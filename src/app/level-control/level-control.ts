@@ -14,7 +14,9 @@ export class LevelControl implements AfterViewInit {
   startRender() {
       this.drawOperationsWorker = new Worker(new URL('./draw-operations.worker', import.meta.url));
       this.drawOperationsWorker.onmessage = async  ({data}) => {
-
+        if(data === "terminate"){
+        //  this.drawOperationsWorker.terminate();
+        }
     };
       const offScreenCanvas = this.theCanvas.nativeElement.transferControlToOffscreen();
 
