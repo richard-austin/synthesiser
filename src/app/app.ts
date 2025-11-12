@@ -1,9 +1,10 @@
 import { Component, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import {LevelControl} from './level-control/level-control';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, LevelControl],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
