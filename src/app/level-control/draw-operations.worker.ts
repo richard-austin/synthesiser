@@ -1,10 +1,17 @@
 /// <reference lib="webworker" />
+import {interval} from 'rxjs';
+
 addEventListener('message', ({ data }) => {
   const response = `worker response to ${data}`;
   if(data.canvas) {
     const render: Renderer = new Renderer(data.canvas);
-    render.drawCalibrations();
-    postMessage("terminate");
+    let angle = 0;
+    interval(10).subscribe(() => {
+      render.drawDial(angle);
+      angle += 1;
+    });
+    //render.drawDial(angle);
+   // postMessage("terminate");
 
   }
 //  postMessage(response);
@@ -16,20 +23,21 @@ class Renderer {
     this.canvas = canvas;
   }
 
-  drawCalibrations() {
+  drawDial(angle: number) {
     const canvas = this.canvas;
     const ctx = this.canvas.getContext('2d');
     const start = performance.now();
-    const radius = 60;
-    const centreButtonRadius = radius - 30;
-    const skirtInnerRadius = radius - 15;
-    const knurlAngle = 5;
+    const radius = 50;
+    const centreButtonRadius = radius - 18;
+    const skirtInnerRadius = radius - 25;
+    const knurlAngle = 6;
     const centreX = canvas.width / 2;
     const centreY = canvas.height / 2;
-    const calAngle = 340;
+    const calAngle = 350;
+    const align = calAngle - 90;  // Align zero position
     const divisions = 11;
     const toRads = Math.PI / 180;
-    const textPos = -12;
+    const textPos = -15;
 
     if (ctx !== null) {
       // Outer edge of skirting
@@ -39,6 +47,7 @@ class Renderer {
       radGrad.addColorStop(1, "#a86");
       ctx.arc(centreX, centreY, radius, 0, 2 * Math.PI, false);
       ctx.lineWidth = 1;
+      ctx.strokeStyle = 'white';
       ctx.fillStyle = radGrad;
       ctx.fill();
       ctx.stroke();
@@ -78,11 +87,11 @@ class Renderer {
 
       // Calibrations
       for (let i = 0; i < divisions; ++i) {
-        const x = Math.cos(((i / divisions * calAngle) + 90 - calAngle) * toRads) * (radius + textPos) + centreX;
-        const y = Math.sin(((i / divisions * calAngle) + 90 - calAngle) * toRads) * (radius + textPos) + centreY;
+        const x = Math.cos(((i / divisions * calAngle) + align - calAngle +angle) * toRads) * (radius + textPos) + centreX;
+        const y = Math.sin(((i / divisions * calAngle) + align - calAngle +angle) * toRads) * (radius + textPos) + centreY;
         ctx.save();
         ctx.translate(x, y);
-        ctx.rotate((((i + 0.5) / divisions * calAngle) - calAngle / 2) * toRads);
+        ctx.rotate(((i / divisions * calAngle) - calAngle + align + 90 + angle) * toRads);
         ctx.fillText((i).toString(), 0, 0);
         ctx.restore();
       }
@@ -92,14 +101,14 @@ class Renderer {
       grad3.addColorStop(1, "black");
 
       // Knurling
-      for(let angle = 0; angle < 360; angle += knurlAngle) {
-        const x1 = centreX+Math.cos(angle* toRads) * (centreButtonRadius);
-        const y1 = centreY+Math.sin(angle * toRads) * (centreButtonRadius);
-        const x2 = centreX+Math.cos(angle * toRads) * (skirtInnerRadius);
-        const y2 = centreY+Math.sin(angle * toRads) * (skirtInnerRadius);
+      for(let knurl = 0; knurl < 360; knurl += knurlAngle) {
+        const x1 = centreX+Math.cos((knurl+angle) * toRads) * (centreButtonRadius);
+        const y1 = centreY+Math.sin((knurl+angle) * toRads) * (centreButtonRadius);
+        const x2 = centreX+Math.cos((knurl+angle) * toRads) * (skirtInnerRadius);
+        const y2 = centreY+Math.sin((knurl+angle) * toRads) * (skirtInnerRadius);
         ctx.beginPath();
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = grad3;
+        // ctx.lineWidth = 1;
+        // ctx.strokeStyle = grad3;
       //  ctx.fill();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
@@ -108,7 +117,7 @@ class Renderer {
       }
 
       const finish = performance.now();
-      console.log("Time = " + (finish - start).toString());
+    //  console.log("Time = " + (finish - start).toString());
     }
   }
 }
