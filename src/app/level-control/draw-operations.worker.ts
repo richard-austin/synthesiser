@@ -1,7 +1,4 @@
 /// <reference lib="webworker" />
-
-import {ElementRef} from '@angular/core';
-
 addEventListener('message', ({ data }) => {
   const response = `worker response to ${data}`;
   if(data.canvas) {
@@ -48,7 +45,6 @@ class Renderer {
 
       ctx.beginPath();
       ctx.strokeStyle = '#333';
-      //ctx.moveTo(centreX, centreY);
       ctx.lineWidth = 1;
       ctx.fillStyle = grad1;
       ctx.arc(centreX, centreY, radius - 10, 0, 2 * Math.PI, false);
@@ -57,7 +53,7 @@ class Renderer {
       ctx.closePath();
 
       // Create linear gradient
-      const grad = ctx.createLinearGradient(0, 0, 0, 130);
+      const grad = ctx.createLinearGradient(centreX, centreY, centreX+radius-30, centreY+radius-30);
       grad.addColorStop(0, "lightblue");
       grad.addColorStop(1, "darkblue");
 
@@ -82,6 +78,33 @@ class Renderer {
         ctx.restore();
       }
 
+      for(let angle = 0; angle < 360; angle += 3) {
+        const x1 = centreX+Math.cos(angle* toRads) * (radius - 30);
+        const y1 = centreY+Math.sin(angle * toRads) * (radius - 30);
+        const x2 = centreX+Math.cos(angle * toRads) * (radius - 10);
+        const y2 = centreY+Math.sin(angle * toRads) * (radius - 10);
+        ctx.beginPath();
+        ctx.fillStyle = '#000';
+        ctx.fill();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.closePath();
+      }
+
+      // for(let angle = 0; angle < 360; angle += 2) {
+      //   const x1 = centreX+Math.cos(angle* toRads) * (radius - 30);
+      //   const y1 = centreY+Math.sin(angle * toRads) * (radius - 30);
+      //   const x2 = centreX;
+      //   const y2 = centreY;
+      //   ctx.beginPath();
+      //   ctx.fillStyle = '#000';
+      //   ctx.fill();
+      //   ctx.moveTo(x1, y1);
+      //   ctx.lineTo(x2, y2);
+      //   ctx.stroke();
+      //   ctx.closePath();
+      // }
       const finish = performance.now();
       console.log("Time = " + (finish - start).toString());
     }
