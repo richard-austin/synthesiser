@@ -1,51 +1,61 @@
 /// <reference lib="webworker" />
-import {interval} from 'rxjs';
+import {LevelControlParameters} from './levelControlParameters';
 
-addEventListener('message', ({ data }) => {
+let render: Renderer;
+addEventListener('message', ({data}) => {
   const response = `worker response to ${data}`;
-  if(data.canvas) {
-    const render: Renderer = new Renderer(data.canvas);
+  if (data.canvas && data.params) {
+    render = new Renderer(data.canvas, data.params);
     let angle = 0;
-    interval(10).subscribe(() => {
-      render.drawDial(angle);
-      angle += 1;
-    });
-    //render.drawDial(angle);
-   // postMessage("terminate");
-
+    render.drawCursor();
+    render.drawDial(angle);
   }
+  if (render && data.angle !== undefined) {
+    render.drawDial(data.angle);
+  }
+
 //  postMessage(response);
 });
 
 class Renderer {
-  private readonly canvas: HTMLCanvasElement;
-  constructor(canvas: HTMLCanvasElement) {
+  private readonly canvas: OffscreenCanvas;
+  private readonly params: LevelControlParameters;
+
+  constructor(canvas: OffscreenCanvas, params: LevelControlParameters) {
     this.canvas = canvas;
+    this.params = params;
+  }
+
+  drawCursor() {
+    const cursorLength = 7;
+    const cursorWidth = 10;
+    const cursorOffset = 2;
+    const ctx = this.canvas.getContext('2d');
+    if (ctx) {
+      ctx.beginPath();
+      ctx.moveTo(this.params.centreX, this.params.centreY - this.params.radius - cursorOffset);
+      ctx.lineTo(this.params.centreX + cursorWidth / 2, this.params.centreY - this.params.radius - cursorLength - cursorOffset);
+      ctx.lineTo(this.params.centreX - cursorWidth / 2, this.params.centreY - this.params.radius - cursorLength - cursorOffset);
+      ctx.closePath();
+      ctx.fillStyle = '#000';
+      ctx.fill();
+      ctx.stroke();
+    }
   }
 
   drawDial(angle: number) {
-    const canvas = this.canvas;
+    // const canvas = this.canvas;
     const ctx = this.canvas.getContext('2d');
-    const start = performance.now();
-    const radius = 50;
-    const centreButtonRadius = radius - 18;
-    const skirtInnerRadius = radius - 25;
-    const knurlAngle = 6;
-    const centreX = canvas.width / 2;
-    const centreY = canvas.height / 2;
-    const calAngle = 350;
-    const align = calAngle - 90;  // Align zero position
-    const divisions = 11;
     const toRads = Math.PI / 180;
-    const textPos = -15;
 
     if (ctx !== null) {
+      const p = this.params;
       // Outer edge of skirting
       ctx.beginPath();
-      const radGrad = ctx.createRadialGradient(centreX, centreY, skirtInnerRadius, centreX, centreY, radius);
+      const radGrad = ctx.createRadialGradient(p.centreX, p.centreY, p.skirtInnerRadius, p.centreX, p.centreY, p.radius);
       radGrad.addColorStop(0, "#dca");
       radGrad.addColorStop(1, "#a86");
-      ctx.arc(centreX, centreY, radius, 0, 2 * Math.PI, false);
+      ctx.arc(p.centreX, p.centreY, p.radius, 0, 2 * Math.PI, false);
       ctx.lineWidth = 1;
       ctx.strokeStyle = 'white';
       ctx.fillStyle = radGrad;
@@ -63,19 +73,19 @@ class Renderer {
       ctx.lineWidth = 1;
       ctx.fillStyle = grad1;
       ctx.strokeStyle = 'black';
-      ctx.arc(centreX, centreY, skirtInnerRadius, 0, 2 * Math.PI, false);
+      ctx.arc(p.centreX, p.centreY, p.skirtInnerRadius, 0, 2 * Math.PI, false);
       ctx.fill();
       ctx.stroke();
       ctx.closePath();
 
       // Create linear gradient
-      const grad = ctx.createLinearGradient(centreX-centreButtonRadius, centreY-centreButtonRadius, centreX+centreButtonRadius, centreY+centreButtonRadius);
+      const grad = ctx.createLinearGradient(p.centreX - p.centreButtonRadius, p.centreY - p.centreButtonRadius, p.centreX + p.centreButtonRadius, p.centreY + p.centreButtonRadius);
       grad.addColorStop(0, "lightblue");
       grad.addColorStop(1, "darkblue");
 
       // Center button
       ctx.beginPath();
-      ctx.arc(centreX, centreY, centreButtonRadius, 0, 2 * Math.PI, false);
+      ctx.arc(p.centreX, p.centreY, p.centreButtonRadius, 0, 2 * Math.PI, false);
       ctx.fillStyle = grad;
       ctx.fill();
       ctx.stroke();
@@ -86,30 +96,30 @@ class Renderer {
       ctx.fillStyle = '#000';
 
       // Calibrations
-      for (let i = 0; i < divisions; ++i) {
-        const x = Math.cos(((i / divisions * calAngle) + align - calAngle +angle) * toRads) * (radius + textPos) + centreX;
-        const y = Math.sin(((i / divisions * calAngle) + align - calAngle +angle) * toRads) * (radius + textPos) + centreY;
+      for (let i = 0; i <= p.divisions; ++i) {
+        const x = Math.cos(((-i / p.divisions * p.calAngle) + p.align - p.calAngle + angle) * toRads) * (p.radius + p.textPos) + p.centreX;
+        const y = Math.sin(((-i / p.divisions * p.calAngle) + p.align - p.calAngle + angle) * toRads) * (p.radius + p.textPos) + p.centreY;
         ctx.save();
         ctx.translate(x, y);
-        ctx.rotate(((i / divisions * calAngle) - calAngle + align + 90 + angle) * toRads);
+        ctx.rotate(((-i / p.divisions * p.calAngle) - p.calAngle + p.align + 90 + angle) * toRads);
         ctx.fillText((i).toString(), 0, 0);
         ctx.restore();
       }
 
-      const grad3 = ctx.createLinearGradient(centreX-centreButtonRadius, centreY-centreButtonRadius, centreX+centreButtonRadius, centreY+centreButtonRadius);
+      const grad3 = ctx.createLinearGradient(p.centreX - p.centreButtonRadius, p.centreY - p.centreButtonRadius, p.centreX + p.centreButtonRadius, p.centreY + p.centreButtonRadius);
       grad3.addColorStop(0, "gray");
       grad3.addColorStop(1, "black");
 
       // Knurling
-      for(let knurl = 0; knurl < 360; knurl += knurlAngle) {
-        const x1 = centreX+Math.cos((knurl+angle) * toRads) * (centreButtonRadius);
-        const y1 = centreY+Math.sin((knurl+angle) * toRads) * (centreButtonRadius);
-        const x2 = centreX+Math.cos((knurl+angle) * toRads) * (skirtInnerRadius);
-        const y2 = centreY+Math.sin((knurl+angle) * toRads) * (skirtInnerRadius);
+      for (let knurl = 0; knurl < 360; knurl += p.knurlAngle) {
+        const x1 = p.centreX + Math.cos((knurl + angle) * toRads) * (p.centreButtonRadius);
+        const y1 = p.centreY + Math.sin((knurl + angle) * toRads) * (p.centreButtonRadius);
+        const x2 = p.centreX + Math.cos((knurl + angle) * toRads) * (p.skirtInnerRadius);
+        const y2 = p.centreY + Math.sin((knurl + angle) * toRads) * (p.skirtInnerRadius);
         ctx.beginPath();
         // ctx.lineWidth = 1;
         // ctx.strokeStyle = grad3;
-      //  ctx.fill();
+        //  ctx.fill();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
         ctx.stroke();
@@ -117,7 +127,7 @@ class Renderer {
       }
 
       const finish = performance.now();
-    //  console.log("Time = " + (finish - start).toString());
+      //  console.log("Time = " + (finish - start).toString());
     }
   }
 }
