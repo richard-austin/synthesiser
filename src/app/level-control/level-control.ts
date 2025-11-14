@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, EventEmitter, Output, ViewChild} from '@angular/core';
 import {LevelControlParameters} from './levelControlParameters';
 
 @Component({
@@ -12,6 +12,7 @@ export class LevelControl implements AfterViewInit {
   params!: LevelControlParameters;
 
   @ViewChild('theCanvas') theCanvas!: ElementRef<HTMLCanvasElement>;
+  @Output() setLevel = new EventEmitter<number>();
 
   startRender() {
     this.drawOperationsWorker = new Worker(new URL('./draw-operations.worker', import.meta.url));
@@ -29,6 +30,25 @@ export class LevelControl implements AfterViewInit {
     }, [this.params.canvas]);
   }
 
+  focus() {
+    this.drawOperationsWorker.postMessage("focus");
+  }
+
+  blur() {
+    this.drawOperationsWorker.postMessage("blur");
+  }
+
+  setAngle(currentAngle: number, delta: number): number {
+    currentAngle += delta;
+    if (currentAngle > this.params.calAngle)
+      currentAngle = this.params.calAngle;
+    else if (currentAngle < 0)
+      currentAngle = 0;
+    this.setLevel.emit(currentAngle / this.params.calAngle);
+    this.drawOperationsWorker.postMessage({angle: currentAngle});
+    return currentAngle;
+  }
+
   ngAfterViewInit(): void {
     this.startRender();
     const canvas = this.theCanvas.nativeElement;
@@ -36,11 +56,13 @@ export class LevelControl implements AfterViewInit {
     let currentAngle = 0;
     let lastX = 0
     let lastY = 0;
+    canvas.tabIndex = 0;
     canvas.addEventListener('mousedown', (e) => {
       let p = this.params;
       let x = e.offsetX - p.centreX;
       let y = e.offsetY - p.centreY;
       mouseDown = true;
+      canvas.focus();
       if (x >= -this.params.radius && x <= this.params.radius &&
         y >= -this.params.radius && y <= this.params.radius) {
         lastX = x;
@@ -61,13 +83,7 @@ export class LevelControl implements AfterViewInit {
         lastX = x;
         lastY = y;
 
-        currentAngle += delta;
-        if (currentAngle > this.params.calAngle)
-          currentAngle = this.params.calAngle;
-        else if (currentAngle < 0)
-          currentAngle = 0;
-
-        this.drawOperationsWorker.postMessage({angle: currentAngle});
+        currentAngle = this.setAngle(currentAngle, delta);
       }
       e.preventDefault();
     });
@@ -82,6 +98,22 @@ export class LevelControl implements AfterViewInit {
       lastX = lastY = 0;
       mouseDown = false;
       e.preventDefault();
-    })
+    });
+
+    canvas.addEventListener('keydown', (e) => {
+      console.log("key", e);
+      let delta = 0.5;
+      if (e.ctrlKey)
+        delta = 4;
+      else if (e.shiftKey)
+        delta = 1;
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+
+        if (e.key === "ArrowDown")
+          delta *= -1;
+        currentAngle = this.setAngle(currentAngle, delta);
+      }
+    });
   }
 }

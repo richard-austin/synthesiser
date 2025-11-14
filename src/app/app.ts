@@ -10,4 +10,7 @@ import {LevelControl} from './level-control/level-control';
 })
 export class App {
   protected readonly title = signal('synthesiser');
+
+  protected setLevel(level: number) {
+  }
 }

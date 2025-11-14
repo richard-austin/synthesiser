@@ -3,17 +3,18 @@ import {LevelControlParameters} from './levelControlParameters';
 
 let render: Renderer;
 addEventListener('message', ({data}) => {
-  const response = `worker response to ${data}`;
   if (data.canvas && data.params) {
     render = new Renderer(data.canvas, data.params);
     let angle = 0;
-    render.drawCursor();
+    render.drawCursor(false);
     render.drawDial(angle);
   }
   if (render && data.angle !== undefined) {
     render.drawDial(data.angle);
   }
-
+  else if(data === "focus" || data === "blur") {
+    render.focus(data === "focus");
+  }
 //  postMessage(response);
 });
 
@@ -26,7 +27,7 @@ class Renderer {
     this.params = params;
   }
 
-  drawCursor() {
+  drawCursor(focus: boolean) {
     const cursorLength = 7;
     const cursorWidth = 10;
     const cursorOffset = 2;
@@ -37,9 +38,8 @@ class Renderer {
       ctx.lineTo(this.params.centreX + cursorWidth / 2, this.params.centreY - this.params.radius - cursorLength - cursorOffset);
       ctx.lineTo(this.params.centreX - cursorWidth / 2, this.params.centreY - this.params.radius - cursorLength - cursorOffset);
       ctx.closePath();
-      ctx.fillStyle = '#000';
+      ctx.fillStyle = focus ? '#a00' : '#000';
       ctx.fill();
-      ctx.stroke();
     }
   }
 
@@ -84,18 +84,13 @@ class Renderer {
       grad.addColorStop(1, "darkblue");
 
       // Center button
-      ctx.beginPath();
-      ctx.arc(p.centreX, p.centreY, p.centreButtonRadius, 0, 2 * Math.PI, false);
-      ctx.fillStyle = grad;
-      ctx.fill();
-      ctx.stroke();
-      ctx.closePath();
+      this.centreButton(ctx, grad);
 
+      // Calibrations
       ctx.textAlign = 'center';
       ctx.font = '16x Arial';
       ctx.fillStyle = '#000';
 
-      // Calibrations
       for (let i = 0; i <= p.divisions; ++i) {
         const x = Math.cos(((-i / p.divisions * p.calAngle) + p.align - p.calAngle + angle) * toRads) * (p.radius + p.textPos) + p.centreX;
         const y = Math.sin(((-i / p.divisions * p.calAngle) + p.align - p.calAngle + angle) * toRads) * (p.radius + p.textPos) + p.centreY;
@@ -129,5 +124,19 @@ class Renderer {
       const finish = performance.now();
       //  console.log("Time = " + (finish - start).toString());
     }
+  }
+
+  centreButton(ctx: OffscreenCanvasRenderingContext2D, grad: CanvasGradient) {
+    const p = this.params;
+    ctx.beginPath();
+    ctx.arc(p.centreX, p.centreY, p.centreButtonRadius, 0, 2 * Math.PI, false);
+    ctx.fillStyle = grad;
+    ctx.fill();
+   // ctx.stroke();
+    ctx.closePath();
+  }
+
+  focus(focus: boolean) {
+    this.drawCursor(focus);
   }
 }
