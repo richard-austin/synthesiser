@@ -1,2 +1,6 @@
-<app-level-control (setLevel)="setLevel($event)"></app-level-control><app-level-control (setLevel)="setLevel($event)"></app-level-control>
+<button (click)="start()">Start</button>
+<button (mousedown)="play()" (mouseup)="end()" (mouseout)="end()">Ping</button>
+<app-level-control (setLevel)="setFreq($event)"></app-level-control>
+<app-level-control (setLevel)="setLevel($event)"></app-level-control>
+<app-level-control (setLevel)="setFilter($event)"></app-level-control>
 <router-outlet />

@@ -107,12 +107,17 @@ export class LevelControl implements AfterViewInit {
         delta = 4;
       else if (e.shiftKey)
         delta = 1;
-      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      if(/^[0123456789]$/.test(e.key)) {
+        let p = this.params;
+
+        currentAngle = this.setAngle(p.calAngle * parseInt(e.key) / 10, 0);
+      }
+      else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault();
 
         if (e.key === "ArrowDown")
           delta *= -1;
-        currentAngle = this.setAngle(currentAngle, delta);
+         currentAngle = this.setAngle(currentAngle, delta);
       }
     });
   }
