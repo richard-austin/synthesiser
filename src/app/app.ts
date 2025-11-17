@@ -1,6 +1,7 @@
 import {AfterViewInit, Component} from '@angular/core';
 import {RouterOutlet} from '@angular/router';
 import {LevelControl} from './level-control/level-control';
+import {Oscillator} from './modules/oscillator';
 
 @Component({
   selector: 'app-root',
@@ -10,10 +11,13 @@ import {LevelControl} from './level-control/level-control';
 })
 export class App implements AfterViewInit {
   oscillator!: OscillatorNode;
+  osc2!: OscillatorNode;
   gain!: GainNode;
   filter!: BiquadFilterNode;
   reverb!: DelayNode;
   audioCtx!: AudioContext;
+
+  osc!: Oscillator;
 
   ngAfterViewInit(): void {
 
@@ -27,7 +31,7 @@ export class App implements AfterViewInit {
   }
 
   protected setFreq(freq: number) {
-    this.oscillator.frequency.setValueAtTime((Math.pow(2, freq * 10)) * 70, this.audioCtx.currentTime);
+    this.osc.setFrequency(Math.pow(2, freq * 10) * 70);
   }
 
   protected setFilter(freq: number) {
@@ -44,9 +48,13 @@ export class App implements AfterViewInit {
     // gain2.gain.setValueAtTime(.90, 0);
     this.filter = this.audioCtx.createBiquadFilter();
     // this.reverb = this.audioCtx.createDelay();
-    this.oscillator.type = "sine";
-    this.oscillator.frequency.setValueAtTime(0, this.audioCtx.currentTime); // value in hertz
+    this.oscillator.type = "sawtooth";
+    this.oscillator.frequency.setValueAtTime(1000, this.audioCtx.currentTime); // value in hertz
     this.gain.gain.setValueAtTime(0, this.audioCtx.currentTime);
+    this.osc2 = this.audioCtx.createOscillator();
+    this.osc2.type = "sine";
+    this.osc2.frequency.setValueAtTime(5, this.audioCtx.currentTime);
+    //osc2.connect(this.gain.gain);
     //
     this.oscillator.connect(this.filter);
     //
@@ -61,7 +69,6 @@ export class App implements AfterViewInit {
     this.filter.type = "lowpass";
     this.filter.Q.setValueAtTime(20, this.audioCtx.currentTime);
     this.filter.connect(this.gain);
-    // //this.filter.connect(this.gain);
     // this.reverb.delayTime.setValueAtTime(.02, this.audioCtx.currentTime);
     // this.reverb.connect(gain2);
     // gain2.connect(this.reverb);
@@ -70,39 +77,28 @@ export class App implements AfterViewInit {
     this.gain.connect(this.audioCtx.destination);
     //
     this.oscillator.start();
+    this.osc2.start();
     // lfo.start();
+
+
+    this.filter.frequency.setValueAtTime(1000, this.audioCtx.currentTime);
+    this.filter.frequency.linearRampToValueAtTime(1000, this.audioCtx.currentTime);
+    this.filter.frequency.exponentialRampToValueAtTime(1000, this.audioCtx.currentTime);
+    this.oscillator.frequency.linearRampToValueAtTime(1000, this.audioCtx.currentTime);
+
+    this.osc = new Oscillator(this.audioCtx);
+    this.osc.setFrequency(1000);
+    this.osc.connect(this.audioCtx.destination);
+    this.osc.setModLevel(5);
+   // this.osc.modulation(this.osc2);
   }
 
-
   protected play() {
-    const attack = [0, 3000];
-    const decaySustain = [3000, 700];
-    const attackTime = 1;
-    const decayTime = 1;
-    if (this.filter) {
-      this.filter.frequency.cancelScheduledValues(0);
-      if (attackTime >= 0.01)
-        this.filter.frequency.setValueCurveAtTime(attack, this.audioCtx.currentTime, attackTime);
-      else
-        this.filter.frequency.setValueAtTime(attack[1], this.audioCtx.currentTime);
-
-      if (decayTime >= 0.01)
-        this.filter.frequency.setValueCurveAtTime(decaySustain, this.audioCtx.currentTime + attackTime, decayTime);
-      else
-        this.filter.frequency.setValueAtTime(decaySustain[1], this.audioCtx.currentTime);
-    }
+    this.osc.modulation(this.osc2);
+    this.osc.keyDown();
   }
 
   protected end() {
-    if (this.filter) {
-      const release = [this.filter.frequency.value, 0];  // 1st value must be same as sustain value
-      const releaseTime = 3;
-      console.log(this.filter.frequency.value);
-      this.filter.frequency.cancelScheduledValues(0);
-      if (releaseTime >= 0.01)
-        this.filter.frequency.setValueCurveAtTime(release, this.audioCtx.currentTime, releaseTime);
-      else
-        this.filter.frequency.setValueAtTime(0, this.audioCtx.currentTime);
-    }
+    this.osc.keyUp();
   }
 }
