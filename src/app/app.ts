@@ -2,6 +2,7 @@ import {AfterViewInit, Component} from '@angular/core';
 import {RouterOutlet} from '@angular/router';
 import {LevelControl} from './level-control/level-control';
 import {Oscillator} from './modules/oscillator';
+import {FreqBendValues} from './util-classes/freq-bend-values';
 
 @Component({
   selector: 'app-root',
@@ -90,11 +91,11 @@ export class App implements AfterViewInit {
     this.osc.setFrequency(1000);
     this.osc.connect(this.audioCtx.destination);
     this.osc.setModLevel(5);
-   // this.osc.modulation(this.osc2);
+    this.osc.setFreqBendEnvelope(new FreqBendValues(0, .5, .1, 0,0));
+    this.osc.modulation(this.osc2);
   }
 
   protected play() {
-    this.osc.modulation(this.osc2);
     this.osc.keyDown();
   }
 
