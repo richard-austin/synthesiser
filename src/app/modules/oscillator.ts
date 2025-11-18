@@ -1,7 +1,8 @@
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {OscFilterBase} from './osc-filter-base';
+import {FreqBendValues} from '../util-classes/freq-bend-values';
 
-export class Oscillator extends OscFilterBase{
+export class Oscillator extends OscFilterBase {
   oscillator: OscillatorNode;
   // public static override readonly  maxLevel: number = 1;
   // public static override readonly maxFrequency = 20000;
@@ -9,6 +10,7 @@ export class Oscillator extends OscFilterBase{
 
   constructor(protected override audioCtx: AudioContext) {
     super(audioCtx);
+    this.useAmplitudeEnvelope = true;
     this.oscillator = audioCtx.createOscillator();
     this.oscillator.type = "sine";
     // Default ADSR values
@@ -19,12 +21,11 @@ export class Oscillator extends OscFilterBase{
   }
 
   setFrequency(freq: number) {
-    const f = freq <= OscFilterBase.maxFrequency ?
-      freq >= 0 ? freq :
-        freq : OscFilterBase.maxFrequency;
-    this.oscillator.frequency.setValueAtTime(f, this.audioCtx.currentTime);
-    this.mod.gain.setValueAtTime(f * this.modLevel, this.audioCtx.currentTime);
-    this.freq = freq;
+    let f = super.clampFrequency(freq);
+    let fStart = super.clampFrequency(freq * this.initialFrequencyFactor);
+    this.oscillator.frequency.setValueAtTime(fStart, this.audioCtx.currentTime);
+    this.mod.gain.setValueAtTime(fStart * this.modLevel, this.audioCtx.currentTime);
+    this.freq = f;
   }
 
   setType(type: OscillatorType) {
@@ -40,30 +41,40 @@ export class Oscillator extends OscFilterBase{
   }
 
   setModLevel(level: number) {
-    this.modLevel = level *OscFilterBase.maxLevel /100;
+    this.modLevel = level * OscFilterBase.maxLevel / 100;
     this.mod.gain.setValueAtTime(this.oscillator.frequency.value * this.modLevel, this.audioCtx.currentTime);
   }
 
+  override setFreqBendEnvelope(envelope: FreqBendValues) {
+    super.setFreqBendEnvelope(envelope);
+    this.initialFrequencyFactor = envelope.releaseLevel;  // Ensure frequency starts at the level it ends at in the frequency bend envelope.
+    this.oscillator.frequency.setValueAtTime(this.freq * this.initialFrequencyFactor, this.audioCtx.currentTime);
+  }
+
+  override freqBendEnvelopeOff() {
+    super.freqBendEnvelopeOff();
+    this.initialFrequencyFactor = 1;
+    this.oscillator.frequency.setValueAtTime(this.freq, this.audioCtx.currentTime);
+  }
+
+
   // Key down for this oscillator
   override keyDown() {
-    super.keyDown();
+    super.attack();
     if (this.useFreqBendEnvelope) {
       const freq = this.freq;
       this.oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
-      this.oscillator.frequency.linearRampToValueAtTime(freq + freq * this.freqBendEnv.attackLevel, this.audioCtx.currentTime+this.freqBendEnv.attackTime);
-      this.oscillator.frequency.linearRampToValueAtTime(freq + freq * this.freqBendEnv.sustainLevel, this.audioCtx.currentTime + this.freqBendEnv.attackTime + this.freqBendEnv.decayTime);
+      this.oscillator.frequency.linearRampToValueAtTime(this.clampFrequency(freq * this.freqBendEnv.attackLevel), this.audioCtx.currentTime + this.freqBendEnv.attackTime);
+      this.oscillator.frequency.linearRampToValueAtTime(this.clampFrequency(freq * this.freqBendEnv.sustainLevel), this.audioCtx.currentTime + this.freqBendEnv.attackTime + this.freqBendEnv.decayTime);
     }
   }
 
   // Key released for this oscillator
   keyUp() {
-    this.gain.gain.cancelAndHoldAtTime(this.audioCtx.currentTime);
- //   this.gain.gain.setValueAtTime(this.gain.gain.value, this.audioCtx.currentTime);
-    this.gain.gain.linearRampToValueAtTime(0.0, this.audioCtx.currentTime + this.env.releaseTime);
-
-    if(this.useFreqBendEnvelope) {
+    super.release();
+    if (this.useFreqBendEnvelope) {
       this.oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
-      this.oscillator.frequency.linearRampToValueAtTime(this.freq, this.audioCtx.currentTime + this.freqBendEnv.releaseTime);
+      this.oscillator.frequency.linearRampToValueAtTime(this.clampFrequency(this.freq*this.freqBendEnv.releaseLevel), this.audioCtx.currentTime + this.freqBendEnv.releaseTime);
     }
   }
 }
