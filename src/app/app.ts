@@ -6,6 +6,7 @@ import {Filter} from './modules/filter';
 import {FreqBendValues} from './util-classes/freq-bend-values';
 import {timer} from 'rxjs';
 import {ADSRValues} from './util-classes/adsrvalues';
+import {Delay} from './modules/delay';
 
 @Component({
   selector: 'app-root',
@@ -30,19 +31,27 @@ export class App implements AfterViewInit {
   }
 
   //protected readonly title = signal('synthesiser');
-
+  delay!: Delay;
   protected setLevel(level: number) {
-    this.gain.gain.setValueAtTime(level * 5, this.audioCtx.currentTime);
+    if(this.delay)
+      this.delay.setDelay(level/10);
+   // this.gain.gain.setValueAtTime(level * 5, this.audioCtx.currentTime);
   }
 
   protected setFreq(freq: number) {
-    this.osc.setFrequency(Math.pow(2, freq * 10) * 70);
-    this.oscx.setFrequency(Math.pow(2, freq *10 + 0.8) * 70);
-    this.filter.setFrequency(Math.pow(2, freq * 10) * 70);
+    // this.osc.setFrequency(Math.pow(2, freq * 10) * 70);
+    // this.oscx.setFrequency(Math.pow(2, freq *10 + 0.8) * 70);
+    // this.filter.setFrequency(Math.pow(2, freq * 10) * 70);
+    for (let i = 0; i < this.filters.length; i++) {
+      this.oscillators[i].setFrequency(freq * 100 * Math.pow(Math.pow(2, 1/12), (i+1)));
+    }
   }
 
   protected setFilter(freq: number) {
-    this.filter.setFrequency(Math.pow(2, freq * 10) * 70);
+    //this.filter.setFrequency(Math.pow(2, freq * 10) * 70);
+    for (let i = 0; i < this.filters.length; i++) {
+      this.filters[i].setFrequency(freq * 1000 * Math.pow(Math.pow(2, 1/12), (i+1)));
+    }
   }
 
   protected start() {
@@ -118,6 +127,7 @@ export class App implements AfterViewInit {
  //    this.filter.setModLevel(40);
  //    this.filter.setFreqBendEnvelope(new FreqBendValues(0.1, 1, .5, 0,0.5));
  //    this.filter.modulation(this.osc2);
+    this.delay = new Delay(this.audioCtx);
     console.log(Math.pow(2, 1/12));
     for(let i=0; i < 60; ++i) {
       this.oscillators.push(new Oscillator(this.audioCtx));
@@ -134,10 +144,14 @@ export class App implements AfterViewInit {
         this.filters[i].setType('lowpass');
         //this.filters[i].setModLevel(40);
         this.filters[i].setFreqBendEnvelope(new FreqBendValues(0.1, 20, 0.08, 3,0.8, 0.1));
-       // this.filters[i].freqBendEnvelopeOff();
+        this.filters[i].freqBendEnvelopeOff();
         this.oscillators[i].connect(this.filters[i].filter);
-        this.filters[i].connect(this.audioCtx.destination);
+      this.filters[i].connect(this.delay.delay);
+      this.filters[i].connect(this.audioCtx.destination);
     }
+    this.delay.connect(this.audioCtx.destination);
+    this.delay.setDelay(0);
+    this.delay.feedbackFactor = .1;
     let index = 0;
     let iter: ()=> void = () => {
       const sub = timer(200).subscribe(() => {
