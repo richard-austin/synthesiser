@@ -7,6 +7,9 @@ import {FreqBendValues} from './util-classes/freq-bend-values';
 import {timer} from 'rxjs';
 import {ADSRValues} from './util-classes/adsrvalues';
 import {Delay} from './modules/delay';
+import {WhiteNoise} from './modules/noise/white-noise';
+import {PinkNoise} from './modules/noise/pink-noise';
+import {BrownNoise} from './modules/noise/brown-noise';
 
 @Component({
   selector: 'app-root',
@@ -50,11 +53,11 @@ export class App implements AfterViewInit {
   protected setFilter(freq: number) {
     //this.filter.setFrequency(Math.pow(2, freq * 10) * 70);
     for (let i = 0; i < this.filters.length; i++) {
-      this.filters[i].setFrequency(freq * 1000 * Math.pow(Math.pow(2, 1/12), (i+1)));
+      this.filters[i].setFrequency(freq * 10000 * Math.pow(Math.pow(2, 1/12), (i+1)));
     }
   }
 
-  protected start() {
+  protected async start() {
     this.audioCtx = new AudioContext();
 
     // create Oscillator node
@@ -66,7 +69,7 @@ export class App implements AfterViewInit {
     // this.reverb = this.audioCtx.createDelay();
     this.oscillator.type = "sawtooth";
     this.oscillator.frequency.setValueAtTime(1000, this.audioCtx.currentTime); // value in hertz
-    this.gain.gain.setValueAtTime(0, this.audioCtx.currentTime);
+    this.gain.gain.setValueAtTime(0.5, this.audioCtx.currentTime);
     this.osc2 = this.audioCtx.createOscillator();
     this.osc2.type = "sine";
     this.osc2.frequency.setValueAtTime(5, this.audioCtx.currentTime);
@@ -128,8 +131,7 @@ export class App implements AfterViewInit {
  //    this.filter.setFreqBendEnvelope(new FreqBendValues(0.1, 1, .5, 0,0.5));
  //    this.filter.modulation(this.osc2);
     this.delay = new Delay(this.audioCtx);
-    console.log(Math.pow(2, 1/12));
-    for(let i=0; i < 60; ++i) {
+    for(let i=0; i < 100; ++i) {
       this.oscillators.push(new Oscillator(this.audioCtx));
          this.oscillators[i].setFrequency(200 * Math.pow(Math.pow(2, 1/12), (i+1)));
          //this.osc.connect(this.audioCtx.destination);
@@ -140,26 +142,42 @@ export class App implements AfterViewInit {
          this.oscillators[i].setType('sawtooth');
         this.filters.push(new Filter(this.audioCtx));
         this.filters[i].setFrequency(200 * Math.pow(Math.pow(2, 1/12), (i+1)));
-        this.filters[i].setQ(15);
-        this.filters[i].setType('lowpass');
+        this.filters[i].setQ(10);
+        this.filters[i].setType('bandpass');
         //this.filters[i].setModLevel(40);
         this.filters[i].setFreqBendEnvelope(new FreqBendValues(0.1, 20, 0.08, 3,0.8, 0.1));
         this.filters[i].freqBendEnvelopeOff();
-        this.oscillators[i].connect(this.filters[i].filter);
-      this.filters[i].connect(this.delay.delay);
-      this.filters[i].connect(this.audioCtx.destination);
+        this.oscillators[i].connect(this.gain);
+      //this.filters[i].connect(this.delay.delay);
+      //this.filters[i].connect(this.audioCtx.destination);
+
+      this.noises[i] = new WhiteNoise(this.audioCtx); // new WhiteNoise(this.audioCtx);
+      await this.noises[i].start();
+
+     // this.noises[i].connect(this.filters[i].filter);
+      //this.filters[i].connect(this.delay.delay);
     }
-    this.delay.connect(this.audioCtx.destination);
+    // let noise = new WhiteNoise(this.audioCtx); // new WhiteNoise(this.audioCtx);
+    // await noise.start();
+    //
+    // noise.connect(this.filters[0].filter);
+    // this.filters[0].connect(this.audioCtx.destination);
+     //noise.start();
+  //  this.oscillators[0].connect(this.delay.delay);
+    //this.delay.connect(this.audioCtx.destination);
+    this.gain.gain.setValueAtTime(0.05, this.audioCtx.currentTime);
+    this.gain.connect(this.delay.delay);
     this.delay.setDelay(0);
-    this.delay.feedbackFactor = .1;
+    this.delay.feedbackFactor = 0.8;
+    this.delay.connect(this.audioCtx.destination);
     let index = 0;
     let iter: ()=> void = () => {
       const sub = timer(200).subscribe(() => {
-        this.oscillators[index].keyDown();
+        //this.oscillators[index].keyDown();
         this.filters[index].keyDown();
 
         const sub2 = timer(200).subscribe(() => {
-          this.oscillators[index].keyUp();
+          //this.oscillators[index].keyUp();
           this.filters[index++].keyUp();
           if(index >= this.oscillators.length) {
             index = 0;
@@ -172,6 +190,7 @@ export class App implements AfterViewInit {
     }
     iter();
   }
+  noises:WhiteNoise[] = [];
   oscillators:Oscillator[] = []
   filters:Filter[] = [];
   mods:Oscillator[] = [];

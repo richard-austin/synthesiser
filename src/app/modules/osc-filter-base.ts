@@ -69,18 +69,20 @@ export abstract class OscFilterBase {
   }
 
   attack() {
+    const ctx = this.audioCtx;
     if (this.useAmplitudeEnvelope) {
-      this.gain.gain.cancelAndHoldAtTime(this.audioCtx.currentTime);
-      this.gain.gain.setValueAtTime(0, this.audioCtx.currentTime);
-      this.gain.gain.linearRampToValueAtTime(OscFilterBase.maxLevel, this.audioCtx.currentTime + this.env.attackTime);
-      this.gain.gain.linearRampToValueAtTime(this.env.sustainLevel, this.audioCtx.currentTime + this.env.attackTime + this.env.decayTime);
+      this.gain.gain.cancelAndHoldAtTime(ctx.currentTime);
+      this.gain.gain.setValueAtTime(0, ctx.currentTime);
+      this.gain.gain.linearRampToValueAtTime(OscFilterBase.maxLevel, ctx.currentTime + this.env.attackTime);
+      this.gain.gain.linearRampToValueAtTime(this.env.sustainLevel, ctx.currentTime + this.env.attackTime + this.env.decayTime);
     }
   }
 
   release() {
+    const ctx = this.audioCtx;
     if (this.useAmplitudeEnvelope) {
-      this.gain.gain.cancelAndHoldAtTime(this.audioCtx.currentTime);
-      this.gain.gain.linearRampToValueAtTime(0.0, this.audioCtx.currentTime + this.env.releaseTime);
+      this.gain.gain.cancelAndHoldAtTime(ctx.currentTime);
+      this.gain.gain.linearRampToValueAtTime(0.0, ctx.currentTime + this.env.releaseTime);
     }
   }
 
