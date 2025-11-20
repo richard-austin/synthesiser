@@ -8,8 +8,6 @@ import {timer} from 'rxjs';
 import {ADSRValues} from './util-classes/adsrvalues';
 import {Delay} from './modules/delay';
 import {WhiteNoise} from './modules/noise/white-noise';
-import {PinkNoise} from './modules/noise/pink-noise';
-import {BrownNoise} from './modules/noise/brown-noise';
 
 @Component({
   selector: 'app-root',
