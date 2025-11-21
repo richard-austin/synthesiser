@@ -37,7 +37,6 @@ export class Oscillator extends OscFilterBase {
     modulator.connect(this.mod);
     this.mod.connect(this.oscillator.frequency);
     this.mod.gain.setValueAtTime(this.oscillator.frequency.value * this.modLevel, this.audioCtx.currentTime);
-
   }
 
   setModLevel(level: number) {
@@ -48,7 +47,7 @@ export class Oscillator extends OscFilterBase {
   override setFreqBendEnvelope(envelope: FreqBendValues) {
     super.setFreqBendEnvelope(envelope);
     this.initialFrequencyFactor = envelope.releaseLevel;  // Ensure frequency starts at the level it ends at in the frequency bend envelope.
-    this.oscillator.frequency.setValueAtTime(this.freq * this.initialFrequencyFactor, this.audioCtx.currentTime);
+    this.oscillator.frequency.setValueAtTime(super.clampFrequency(this.freq * this.initialFrequencyFactor), this.audioCtx.currentTime);
   }
 
   override freqBendEnvelopeOff() {
@@ -61,11 +60,12 @@ export class Oscillator extends OscFilterBase {
   // Key down for this oscillator
   override keyDown() {
     super.attack();
+    const ctx = this.audioCtx;
     if (this.useFreqBendEnvelope) {
       const freq = this.freq;
-      this.oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
-      this.oscillator.frequency.linearRampToValueAtTime(this.clampFrequency(freq * this.freqBendEnv.attackLevel), this.audioCtx.currentTime + this.freqBendEnv.attackTime);
-      this.oscillator.frequency.linearRampToValueAtTime(this.clampFrequency(freq * this.freqBendEnv.sustainLevel), this.audioCtx.currentTime + this.freqBendEnv.attackTime + this.freqBendEnv.decayTime);
+      this.oscillator.frequency.cancelAndHoldAtTime(ctx.currentTime);
+      this.oscillator.frequency.linearRampToValueAtTime(this.clampFrequency(freq * this.freqBendEnv.attackLevel), ctx.currentTime + this.freqBendEnv.attackTime);
+      this.oscillator.frequency.linearRampToValueAtTime(this.clampFrequency(freq * this.freqBendEnv.sustainLevel), ctx.currentTime + this.freqBendEnv.attackTime + this.freqBendEnv.decayTime);
     }
   }
 

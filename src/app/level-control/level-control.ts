@@ -101,7 +101,7 @@ export class LevelControl implements AfterViewInit {
     });
 
     canvas.addEventListener('keydown', (e) => {
-      console.log("key", e);
+      //console.log("key", e);
       let delta = 0.5;
       if (e.ctrlKey)
         delta = 4;

@@ -3,4 +3,8 @@
 <app-level-control (setLevel)="setFreq($event)"></app-level-control>
 <app-level-control (setLevel)="setLevel($event)"></app-level-control>
 <app-level-control (setLevel)="setFilter($event)"></app-level-control>
+<br>
+<br>
+<br>
+<div #div (keydown)="keydown($event)" (keyup)="keyup($event)" style="width: 10px; height: 10px; background-color: black"></div>
 <router-outlet />

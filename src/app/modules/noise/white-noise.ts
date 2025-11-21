@@ -1,6 +1,9 @@
-export class WhiteNoise {
+import {GainEnvelopeBase} from '../gain-envelope-base';
+
+export class WhiteNoise extends GainEnvelopeBase {
   private node!: AudioWorkletNode;
-  constructor(private audioCtx: AudioContext) {
+  constructor(audioCtx: AudioContext) {
+    super(audioCtx);
   }
 
   async start() {
@@ -28,8 +31,10 @@ export class WhiteNoise {
 
     await this.audioCtx.audioWorklet.addModule(`data:text/javascript,(${worklet.toString()})()`);
     this.node = new AudioWorkletNode(this.audioCtx, "white-noise");
+    this.node.connect(this.gain);
   }
-  connect(out: AudioNode): void {
-    this.node.connect(out);
+  modulation(modulator: OscillatorNode) {
+    this.modulator = modulator;
+    modulator.connect(this.mod);
   }
 }
