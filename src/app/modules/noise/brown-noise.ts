@@ -40,6 +40,6 @@ export class BrownNoise extends GainEnvelopeBase{
 
   modulation(modulator: OscillatorNode) {
     this.modulator = modulator;
-    modulator.connect(this.mod);
+    modulator.connect(this.frequencyMod);
   }
  }

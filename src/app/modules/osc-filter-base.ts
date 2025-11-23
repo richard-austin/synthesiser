@@ -4,8 +4,8 @@ import {GainEnvelopeBase} from './gain-envelope-base';
 export abstract class OscFilterBase extends GainEnvelopeBase{
   freqBendEnv: FreqBendValues;
   protected useFreqBendEnvelope: boolean;
-  protected initialFrequencyFactor: number = 1;
   public static readonly maxFrequency = 20000;
+  public static readonly minFrequency = 0.01;
 
   protected constructor(audioCtx: AudioContext) {
     super(audioCtx);
@@ -18,7 +18,6 @@ export abstract class OscFilterBase extends GainEnvelopeBase{
   setFreqBendEnvelope(envelope: FreqBendValues) {
     this.freqBendEnv = envelope;
     this.useFreqBendEnvelope = true;
-    this.initialFrequencyFactor = envelope.releaseLevel;
   }
 
   freqBendEnvelopeOff() {
@@ -26,9 +25,9 @@ export abstract class OscFilterBase extends GainEnvelopeBase{
   }
 
   clampFrequency(freq: number): number {
-    return freq <= OscFilterBase.maxFrequency ?
-      freq >= 0 ? freq :
-        freq : OscFilterBase.maxFrequency;
+    return freq < OscFilterBase.minFrequency ? OscFilterBase.minFrequency :
+      freq > OscFilterBase.maxFrequency ? OscFilterBase.maxFrequency :
+      freq;
   }
 
   abstract setFrequency(freq: number): void;

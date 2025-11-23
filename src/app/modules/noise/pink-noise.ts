@@ -53,6 +53,6 @@ export class PinkNoise extends GainEnvelopeBase {
 
   modulation(modulator: OscillatorNode) {
     this.modulator = modulator;
-    modulator.connect(this.mod);
+    modulator.connect(this.frequencyMod);
   }
 }
