@@ -88,12 +88,13 @@ class Renderer {
 
       // Calibrations
       ctx.textAlign = 'center';
-      ctx.font = '16x Arial';
+      const fontSize = (this.params.radius-this.params.skirtInnerRadius)/1.5;
+      ctx.font = `bold ${fontSize}10px serif`;
       ctx.fillStyle = '#000';
 
       for (let i = 0; i <= p.divisions; ++i) {
-        const x = Math.cos(((-i / p.divisions * p.calAngle) + p.align - p.calAngle + angle) * toRads) * (p.radius + p.textPos) + p.centreX;
-        const y = Math.sin(((-i / p.divisions * p.calAngle) + p.align - p.calAngle + angle) * toRads) * (p.radius + p.textPos) + p.centreY;
+        const x = Math.cos(((-i / p.divisions * p.calAngle) + p.align - p.calAngle + angle) * toRads) * (p.radius - fontSize) + p.centreX;
+        const y = Math.sin(((-i / p.divisions * p.calAngle) + p.align - p.calAngle + angle) * toRads) * (p.radius - fontSize) + p.centreY;
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(((-i / p.divisions * p.calAngle) - p.calAngle + p.align + 90 + angle) * toRads);

@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, Output, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild} from '@angular/core';
 import {LevelControlParameters} from './levelControlParameters';
 
 @Component({
@@ -10,9 +10,14 @@ import {LevelControlParameters} from './levelControlParameters';
 export class LevelControl implements AfterViewInit {
   drawOperationsWorker!: Worker;
   params!: LevelControlParameters;
-
-  @ViewChild('theCanvas') theCanvas!: ElementRef<HTMLCanvasElement>;
+  readonly extraForCursor = 20;
+  @ViewChild('theCanvas') canvas!: ElementRef<HTMLCanvasElement>;
   @Output() setLevel = new EventEmitter<number>();
+  @Input() radius: number = 50;
+  @Input() calAngle: number = 330;
+  @Input() divisions: number = 10;
+  @Input() centreX: number = 50;
+  @Input() centreY: number = 50;
 
   startRender() {
     this.drawOperationsWorker = new Worker(new URL('./draw-operations.worker', import.meta.url));
@@ -21,9 +26,9 @@ export class LevelControl implements AfterViewInit {
         //  this.drawOperationsWorker.terminate();
       }
     };
-    const offScreenCanvas = this.theCanvas.nativeElement.transferControlToOffscreen();
+    const offScreenCanvas = this.canvas.nativeElement.transferControlToOffscreen();
 
-    this.params = new LevelControlParameters(offScreenCanvas, 50, 330, 10);
+    this.params = new LevelControlParameters(offScreenCanvas, this.radius, this.calAngle, this.divisions, this.radius, this.radius + this.extraForCursor);
     this.drawOperationsWorker.postMessage({
       canvas: this.params.canvas,
       params: this.params.getObject()
@@ -51,7 +56,7 @@ export class LevelControl implements AfterViewInit {
 
   ngAfterViewInit(): void {
     this.startRender();
-    const canvas = this.theCanvas.nativeElement;
+    const canvas = this.canvas.nativeElement;
     let mouseDown = false;
     let currentAngle = 0;
     let lastX = 0
@@ -75,15 +80,18 @@ export class LevelControl implements AfterViewInit {
       let p = this.params;
       let x = e.offsetX - p.centreX;
       let y = e.offsetY - p.centreY;
-      let delta = 0;
+      let deltaAngle = 0;
       if (mouseDown && x >= -this.params.radius && x <= this.params.radius &&
         y >= -this.params.radius && y <= this.params.radius) {
 
-        delta = (y - lastY) * Math.sign(x) - (x - lastX) * Math.sign(y);
+        const delta = ((y - lastY) * Math.sign(x) - (x - lastX) * Math.sign(y)) / Math.sqrt(x ** 2 + y ** 2) / 3;
+        deltaAngle = 2.5 * Math.asin(delta) * 180 / Math.PI;
         lastX = x;
         lastY = y;
-
-        currentAngle = this.setAngle(currentAngle, delta);
+        if(isNaN(deltaAngle))
+          console.log("deltaAngle = " + deltaAngle);
+        if (!isNaN(deltaAngle) && deltaAngle !== 0)
+          currentAngle = this.setAngle(currentAngle, deltaAngle);
       }
       e.preventDefault();
     });
@@ -107,17 +115,16 @@ export class LevelControl implements AfterViewInit {
         delta = 4;
       else if (e.shiftKey)
         delta = 1;
-      if(/^[0123456789]$/.test(e.key)) {
+      if (/^[0123456789]$/.test(e.key)) {
         let p = this.params;
 
         currentAngle = this.setAngle(p.calAngle * parseInt(e.key) / 10, 0);
-      }
-      else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault();
 
         if (e.key === "ArrowDown")
           delta *= -1;
-         currentAngle = this.setAngle(currentAngle, delta);
+        currentAngle = this.setAngle(currentAngle, delta);
       }
     });
   }

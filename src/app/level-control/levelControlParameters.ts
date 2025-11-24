@@ -18,8 +18,8 @@ export class LevelControlParameters {
               centreX: number = canvas.width / 2,
               centreY: number = canvas.height / 2,
               textPos: number = -15,
-              centreButtonRadius: number = radius - 18,
-              skirtInnerRadius: number = radius - 25,
+              centreButtonRadius: number = radius/2,
+              skirtInnerRadius: number = radius/1.5,
               knurlAngle: number = 6) {
     this.canvas = canvas;
     this.radius = radius;

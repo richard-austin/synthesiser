@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, ViewChild} from '@angular/core';
+import {AfterViewInit, Component} from '@angular/core';
 import {RouterOutlet} from '@angular/router';
 import {LevelControl} from './level-control/level-control';
 import {Oscillator} from './modules/oscillator';
@@ -23,13 +23,13 @@ export class App implements AfterViewInit {
   filter!: Filter;
   reverb!: DelayNode;
   audioCtx!: AudioContext;
-  @ViewChild('div') div!: ElementRef<HTMLDivElement>;
+//  @ViewChild('div') div!: ElementRef<HTMLDivElement>;
 
   osc!: Oscillator;
   oscx!: Oscillator;
 
   ngAfterViewInit(): void {
-    this.div.nativeElement.tabIndex = 0;
+   // this.div.nativeElement.tabIndex = 0;
 
   }
 
@@ -157,15 +157,15 @@ export class App implements AfterViewInit {
 
       this.filters.push(new Filter(this.audioCtx));
       this.filters[i].setFrequency(2.5 * Math.pow(Math.pow(2, 1 / 12), (i + 1)));
-      this.filters[i].setQ(30);
+      this.filters[i].setQ(15);
       this.filters[i].setType('lowpass');
       this.filters[i].modulation(lfo);
-      this.filters[i].setModLevel(23.4);
+      this.filters[i].setModLevel(2);
       //this.filters[i].modulationOff();
-      this.filters[i].setAmplitudeEnvelope(new ADSRValues(0.05, 0.4, 1, 1));
+      this.filters[i].setAmplitudeEnvelope(new ADSRValues(0.0, 0.4, 1, 1));
       this.filters[i].useAmplitudeEnvelope = true;
       this.filters[i].setGain(0.2);
-      this.filters[i].setFreqBendEnvelope(new FreqBendValues(0.5, 5, 1, 1, 4, 0));
+      this.filters[i].setFreqBendEnvelope(new FreqBendValues(0, 1, 1, 1, 4, 0));
   //    this.filters[i].freqBendEnvelopeOff();
       this.oscillators[i].connect(this.filters[i].filter);
     //  this.o2[i].connect(this.filters[i].filter);
@@ -232,6 +232,19 @@ export class App implements AfterViewInit {
     //   });
     // }
     // iter();
+
+    window.addEventListener("keydown", (e) => {
+      if(/^[abcdefghijklmnopqrstuvwxyz,.\/]$/.test(e.key)) {
+        e.preventDefault();
+        this.keydown(e);
+      }
+    });
+    window.addEventListener("keyup", (e) => {
+      if(/^[abcdefghijklmnopqrstuvwxyz,.\/]$/.test(e.key)) {
+        e.preventDefault();
+        this.keyup(e);
+      }
+    });
   }
 
   noises: WhiteNoise[] = [];
