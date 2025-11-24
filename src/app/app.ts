@@ -6,9 +6,9 @@ import {Filter} from './modules/filter';
 import {ADSRValues} from './util-classes/adsrvalues';
 import {Delay} from './modules/delay';
 import {WhiteNoise} from './modules/noise/white-noise';
-import {modulationType} from './modules/gain-envelope-base';
 import {FreqBendValues} from './util-classes/freq-bend-values';
 import {BrownNoise} from './modules/noise/brown-noise';
+import {timer} from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -48,7 +48,7 @@ export class App implements AfterViewInit {
     // this.filter.setFrequency(Math.pow(2, freq * 10) * 70);
     for (let i = 0; i < this.oscillators.length; i++) {
       this.oscillators[i].setFrequency(20 * Math.pow(Math.pow(2, 1 / 12), (i + 1) + 120 * freq));
-      this.o2[i].setFrequency(20 * Math.pow(Math.pow(2, 1 / 12), (i + 1) + 120 * freq)+1);
+    //  this.o2[i].setFrequency(20 * Math.pow(Math.pow(2, 1 / 12), (i + 1) + 120 * freq)+1);
       this.filters[i].setFrequency(20 * Math.pow(Math.pow(2, 1 / 12), (i + 1) + 120 * freq));
     }
   }
@@ -126,51 +126,69 @@ export class App implements AfterViewInit {
     await noise.start();
     noise.setGain(10);
 
-    for (let i = 0; i < 100; ++i) {
+    for (let i = 0; i < 50; ++i) {
       this.oscillators.push(new Oscillator(this.audioCtx));
       this.oscillators[i].setFrequency(20 * Math.pow(Math.pow(2, 1 / 12), (i + 1)));
       //this.osc.connect(this.audioCtx.destination);
       this.oscillators[i].setAmplitudeEnvelope(new ADSRValues(0.03, 0.5, 1, 4))
       this.oscillators[i].useAmplitudeEnvelope = false;
-      this.oscillators[i].setGain(1);
-      this.oscillators[i].setFreqBendEnvelope(new FreqBendValues(.2, 1.5, .2, 1.5,1.5, 0.5));
+      this.oscillators[i].setGain(.1);
+      this.oscillators[i].setFreqBendEnvelope(new FreqBendValues(3, 1.5, .2, 1.5,0.2, 0.0));
       this.oscillators[i].freqBendEnvelopeOff();
       this.oscillators[i].setType('square');
-      this.oscillators[i].modulation(lfo, modulationType.frequency);
-    //  this.oscillators[i].modulationOff();
-      this.oscillators[i].setModLevel(2);
+//      this.oscillators[i].modulation(lfo, modulationType.frequency);
+ //     this.oscillators[i].modulationOff();
+  //    this.oscillators[i].setModLevel(23.4);
 
-      this.o2.push(new Oscillator(this.audioCtx));
-      this.o2[i].setFrequency(20 * Math.pow(Math.pow(2, 1 / 12), (i + 1)));
-      //this.osc.connect(this.audioCtx.destination);
-      this.o2[i].setModLevel(2);
-      this.o2[i].setAmplitudeEnvelope(new ADSRValues(0.03, 0.5, 1, 4))
-      this.o2[i].useAmplitudeEnvelope = false;
-      this.o2[i].setGain(0.1);
-      this.o2[i].setFreqBendEnvelope(new FreqBendValues(.2, 1.5, .2, 1.5,1.5, 0.5));
-      this.o2[i].freqBendEnvelopeOff();
-      this.o2[i].setType('square');
-      this.o2[i].modulation(lfo, modulationType.amplitude);
-      //  this.o2[i].modulationOff();
-      this.o2[i].setModLevel(2);
+      // this.o2.push(new Oscillator(this.audioCtx));
+      // this.o2[i].setFrequency(20 * Math.pow(Math.pow(2, 1 / 12), (i + 1)));
+      // //this.osc.connect(this.audioCtx.destination);
+      // this.o2[i].setModLevel(0);
+      // this.o2[i].setAmplitudeEnvelope(new ADSRValues(0.03, 0.5, 1, 4))
+      // this.o2[i].useAmplitudeEnvelope = false;
+      // this.o2[i].setGain(0.03);
+      // this.o2[i].setFreqBendEnvelope(new FreqBendValues(.2, 1.5, .2, 1.5,1.5, 0.5));
+      // this.o2[i].freqBendEnvelopeOff();
+      // this.o2[i].setType('square');
+      // this.o2[i].modulation(lfo, modulationType.amplitude);
+      // //  this.o2[i].modulationOff();
+      // this.o2[i].setModLevel(2);
 
 
       this.filters.push(new Filter(this.audioCtx));
       this.filters[i].setFrequency(2.5 * Math.pow(Math.pow(2, 1 / 12), (i + 1)));
-      this.filters[i].setQ(20);
+      this.filters[i].setQ(30);
       this.filters[i].setType('lowpass');
       this.filters[i].modulation(lfo);
-      this.filters[i].setModLevel(9);
-      this.filters[i].setAmplitudeEnvelope(new ADSRValues(0.0, 0.4, 1, 5));
-      this.filters[i].useAmplitudeEnvelope = false;
-      this.filters[i].setGain(1);
-      this.filters[i].setFreqBendEnvelope(new FreqBendValues(0, 3, 1, 1, 4, 0));
-      //this.filters[i].freqBendEnvelopeOff();
+      this.filters[i].setModLevel(23.4);
+      //this.filters[i].modulationOff();
+      this.filters[i].setAmplitudeEnvelope(new ADSRValues(0.05, 0.4, 1, 1));
+      this.filters[i].useAmplitudeEnvelope = true;
+      this.filters[i].setGain(0.2);
+      this.filters[i].setFreqBendEnvelope(new FreqBendValues(0.5, 5, 1, 1, 4, 0));
+  //    this.filters[i].freqBendEnvelopeOff();
       this.oscillators[i].connect(this.filters[i].filter);
-      this.o2[i].connect(this.filters[i].filter);
+    //  this.o2[i].connect(this.filters[i].filter);
       compressor.connect(this.audioCtx.destination);
       //this.filters[i].connect(this.delay.delay);
       this.filters[i].connect(compressor);
+
+      let iter = () => {
+        const sub1 = timer(3000).subscribe(() => {
+          for(let i = 0; i < this.oscillators.length; ++i) {
+            this.oscillators[i].setModLevel(0);
+          }
+          sub1.unsubscribe()
+          const sub2 = timer(3000).subscribe(() => {
+            for(let i = 0; i < this.oscillators.length; ++i) {
+              this.oscillators[i].setModLevel(16);
+            }
+            sub2.unsubscribe();
+            iter();
+          })
+        });
+      }
+      //iter();
 
       // this.noises[i] = new WhiteNoise(this.audioCtx); // new WhiteNoise(this.audioCtx);
       // await this.noises[i].start();
@@ -218,7 +236,7 @@ export class App implements AfterViewInit {
 
   noises: WhiteNoise[] = [];
   oscillators: Oscillator[] = []
-  o2: Oscillator[] = [];
+ // o2: Oscillator[] = [];
   filters: Filter[] = [];
   mods: Oscillator[] = [];
 
@@ -242,7 +260,7 @@ export class App implements AfterViewInit {
       if (!this.downKeys.has(code)) {
         this.downKeys.add(code);
         this.oscillators[code].keyDown()
-        this.o2[code].keyDown()
+        //this.o2[code].keyDown()
         this.filters[code].keyDown();
         // this.noises[code].attack();
      }
@@ -255,7 +273,7 @@ export class App implements AfterViewInit {
       if (this.downKeys.has(code))
         this.downKeys.delete(code);
       this.oscillators[code].keyUp()
-      this.o2[code].keyUp()
+   //   this.o2[code].keyUp()
       this.filters[code].keyUp();
     }
   //  this.noises[code].release();

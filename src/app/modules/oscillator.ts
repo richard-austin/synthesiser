@@ -23,9 +23,8 @@ export class Oscillator extends OscFilterBase {
 
   setFrequency(freq: number) {
     let f = super.clampFrequency(freq);
-    let fStart = super.clampFrequency(freq/* * this.initialFrequencyFactor*/);
-    this.oscillator.frequency.setValueAtTime(fStart, this.audioCtx.currentTime);
-    this.frequencyMod.gain.setValueAtTime(fStart * this.modLevel, this.audioCtx.currentTime);
+    this.oscillator.frequency.setValueAtTime(f, this.audioCtx.currentTime);
+    this.frequencyMod.gain.setValueAtTime(f * this.modLevel, this.audioCtx.currentTime);
     this.freq = f;
   }
 
@@ -39,7 +38,7 @@ export class Oscillator extends OscFilterBase {
     if( type === modulationType.frequency) {
       modulator.connect(this.frequencyMod);
       this.frequencyMod.connect(this.oscillator.frequency);
-      this.frequencyMod.gain.setValueAtTime(this.oscillator.frequency.value * this.modLevel, this.audioCtx.currentTime);
+      this.frequencyMod.gain.setValueAtTime(this.freq * this.modLevel, this.audioCtx.currentTime);
     }
     else {
       modulator.connect(this.amplitudeModDepth);

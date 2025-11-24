@@ -18,10 +18,7 @@ export class Filter extends OscFilterBase {
   setFrequency(freq: number) {
     const f = super.clampFrequency(freq);
     let f2 = f;
-   // let fStart = super.clampFrequency(freq/* * this.initialFrequencyFactor*/);
-    if(this.useFreqBendEnvelope)
-      f2 = this.clampFrequency(f * this.freqBendEnv.releaseLevel);
-    this.filter.frequency.setValueAtTime(f2, this.audioCtx.currentTime);
+    this.filter.frequency.setValueAtTime(f, this.audioCtx.currentTime);
     this.frequencyMod.gain.setValueAtTime(f * this.modLevel, this.audioCtx.currentTime);
     this.freq = f;
   }
@@ -39,13 +36,13 @@ export class Filter extends OscFilterBase {
     modulator.connect(this.frequencyMod);
     this.frequencyMod.connect(this.filter.frequency);
     this.frequencyMod.gain.setValueAtTime(this.filter.frequency.value * this.modLevel, this.audioCtx.currentTime);
-    this.useFreqBendEnvelope = false;
+ //   this.useFreqBendEnvelope = false;
   }
 
   setModLevel(level: number) {
     this.modLevel = level * OscFilterBase.maxLevel / 100;
     this.frequencyMod.gain.setValueAtTime(this.filter.frequency.value * this.modLevel, this.audioCtx.currentTime);
-    this.useFreqBendEnvelope = false;
+   /// this.useFreqBendEnvelope = false;
   }
 
   override setFreqBendEnvelope(envelope: FreqBendValues) {
@@ -66,7 +63,7 @@ export class Filter extends OscFilterBase {
     if (this.useFreqBendEnvelope) {
       const freq = this.freq;
       this.filter.frequency.cancelAndHoldAtTime(ctx.currentTime);
-      this.filter.frequency.setValueAtTime(freq*this.freqBendEnv.releaseLevel, this.audioCtx.currentTime);
+      //this.filter.frequency.setValueAtTime(freq*this.freqBendEnv.releaseLevel, this.audioCtx.currentTime);
       this.filter.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * this.freqBendEnv.attackLevel), ctx.currentTime + this.freqBendEnv.attackTime);
       this.filter.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * this.freqBendEnv.sustainLevel), ctx.currentTime + this.freqBendEnv.attackTime + this.freqBendEnv.decayTime);
     }
