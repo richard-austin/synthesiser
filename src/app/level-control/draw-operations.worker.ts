@@ -8,6 +8,7 @@ addEventListener('message', ({data}) => {
     let angle = 0;
     render.drawCursor(false);
     render.drawDial(angle);
+    render.drawLabel();
   }
   if (render && data.angle !== undefined) {
     render.drawDial(data.angle);
@@ -27,16 +28,31 @@ class Renderer {
     this.params = params;
   }
 
+  readonly cursorLength = 7;
+  readonly cursorWidth = 10;
+  readonly cursorOffset = 2;
+  readonly labelGap = 10;
+
+  drawLabel() {
+    const ctx = this.canvas.getContext('2d');
+    if(ctx) {
+      ctx.save();
+      ctx.font = `bold 15px serif`;
+      ctx.fillStyle = '#000';
+
+      ctx.translate(this.params.centreX, this.params.centreY - this.params.radius - this.cursorOffset- this.labelGap);
+      ctx.fillText(this.params.label, 0, 0);
+      ctx.restore();
+    }
+  }
+
   drawCursor(focus: boolean) {
-    const cursorLength = 7;
-    const cursorWidth = 10;
-    const cursorOffset = 2;
     const ctx = this.canvas.getContext('2d');
     if (ctx) {
       ctx.beginPath();
-      ctx.moveTo(this.params.centreX, this.params.centreY - this.params.radius - cursorOffset);
-      ctx.lineTo(this.params.centreX + cursorWidth / 2, this.params.centreY - this.params.radius - cursorLength - cursorOffset);
-      ctx.lineTo(this.params.centreX - cursorWidth / 2, this.params.centreY - this.params.radius - cursorLength - cursorOffset);
+      ctx.moveTo(this.params.centreX, this.params.centreY - this.params.radius - this.cursorOffset);
+      ctx.lineTo(this.params.centreX + this.cursorWidth / 2, this.params.centreY - this.params.radius - this.cursorLength - this.cursorOffset);
+      ctx.lineTo(this.params.centreX - this.cursorWidth / 2, this.params.centreY - this.params.radius - this.cursorLength - this.cursorOffset);
       ctx.closePath();
       ctx.fillStyle = focus ? '#a00' : '#000';
       ctx.fill();
@@ -89,7 +105,7 @@ class Renderer {
       // Calibrations
       ctx.textAlign = 'center';
       const fontSize = (this.params.radius-this.params.skirtInnerRadius)/1.5;
-      ctx.font = `bold ${fontSize}10px serif`;
+      ctx.font = `bold ${fontSize}px serif`;
       ctx.fillStyle = '#000';
 
       for (let i = 0; i <= p.divisions; ++i) {

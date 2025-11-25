@@ -3,25 +3,25 @@ import {GainEnvelopeBase} from './gain-envelope-base';
 
 export abstract class OscFilterBase extends GainEnvelopeBase{
   freqBendEnv: FreqBendValues;
-  protected useFreqBendEnvelope: boolean;
+  protected _useFreqBendEnvelope: boolean;
   public static readonly maxFrequency = 20000;
   public static readonly minFrequency = 0.01;
 
   protected constructor(audioCtx: AudioContext) {
     super(audioCtx);
     this.freqBendEnv = new FreqBendValues(0, 0, 0, 0, 0, 0);
-    this.useFreqBendEnvelope = false;
+    this._useFreqBendEnvelope = false;
   }
 
   freq: number = 0;
 
   setFreqBendEnvelope(envelope: FreqBendValues) {
     this.freqBendEnv = envelope;
-    this.useFreqBendEnvelope = true;
+    this._useFreqBendEnvelope = true;
   }
 
-  freqBendEnvelopeOff() {
-    this.useFreqBendEnvelope = false;
+  useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
+    this._useFreqBendEnvelope = useFreqBendEnvelope;
   }
 
   clampFrequency(freq: number): number {

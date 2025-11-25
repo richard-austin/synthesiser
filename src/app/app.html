@@ -1,8 +1,8 @@
 <button (click)="start()">Start</button>
 <button (mousedown)="play()" (mouseup)="end()" (mouseout)="end()">Ping</button>
-<app-level-control [radius]="50"  (setLevel)="setFreq($event)"></app-level-control>
-<app-level-control [radius]="50"  (setLevel)="setLevel($event)"></app-level-control>
-<app-level-control [radius]="40" (setLevel)="setFilter($event)"></app-level-control>
+<app-level-control label="Oscillator Freq" [radius]="50"  (setLevel)="setFreq($event)"></app-level-control>
+<app-level-control label="Whatever" [radius]="50"  (setLevel)="setLevel($event)"></app-level-control>
+<app-level-control label="Filter Freq" [radius]="40" (setLevel)="setFilter($event)"></app-level-control>
 <br>
 <br>
 <br>

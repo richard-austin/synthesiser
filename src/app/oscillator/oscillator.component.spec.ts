@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { LevelControl } from './level-control';
+import { OscillatorComponent } from './oscillator.component';
 
-describe('LevelControl', () => {
-  let component: LevelControl;
-  let fixture: ComponentFixture<LevelControl>;
+describe('OscillatorModule', () => {
+  let component: OscillatorComponent;
+  let fixture: ComponentFixture<OscillatorComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [LevelControl]
+      imports: [OscillatorComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(LevelControl);
+    fixture = TestBed.createComponent(OscillatorComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

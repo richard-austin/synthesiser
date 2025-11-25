@@ -4,13 +4,13 @@ import {LevelControlParameters} from './levelControlParameters';
 @Component({
   selector: 'app-level-control',
   imports: [],
-  templateUrl: './level-control.html',
-  styleUrl: './level-control.scss',
+  templateUrl: './level-control.component.html',
+  styleUrl: './level-control.component.scss',
 })
-export class LevelControl implements AfterViewInit {
+export class LevelControlComponent implements AfterViewInit {
   drawOperationsWorker!: Worker;
   params!: LevelControlParameters;
-  readonly extraForCursor = 20;
+  readonly extraForCursor = 26;
   @ViewChild('theCanvas') canvas!: ElementRef<HTMLCanvasElement>;
   @Output() setLevel = new EventEmitter<number>();
   @Input() radius: number = 50;
@@ -18,6 +18,7 @@ export class LevelControl implements AfterViewInit {
   @Input() divisions: number = 10;
   @Input() centreX: number = 50;
   @Input() centreY: number = 50;
+  @Input() label: string ='???';
 
   startRender() {
     this.drawOperationsWorker = new Worker(new URL('./draw-operations.worker', import.meta.url));
@@ -28,7 +29,7 @@ export class LevelControl implements AfterViewInit {
     };
     const offScreenCanvas = this.canvas.nativeElement.transferControlToOffscreen();
 
-    this.params = new LevelControlParameters(offScreenCanvas, this.radius, this.calAngle, this.divisions, this.radius, this.radius + this.extraForCursor);
+    this.params = new LevelControlParameters(offScreenCanvas, this.radius, this.calAngle, this.divisions, this.label, this.radius, this.radius + this.extraForCursor);
     this.drawOperationsWorker.postMessage({
       canvas: this.params.canvas,
       params: this.params.getObject()

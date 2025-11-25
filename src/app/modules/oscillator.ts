@@ -63,8 +63,8 @@ export class Oscillator extends OscFilterBase {
     this.oscillator.frequency.setValueAtTime(super.clampFrequency(this.freq * envelope.releaseLevel), this.audioCtx.currentTime);
   }
 
-  override freqBendEnvelopeOff() {
-    super.freqBendEnvelopeOff();
+  override useFreqBendEnvelope(useFreqBendEnvelope:boolean) {
+    super.useFreqBendEnvelope(useFreqBendEnvelope);
     this.oscillator.frequency.setValueAtTime(super.clampFrequency(this.freq), this.audioCtx.currentTime);
   }
 
@@ -72,7 +72,7 @@ export class Oscillator extends OscFilterBase {
   override keyDown() {
     super.attack();
     const ctx = this.audioCtx;
-    if (this.useFreqBendEnvelope) {
+    if (this._useFreqBendEnvelope) {
       const freq = this.freq;
       this.oscillator.frequency.cancelAndHoldAtTime(ctx.currentTime);
       this.oscillator.frequency.setValueAtTime(freq*this.freqBendEnv.releaseLevel, this.audioCtx.currentTime);
@@ -84,9 +84,13 @@ export class Oscillator extends OscFilterBase {
   // Key released for this oscillator
   keyUp() {
     super.release();
-    if (this.useFreqBendEnvelope) {
+    if (this._useFreqBendEnvelope) {
       this.oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
       this.oscillator.frequency.linearRampToValueAtTime(this.clampFrequency(this.freq*this.freqBendEnv.releaseLevel), this.audioCtx.currentTime + this.freqBendEnv.releaseTime);
     }
+  }
+
+  disconnect() {
+    this.oscillator.disconnect();
   }
 }

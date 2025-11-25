@@ -1,6 +1,6 @@
 import {AfterViewInit, Component} from '@angular/core';
 import {RouterOutlet} from '@angular/router';
-import {LevelControl} from './level-control/level-control';
+import {LevelControlComponent} from './level-control/level-control.component';
 import {Oscillator} from './modules/oscillator';
 import {Filter} from './modules/filter';
 import {ADSRValues} from './util-classes/adsrvalues';
@@ -12,7 +12,7 @@ import {timer} from 'rxjs';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, LevelControl],
+  imports: [RouterOutlet, LevelControlComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -134,7 +134,7 @@ export class App implements AfterViewInit {
       this.oscillators[i].useAmplitudeEnvelope = false;
       this.oscillators[i].setGain(.1);
       this.oscillators[i].setFreqBendEnvelope(new FreqBendValues(3, 1.5, .2, 1.5,0.2, 0.0));
-      this.oscillators[i].freqBendEnvelopeOff();
+      this.oscillators[i].useFreqBendEnvelope(false);
       this.oscillators[i].setType('square');
 //      this.oscillators[i].modulation(lfo, modulationType.frequency);
  //     this.oscillators[i].modulationOff();
@@ -225,7 +225,7 @@ export class App implements AfterViewInit {
     //       if(index >= this.oscillators.length) {
     //         index = 0;
     //       }
-    //       iter();
+    //       iter();q
     //       sub2.unsubscribe();
     //     });
     //     sub.unsubscribe();

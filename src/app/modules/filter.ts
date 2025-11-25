@@ -17,7 +17,6 @@ export class Filter extends OscFilterBase {
 
   setFrequency(freq: number) {
     const f = super.clampFrequency(freq);
-    let f2 = f;
     this.filter.frequency.setValueAtTime(f, this.audioCtx.currentTime);
     this.frequencyMod.gain.setValueAtTime(f * this.modLevel, this.audioCtx.currentTime);
     this.freq = f;
@@ -51,8 +50,8 @@ export class Filter extends OscFilterBase {
     this.filter.frequency.setValueAtTime(super.clampFrequency(this.freq * envelope.releaseLevel), this.audioCtx.currentTime);
   }
 
-  override freqBendEnvelopeOff() {
-    super.freqBendEnvelopeOff();
+  override useFreqBendEnvelope(useFreqBendEnvelope:boolean) {
+    super.useFreqBendEnvelope(useFreqBendEnvelope);
     this.filter.frequency.setValueAtTime(super.clampFrequency(this.freq), this.audioCtx.currentTime);
   }
 
@@ -60,7 +59,7 @@ export class Filter extends OscFilterBase {
   override keyDown() {
     super.attack();
     const ctx = this.audioCtx;
-    if (this.useFreqBendEnvelope) {
+    if (this._useFreqBendEnvelope) {
       const freq = this.freq;
       this.filter.frequency.cancelAndHoldAtTime(ctx.currentTime);
       //this.filter.frequency.setValueAtTime(freq*this.freqBendEnv.releaseLevel, this.audioCtx.currentTime);
@@ -73,7 +72,7 @@ export class Filter extends OscFilterBase {
   keyUp() {
     super.release();
     const ctx = this.audioCtx;
-    if (this.useFreqBendEnvelope) {
+    if (this._useFreqBendEnvelope) {
       this.filter.frequency.cancelAndHoldAtTime(ctx.currentTime);
       this.filter.frequency.exponentialRampToValueAtTime(this.clampFrequency(this.freq*this.freqBendEnv.releaseLevel), ctx.currentTime + this.freqBendEnv.releaseTime);
     }
