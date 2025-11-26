@@ -16,9 +16,8 @@ export class LevelControlComponent implements AfterViewInit {
   @Input() radius: number = 50;
   @Input() calAngle: number = 330;
   @Input() divisions: number = 10;
-  @Input() centreX: number = 50;
-  @Input() centreY: number = 50;
   @Input() label: string = '???';
+  @Input() plusMinus: boolean = false;
 
   startRender() {
     this.drawOperationsWorker = new Worker(new URL('./draw-operations.worker', import.meta.url));
@@ -29,7 +28,7 @@ export class LevelControlComponent implements AfterViewInit {
     };
     const offScreenCanvas = this.canvas.nativeElement.transferControlToOffscreen();
 
-    this.params = new LevelControlParameters(offScreenCanvas, this.radius, this.calAngle, this.divisions, this.label, this.radius, this.radius + this.extraForCursor);
+    this.params = new LevelControlParameters(offScreenCanvas, this.radius, this.calAngle, this.divisions, this.label, this.plusMinus, this.radius, this.radius + this.extraForCursor);
     this.drawOperationsWorker.postMessage({
       canvas: this.params.canvas,
       params: this.params.getObject()
@@ -46,11 +45,14 @@ export class LevelControlComponent implements AfterViewInit {
 
   setAngle(currentAngle: number, delta: number): number {
     currentAngle += delta;
-    if (currentAngle > this.params.calAngle)
-      currentAngle = this.params.calAngle;
-    else if (currentAngle < 0)
-      currentAngle = 0;
-    this.setLevel.emit(currentAngle / this.params.calAngle);
+    const p = this.params;
+    const upperLimit = p.plusMinus ? p.calAngle/2 : p.calAngle;
+    const lowerLimit = p.plusMinus ? -p.calAngle/2 :0;
+    if (currentAngle > upperLimit)
+      currentAngle = upperLimit;
+    else if (currentAngle < lowerLimit)
+      currentAngle = lowerLimit;
+    this.setLevel.emit(currentAngle / p.calAngle);
     this.drawOperationsWorker.postMessage({angle: currentAngle});
     return currentAngle;
   }
@@ -117,22 +119,24 @@ export class LevelControlComponent implements AfterViewInit {
 
     canvas.addEventListener('keydown', (e) => {
       //console.log("key", e);
+      console.log(e);
       let delta = 0.5;
-      if (e.ctrlKey)
+      if (/^Escape|F1|F2|F3|F4|F5|F6|F7|F8|F9|F10|F11|F12$/.test(e.key)) {
+        let p = this.params;
+        const key = e.key === "Escape" ? "F0" : e.key;
+        const sign = e.shiftKey ? -1 : 1;
+        this.currentAngle = this.setAngle(p.calAngle * sign * parseInt(key.substring(1)) / p.divisions, 0);
+      }
+      else if (e.ctrlKey)
         delta = 4;
       else if (e.shiftKey)
         delta = 1;
-      if (/^[0123456789]$/.test(e.key)) {
-        let p = this.params;
-
-        this.currentAngle = this.setAngle(p.calAngle * parseInt(e.key) / 10, 0);
-      } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-        e.preventDefault();
-
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         if (e.key === "ArrowDown")
           delta *= -1;
         this.currentAngle = this.setAngle(this.currentAngle, delta);
       }
+      e.preventDefault();
     });
   }
 }

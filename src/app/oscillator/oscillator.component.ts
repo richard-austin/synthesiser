@@ -18,6 +18,7 @@ export class OscillatorComponent {
   private oscillators: Oscillator[] = [];
   private adsr!: ADSRValues;
   private freqBend!: FreqBendValues;
+  protected tuningDivisions = 6;
 
   @Input() audioCtx!: AudioContext;
   @Input() numberOfOscillators!: number;
@@ -42,7 +43,7 @@ export class OscillatorComponent {
         this.oscillators[i].setType('sine');
       }
 
-      this.frequency.setValue(3);
+      this.frequency.setValue(0);  // Set frequency dial initial value.
       this.gain.setValue(4);
     }
     return ok;
@@ -50,7 +51,7 @@ export class OscillatorComponent {
 
   protected setFrequency(freq: number) {
     for (let i = 0; i < this.oscillators.length; i++) {
-      this.oscillators[i].setFrequency(20 * Math.pow(Math.pow(2, 1 / 12), (i + 1) + 120 * freq));
+      this.oscillators[i].setFrequency(450 * Math.pow(Math.pow(2, 1 / 12), (i + 1) + 120 * freq*this.tuningDivisions/10));
     }
   }
 

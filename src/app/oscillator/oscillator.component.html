@@ -1,2 +1,2 @@
-<app-level-control #frequency label="Frequency" [radius]="50" (setLevel)="setFrequency($event)"></app-level-control>
+<app-level-control #frequency label="Tuning" [plusMinus]="true" [divisions]="tuningDivisions" [calAngle]="300" [radius]="50" (setLevel)="setFrequency($event)"></app-level-control>
 <app-level-control #gain label="Gain" [radius]="50" (setLevel)="setGain($event)"></app-level-control>

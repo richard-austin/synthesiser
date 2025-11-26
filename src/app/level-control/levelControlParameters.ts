@@ -11,12 +11,14 @@ export class LevelControlParameters {
   divisions: number;
   textPos: number;
   label: string;
+  plusMinus: boolean;
 
   constructor(canvas: OffscreenCanvas,
               radius: number,
               calAngle: number,
               divisions: number,
               label: string,
+              plusMinus: boolean = false,
               centreX: number = canvas.width / 2,
               centreY: number = canvas.height / 2,
               textPos: number = -15,
@@ -34,6 +36,7 @@ export class LevelControlParameters {
     this.align = calAngle - 90;  // Align zero position
     this.divisions = divisions;
     this.label = label;
+    this.plusMinus = plusMinus;
     this.textPos = textPos;
   }
 
@@ -50,6 +53,7 @@ export class LevelControlParameters {
       align: this.align,
       divisions: this.divisions,
       label: this.label,
+      plusMinus: this.plusMinus,
       textPos: this.textPos
     };
   }

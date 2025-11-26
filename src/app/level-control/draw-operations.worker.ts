@@ -107,13 +107,16 @@ class Renderer {
       ctx.font = `bold ${fontSize}px serif`;
       ctx.fillStyle = '#000';
 
+      const plusMinus = p.plusMinus;
+      const lowSetting = plusMinus ? -p.divisions / 2 : 0;
+      const offsetAngle = plusMinus ? p.calAngle / 2 : 0;
       for (let i = 0; i <= p.divisions; ++i) {
-        const x = Math.cos(((-i / p.divisions * p.calAngle) + p.align - p.calAngle + angle) * toRads) * (p.radius - fontSize) + p.centreX;
-        const y = Math.sin(((-i / p.divisions * p.calAngle) + p.align - p.calAngle + angle) * toRads) * (p.radius - fontSize) + p.centreY;
+        const x = Math.cos(((-i / p.divisions * p.calAngle) + p.align - p.calAngle + angle+offsetAngle) * toRads) * (p.radius - fontSize) + p.centreX;
+        const y = Math.sin(((-i / p.divisions * p.calAngle) + p.align - p.calAngle + angle+offsetAngle) * toRads) * (p.radius - fontSize) + p.centreY;
         ctx.save();
         ctx.translate(x, y);
-        ctx.rotate(((-i / p.divisions * p.calAngle) - p.calAngle + p.align + 90 + angle) * toRads);
-        ctx.fillText((i).toString(), 0, 0);
+        ctx.rotate(((-i / p.divisions * p.calAngle) - p.calAngle + p.align + 90 + angle+offsetAngle) * toRads);
+        ctx.fillText((i+lowSetting).toString(), 0, 0);
         ctx.restore();
       }
 
@@ -128,9 +131,6 @@ class Renderer {
         const x2 = p.centreX + Math.cos((knurl + angle) * toRads) * (p.skirtInnerRadius);
         const y2 = p.centreY + Math.sin((knurl + angle) * toRads) * (p.skirtInnerRadius);
         ctx.beginPath();
-        // ctx.lineWidth = 1;
-        // ctx.strokeStyle = grad3;
-        //  ctx.fill();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
         ctx.stroke();
