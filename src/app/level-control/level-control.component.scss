@@ -1,6 +1,14 @@
-canvas {
-  margin: 10px;
- >focus {
-   outline: none;
- }
+div {
+  display: flex;
+  //flex-wrap: wrap;
+  //flex-direction: column;
+  justify-content: center;
+  canvas {
+    margin: 5px;
+    cursor: pointer;
+
+    &:focus {
+      outline: none;
+    }
+  }
 }

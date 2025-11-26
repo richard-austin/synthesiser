@@ -1,2 +1,33 @@
-<app-level-control #frequency label="Tuning" [plusMinus]="true" [divisions]="tuningDivisions" [calAngle]="300" [radius]="50" (setLevel)="setFrequency($event)"></app-level-control>
-<app-level-control #gain label="Gain" [radius]="50" [divisions]="10" (setLevel)="setGain($event)"></app-level-control>
+<div class="group-container metallic-button">
+    <h1>Oscillators</h1>
+<div class="group">
+  <div class="column">
+    <div class="module">
+      <h2>Oscillators</h2>
+      <app-level-control #frequency label="Tuning" [plusMinus]="true" [divisions]="tuningDivisions" [calAngle]="300" [radius]="50" (setLevel)="setFrequency($event)"></app-level-control>
+      <app-level-control #gain label="Gain" [radius]="50" [divisions]="10" (setLevel)="setGain($event)"></app-level-control>
+    </div>
+    <div class="module align-mod">
+      <h2>Modulation</h2>
+      <app-level-control #modulation label="LFO Frequency" [plusMinus]="true" [divisions]="tuningDivisions" [calAngle]="300" [radius]="50" (setLevel)="setFrequency($event)"></app-level-control>
+    </div>
+  </div>
+  <div class="module">
+    <h2>Envelope</h2>
+    <app-level-control #attack label="Attack" [divisions]="10" [calAngle]="300" [radius]="50" (setLevel)="setAttack($event)"></app-level-control>
+    <app-level-control #decay label="Decay" [radius]="50" [divisions]="10" (setLevel)="setDecayTime($event)"></app-level-control>
+    <app-level-control #sustain label="Sustain" [radius]="50" [divisions]="10" (setLevel)="setSustainLevel($event)"></app-level-control>
+    <app-level-control #release label="Release" [radius]="50" [divisions]="10" (setLevel)="setReleaseTime($event)"></app-level-control>
+  </div>
+  <div class="module">
+    <h2>Freq Envelope</h2>
+    <app-level-control #freqAttack label="Attack" [divisions]="10" [calAngle]="300" [radius]="50" (setLevel)="setAttack($event)"></app-level-control>
+    <app-level-control #freqAttackLevel label="Attack Level" [divisions]="10" [calAngle]="300" [radius]="50" (setLevel)="setAttack($event)"></app-level-control>
+    <app-level-control #freqDecay label="Decay" [radius]="50" [divisions]="10" (setLevel)="setDecayTime($event)"></app-level-control>
+    <app-level-control #freqSustain label="Sustain" [radius]="50" [divisions]="10" (setLevel)="setSustainLevel($event)"></app-level-control>
+    <app-level-control #freqRelease label="Release" [radius]="50" [divisions]="10" (setLevel)="setReleaseTime($event)"></app-level-control>
+    <app-level-control #freqReleaseLevel label="Release Level" [radius]="50" [divisions]="10" (setLevel)="setReleaseTime($event)"></app-level-control>
+  </div>
+</div>
+
+</div>

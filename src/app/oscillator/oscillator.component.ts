@@ -24,12 +24,16 @@ export class OscillatorComponent {
   @Input() numberOfOscillators!: number;
   @ViewChild('frequency') frequency!: LevelControlComponent;
   @ViewChild('gain') gain!: LevelControlComponent;
+  @ViewChild('attack') attack!: LevelControlComponent;
+  @ViewChild('decay') decay!: LevelControlComponent;
+  @ViewChild('sustain') sustain!: LevelControlComponent;
+  @ViewChild('release') release!: LevelControlComponent;
 
   start(): boolean {
     let ok = false;
     if (this.numberOfOscillators) {
       ok = true;
-      this.adsr = new ADSRValues(0.0, 0.5, 1, 4);
+      this.adsr = new ADSRValues(0.2, 0.5, 1, 4);
       this.freqBend = new FreqBendValues(0, 1.5, .2, 1.5, 0.2, 0.0);
 
       for (let i = 0; i < this.numberOfOscillators; ++i) {
@@ -45,6 +49,10 @@ export class OscillatorComponent {
 
       this.frequency.setValue(0);  // Set frequency dial initial value.
       this.gain.setValue(4);
+      this.attack.setValue(this.adsr.attackTime);
+      this.decay.setValue(this.adsr.decayTime);
+      this.sustain.setValue(this.adsr.sustainLevel);
+      this.release.setValue(this.adsr.releaseTime);
     }
     return ok;
   }
@@ -139,5 +147,21 @@ export class OscillatorComponent {
     if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
       this.oscillators[keyIndex].keyUp();
     }
+  }
+
+  protected setAttack($event: number) {
+    this.adsr.attackTime = $event;
+  }
+
+  protected setDecayTime($event: number) {
+    this.adsr.decayTime = $event * 10;
+  }
+
+  protected setSustainLevel($event: number) {
+    this.adsr.sustainLevel = $event;
+  }
+
+  protected setReleaseTime($event: number) {
+    this.adsr.releaseTime = $event * 10;
   }
 }

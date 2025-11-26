@@ -65,6 +65,7 @@ export class App implements AfterViewInit {
     this.oscillatorsGrp.audioCtx = this.audioCtx;
     this.oscillatorsGrp.start();
     this.oscillatorsGrp.connect(this.audioCtx.destination);
+    window.addEventListener('click', () => {})
     window.addEventListener("keydown", (e) => {
       if(/^[abcdefghijklmnopqrstuvwxyz,.\/]$/.test(e.key)) {
         e.preventDefault();

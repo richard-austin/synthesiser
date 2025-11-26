@@ -118,8 +118,6 @@ export class LevelControlComponent implements AfterViewInit {
     });
 
     canvas.addEventListener('keydown', (e) => {
-      //console.log("key", e);
-      console.log(e);
       let delta = 0.5;
       if (/^Escape|F1|F2|F3|F4|F5|F6|F7|F8|F9|F10|F11|F12$/.test(e.key)) {
         let p = this.params;
