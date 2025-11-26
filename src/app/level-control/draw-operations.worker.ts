@@ -110,7 +110,8 @@ class Renderer {
       const plusMinus = p.plusMinus;
       const lowSetting = plusMinus ? -p.divisions / 2 : 0;
       const offsetAngle = plusMinus ? p.calAngle / 2 : 0;
-      for (let i = 0; i <= p.divisions; ++i) {
+      const divisionIncrement = Math.ceil(p.divisions / 10);
+      for (let i = 0; i <= p.divisions; i += divisionIncrement) {
         const x = Math.cos(((-i / p.divisions * p.calAngle) + p.align - p.calAngle + angle+offsetAngle) * toRads) * (p.radius - fontSize) + p.centreX;
         const y = Math.sin(((-i / p.divisions * p.calAngle) + p.align - p.calAngle + angle+offsetAngle) * toRads) * (p.radius - fontSize) + p.centreY;
         ctx.save();
