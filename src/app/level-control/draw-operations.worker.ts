@@ -12,8 +12,7 @@ addEventListener('message', ({data}) => {
   }
   if (render && data.angle !== undefined) {
     render.drawDial(data.angle);
-  }
-  else if(data === "focus" || data === "blur") {
+  } else if (data === "focus" || data === "blur") {
     render.focus(data === "focus");
   }
 //  postMessage(response);
@@ -35,12 +34,12 @@ class Renderer {
 
   drawLabel() {
     const ctx = this.canvas.getContext('2d');
-    if(ctx) {
+    if (ctx) {
       ctx.save();
-      ctx.font = `bold 15px serif`;
+      ctx.font = `bold 14px arial`;
       ctx.fillStyle = '#000';
 
-      ctx.translate(this.params.centreX, this.params.centreY - this.params.radius - this.cursorOffset- this.labelGap);
+      ctx.translate(this.params.centreX, this.params.centreY - this.params.radius - this.cursorOffset - this.labelGap);
       ctx.fillText(this.params.label, 0, 0);
       ctx.restore();
     }
@@ -104,7 +103,7 @@ class Renderer {
 
       // Calibrations
       ctx.textAlign = 'center';
-      const fontSize = (this.params.radius-this.params.skirtInnerRadius)/1.5;
+      const fontSize = (this.params.radius - this.params.skirtInnerRadius) / 1.5;
       ctx.font = `bold ${fontSize}px serif`;
       ctx.fillStyle = '#000';
 
@@ -149,7 +148,7 @@ class Renderer {
     ctx.arc(p.centreX, p.centreY, p.centreButtonRadius, 0, 2 * Math.PI, false);
     ctx.fillStyle = grad;
     ctx.fill();
-   // ctx.stroke();
+    // ctx.stroke();
     ctx.closePath();
   }
 

@@ -1,4 +1,4 @@
-import {Component, Input} from '@angular/core';
+import {Component, Input, ViewChild} from '@angular/core';
 import {Oscillator} from '../modules/oscillator';
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {FreqBendValues} from '../util-classes/freq-bend-values';
@@ -7,7 +7,7 @@ import {modulationType} from '../modules/gain-envelope-base';
 import {Filter} from '../modules/filter';
 
 @Component({
-  selector: 'app-oscillator-module',
+  selector: 'app-oscillators',
   imports: [
     LevelControlComponent
   ],
@@ -21,12 +21,14 @@ export class OscillatorComponent {
 
   @Input() audioCtx!: AudioContext;
   @Input() numberOfOscillators!: number;
+  @ViewChild('frequency') frequency!: LevelControlComponent;
+  @ViewChild('gain') gain!: LevelControlComponent;
 
   start(): boolean {
     let ok = false;
-    if(this.numberOfOscillators) {
+    if (this.numberOfOscillators) {
       ok = true;
-      this.adsr = new ADSRValues(0.03, 0.5, 1, 4);
+      this.adsr = new ADSRValues(0.0, 0.5, 1, 4);
       this.freqBend = new FreqBendValues(0, 1.5, .2, 1.5, 0.2, 0.0);
 
       for (let i = 0; i < this.numberOfOscillators; ++i) {
@@ -39,6 +41,9 @@ export class OscillatorComponent {
         this.oscillators[i].useFreqBendEnvelope(false);
         this.oscillators[i].setType('sine');
       }
+
+      this.frequency.setValue(3);
+      this.gain.setValue(4);
     }
     return ok;
   }
@@ -84,6 +89,7 @@ export class OscillatorComponent {
       this.oscillators[i].setModLevel(level);
     }
   }
+
   modulationOff() {
     for (let i = 0; i < this.numberOfOscillators; ++i) {
       this.oscillators[i].modulationOff();
@@ -96,7 +102,7 @@ export class OscillatorComponent {
    */
   connectToFilters(filters: Filter[]): boolean {
     let ok = false;
-    if(filters && filters.length === this.oscillators.length) {
+    if (filters && filters.length === this.oscillators.length) {
       ok = true;
       for (let i = 0; i < this.oscillators.length; i++) {
         this.oscillators[i].connect(filters[i].filter);
@@ -122,15 +128,15 @@ export class OscillatorComponent {
     }
   }
 
-  keyDown() {
-    for (let i = 0; i < this.numberOfOscillators; ++i) {
-      this.oscillators[i].keyDown();
+  keyDown(keyIndex: number) {
+    if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
+      this.oscillators[keyIndex].keyDown();
     }
   }
 
-  keyUp() {
-    for (let i = 0; i < this.numberOfOscillators; ++i) {
-      this.oscillators[i].keyUp();
+  keyUp(keyIndex: number) {
+    if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
+      this.oscillators[keyIndex].keyUp();
     }
   }
 }

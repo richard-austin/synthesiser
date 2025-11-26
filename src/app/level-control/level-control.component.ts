@@ -18,13 +18,13 @@ export class LevelControlComponent implements AfterViewInit {
   @Input() divisions: number = 10;
   @Input() centreX: number = 50;
   @Input() centreY: number = 50;
-  @Input() label: string ='???';
+  @Input() label: string = '???';
 
   startRender() {
     this.drawOperationsWorker = new Worker(new URL('./draw-operations.worker', import.meta.url));
     this.drawOperationsWorker.onmessage = async ({data}) => {
       if (data === "terminate") {
-        //  this.drawOperationsWorker.terminate();
+        //this.drawOperationsWorker.terminate();
       }
     };
     const offScreenCanvas = this.canvas.nativeElement.transferControlToOffscreen();
@@ -55,11 +55,17 @@ export class LevelControlComponent implements AfterViewInit {
     return currentAngle;
   }
 
+  currentAngle = 0;
+
+  setValue(value: number) {
+    let p = this.params;
+    this.currentAngle = this.setAngle(p.calAngle * value / p.divisions, 0);
+  }
+
   ngAfterViewInit(): void {
     this.startRender();
     const canvas = this.canvas.nativeElement;
     let mouseDown = false;
-    let currentAngle = 0;
     let lastX = 0
     let lastY = 0;
     canvas.tabIndex = 0;
@@ -89,10 +95,10 @@ export class LevelControlComponent implements AfterViewInit {
         deltaAngle = 2.5 * Math.asin(delta) * 180 / Math.PI;
         lastX = x;
         lastY = y;
-        if(isNaN(deltaAngle))
+        if (isNaN(deltaAngle))
           console.log("deltaAngle = " + deltaAngle);
         if (!isNaN(deltaAngle) && deltaAngle !== 0)
-          currentAngle = this.setAngle(currentAngle, deltaAngle);
+          this.currentAngle = this.setAngle(this.currentAngle, deltaAngle);
       }
       e.preventDefault();
     });
@@ -119,13 +125,13 @@ export class LevelControlComponent implements AfterViewInit {
       if (/^[0123456789]$/.test(e.key)) {
         let p = this.params;
 
-        currentAngle = this.setAngle(p.calAngle * parseInt(e.key) / 10, 0);
+        this.currentAngle = this.setAngle(p.calAngle * parseInt(e.key) / 10, 0);
       } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
         e.preventDefault();
 
         if (e.key === "ArrowDown")
           delta *= -1;
-        currentAngle = this.setAngle(currentAngle, delta);
+        this.currentAngle = this.setAngle(this.currentAngle, delta);
       }
     });
   }

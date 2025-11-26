@@ -1,6 +1,5 @@
-import {AfterViewInit, Component} from '@angular/core';
+import {AfterViewInit, Component, ViewChild} from '@angular/core';
 import {RouterOutlet} from '@angular/router';
-import {LevelControlComponent} from './level-control/level-control.component';
 import {Oscillator} from './modules/oscillator';
 import {Filter} from './modules/filter';
 import {ADSRValues} from './util-classes/adsrvalues';
@@ -9,10 +8,11 @@ import {WhiteNoise} from './modules/noise/white-noise';
 import {FreqBendValues} from './util-classes/freq-bend-values';
 import {BrownNoise} from './modules/noise/brown-noise';
 import {timer} from 'rxjs';
+import {OscillatorComponent} from './oscillator/oscillator.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, LevelControlComponent],
+  imports: [RouterOutlet, OscillatorComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -24,7 +24,7 @@ export class App implements AfterViewInit {
   reverb!: DelayNode;
   audioCtx!: AudioContext;
 //  @ViewChild('div') div!: ElementRef<HTMLDivElement>;
-
+    @ViewChild(OscillatorComponent) oscillatorsGrp!: OscillatorComponent
   osc!: Oscillator;
   oscx!: Oscillator;
 
@@ -60,7 +60,27 @@ export class App implements AfterViewInit {
     // }
   }
 
-  protected async start() {
+  protected start(): void {
+    this.audioCtx = new AudioContext();
+    this.oscillatorsGrp.audioCtx = this.audioCtx;
+    this.oscillatorsGrp.start();
+    this.oscillatorsGrp.connect(this.audioCtx.destination);
+    window.addEventListener("keydown", (e) => {
+      if(/^[abcdefghijklmnopqrstuvwxyz,.\/]$/.test(e.key)) {
+        e.preventDefault();
+        this.keydown(e);
+      }
+    });
+    window.addEventListener("keyup", (e) => {
+      if(/^[abcdefghijklmnopqrstuvwxyz,.\/]$/.test(e.key)) {
+        e.preventDefault();
+        this.keyup(e);
+      }
+    });
+
+  }
+
+  protected async startx() {
     this.audioCtx = new AudioContext();
 
     // create Oscillator node
@@ -171,7 +191,7 @@ export class App implements AfterViewInit {
     //  this.o2[i].connect(this.filters[i].filter);
       compressor.connect(this.audioCtx.destination);
       //this.filters[i].connect(this.delay.delay);
-      this.filters[i].connect(compressor);
+  //    this.filters[i].connect(compressor);
 
       let iter = () => {
         const sub1 = timer(3000).subscribe(() => {
@@ -233,18 +253,6 @@ export class App implements AfterViewInit {
     // }
     // iter();
 
-    window.addEventListener("keydown", (e) => {
-      if(/^[abcdefghijklmnopqrstuvwxyz,.\/]$/.test(e.key)) {
-        e.preventDefault();
-        this.keydown(e);
-      }
-    });
-    window.addEventListener("keyup", (e) => {
-      if(/^[abcdefghijklmnopqrstuvwxyz,.\/]$/.test(e.key)) {
-        e.preventDefault();
-        this.keyup(e);
-      }
-    });
   }
 
   noises: WhiteNoise[] = [];
@@ -272,9 +280,9 @@ export class App implements AfterViewInit {
     if (code >= 0) {
       if (!this.downKeys.has(code)) {
         this.downKeys.add(code);
-        this.oscillators[code].keyDown()
+        this.oscillatorsGrp.keyDown(code)
         //this.o2[code].keyDown()
-        this.filters[code].keyDown();
+    //    this.filters[code].keyDown();
         // this.noises[code].attack();
      }
     }
@@ -285,9 +293,9 @@ export class App implements AfterViewInit {
     if (code >= 0) {
       if (this.downKeys.has(code))
         this.downKeys.delete(code);
-      this.oscillators[code].keyUp()
+      this.oscillatorsGrp.keyUp(code)
    //   this.o2[code].keyUp()
-      this.filters[code].keyUp();
+     // this.filters[code].keyUp();
     }
   //  this.noises[code].release();
   }
