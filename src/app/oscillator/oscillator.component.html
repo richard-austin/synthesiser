@@ -21,12 +21,12 @@
   </div>
   <div class="module">
     <h2>Freq Envelope</h2>
-    <app-level-control #freqAttack label="Attack" [style]="dialStyle.yellow" [divisions]="10" [calAngle]="300" [radius]="50" (setLevel)="setAttack($event)"></app-level-control>
-    <app-level-control #freqAttackLevel label="Attack Level" [style]="dialStyle.yellow"  [divisions]="10" [calAngle]="300" [radius]="50" (setLevel)="setAttack($event)"></app-level-control>
-    <app-level-control #freqDecay label="Decay" [radius]="50" [style]="dialStyle.yellow"  [divisions]="10" (setLevel)="setDecayTime($event)"></app-level-control>
-    <app-level-control #freqSustain label="Sustain" [radius]="50" [style]="dialStyle.yellow"  [divisions]="10" (setLevel)="setSustainLevel($event)"></app-level-control>
-    <app-level-control #freqRelease label="Release" [radius]="50" [style]="dialStyle.yellow"  [divisions]="10" (setLevel)="setReleaseTime($event)"></app-level-control>
-    <app-level-control #freqReleaseLevel label="Release Level" [style]="dialStyle.yellow"  [radius]="50" [divisions]="10" (setLevel)="setReleaseTime($event)"></app-level-control>
+    <app-level-control #freqAttack label="Attack" [style]="dialStyle.yellow" [divisions]="10" [calAngle]="300" [radius]="50" (setLevel)="setFreqAttack($event)"></app-level-control>
+    <app-level-control #freqAttackLevel label="Attack Level" [style]="dialStyle.yellow"  [divisions]="10" [calAngle]="300" [radius]="50" [plusMinus]="true" (setLevel)="setFreqAttackLevel($event)"></app-level-control>
+    <app-level-control #freqDecay label="Decay" [radius]="50" [style]="dialStyle.yellow"  [divisions]="10" (setLevel)="setFreqDecayTime($event)"></app-level-control>
+    <app-level-control #freqSustain label="Sustain" [radius]="50" [style]="dialStyle.yellow"  [divisions]="10" [plusMinus]="true" (setLevel)="setFreqSustainLevel($event)"></app-level-control>
+    <app-level-control #freqRelease label="Release" [radius]="50" [style]="dialStyle.yellow"  [divisions]="10" (setLevel)="setFreqReleaseTime($event)"></app-level-control>
+    <app-level-control #freqReleaseLevel label="Release Level" [style]="dialStyle.yellow"  [radius]="50" [divisions]="10" [plusMinus]="true" (setLevel)="setFreqReleaseLevel($event)"></app-level-control>
   </div>
 </div>
 

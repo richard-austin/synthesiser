@@ -30,6 +30,14 @@ export class OscillatorComponent {
   @ViewChild('sustain') sustain!: LevelControlComponent;
   @ViewChild('release') release!: LevelControlComponent;
 
+  @ViewChild('freqAttack') freqAttack!: LevelControlComponent;
+  @ViewChild('freqAttackLevel') freqAttackLevel!: LevelControlComponent;
+  @ViewChild('freqDecay') freqDecay!: LevelControlComponent;
+  @ViewChild('freqSustain') freqSustain!: LevelControlComponent;
+  @ViewChild('freqRelease') freqRelease!: LevelControlComponent;
+  @ViewChild('freqReleaseLevel') freqReleaseLevel!: LevelControlComponent;
+
+
   start(): boolean {
     let ok = false;
     if (this.numberOfOscillators) {
@@ -44,7 +52,7 @@ export class OscillatorComponent {
         this.oscillators[i].useAmplitudeEnvelope = true;
         this.oscillators[i].setGain(.1);
         this.oscillators[i].setFreqBendEnvelope(this.freqBend);
-        this.oscillators[i].useFreqBendEnvelope(false);
+        this.oscillators[i].useFreqBendEnvelope(true);
         this.oscillators[i].setType('sine');
       }
 
@@ -54,6 +62,15 @@ export class OscillatorComponent {
       this.decay.setValue(this.adsr.decayTime);
       this.sustain.setValue(this.adsr.sustainLevel);
       this.release.setValue(this.adsr.releaseTime);
+
+      // Set up default frequency bend e=velope values
+      this.freqAttack.setValue(this.freqBend.attackTime);
+      this.freqAttackLevel.setValue(this.freqBend.attackLevel);
+      this.freqDecay.setValue(this.freqBend.decayTime);
+      this.freqSustain.setValue(this.freqBend.sustainLevel);
+      this.freqRelease.setValue(this.freqBend.releaseTime);
+      this.freqReleaseLevel.setValue(this.freqBend.releaseLevel);
+
     }
     return ok;
   }
@@ -167,4 +184,28 @@ export class OscillatorComponent {
   }
 
   protected readonly dialStyle = dialStyle;
+
+  protected setFreqAttack($event: number) {
+    this.freqBend.attackTime = $event * 3;
+  }
+
+  protected setFreqAttackLevel($event: number) {
+    this.freqBend.attackLevel = $event * 5;
+  }
+
+  protected setFreqDecayTime($event: number) {
+    this.freqBend.decayTime = $event * 3;
+  }
+
+  protected setFreqSustainLevel($event: number) {
+    this.freqBend.sustainLevel = $event * 5;
+  }
+
+  protected setFreqReleaseTime($event: number) {
+    this.freqBend.releaseTime = $event * 3;
+  }
+
+  protected setFreqReleaseLevel($event: number) {
+    this.freqBend.releaseLevel = $event * 5;
+  }
 }
