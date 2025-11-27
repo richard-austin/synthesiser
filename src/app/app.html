@@ -1,4 +1,4 @@
 <button (click)="start()">Start</button>
 <button (mousedown)="play()" (mouseup)="end()" (mouseout)="end()">Ping</button>
-<app-oscillators [audioCtx]="audioCtx" [numberOfOscillators]="500"></app-oscillators>
+<app-oscillators [audioCtx]="audioCtx" [numberOfOscillators]="50" (output)="setOscOutputTarget($event)"></app-oscillators>
 <router-outlet />

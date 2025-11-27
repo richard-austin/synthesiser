@@ -1,4 +1,4 @@
-import {Component, Input, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild} from '@angular/core';
 import {Oscillator} from '../modules/oscillator';
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {FreqBendValues} from '../util-classes/freq-bend-values';
@@ -15,7 +15,7 @@ import {dialStyle} from '../level-control/levelControlParameters';
   templateUrl: './oscillator.component.html',
   styleUrl: './oscillator.component.scss',
 })
-export class OscillatorComponent {
+export class OscillatorComponent implements AfterViewInit {
   private oscillators: Oscillator[] = [];
   private adsr!: ADSRValues;
   private freqBend!: FreqBendValues;
@@ -23,6 +23,7 @@ export class OscillatorComponent {
 
   @Input() audioCtx!: AudioContext;
   @Input() numberOfOscillators!: number;
+  @Output() output = new EventEmitter<string>();
   @ViewChild('frequency') frequency!: LevelControlComponent;
   @ViewChild('gain') gain!: LevelControlComponent;
   @ViewChild('attack') attack!: LevelControlComponent;
@@ -37,6 +38,7 @@ export class OscillatorComponent {
   @ViewChild('freqRelease') freqRelease!: LevelControlComponent;
   @ViewChild('freqReleaseLevel') freqReleaseLevel!: LevelControlComponent;
 
+  @ViewChild('oscOutputToForm') oscOutputToForm!: ElementRef<HTMLFormElement>;
 
   start(): boolean {
     let ok = false;
@@ -207,5 +209,16 @@ export class OscillatorComponent {
 
   protected setFreqReleaseLevel($event: number) {
     this.freqBend.releaseLevel = $event * 5;
+  }
+
+  ngAfterViewInit(): void {
+    const oscOutForm = this.oscOutputToForm.nativeElement;
+    for (let i = 0; i < oscOutForm.elements.length; ++i) {
+      oscOutForm.elements[i].addEventListener('change', ($event) => {
+        const target = $event.target;
+        // @ts-ignore
+        this.output.emit(target.value);
+      });
+    }
   }
 }

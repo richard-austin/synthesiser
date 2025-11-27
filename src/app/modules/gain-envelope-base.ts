@@ -99,4 +99,8 @@ export abstract class GainEnvelopeBase {
   connect(params: AudioNode) {
     this.amplitudeMod.connect(params);
   }
+
+  disconnect() {
+    this.amplitudeMod.disconnect();
+  }
 }

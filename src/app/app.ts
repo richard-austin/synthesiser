@@ -395,4 +395,19 @@ export class App implements AfterViewInit {
     e.preventDefault();
     return code-1;
   }
+
+  protected setOscOutputTarget($event:string) {
+    this.oscillatorsGrp.disconnect();
+    switch ($event) {
+      case 'speaker':
+        this.oscillatorsGrp.connect(this.audioCtx.destination);
+        break;
+      case 'filter':
+        break;
+      case 'ringmod':
+        break;
+      case 'off':
+        break;
+    }
+  }
 }

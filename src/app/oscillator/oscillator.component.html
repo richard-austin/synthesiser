@@ -10,6 +10,10 @@
     <div class="module align-mod">
       <h2>Modulation</h2>
       <app-level-control #modulation label="LFO Frequency" [style]="dialStyle.green" [plusMinus]="true" [divisions]="tuningDivisions" [calAngle]="300" [radius]="50" (setLevel)="setFrequency($event)"></app-level-control>
+      <form>
+        <label><input type="radio" name="lfo" value="on"><span>On</span></label>
+        <label><input type="radio" name="lfo" value="off" checked><span>Off</span></label>
+      </form>
     </div>
   </div>
   <div class="module">
@@ -18,6 +22,11 @@
     <app-level-control #decay label="Decay" [style]="dialStyle.red" [radius]="50" [divisions]="10" (setLevel)="setDecayTime($event)"></app-level-control>
     <app-level-control #sustain label="Sustain" [style]="dialStyle.red" [radius]="50" [divisions]="10" (setLevel)="setSustainLevel($event)"></app-level-control>
     <app-level-control #release label="Release" [style]="dialStyle.red" [radius]="50" [divisions]="10" (setLevel)="setReleaseTime($event)"></app-level-control>
+    <form #amplitudeEnvelopeOnOffForm>
+      <label><input type="radio" name="envelope" value="on" checked><span>On</span></label>
+      <label><input type="radio" name="envelope" value="off"><span>Off</span></label>
+    </form>
+
   </div>
   <div class="module">
     <h2>Freq Envelope</h2>
@@ -27,7 +36,19 @@
     <app-level-control #freqSustain label="Sustain" [radius]="50" [style]="dialStyle.yellow"  [divisions]="10" [plusMinus]="true" (setLevel)="setFreqSustainLevel($event)"></app-level-control>
     <app-level-control #freqRelease label="Release" [radius]="50" [style]="dialStyle.yellow"  [divisions]="10" (setLevel)="setFreqReleaseTime($event)"></app-level-control>
     <app-level-control #freqReleaseLevel label="Release Level" [style]="dialStyle.yellow"  [radius]="50" [divisions]="10" [plusMinus]="true" (setLevel)="setFreqReleaseLevel($event)"></app-level-control>
+    <form #freqEnveOnOffForm>
+      <label><input type="radio" name="freqenvelope" value="on"><span>On</span></label>
+      <label><input type="radio" name="freqenvelope" value="off" checked><span>Off</span></label>
+    </form>
   </div>
 </div>
+  <h2>Output</h2>
+  <div style="height: 3px;"></div>
+  <form #oscOutputToForm>
+    <label><input type="radio" name="output" value="speaker" checked><span>Speaker</span></label>
+    <label><input type="radio" name="output" value="filter"><span>Filter</span></label>
+    <label><input type="radio" name="output" value="ringmod"><span>Ring Mod</span></label>
+    <label><input type="radio" name="output" value="off"><span>Off</span></label>
+  </form>
 
 </div>

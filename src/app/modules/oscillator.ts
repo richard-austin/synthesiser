@@ -90,7 +90,7 @@ export class Oscillator extends OscFilterBase {
     }
   }
 
-  disconnect() {
-    this.oscillator.disconnect();
+  override disconnect() {
+    super.disconnect();
   }
 }
