@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import {LevelControlParameters} from './levelControlParameters';
+import {dialStyle, LevelControlParameters} from './levelControlParameters';
 
 let render: Renderer;
 addEventListener('message', ({data}) => {
@@ -58,6 +58,13 @@ class Renderer {
     }
   }
 
+  private readonly styles: Map<dialStyle, [string,string][]> = new Map([
+    [dialStyle.blue, [['#ccf', '#aaa'],['gray','darkgray'],['lightblue','darkblue']]],
+      [dialStyle.red, [['#fcc', '#aaa'],['gray','darkgray'],['lightpink','darkred']]],
+      [dialStyle.green, [['#cfc', '#aaa'],['gray','darkgray'],['lightgreen','green']]],
+      [dialStyle.yellow, [['#ffc', '#aaa'],['gray','darkgray'],['yellow','brown']]]
+  ]);
+
   drawDial(angle: number) {
     // const canvas = this.canvas;
     const ctx = this.canvas.getContext('2d');
@@ -68,8 +75,9 @@ class Renderer {
       // Outer edge of skirting
       ctx.beginPath();
       const radGrad = ctx.createRadialGradient(p.centreX, p.centreY, p.skirtInnerRadius, p.centreX, p.centreY, p.radius);
-      radGrad.addColorStop(0, "#dca");
-      radGrad.addColorStop(1, "#a86");
+      const style:[string,string] = (this.styles.get(p.style) as unknown) as [string, string];
+      radGrad.addColorStop(0, style[0][0]);
+      radGrad.addColorStop(1, style[0][1]);
       ctx.arc(p.centreX, p.centreY, p.radius, 0, 2 * Math.PI, false);
       ctx.lineWidth = 1;
       ctx.strokeStyle = 'white';
@@ -80,8 +88,8 @@ class Renderer {
 
       // Create linear gradient
       const grad1 = ctx.createLinearGradient(0, 0, 0, 130);
-      grad1.addColorStop(0, "gray");
-      grad1.addColorStop(1, "darkgray");
+      grad1.addColorStop(0, style[1][0]);
+      grad1.addColorStop(1, style[1][1]);
       // Inner edge of skirting
       ctx.beginPath();
       ctx.strokeStyle = '#333';
@@ -95,8 +103,10 @@ class Renderer {
 
       // Create linear gradient
       const grad = ctx.createLinearGradient(p.centreX - p.centreButtonRadius, p.centreY - p.centreButtonRadius, p.centreX + p.centreButtonRadius, p.centreY + p.centreButtonRadius);
-      grad.addColorStop(0, "lightblue");
-      grad.addColorStop(1, "darkblue");
+      // @ts-ignore
+      grad.addColorStop(0, style[2][0]);
+      // @ts-ignore
+      grad.addColorStop(1, style[2][1]);
 
       // Center button
       this.centreButton(ctx, grad);

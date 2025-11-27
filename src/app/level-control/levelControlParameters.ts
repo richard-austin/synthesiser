@@ -1,3 +1,5 @@
+export enum dialStyle {red, blue, green, yellow}
+
 export class LevelControlParameters {
   canvas: OffscreenCanvas;
   radius: number;
@@ -12,15 +14,17 @@ export class LevelControlParameters {
   textPos: number;
   label: string;
   plusMinus: boolean;
+  style: dialStyle;
 
   constructor(canvas: OffscreenCanvas,
               radius: number,
               calAngle: number,
               divisions: number,
               label: string,
-              plusMinus: boolean = false,
-              centreX: number = canvas.width / 2,
-              centreY: number = canvas.height / 2,
+              plusMinus: boolean,
+              style: dialStyle,
+              centreX: number,
+              centreY: number,
               textPos: number = -15,
               centreButtonRadius: number = radius/2,
               skirtInnerRadius: number = radius/1.5,
@@ -37,6 +41,7 @@ export class LevelControlParameters {
     this.divisions = divisions;
     this.label = label;
     this.plusMinus = plusMinus;
+    this.style = style;
     this.textPos = textPos;
   }
 
@@ -54,6 +59,7 @@ export class LevelControlParameters {
       divisions: this.divisions,
       label: this.label,
       plusMinus: this.plusMinus,
+      style: this.style,
       textPos: this.textPos
     };
   }

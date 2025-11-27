@@ -1,5 +1,5 @@
 import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild} from '@angular/core';
-import {LevelControlParameters} from './levelControlParameters';
+import {dialStyle, LevelControlParameters} from './levelControlParameters';
 
 @Component({
   selector: 'app-level-control',
@@ -18,6 +18,7 @@ export class LevelControlComponent implements AfterViewInit {
   @Input() divisions: number = 10;
   @Input() label: string = '???';
   @Input() plusMinus: boolean = false;
+  @Input() style: dialStyle = dialStyle.blue
 
   startRender() {
     this.drawOperationsWorker = new Worker(new URL('./draw-operations.worker', import.meta.url));
@@ -28,7 +29,7 @@ export class LevelControlComponent implements AfterViewInit {
     };
     const offScreenCanvas = this.canvas.nativeElement.transferControlToOffscreen();
 
-    this.params = new LevelControlParameters(offScreenCanvas, this.radius, this.calAngle, this.divisions, this.label, this.plusMinus, this.radius, this.radius + this.extraForCursor);
+    this.params = new LevelControlParameters(offScreenCanvas, this.radius, this.calAngle, this.divisions, this.label, this.plusMinus, this.style, this.radius, this.radius + this.extraForCursor);
     this.drawOperationsWorker.postMessage({
       canvas: this.params.canvas,
       params: this.params.getObject()

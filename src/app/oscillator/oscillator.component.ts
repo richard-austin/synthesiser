@@ -5,6 +5,7 @@ import {FreqBendValues} from '../util-classes/freq-bend-values';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {modulationType} from '../modules/gain-envelope-base';
 import {Filter} from '../modules/filter';
+import {dialStyle} from '../level-control/levelControlParameters';
 
 @Component({
   selector: 'app-oscillators',
@@ -164,4 +165,6 @@ export class OscillatorComponent {
   protected setReleaseTime($event: number) {
     this.adsr.releaseTime = $event * 10;
   }
+
+  protected readonly dialStyle = dialStyle;
 }
