@@ -56,7 +56,7 @@ export class OscillatorComponent implements AfterViewInit {
         this.oscillators[i].useAmplitudeEnvelope = true;
         this.oscillators[i].setGain(.1);
         this.oscillators[i].setFreqBendEnvelope(this.freqBend);
-        this.oscillators[i].useFreqBendEnvelope(true);
+        this.oscillators[i].useFreqBendEnvelope(false);
         this.oscillators[i].setType('sine');
       }
 
@@ -81,7 +81,7 @@ export class OscillatorComponent implements AfterViewInit {
 
   protected setFrequency(freq: number) {
     for (let i = 0; i < this.oscillators.length; i++) {
-      this.oscillators[i].setFrequency(450 * Math.pow(Math.pow(2, 1 / 12), (i + 1) + 120 * freq*this.tuningDivisions/10));
+      this.oscillators[i].setFrequency(450 * Math.pow(Math.pow(2, 1 / 12), (i + 1) + 120 * freq * this.tuningDivisions / 10));
     }
   }
 
@@ -97,7 +97,7 @@ export class OscillatorComponent implements AfterViewInit {
     }
   }
 
-  useFreqBendEnvelopeOff(useFreqBendEnvelope: boolean) {
+  useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
     for (let i = 0; i < this.oscillators.length; i++) {
       this.oscillators[i].useFreqBendEnvelope(useFreqBendEnvelope);
     }
@@ -223,23 +223,19 @@ export class OscillatorComponent implements AfterViewInit {
       });
     }
     const freqEnveOnOffForm = this.freqEnveOnOffForm.nativeElement;
-    for(let i = 0; i < freqEnveOnOffForm.elements.length; ++i) {
+    for (let i = 0; i < freqEnveOnOffForm.elements.length; ++i) {
       freqEnveOnOffForm.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value;
-        for(let i =0; i < this.oscillators.length; i++) {
-          this.oscillators[i].useFreqBendEnvelope(value==='on');
-        }
+        this.useFreqBendEnvelope(value === 'on')
       })
     }
     const amplitudeEnvelopeOnOffForm = this.amplitudeEnvelopeOnOffForm.nativeElement;
-    for(let i = 0; i < amplitudeEnvelopeOnOffForm.elements.length; ++i) {
+    for (let i = 0; i < amplitudeEnvelopeOnOffForm.elements.length; ++i) {
       amplitudeEnvelopeOnOffForm.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value;
-        for(let i =0; i < this.oscillators.length; i++) {
-          this.oscillators[i].useAmplitudeEnvelope = value==='on';
-        }
+        this.useAmplitudeEnvelope(value === 'on');
       });
     }
   }
