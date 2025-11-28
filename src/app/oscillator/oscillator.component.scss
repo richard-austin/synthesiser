@@ -15,12 +15,18 @@
   margin: 3px;
 }
 .column {
+  //border: 1px solid black;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   width: fit-content;
   height: fit-content;
 }
 
 .align-mod {
-  margin-top: 108px;
+  margin-top: 25px;
+  margin-right: auto;
+  margin-left: auto;
 }
 
 .group-container {

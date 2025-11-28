@@ -39,6 +39,8 @@ export class OscillatorComponent implements AfterViewInit {
   @ViewChild('freqReleaseLevel') freqReleaseLevel!: LevelControlComponent;
 
   @ViewChild('oscOutputToForm') oscOutputToForm!: ElementRef<HTMLFormElement>;
+  @ViewChild('freqEnveOnOffForm') freqEnveOnOffForm!: ElementRef<HTMLFormElement>;
+  @ViewChild('amplitudeEnvelopeOnOffForm') amplitudeEnvelopeOnOffForm!: ElementRef<HTMLFormElement>;
 
   start(): boolean {
     let ok = false;
@@ -218,6 +220,26 @@ export class OscillatorComponent implements AfterViewInit {
         const target = $event.target;
         // @ts-ignore
         this.output.emit(target.value);
+      });
+    }
+    const freqEnveOnOffForm = this.freqEnveOnOffForm.nativeElement;
+    for(let i = 0; i < freqEnveOnOffForm.elements.length; ++i) {
+      freqEnveOnOffForm.elements[i].addEventListener('change', ($event) => {
+        // @ts-ignore
+        const value = $event.target.value;
+        for(let i =0; i < this.oscillators.length; i++) {
+          this.oscillators[i].useFreqBendEnvelope(value==='on');
+        }
+      })
+    }
+    const amplitudeEnvelopeOnOffForm = this.amplitudeEnvelopeOnOffForm.nativeElement;
+    for(let i = 0; i < amplitudeEnvelopeOnOffForm.elements.length; ++i) {
+      amplitudeEnvelopeOnOffForm.elements[i].addEventListener('change', ($event) => {
+        // @ts-ignore
+        const value = $event.target.value;
+        for(let i =0; i < this.oscillators.length; i++) {
+          this.oscillators[i].useAmplitudeEnvelope = value==='on';
+        }
       });
     }
   }
