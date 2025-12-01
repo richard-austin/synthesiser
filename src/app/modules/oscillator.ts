@@ -68,10 +68,6 @@ export class Oscillator extends OscFilterBase {
     this.oscillator.frequency.setValueAtTime(super.clampFrequency(this.freq), this.audioCtx.currentTime);
   }
 
-  setWaveForm(value: EventTarget | null) {
-
-  }
-
   // Key down for this oscillator
   override keyDown() {
     super.attack();
