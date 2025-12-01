@@ -41,6 +41,7 @@ export class OscillatorComponent implements AfterViewInit {
   @ViewChild('oscOutputToForm') oscOutputToForm!: ElementRef<HTMLFormElement>;
   @ViewChild('freqEnveOnOffForm') freqEnveOnOffForm!: ElementRef<HTMLFormElement>;
   @ViewChild('amplitudeEnvelopeOnOffForm') amplitudeEnvelopeOnOffForm!: ElementRef<HTMLFormElement>;
+  @ViewChild('oscWaveForm') oscWaveForm!: ElementRef<HTMLFormElement>;
 
   start(): boolean {
     let ok = false;
@@ -100,6 +101,12 @@ export class OscillatorComponent implements AfterViewInit {
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
     for (let i = 0; i < this.oscillators.length; i++) {
       this.oscillators[i].useFreqBendEnvelope(useFreqBendEnvelope);
+    }
+  }
+
+  private setWaveForm(value: OscillatorType) {
+    for (let i = 0; i < this.numberOfOscillators; ++i) {
+      this.oscillators[i].oscillator.type = value;
     }
   }
 
@@ -237,6 +244,14 @@ export class OscillatorComponent implements AfterViewInit {
         const value = $event.target.value;
         this.useAmplitudeEnvelope(value === 'on');
       });
+    }
+    const waveform = this.oscWaveForm.nativeElement;
+    for (let i = 0; i < waveform.elements.length; ++i) {
+      waveform.elements[i].addEventListener('change', ($event) => {
+        // @ts-ignore
+        const value = $event.target.value as OscillatorType;
+        this.setWaveForm(value as OscillatorType);
+      })
     }
   }
 }

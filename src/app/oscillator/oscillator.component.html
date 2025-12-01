@@ -8,11 +8,11 @@
       <app-level-control #gain label="Gain" [radius]="50" [divisions]="10" (setLevel)="setGain($event)"></app-level-control>
       <h2>Waveform</h2>
       <div style="height: 3px;"></div>
-      <form #oscOutputToForm>
-        <label><input type="radio" name="output" value="sine" checked><span>Sine</span></label>
-        <label><input type="radio" name="output" value="square"><span>Square</span></label>
-        <label><input type="radio" name="output" value="sawtooth"><span>Saw</span></label>
-        <label><input type="radio" name="output" value="triangle"><span>Tri</span></label>
+      <form #oscWaveForm>
+        <label><input type="radio" name="waveform" value="sine" checked><span>Sine</span></label>
+        <label><input type="radio" name="waveform" value="square"><span>Square</span></label>
+        <label><input type="radio" name="waveform" value="sawtooth"><span>Saw</span></label>
+        <label><input type="radio" name="waveform" value="triangle"><span>Tri</span></label>
       </form>
       <h2>Output</h2>
       <div style="height: 3px;"></div>
