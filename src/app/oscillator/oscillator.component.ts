@@ -20,6 +20,7 @@ export class OscillatorComponent implements AfterViewInit {
   private adsr!: ADSRValues;
   private freqBend!: FreqBendValues;
   protected tuningDivisions = 6;
+  private lfo!: Oscillator;
 
   @Input() audioCtx!: AudioContext;
   @Input() numberOfOscillators!: number;
@@ -39,13 +40,20 @@ export class OscillatorComponent implements AfterViewInit {
   @ViewChild('freqReleaseLevel') freqReleaseLevel!: LevelControlComponent;
 
   @ViewChild('oscOutputToForm') oscOutputToForm!: ElementRef<HTMLFormElement>;
+
   @ViewChild('freqEnveOnOffForm') freqEnveOnOffForm!: ElementRef<HTMLFormElement>;
   @ViewChild('amplitudeEnvelopeOnOffForm') amplitudeEnvelopeOnOffForm!: ElementRef<HTMLFormElement>;
   @ViewChild('oscWaveForm') oscWaveForm!: ElementRef<HTMLFormElement>;
 
+  @ViewChild('modSettingsForm') modSettingsForm!: ElementRef<HTMLFormElement>;
+  @ViewChild('modFreq') modFreq!: LevelControlComponent;
+  @ViewChild('modDepth') modLevel!: LevelControlComponent;
+
   start(): boolean {
     let ok = false;
     if (this.numberOfOscillators) {
+      this.lfo = new Oscillator(this.audioCtx);
+
       ok = true;
       this.adsr = new ADSRValues(0.2, 0.5, 1, 4);
       this.freqBend = new FreqBendValues(0, 1.5, .2, 1.5, 0.2, 0.0);
@@ -59,6 +67,11 @@ export class OscillatorComponent implements AfterViewInit {
         this.oscillators[i].setFreqBendEnvelope(this.freqBend);
         this.oscillators[i].useFreqBendEnvelope(false);
         this.oscillators[i].setType('sine');
+     //
+     // this.oscillators[i].modulation(this.lfo.oscillator, modulationType.frequency);
+     //      //  this.oscillators[i].modulationOff();
+     //      this.oscillators[i].setModLevel(23.4);
+     //
       }
 
       this.frequency.setValue(0);  // Set frequency dial initial value.
@@ -76,6 +89,14 @@ export class OscillatorComponent implements AfterViewInit {
       this.freqRelease.setValue(this.freqBend.releaseTime);
       this.freqReleaseLevel.setValue(this.freqBend.releaseLevel);
 
+      // Set up LFO default values
+      // this.lfo = new LFO(this.audioCtx);
+      // this.lfo.lfo.frequency.setValueAtTime(4, this.audioCtx.currentTime);
+      this.modFreq.setValue(4);  // Set dial
+      this.lfo.setFrequency(4);   // Set actual mod frequency
+      this.modLevel.setValue(0);  // Set dial
+      this.setModLevel(0); // Set actual mod depth
+      this.modulation(this.lfo.oscillator, modulationType.off);
     }
     return ok;
   }
@@ -106,25 +127,13 @@ export class OscillatorComponent implements AfterViewInit {
 
   private setWaveForm(value: OscillatorType) {
     for (let i = 0; i < this.numberOfOscillators; ++i) {
-      this.oscillators[i].oscillator.type = value;
-    }
-  }
-
-  setType(type: OscillatorType) {
-    for (let i = 0; i < this.oscillators.length; i++) {
-      this.oscillators[i].setType(type);
+      this.oscillators[i].setType(value);
     }
   }
 
   modulation(source: AudioNode, type: modulationType) {
     for (let i = 0; i < this.numberOfOscillators; ++i) {
       this.oscillators[i].modulation(source, type);
-    }
-  }
-
-  setModLevel(level: number) {
-    for (let i = 0; i < this.numberOfOscillators; ++i) {
-      this.oscillators[i].setModLevel(level);
     }
   }
 
@@ -220,6 +229,27 @@ export class OscillatorComponent implements AfterViewInit {
     this.freqBend.releaseLevel = $event * 5;
   }
 
+  protected setModFrequency(freq: number) {
+    this.lfo.setFrequency(freq * 20);
+  }
+
+  protected setModLevel($event: number) {
+    for(let i = 0; i < this.numberOfOscillators; ++i) {
+      this.oscillators[i].setModLevel($event);
+    }
+  }
+
+  protected setModType(type: modulationType) {
+    for(let i = 0; i < this.numberOfOscillators; ++i) {
+      if (type === modulationType.off) {
+        this.oscillators[i].modulationOff();
+      }
+      else {
+        this.oscillators[i].modulation(this.lfo.oscillator, type);
+      }
+    }
+  }
+
   ngAfterViewInit(): void {
     const oscOutForm = this.oscOutputToForm.nativeElement;
     for (let i = 0; i < oscOutForm.elements.length; ++i) {
@@ -251,7 +281,16 @@ export class OscillatorComponent implements AfterViewInit {
         // @ts-ignore
         const value = $event.target.value as OscillatorType;
         this.setWaveForm(value as OscillatorType);
-      })
+      });
+
+      const modSettingsForm = this.modSettingsForm.nativeElement;
+      for (let j = 0; j < modSettingsForm.elements.length; ++j) {
+        modSettingsForm.elements[j].addEventListener('change', ($event) => {
+          // @ts-ignore
+          const value = $event.target.value as modulationType;
+          this.setModType(value);
+        });
+      }
     }
   }
 }

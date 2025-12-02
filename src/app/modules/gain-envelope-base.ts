@@ -4,6 +4,7 @@ import {OscFilterBase} from './osc-filter-base';
 export enum modulationType {
   frequency = 'frequency',
   amplitude = 'amplitude',
+  off = 'off'
 }
 
 export abstract class GainEnvelopeBase {

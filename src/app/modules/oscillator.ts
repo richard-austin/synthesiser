@@ -35,25 +35,31 @@ export class Oscillator extends OscFilterBase {
   modulation(modulator: AudioNode, type: modulationType = modulationType.frequency) {
     this.modType = type;
     this.modulator = modulator;
+    this.frequencyMod.disconnect();
+    this.amplitudeModDepth.gain.setValueAtTime(0, this.audioCtx.currentTime);
+    this.oscillator.connect(this.gain);
     if( type === modulationType.frequency) {
       modulator.connect(this.frequencyMod);
       this.frequencyMod.connect(this.oscillator.frequency);
       this.frequencyMod.gain.setValueAtTime(this.freq * this.modLevel, this.audioCtx.currentTime);
     }
-    else {
+    else if( type === modulationType.amplitude) {
       modulator.connect(this.amplitudeModDepth);
-      this.amplitudeModDepth.gain.setValueAtTime(this.modLevel, this.audioCtx.currentTime);
+      this.amplitudeModDepth.gain.setValueAtTime(this.modLevel * 10, this.audioCtx.currentTime);
+    }
+    else if( type === modulationType.off) {
+      this.modulationOff();
     }
   }
 
   setModLevel(level: number) {
     if(this.modType === modulationType.frequency) {
-      this.modLevel = level * OscFilterBase.maxLevel / 100;
+      this.modLevel = level * OscFilterBase.maxLevel;
       this.frequencyMod.gain.setValueAtTime(this.oscillator.frequency.value * this.modLevel, this.audioCtx.currentTime);
     }
     else {
         this.modLevel = level;
-        this.amplitudeModDepth.gain.setValueAtTime(level, this.audioCtx.currentTime);
+        this.amplitudeModDepth.gain.setValueAtTime(level * 10, this.audioCtx.currentTime);
       }
   }
 
