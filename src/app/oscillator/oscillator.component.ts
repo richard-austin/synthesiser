@@ -48,6 +48,7 @@ export class OscillatorComponent implements AfterViewInit {
   @ViewChild('modSettingsForm') modSettingsForm!: ElementRef<HTMLFormElement>;
   @ViewChild('modFreq') modFreq!: LevelControlComponent;
   @ViewChild('modDepth') modLevel!: LevelControlComponent;
+  @ViewChild('lfoWaveForm') lfoWaveForm!: ElementRef<HTMLFormElement>;
 
   start(): boolean {
     let ok = false;
@@ -290,6 +291,15 @@ export class OscillatorComponent implements AfterViewInit {
           const value = $event.target.value as modulationType;
           this.setModType(value);
         });
+      }
+
+      const modWaveForm = this.lfoWaveForm.nativeElement;
+      for (let j = 0; j < modWaveForm.elements.length; ++j) {
+        modWaveForm.elements[j].addEventListener('change', ($event) => {
+          // @ts-ignore
+          const value = $event.target.value as OscillatorType;
+          this.lfo.setType(value);
+        })
       }
     }
   }

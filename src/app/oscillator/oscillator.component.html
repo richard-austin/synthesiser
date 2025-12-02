@@ -2,7 +2,7 @@
     <h1>Oscillators</h1>
 <div class="group">
   <div class="column">
-    <div class="module">
+    <div class="module osc-width">
       <h2>Oscillators</h2>
       <app-level-control #frequency label="Tuning" [plusMinus]="true" [divisions]="tuningDivisions" [calAngle]="300" [radius]="50" (setLevel)="setFrequency($event)"></app-level-control>
       <app-level-control #gain label="Gain" [radius]="50" [divisions]="10" (setLevel)="setGain($event)"></app-level-control>
@@ -11,8 +11,8 @@
       <form #oscWaveForm>
         <label><input type="radio" name="waveform" value="sine" checked><span>Sine</span></label>
         <label><input type="radio" name="waveform" value="square"><span>Square</span></label>
-        <label><input type="radio" name="waveform" value="sawtooth"><span>Saw</span></label>
-        <label><input type="radio" name="waveform" value="triangle"><span>Tri</span></label>
+        <label><input type="radio" name="waveform" value="sawtooth"><span>Sawtooth</span></label>
+        <label><input type="radio" name="waveform" value="triangle"><span>Triangle</span></label>
       </form>
       <h2>Output</h2>
       <div style="height: 3px;"></div>
@@ -23,13 +23,21 @@
         <label><input type="radio" name="output" value="off"><span>Off</span></label>
       </form>
     </div>
-    <div class="module align-mod">
+    <div class="module osc-width">
       <h2>Modulation</h2>
       <app-level-control #modFreq label="LFO Frequency" [style]="dialStyle.green" [divisions]="10" [calAngle]="300" [radius]="50" (setLevel)="setModFrequency($event)"></app-level-control>
       <app-level-control #modDepth label="Mod Depth" [style]="dialStyle.green" [divisions]="10" [calAngle]="300" [radius]="50" (setLevel)="setModLevel($event)"></app-level-control>
+      <h2>Waveform</h2>
+      <div style="height: 3px;"></div>
+      <form #lfoWaveForm>
+        <label><input type="radio" name="waveform" value="sine" checked><span>Sine</span></label>
+        <label><input type="radio" name="waveform" value="square"><span>Square</span></label>
+        <label><input type="radio" name="waveform" value="sawtooth"><span>Sawtooth</span></label>
+        <label><input type="radio" name="waveform" value="triangle"><span>Triangle</span></label>
+      </form>
       <form #modSettingsForm>
-        <label><input type="radio" name="lfo" value="amplitude"><span>Amp</span></label>
-        <label><input type="radio" name="lfo" value="frequency"><span>Freq</span></label>
+        <label><input type="radio" name="lfo" value="amplitude"><span>Amplitude</span></label>
+        <label><input type="radio" name="lfo" value="frequency"><span>Frequency</span></label>
         <label><input type="radio" name="lfo" value="off" checked><span>&nbsp;Off&nbsp;</span></label>
       </form>
     </div>
