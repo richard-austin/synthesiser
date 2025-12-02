@@ -91,10 +91,8 @@ export class OscillatorComponent implements AfterViewInit {
       this.freqReleaseLevel.setValue(this.freqBend.releaseLevel);
 
       // Set up LFO default values
-      // this.lfo = new LFO(this.audioCtx);
-      // this.lfo.lfo.frequency.setValueAtTime(4, this.audioCtx.currentTime);
       this.modFreq.setValue(4);  // Set dial
-      this.lfo.setFrequency(4);   // Set actual mod frequency
+      this.lfo.setFrequency(4 * 2);   // Set actual mod frequency
       this.modLevel.setValue(0);  // Set dial
       this.setModLevel(0); // Set actual mod depth
       this.modulation(this.lfo.oscillator, modulationType.off);
