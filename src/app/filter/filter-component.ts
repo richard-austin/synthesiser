@@ -1,37 +1,41 @@
 import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild} from '@angular/core';
-import {Oscillator} from '../modules/oscillator';
+import {dialStyle} from '../level-control/levelControlParameters';
+import {LevelControlComponent} from '../level-control/level-control.component';
+import {Filter} from '../modules/filter';
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {FreqBendValues} from '../util-classes/freq-bend-values';
-import {LevelControlComponent} from '../level-control/level-control.component';
+import {Oscillator} from '../modules/oscillator';
 import {modulationType} from '../modules/gain-envelope-base';
-import {dialStyle} from '../level-control/levelControlParameters';
-import {FilterComponent} from '../filter/filter-component';
 
 @Component({
-  selector: 'app-oscillators',
+  selector: 'app-filters',
   imports: [
     LevelControlComponent
   ],
-  templateUrl: './oscillator.component.html',
-  styleUrl: './oscillator.component.scss',
+  templateUrl: './filter-component.html',
+  styleUrl: './filter-component.scss',
 })
-export class OscillatorComponent implements AfterViewInit {
-  private oscillators: Oscillator[] = [];
+export class FilterComponent implements AfterViewInit {
+  private _filters: Filter[] = [];
   private adsr!: ADSRValues;
   private freqBend!: FreqBendValues;
   protected tuningDivisions = 6;
   private lfo!: Oscillator;
-  public audioCtx!: AudioContext;
+  audioCtx!: AudioContext;
 
-  @Input() filters!: FilterComponent;
-  @Input() numberOfOscillators!: number;
+  private set filters(filters: Filter[]) {
+    this._filters = filters;
+  }
+
+  public get filters(): Filter[] {
+    return this._filters;
+  }
+
+  @Input() numberOfFilters!: number;
   @Output() output = new EventEmitter<string>();
   @ViewChild('frequency') frequency!: LevelControlComponent;
   @ViewChild('gain') gain!: LevelControlComponent;
-  @ViewChild('attack') attack!: LevelControlComponent;
-  @ViewChild('decay') decay!: LevelControlComponent;
-  @ViewChild('sustain') sustain!: LevelControlComponent;
-  @ViewChild('release') release!: LevelControlComponent;
+  @ViewChild('qfactor') qfactor!: LevelControlComponent;
 
   @ViewChild('freqAttack') freqAttack!: LevelControlComponent;
   @ViewChild('freqAttackLevel') freqAttackLevel!: LevelControlComponent;
@@ -40,11 +44,10 @@ export class OscillatorComponent implements AfterViewInit {
   @ViewChild('freqRelease') freqRelease!: LevelControlComponent;
   @ViewChild('freqReleaseLevel') freqReleaseLevel!: LevelControlComponent;
 
-  @ViewChild('oscOutputToForm') oscOutputToForm!: ElementRef<HTMLFormElement>;
+  @ViewChild('filterOutputToForm') filterOutputTo!: ElementRef<HTMLFormElement>;
 
-  @ViewChild('freqEnveOnOffForm') freqEnveOnOffForm!: ElementRef<HTMLFormElement>;
-  @ViewChild('amplitudeEnvelopeOnOffForm') amplitudeEnvelopeOnOffForm!: ElementRef<HTMLFormElement>;
-  @ViewChild('oscWaveForm') oscWaveForm!: ElementRef<HTMLFormElement>;
+  @ViewChild('freqEnveOnOffForm') freqEnveOnOff!: ElementRef<HTMLFormElement>;
+  @ViewChild('filterTypeForm') filterType!: ElementRef<HTMLFormElement>;
 
   @ViewChild('modSettingsForm') modSettingsForm!: ElementRef<HTMLFormElement>;
   @ViewChild('modFreq') modFreq!: LevelControlComponent;
@@ -53,35 +56,32 @@ export class OscillatorComponent implements AfterViewInit {
 
   start(): boolean {
     let ok = false;
-    if (this.numberOfOscillators) {
+    if (this.numberOfFilters) {
       this.lfo = new Oscillator(this.audioCtx);
 
       ok = true;
       this.adsr = new ADSRValues(0.2, 0.5, 1, 4);
       this.freqBend = new FreqBendValues(0, 1.5, .2, 1.5, 0.2, 0.0);
 
-      for (let i = 0; i < this.numberOfOscillators; ++i) {
-        this.oscillators.push(new Oscillator(this.audioCtx));
-        this.oscillators[i].setFrequency(20 * Math.pow(Math.pow(2, 1 / 12), (i + 1)));
-        this.oscillators[i].setAmplitudeEnvelope(this.adsr)
-        this.oscillators[i].useAmplitudeEnvelope = true;
-        this.oscillators[i].setGain(.1);
-        this.oscillators[i].setFreqBendEnvelope(this.freqBend);
-        this.oscillators[i].useFreqBendEnvelope(false);
-        this.oscillators[i].setType('sine');
+      for (let i = 0; i < this.numberOfFilters; ++i) {
+        this.filters.push(new Filter(this.audioCtx));
+        this.filters[i].setFrequency(20 * Math.pow(Math.pow(2, 1 / 12), (i + 1)));
+        this.filters[i].setAmplitudeEnvelope(this.adsr)
+        this.filters[i].useAmplitudeEnvelope = false;
+        this.filters[i].setGain(.1);
+        this.filters[i].setFreqBendEnvelope(this.freqBend);
+        this.filters[i].useFreqBendEnvelope(false);
+        this.filters[i].setType('lowpass');
         //
-        // this.oscillators[i].modulation(this.lfo.oscillator, modulationType.frequency);
-        //      //  this.oscillators[i].modulationOff();
-        //      this.oscillators[i].setModLevel(23.4);
+        // this.filters[i].modulation(this.lfo.oscillator, modulationType.frequency);
+        //      //  this.filters[i].modulationOff();
+        //      this.filters[i].setModLevel(23.4);
         //
       }
 
       this.frequency.setValue(0);  // Set frequency dial initial value.
       this.gain.setValue(4);
-      this.attack.setValue(this.adsr.attackTime);
-      this.decay.setValue(this.adsr.decayTime);
-      this.sustain.setValue(this.adsr.sustainLevel);
-      this.release.setValue(this.adsr.releaseTime);
+      this.qfactor.setValue(10);
 
       // Set up default frequency bend e=velope values
       this.freqAttack.setValue(this.freqBend.attackTime);
@@ -96,63 +96,68 @@ export class OscillatorComponent implements AfterViewInit {
       this.lfo.setFrequency(4 * 2);   // Set actual mod frequency
       this.modLevel.setValue(0);  // Set dial
       this.setModLevel(0); // Set actual mod depth
-      this.modulation(this.lfo.oscillator, modulationType.off);
     }
     return ok;
   }
 
   protected setFrequency(freq: number) {
-    for (let i = 0; i < this.oscillators.length; i++) {
-      this.oscillators[i].setFrequency(450 * Math.pow(Math.pow(2, 1 / 12), (i + 1) + 120 * freq * this.tuningDivisions / 10));
+    for (let i = 0; i < this.filters.length; i++) {
+      this.filters[i].setFrequency(450 * Math.pow(Math.pow(2, 1 / 12), (i + 1) + 120 * freq * this.tuningDivisions / 10));
     }
   }
 
   protected setGain(gain: number) {
-    for (let i = 0; i < this.oscillators.length; i++) {
-      this.oscillators[i].setGain(gain);
+    for (let i = 0; i < this.filters.length; i++) {
+      this.filters[i].setGain(gain);
+    }
+  }
+
+  protected setQFactor(qfactor: number) {
+    for (let i = 0; i < this.filters.length; i++) {
+      this.filters[i].setQ(qfactor * 100);
     }
   }
 
   useAmplitudeEnvelope(useAmplitudeEnvelope: boolean) {
-    for (let i = 0; i < this.oscillators.length; i++) {
-      this.oscillators[i].useAmplitudeEnvelope = useAmplitudeEnvelope;
+    for (let i = 0; i < this.filters.length; i++) {
+      this.filters[i].useAmplitudeEnvelope = useAmplitudeEnvelope;
     }
   }
 
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
-    for (let i = 0; i < this.oscillators.length; i++) {
-      this.oscillators[i].useFreqBendEnvelope(useFreqBendEnvelope);
+    for (let i = 0; i < this.filters.length; i++) {
+      this.filters[i].useFreqBendEnvelope(useFreqBendEnvelope);
     }
   }
 
-  private setWaveForm(value: OscillatorType) {
-    for (let i = 0; i < this.numberOfOscillators; ++i) {
-      this.oscillators[i].setType(value);
+  private setFilterType(value: BiquadFilterType) {
+    for (let i = 0; i < this.numberOfFilters; ++i) {
+      this.filters[i].setType(value);
     }
   }
 
-  modulation(source: AudioNode, type: modulationType) {
-    for (let i = 0; i < this.numberOfOscillators; ++i) {
-      this.oscillators[i].modulation(source, type);
+  modulation(source: AudioNode) {
+    for (let i = 0; i < this.numberOfFilters; ++i) {
+      this.filters[i].modulation(source);
     }
   }
 
   modulationOff() {
-    for (let i = 0; i < this.numberOfOscillators; ++i) {
-      this.oscillators[i].modulationOff();
+    for (let i = 0; i < this.numberOfFilters; ++i) {
+      this.filters[i].modulationOff();
     }
   }
 
   /**
    * connectToFilters: Connect to a group of filters
+   * @param filters
    */
-  connectToFilters(): boolean {
-    const filters = this.filters.filters;
+  connectToFilters(filters: Filter[]): boolean {
     let ok = false;
-    if (filters && filters.length === this.oscillators.length) {
+    if (filters && filters.length === this.filters.length) {
       ok = true;
-      for (let i = 0; i < this.oscillators.length; i++) {
-        this.oscillators[i].connect(filters[i].filter);
+      for (let i = 0; i < this.filters.length; i++) {
+        this.filters[i].connect(filters[i].filter);
       }
     } else
       console.log("Filter array is a different size to the oscillator array")
@@ -160,30 +165,30 @@ export class OscillatorComponent implements AfterViewInit {
   }
 
   /**
-   * connect: Connect all oscillators in this group to a single node (i.e. gain node).
+   * connect: Connect all filters in this group to a single node (i.e. gain node).
    * @param node
    */
   connect(node: AudioNode) {
-    for (let i = 0; i < this.oscillators.length; i++) {
-      this.oscillators[i].connect(node);
+    for (let i = 0; i < this.filters.length; i++) {
+      this.filters[i].connect(node);
     }
   }
 
   disconnect() {
-    for (let i = 0; i < this.oscillators.length; i++) {
-      this.oscillators[i].disconnect();
+    for (let i = 0; i < this.filters.length; i++) {
+      this.filters[i].disconnect();
     }
   }
 
   keyDown(keyIndex: number) {
-    if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
-      this.oscillators[keyIndex].keyDown();
+    if (keyIndex >= 0 && keyIndex < this.numberOfFilters) {
+      this.filters[keyIndex].keyDown();
     }
   }
 
   keyUp(keyIndex: number) {
-    if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
-      this.oscillators[keyIndex].keyUp();
+    if (keyIndex >= 0 && keyIndex < this.numberOfFilters) {
+      this.filters[keyIndex].keyUp();
     }
   }
 
@@ -234,19 +239,19 @@ export class OscillatorComponent implements AfterViewInit {
   }
 
   protected setModLevel($event: number) {
-    for (let i = 0; i < this.numberOfOscillators; ++i) {
-      this.oscillators[i].setModLevel($event);
+    for (let i = 0; i < this.numberOfFilters; ++i) {
+      this.filters[i].setModLevel($event);
     }
   }
 
   protected setModType(type: modulationType) {
-    for (let i = 0; i < this.numberOfOscillators; ++i) {
-      this.oscillators[i].modulation(this.lfo.oscillator, type);
+    for (let i = 0; i < this.numberOfFilters; ++i) {
+      this.filters[i].modulation(this.lfo.oscillator, type);
     }
   }
 
   ngAfterViewInit(): void {
-    const oscOutForm = this.oscOutputToForm.nativeElement;
+    const oscOutForm = this.filterOutputTo.nativeElement;
     for (let i = 0; i < oscOutForm.elements.length; ++i) {
       oscOutForm.elements[i].addEventListener('change', ($event) => {
         const target = $event.target;
@@ -254,8 +259,7 @@ export class OscillatorComponent implements AfterViewInit {
         this.output.emit(target.value);
       });
     }
-
-    const freqEnveOnOffForm = this.freqEnveOnOffForm.nativeElement;
+    const freqEnveOnOffForm = this.freqEnveOnOff.nativeElement;
     for (let i = 0; i < freqEnveOnOffForm.elements.length; ++i) {
       freqEnveOnOffForm.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
@@ -263,20 +267,12 @@ export class OscillatorComponent implements AfterViewInit {
         this.useFreqBendEnvelope(value === 'on')
       })
     }
-    const amplitudeEnvelopeOnOffForm = this.amplitudeEnvelopeOnOffForm.nativeElement;
-    for (let i = 0; i < amplitudeEnvelopeOnOffForm.elements.length; ++i) {
-      amplitudeEnvelopeOnOffForm.elements[i].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value;
-        this.useAmplitudeEnvelope(value === 'on');
-      });
-    }
-    const waveform = this.oscWaveForm.nativeElement;
+    const waveform = this.filterType.nativeElement;
     for (let i = 0; i < waveform.elements.length; ++i) {
       waveform.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value as OscillatorType;
-        this.setWaveForm(value as OscillatorType);
+        this.setFilterType(value as BiquadFilterType);
       });
 
       const modSettingsForm = this.modSettingsForm.nativeElement;
@@ -298,4 +294,5 @@ export class OscillatorComponent implements AfterViewInit {
       }
     }
   }
+
 }
