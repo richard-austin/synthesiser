@@ -21,7 +21,7 @@ export class FilterComponent implements AfterViewInit {
   private freqBend!: FreqBendValues;
   protected tuningDivisions = 6;
   private lfo!: Oscillator;
-  audioCtx!: AudioContext;
+  private audioCtx!: AudioContext;
 
   private set filters(filters: Filter[]) {
     this._filters = filters;
@@ -54,7 +54,8 @@ export class FilterComponent implements AfterViewInit {
   @ViewChild('modDepth') modLevel!: LevelControlComponent;
   @ViewChild('lfoWaveForm') lfoWaveForm!: ElementRef<HTMLFormElement>;
 
-  start(): boolean {
+  start(audioCtx: AudioContext): boolean {
+    this.audioCtx = audioCtx;
     let ok = false;
     if (this.numberOfFilters) {
       this.lfo = new Oscillator(this.audioCtx);

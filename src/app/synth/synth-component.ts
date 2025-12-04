@@ -1,13 +1,15 @@
 import {AfterViewInit, Component, ViewChild} from '@angular/core';
 import {FilterComponent} from "../filter/filter-component";
 import {OscillatorComponent} from "../oscillator/oscillator.component";
+import {NoiseComponent} from '../noise/noise-component';
 
 @Component({
   selector: 'app-synth-component',
-    imports: [
-        FilterComponent,
-        OscillatorComponent
-    ],
+  imports: [
+    FilterComponent,
+    OscillatorComponent,
+    NoiseComponent
+  ],
   templateUrl: './synth-component.html',
   styleUrl: './synth-component.scss',
 })
@@ -15,14 +17,15 @@ export class SynthComponent implements AfterViewInit {
   audioCtx!: AudioContext;
   @ViewChild(OscillatorComponent) oscillatorsGrp!: OscillatorComponent
   @ViewChild(FilterComponent) filtersGrp!: FilterComponent;
+  @ViewChild(NoiseComponent) noise!: NoiseComponent;
 
-  protected start(): void {
+  protected async start(): Promise<void> {
     this.audioCtx = new AudioContext();
-    this.oscillatorsGrp.audioCtx = this.audioCtx;
-    this.oscillatorsGrp.start();
-    this.filtersGrp.audioCtx = this.audioCtx;
-    this.filtersGrp.start();
+    this.oscillatorsGrp.start(this.audioCtx);
+    this.filtersGrp.start(this.audioCtx);
     this.oscillatorsGrp.connect(this.audioCtx.destination);
+    await this.noise.start(this.audioCtx)
+
     window.addEventListener('click', () => {
     })
     window.addEventListener("keydown", (e) => {
@@ -49,9 +52,7 @@ export class SynthComponent implements AfterViewInit {
         this.downKeys.add(code);
         this.oscillatorsGrp.keyDown(code);
         this.filtersGrp.keyDown(code);
-        //this.o2[code].keyDown()
-        //    this.filters[code].keyDown();
-        // this.noises[code].attack();
+        this.noise.keyDown(code);
       }
     }
   }
@@ -63,10 +64,8 @@ export class SynthComponent implements AfterViewInit {
         this.downKeys.delete(code);
       this.oscillatorsGrp.keyUp(code)
       this.filtersGrp.keyUp(code);
-      //   this.o2[code].keyUp()
-      // this.filters[code].keyUp();
+      this.noise.keyUp(code);
     }
-    //  this.noises[code].release();
   }
 
   keyCode(e: KeyboardEvent) {
@@ -195,9 +194,26 @@ export class SynthComponent implements AfterViewInit {
       default:
         console.error('Unknown filter output destination');
     }
+  }
+  protected setNoiseOutputTarget($event: string) {
+    this.noise.disconnect();
+    switch ($event) {
+      case 'speaker':
+        this.noise.connect(this.audioCtx.destination);
+        break;
+      case 'filter':
+        this.noise.connectToFilters();
+        break;
+      case 'off':
+        break;
+      default:
+        console.error('Unknown filter output destination');
+        break;
+    }
 
   }
-  ngAfterViewInit(): void {
-    this.start();
+
+  async ngAfterViewInit(): Promise<void> {
+    await this.start();
   }
 }

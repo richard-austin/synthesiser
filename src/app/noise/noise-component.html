@@ -1,0 +1,44 @@
+<div class="group-container metallic-button">
+  <h1>Noise Generator</h1>
+  <div class="group">
+    <div class="column">
+      <div class="module">
+        <h2>Noise</h2>
+        <app-level-control #gainControl label="Gain" [radius]="50" [divisions]="10"
+                           (setLevel)="setGain($event)"></app-level-control>
+        <h2>Noise Type</h2>
+        <div style="height: 3px;"></div>
+        <form #noiseTypeForm>
+          <label><input type="radio" name="noiseType" value="white" checked><span>White</span></label>
+          <label><input type="radio" name="noiseType" value="pink"><span>Pink</span></label>
+          <label><input type="radio" name="noiseType" value="brown"><span>Brown</span></label>
+        </form>
+        <h2>Output</h2>
+        <div style="height: 3px;"></div>
+        <form #noiseOutputToForm>
+          <label><input type="radio" name="output" value="speaker"><span>Speaker</span></label>
+          <label><input type="radio" name="output" value="filter"><span>Filter</span></label>
+          <label><input type="radio" name="output" value="off" checked><span>Off</span></label>
+        </form>
+      </div>
+      <div class="module">
+        <h2>Envelope</h2>
+        <app-level-control #attack label="Attack" [style]="dialStyle.red" [divisions]="10" [calAngle]="300" [radius]="50"
+                           (setLevel)="setAttack($event)"></app-level-control>
+        <app-level-control #decay label="Decay" [style]="dialStyle.red" [radius]="50" [divisions]="10"
+                           (setLevel)="setDecayTime($event)"></app-level-control>
+        <app-level-control #sustain label="Sustain" [style]="dialStyle.red" [radius]="50" [divisions]="10"
+                           (setLevel)="setSustainLevel($event)"></app-level-control>
+        <app-level-control #release label="Release" [style]="dialStyle.red" [radius]="50" [divisions]="10"
+                           (setLevel)="setReleaseTime($event)"></app-level-control>
+        <form #amplitudeEnvelopeOnOffForm>
+          <label><input type="radio" name="envelope" value="on" checked><span>On</span></label>
+          <label><input type="radio" name="envelope" value="off"><span>Off</span></label>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+

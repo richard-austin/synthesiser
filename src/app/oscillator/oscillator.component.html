@@ -1,72 +1,88 @@
 <div class="group-container metallic-button">
-    <h1>Oscillators</h1>
-<div class="group">
-  <div class="column">
-    <div class="module osc-width">
-      <h2>Oscillators</h2>
-      <app-level-control #frequency label="Tuning" [plusMinus]="true" [divisions]="tuningDivisions" [calAngle]="300" [radius]="50" (setLevel)="setFrequency($event)"></app-level-control>
-      <app-level-control #gain label="Gain" [radius]="50" [divisions]="10" (setLevel)="setGain($event)"></app-level-control>
-      <h2>Waveform</h2>
-      <div style="height: 3px;"></div>
-      <form #oscWaveForm>
-        <label><input type="radio" name="waveform" value="sine" checked><span>Sine</span></label>
-        <label><input type="radio" name="waveform" value="square"><span>Square</span></label>
-        <label><input type="radio" name="waveform" value="sawtooth"><span>Sawtooth</span></label>
-        <label><input type="radio" name="waveform" value="triangle"><span>Triangle</span></label>
-      </form>
-      <h2>Output</h2>
-      <div style="height: 3px;"></div>
-      <form #oscOutputToForm>
-        <label><input type="radio" name="output" value="speaker" checked><span>Speaker</span></label>
-        <label><input type="radio" name="output" value="filter"><span>Filter</span></label>
-        <label><input type="radio" name="output" value="ringmod"><span>Ring Mod</span></label>
-        <label><input type="radio" name="output" value="off"><span>Off</span></label>
-      </form>
+  <h1>Oscillators</h1>
+  <div class="group">
+    <div class="column">
+      <div class="module osc-width">
+        <h2>Oscillators</h2>
+        <app-level-control #frequency label="Tuning" [plusMinus]="true" [divisions]="tuningDivisions" [calAngle]="300"
+                           [radius]="50" (setLevel)="setFrequency($event)"></app-level-control>
+        <app-level-control #gain label="Gain" [radius]="50" [divisions]="10"
+                           (setLevel)="setGain($event)"></app-level-control>
+        <h2>Waveform</h2>
+        <div style="height: 3px;"></div>
+        <form #oscWaveForm>
+          <label><input type="radio" name="waveform" value="sine" checked><span>Sine</span></label>
+          <label><input type="radio" name="waveform" value="square"><span>Square</span></label>
+          <label><input type="radio" name="waveform" value="sawtooth"><span>Sawtooth</span></label>
+          <label><input type="radio" name="waveform" value="triangle"><span>Triangle</span></label>
+        </form>
+        <h2>Output</h2>
+        <div style="height: 3px;"></div>
+        <form #oscOutputToForm>
+          <label><input type="radio" name="output" value="speaker" checked><span>Speaker</span></label>
+          <label><input type="radio" name="output" value="filter"><span>Filter</span></label>
+          <label><input type="radio" name="output" value="ringmod"><span>Ring Mod</span></label>
+          <label><input type="radio" name="output" value="off"><span>Off</span></label>
+        </form>
+      </div>
+      <div class="module osc-width">
+        <h2>Modulation</h2>
+        <app-level-control #modFreq label="LFO Frequency" [style]="dialStyle.green" [divisions]="10" [calAngle]="300"
+                           [radius]="50" (setLevel)="setModFrequency($event)"></app-level-control>
+        <app-level-control #modDepth label="Mod Depth" [style]="dialStyle.green" [divisions]="10" [calAngle]="300"
+                           [radius]="50" (setLevel)="setModLevel($event)"></app-level-control>
+        <h2>Waveform</h2>
+        <div style="height: 3px;"></div>
+        <form #lfoWaveForm>
+          <label><input type="radio" name="waveform" value="sine" checked><span>Sine</span></label>
+          <label><input type="radio" name="waveform" value="square"><span>Square</span></label>
+          <label><input type="radio" name="waveform" value="sawtooth"><span>Sawtooth</span></label>
+          <label><input type="radio" name="waveform" value="triangle"><span>Triangle</span></label>
+        </form>
+        <h2>Modulation</h2>
+        <form #modSettingsForm>
+          <label><input type="radio" name="lfo" value="amplitude"><span>Amplitude</span></label>
+          <label><input type="radio" name="lfo" value="frequency"><span>Frequency</span></label>
+          <label><input type="radio" name="lfo" value="off" checked><span>&nbsp;Off&nbsp;</span></label>
+        </form>
+      </div>
     </div>
-    <div class="module osc-width">
-      <h2>Modulation</h2>
-      <app-level-control #modFreq label="LFO Frequency" [style]="dialStyle.green" [divisions]="10" [calAngle]="300" [radius]="50" (setLevel)="setModFrequency($event)"></app-level-control>
-      <app-level-control #modDepth label="Mod Depth" [style]="dialStyle.green" [divisions]="10" [calAngle]="300" [radius]="50" (setLevel)="setModLevel($event)"></app-level-control>
-      <h2>Waveform</h2>
-      <div style="height: 3px;"></div>
-      <form #lfoWaveForm>
-        <label><input type="radio" name="waveform" value="sine" checked><span>Sine</span></label>
-        <label><input type="radio" name="waveform" value="square"><span>Square</span></label>
-        <label><input type="radio" name="waveform" value="sawtooth"><span>Sawtooth</span></label>
-        <label><input type="radio" name="waveform" value="triangle"><span>Triangle</span></label>
+    <div class="module">
+      <h2>Envelope</h2>
+      <app-level-control #attack label="Attack" [style]="dialStyle.red" [divisions]="10" [calAngle]="300" [radius]="50"
+                         (setLevel)="setAttack($event)"></app-level-control>
+      <app-level-control #decay label="Decay" [style]="dialStyle.red" [radius]="50" [divisions]="10"
+                         (setLevel)="setDecayTime($event)"></app-level-control>
+      <app-level-control #sustain label="Sustain" [style]="dialStyle.red" [radius]="50" [divisions]="10"
+                         (setLevel)="setSustainLevel($event)"></app-level-control>
+      <app-level-control #release label="Release" [style]="dialStyle.red" [radius]="50" [divisions]="10"
+                         (setLevel)="setReleaseTime($event)"></app-level-control>
+      <form #amplitudeEnvelopeOnOffForm>
+        <label><input type="radio" name="envelope" value="on" checked><span>On</span></label>
+        <label><input type="radio" name="envelope" value="off"><span>Off</span></label>
       </form>
-      <h2>Modulation</h2>
-      <form #modSettingsForm>
-        <label><input type="radio" name="lfo" value="amplitude"><span>Amplitude</span></label>
-        <label><input type="radio" name="lfo" value="frequency"><span>Frequency</span></label>
-        <label><input type="radio" name="lfo" value="off" checked><span>&nbsp;Off&nbsp;</span></label>
-      </form>
-    </div>
-  </div>
-  <div class="module">
-    <h2>Envelope</h2>
-    <app-level-control #attack label="Attack" [style]="dialStyle.red" [divisions]="10" [calAngle]="300" [radius]="50" (setLevel)="setAttack($event)"></app-level-control>
-    <app-level-control #decay label="Decay" [style]="dialStyle.red" [radius]="50" [divisions]="10" (setLevel)="setDecayTime($event)"></app-level-control>
-    <app-level-control #sustain label="Sustain" [style]="dialStyle.red" [radius]="50" [divisions]="10" (setLevel)="setSustainLevel($event)"></app-level-control>
-    <app-level-control #release label="Release" [style]="dialStyle.red" [radius]="50" [divisions]="10" (setLevel)="setReleaseTime($event)"></app-level-control>
-    <form #amplitudeEnvelopeOnOffForm>
-      <label><input type="radio" name="envelope" value="on" checked><span>On</span></label>
-      <label><input type="radio" name="envelope" value="off"><span>Off</span></label>
-    </form>
 
+    </div>
+    <div class="module">
+      <h2>Freq Envelope</h2>
+      <app-level-control #freqAttack label="Attack" [style]="dialStyle.yellow" [divisions]="10" [calAngle]="300"
+                         [radius]="50" (setLevel)="setFreqAttack($event)"></app-level-control>
+      <app-level-control #freqAttackLevel label="Attack Level" [style]="dialStyle.yellow" [divisions]="10"
+                         [calAngle]="300" [radius]="50" [plusMinus]="true"
+                         (setLevel)="setFreqAttackLevel($event)"></app-level-control>
+      <app-level-control #freqDecay label="Decay" [radius]="50" [style]="dialStyle.yellow" [divisions]="10"
+                         (setLevel)="setFreqDecayTime($event)"></app-level-control>
+      <app-level-control #freqSustain label="Sustain" [radius]="50" [style]="dialStyle.yellow" [divisions]="10"
+                         [plusMinus]="true" (setLevel)="setFreqSustainLevel($event)"></app-level-control>
+      <app-level-control #freqRelease label="Release" [radius]="50" [style]="dialStyle.yellow" [divisions]="10"
+                         (setLevel)="setFreqReleaseTime($event)"></app-level-control>
+      <app-level-control #freqReleaseLevel label="Release Level" [style]="dialStyle.yellow" [radius]="50"
+                         [divisions]="10" [plusMinus]="true"
+                         (setLevel)="setFreqReleaseLevel($event)"></app-level-control>
+      <form #freqEnveOnOffForm>
+        <label><input type="radio" name="freqenvelope" value="on"><span>On</span></label>
+        <label><input type="radio" name="freqenvelope" value="off" checked><span>Off</span></label>
+      </form>
+    </div>
   </div>
-  <div class="module">
-    <h2>Freq Envelope</h2>
-    <app-level-control #freqAttack label="Attack" [style]="dialStyle.yellow" [divisions]="10" [calAngle]="300" [radius]="50" (setLevel)="setFreqAttack($event)"></app-level-control>
-    <app-level-control #freqAttackLevel label="Attack Level" [style]="dialStyle.yellow"  [divisions]="10" [calAngle]="300" [radius]="50" [plusMinus]="true" (setLevel)="setFreqAttackLevel($event)"></app-level-control>
-    <app-level-control #freqDecay label="Decay" [radius]="50" [style]="dialStyle.yellow"  [divisions]="10" (setLevel)="setFreqDecayTime($event)"></app-level-control>
-    <app-level-control #freqSustain label="Sustain" [radius]="50" [style]="dialStyle.yellow"  [divisions]="10" [plusMinus]="true" (setLevel)="setFreqSustainLevel($event)"></app-level-control>
-    <app-level-control #freqRelease label="Release" [radius]="50" [style]="dialStyle.yellow"  [divisions]="10" (setLevel)="setFreqReleaseTime($event)"></app-level-control>
-    <app-level-control #freqReleaseLevel label="Release Level" [style]="dialStyle.yellow"  [radius]="50" [divisions]="10" [plusMinus]="true" (setLevel)="setFreqReleaseLevel($event)"></app-level-control>
-    <form #freqEnveOnOffForm>
-      <label><input type="radio" name="freqenvelope" value="on"><span>On</span></label>
-      <label><input type="radio" name="freqenvelope" value="off" checked><span>Off</span></label>
-    </form>
-  </div>
-</div>
 </div>

@@ -1,7 +1,7 @@
 import {GainEnvelopeBase} from '../gain-envelope-base';
 
 export class PinkNoise extends GainEnvelopeBase {
-  private node!: AudioWorkletNode;
+  private static theNode: AudioWorkletNode | undefined = undefined;
 
   constructor(audioCtx: AudioContext) {
     super(audioCtx);
@@ -46,13 +46,23 @@ export class PinkNoise extends GainEnvelopeBase {
       });
     }
 
-    await this.audioCtx.audioWorklet.addModule(`data:text/javascript,(${worklet.toString()})()`);
-    this.node = new AudioWorkletNode(this.audioCtx, "pink-noise");
-    this.node.connect(this.gain);
+    if(PinkNoise.theNode === undefined) {
+      await this.audioCtx.audioWorklet.addModule(`data:text/javascript,(${worklet.toString()})()`);
+      PinkNoise.theNode = new AudioWorkletNode(this.audioCtx, "pink-noise");
+    }
+    PinkNoise.theNode.connect(this.gain);
   }
 
   modulation(modulator: OscillatorNode) {
     this.modulator = modulator;
     modulator.connect(this.frequencyMod);
+  }
+
+  keyDown() {
+    super.attack();
+  }
+
+  keyUp() {
+    super.release();
   }
 }

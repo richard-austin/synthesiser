@@ -1,7 +1,7 @@
 import {GainEnvelopeBase} from '../gain-envelope-base';
 
 export class BrownNoise extends GainEnvelopeBase{
-  private node!: AudioWorkletNode;
+  private static theNode: AudioWorkletNode | undefined = undefined;
   constructor(audioCtx: AudioContext) {
     super(audioCtx);
   }
@@ -9,7 +9,7 @@ export class BrownNoise extends GainEnvelopeBase{
    async start() {
      function worklet() {
        // @ts-ignore
-       registerProcessor('pink-noise', class Processor extends AudioWorkletProcessor {
+       registerProcessor('brown-noise', class Processor extends AudioWorkletProcessor {
          static get parameterDescriptors() {
            return [{name: 'amplitude', defaultValue: 0.25, minValue: 0, maxValue: 1}];
          }
@@ -33,13 +33,22 @@ export class BrownNoise extends GainEnvelopeBase{
        });
      }
 
-     await this.audioCtx.audioWorklet.addModule(`data:text/javascript,(${worklet.toString()})()`);
-     this.node = new AudioWorkletNode(this.audioCtx, "pink-noise");
-     this.node.connect(this.gain);
-   }
+     if(BrownNoise.theNode === undefined) {
+       await this.audioCtx.audioWorklet.addModule(`data:text/javascript,(${worklet.toString()})()`);
+       BrownNoise.theNode = new AudioWorkletNode(this.audioCtx, "brown-noise");
+     }
+     BrownNoise.theNode.connect(this.gain);   }
 
   modulation(modulator: OscillatorNode) {
     this.modulator = modulator;
     modulator.connect(this.frequencyMod);
+  }
+
+  keyDown() {
+    super.attack();
+  }
+
+  keyUp() {
+    super.release();
   }
  }
