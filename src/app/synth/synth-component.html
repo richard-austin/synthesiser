@@ -1,6 +1,7 @@
 <div style="display: flex; flex-direction: row">
-  <app-oscillators [filters]="filters" [numberOfOscillators]="50" (output)="setOscOutputTarget($event)"></app-oscillators>
+  <app-oscillators #oscillators [filters]="filters"  [numberOfOscillators]="50" (output)="setOscOutputTarget($event)"></app-oscillators>
+  <app-oscillators #oscillators2 [name]="'Oscillators 2'" [filters]="filters" [numberOfOscillators]="50" (output)="setOsc2OutputTarget($event)"></app-oscillators>
   <app-filters #filters [numberOfFilters]="50" (output)="setFilterOutputTarget($event)"></app-filters>
-  <app-noise #noise [filters]="filters" [numberOfChannels]="50" (output)="setNoiseOutputTarget($event)"></app-noise>
+  <app-noise [filters]="filters" [numberOfChannels]="50" (output)="setNoiseOutputTarget($event)"></app-noise>
 </div>
 

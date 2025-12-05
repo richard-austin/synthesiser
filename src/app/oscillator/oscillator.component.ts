@@ -25,6 +25,8 @@ export class OscillatorComponent implements AfterViewInit {
 
   @Input() filters!: FilterComponent;
   @Input() numberOfOscillators!: number;
+  @Input() name!: string;
+
   @Output() output = new EventEmitter<string>();
   @ViewChild('frequency') frequency!: LevelControlComponent;
   @ViewChild('gain') gain!: LevelControlComponent;

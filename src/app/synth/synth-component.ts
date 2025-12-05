@@ -15,15 +15,18 @@ import {NoiseComponent} from '../noise/noise-component';
 })
 export class SynthComponent implements AfterViewInit {
   audioCtx!: AudioContext;
-  @ViewChild(OscillatorComponent) oscillatorsGrp!: OscillatorComponent
+  @ViewChild('oscillators') oscillatorsGrp!: OscillatorComponent
+  @ViewChild('oscillators2') oscillators2Grp!: OscillatorComponent
   @ViewChild(FilterComponent) filtersGrp!: FilterComponent;
   @ViewChild(NoiseComponent) noise!: NoiseComponent;
 
   protected async start(): Promise<void> {
     this.audioCtx = new AudioContext();
     this.oscillatorsGrp.start(this.audioCtx);
+    this.oscillators2Grp.start(this.audioCtx);
     this.filtersGrp.start(this.audioCtx);
     this.oscillatorsGrp.connect(this.audioCtx.destination);
+    this.oscillators2Grp.connect(this.audioCtx.destination);
     await this.noise.start(this.audioCtx)
 
     window.addEventListener('click', () => {
@@ -51,6 +54,7 @@ export class SynthComponent implements AfterViewInit {
       if (!this.downKeys.has(code)) {
         this.downKeys.add(code);
         this.oscillatorsGrp.keyDown(code);
+        this.oscillators2Grp.keyDown(code);
         this.filtersGrp.keyDown(code);
         this.noise.keyDown(code);
       }
@@ -63,6 +67,7 @@ export class SynthComponent implements AfterViewInit {
       if (this.downKeys.has(code))
         this.downKeys.delete(code);
       this.oscillatorsGrp.keyUp(code)
+      this.oscillators2Grp.keyUp(code)
       this.filtersGrp.keyUp(code);
       this.noise.keyUp(code);
     }
@@ -173,6 +178,24 @@ export class SynthComponent implements AfterViewInit {
         break;
       case 'filter':
         this.oscillatorsGrp.connectToFilters();
+        break;
+      case 'off':
+        break;
+      default:
+        console.error('Unknown oscillator output destination');
+    }
+  }
+
+  protected setOsc2OutputTarget($event: string) {
+    this.oscillators2Grp.disconnect();
+    switch ($event) {
+      case 'speaker':
+        this.oscillators2Grp.connect(this.audioCtx.destination);
+        break;
+      case 'ringmod':
+        break;
+      case 'filter':
+        this.oscillators2Grp.connectToFilters();
         break;
       case 'off':
         break;
