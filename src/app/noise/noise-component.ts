@@ -16,17 +16,22 @@ import {ADSRValues} from '../util-classes/adsrvalues';
   styleUrl: './noise-component.scss',
 })
 export class NoiseComponent implements AfterViewInit {
-  private audioCtx!: AudioContext;
   private whiteNoise: WhiteNoise[] = [];
   private pinkNoise: PinkNoise[] = [];
   private brownNoise: BrownNoise[] = [];
   private adsr!: ADSRValues;
   private noiseType: string = 'white';
   private gainLevel: number = 0;
+  private outputTo: string = 'off';
 
   @Input() numberOfChannels!: number;
   @Input() filters!: FilterComponent;
   @Output() output = new EventEmitter<string>();
+
+  @ViewChild('attack') attack!: LevelControlComponent;
+  @ViewChild('decay') decay!: LevelControlComponent;
+  @ViewChild('sustain') sustain!: LevelControlComponent;
+  @ViewChild('release') release!: LevelControlComponent;
 
   @ViewChild('noiseTypeForm') noiseTypeForm!: ElementRef<HTMLFormElement>;
   @ViewChild('noiseOutputToForm') noiseOutputToForm!: ElementRef<HTMLFormElement>;
@@ -37,26 +42,30 @@ export class NoiseComponent implements AfterViewInit {
   }
 
   async start(audioCtx: AudioContext) {
-
-    this.audioCtx = audioCtx;
-
     if (this.numberOfChannels) {
       this.adsr = new ADSRValues(0.2, 0.5, 1, 4);
       for (let i = 0; i < this.numberOfChannels; ++i) {
         this.whiteNoise.push(new WhiteNoise(audioCtx));
         this.whiteNoise[i].setGain(0);
         this.whiteNoise[i].useAmplitudeEnvelope = false;
+        this.whiteNoise[i].setAmplitudeEnvelope(this.adsr);
         this.pinkNoise.push(new PinkNoise(audioCtx));
         this.pinkNoise[i].setGain(0);
         this.pinkNoise[i].useAmplitudeEnvelope = false;
+        this.pinkNoise[i].setAmplitudeEnvelope(this.adsr);
         this.brownNoise.push(new BrownNoise(audioCtx));
         this.brownNoise[i].setGain(0);
         this.brownNoise[i].setGain(0);
         this.brownNoise[i].useAmplitudeEnvelope = false;
+        this.brownNoise[i].setAmplitudeEnvelope(this.adsr);
         await this.whiteNoise[i].start();
         await this.pinkNoise[i].start();
         await this.brownNoise[i].start();
       }
+      this.attack.setValue(this.adsr.attackTime);
+      this.decay.setValue(this.adsr.decayTime);
+      this.sustain.setValue(this.adsr.sustainLevel);
+      this.release.setValue(this.adsr.releaseTime);
     }
   }
 
@@ -89,11 +98,13 @@ export class NoiseComponent implements AfterViewInit {
     }
     const source = this.noiseSource();
     for (let i = 0; i < this.numberOfChannels; ++i) {
-      source[i].setGain(this.gainLevel);
+      if(!source[i].useAmplitudeEnvelope)
+        source[i].setGain(this.gainLevel);
     }
   }
 
   connect(node: AudioNode) {
+    this.outputTo = 'speaker';
     for (let i = 0; i < this.numberOfChannels; ++i) {
       this.whiteNoise[i].disconnect();
       this.pinkNoise[i].disconnect();
@@ -108,6 +119,7 @@ export class NoiseComponent implements AfterViewInit {
    * connectToFilters: Connect to a group of filters
    */
   connectToFilters(): boolean {
+    this.outputTo = 'filter';
     const filters = this.filters.filters;
     let ok = false;
     if (filters && filters.length === this.numberOfChannels) {
@@ -123,6 +135,7 @@ export class NoiseComponent implements AfterViewInit {
   }
 
   disconnect() {
+    this.outputTo = 'off';
     for (let i = 0; i < this.numberOfChannels; i++) {
       this.whiteNoise[i].disconnect();
       this.pinkNoise[i].disconnect();
@@ -156,6 +169,8 @@ export class NoiseComponent implements AfterViewInit {
   keyDown(keyIndex: number) {
     if (keyIndex >= 0 && keyIndex < this.numberOfChannels) {
       let source = this.noiseSource();
+      if(this.outputTo === 'speaker')
+        keyIndex = 0;  // Wired straight to the output, so we only use a single channel to avoid overload
       source[keyIndex].keyDown();
     }
   }
@@ -163,6 +178,8 @@ export class NoiseComponent implements AfterViewInit {
   keyUp(keyIndex: number) {
     if (keyIndex >= 0 && keyIndex < this.numberOfChannels) {
       let source = this.noiseSource();
+      if(this.outputTo === 'speaker')
+        keyIndex = 0; // Wired straight to the output, so we only use a single channel to avoid overload
       source[keyIndex].keyUp();
     }
   }
