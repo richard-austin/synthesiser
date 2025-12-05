@@ -96,7 +96,7 @@ export class NoiseComponent implements AfterViewInit {
       this.pinkNoise[i].setGain(0);
       this.brownNoise[i].setGain(0);
     }
-    const source = this.noiseSource();
+    const source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
     for (let i = 0; i < this.numberOfChannels; ++i) {
       if(!source[i].useAmplitudeEnvelope)
         source[i].setGain(this.gainLevel);
@@ -143,8 +143,8 @@ export class NoiseComponent implements AfterViewInit {
     }
   }
 
-  private noiseSource(): any {
-    let source: any = this.whiteNoise;
+  private noiseSource(): WhiteNoise[] | PinkNoise[] | BrownNoise[] {
+    let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.whiteNoise;
     switch (this.noiseType) {
       case 'white':
         source = this.whiteNoise;
@@ -160,7 +160,7 @@ export class NoiseComponent implements AfterViewInit {
   }
 
   useAmplitudeEnvelope(useAmplitudeEnvelope: boolean) {
-    let source = this.noiseSource();
+    let source : WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
     for (let i = 0; i < this.numberOfChannels; i++) {
       source[i].useAmplitudeEnvelope = useAmplitudeEnvelope;
     }
@@ -168,7 +168,7 @@ export class NoiseComponent implements AfterViewInit {
 
   keyDown(keyIndex: number) {
     if (keyIndex >= 0 && keyIndex < this.numberOfChannels) {
-      let source = this.noiseSource();
+      let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
       if(this.outputTo === 'speaker')
         keyIndex = 0;  // Wired straight to the output, so we only use a single channel to avoid overload
       source[keyIndex].keyDown();
@@ -177,7 +177,7 @@ export class NoiseComponent implements AfterViewInit {
 
   keyUp(keyIndex: number) {
     if (keyIndex >= 0 && keyIndex < this.numberOfChannels) {
-      let source = this.noiseSource();
+      let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
       if(this.outputTo === 'speaker')
         keyIndex = 0; // Wired straight to the output, so we only use a single channel to avoid overload
       source[keyIndex].keyUp();

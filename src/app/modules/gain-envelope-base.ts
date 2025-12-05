@@ -97,8 +97,14 @@ export abstract class GainEnvelopeBase {
     }
   }
 
-  connect(params: AudioNode) {
-    this.amplitudeMod.connect(params);
+  connect(param: AudioParam) : void;
+  connect(node: AudioNode) : AudioNode;
+
+  connect(arg: AudioNode | AudioParam) : AudioNode | void {
+    if(arg instanceof AudioNode)
+      return this.amplitudeMod.connect(arg);
+    else if(arg instanceof AudioParam)
+      this.amplitudeMod.connect(arg);
   }
 
   disconnect() {

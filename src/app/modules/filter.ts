@@ -55,8 +55,14 @@ export class Filter extends OscFilterBase {
     this.filter.frequency.setValueAtTime(this.freq, this.audioCtx.currentTime);
   }
 
-  override connect(params: AudioNode) {
-    this.amplitudeMod.connect(params);
+  override connect(param: AudioParam) : void;
+  override connect(node: AudioNode) : AudioNode;
+
+  override connect(arg: AudioNode | AudioParam): AudioNode | void{
+    if(arg instanceof AudioNode)
+      return this.amplitudeMod.connect(arg);
+    else if(arg instanceof AudioParam)
+      this.amplitudeMod.connect(arg);
   }
 
   override disconnect() {
