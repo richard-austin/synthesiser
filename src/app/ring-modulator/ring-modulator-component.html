@@ -1,0 +1,32 @@
+<div class="group-container metallic-button">
+  <h1>Ring Modulator</h1>
+  <div class="group">
+    <div class="column">
+      <div class="module">
+        <h2>Internal Mod</h2>
+        <app-level-control #modFreq label="LFO Frequency" [style]="dialStyle.green" [divisions]="10" [calAngle]="300"
+                           [radius]="50" (setLevel)="setFrequency($event)"></app-level-control>
+        <app-level-control #modDepth label="Mod Depth" [style]="dialStyle.green" [divisions]="10" [calAngle]="300"
+                           [radius]="50" (setLevel)="setModDepth($event)"></app-level-control>
+        <h2>Waveform</h2>
+        <div style="height: 3px;"></div>
+        <form #modWaveForm>
+          <label><input type="radio" name="waveform" value="sine" checked><span>Sine</span></label>
+          <label><input type="radio" name="waveform" value="square"><span>Square</span></label>
+          <label><input type="radio" name="waveform" value="sawtooth"><span>Sawtooth</span></label>
+          <label><input type="radio" name="waveform" value="triangle"><span>Triangle</span></label>
+        </form>
+        <h2>Internal Modulation</h2>
+        <form #internalModForm>
+          <label><input type="radio" name="mod" value="on"><span>On</span></label>
+          <label><input type="radio" name="mod" value="off" checked><span>&nbsp;Off&nbsp;</span></label>
+        </form>
+        <h2>Output</h2>
+        <form #outputToForm>
+          <label><input type="radio" name="output" value="speaker"><span>Speaker</span></label>
+          <label><input type="radio" name="output" value="off" checked><span>&nbsp;Off&nbsp;</span></label>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

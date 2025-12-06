@@ -2,23 +2,27 @@ import {AfterViewInit, Component, ViewChild} from '@angular/core';
 import {FilterComponent} from "../filter/filter-component";
 import {OscillatorComponent} from "../oscillator/oscillator.component";
 import {NoiseComponent} from '../noise/noise-component';
+import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component';
 
 @Component({
   selector: 'app-synth-component',
   imports: [
     FilterComponent,
     OscillatorComponent,
-    NoiseComponent
+    NoiseComponent,
+    RingModulatorComponent
   ],
   templateUrl: './synth-component.html',
   styleUrl: './synth-component.scss',
 })
 export class SynthComponent implements AfterViewInit {
   audioCtx!: AudioContext;
+
   @ViewChild('oscillators') oscillatorsGrp!: OscillatorComponent
   @ViewChild('oscillators2') oscillators2Grp!: OscillatorComponent
   @ViewChild(FilterComponent) filtersGrp!: FilterComponent;
   @ViewChild(NoiseComponent) noise!: NoiseComponent;
+  @ViewChild(RingModulatorComponent) ringModulator!: RingModulatorComponent;
 
   protected async start(): Promise<void> {
     this.audioCtx = new AudioContext();
@@ -27,7 +31,8 @@ export class SynthComponent implements AfterViewInit {
     this.filtersGrp.start(this.audioCtx);
     this.oscillatorsGrp.connect(this.audioCtx.destination);
     this.oscillators2Grp.connect(this.audioCtx.destination);
-    await this.noise.start(this.audioCtx)
+    await this.noise.start(this.audioCtx);
+    this.ringModulator.start(this.audioCtx);
 
     window.addEventListener('click', () => {
     })
@@ -175,6 +180,7 @@ export class SynthComponent implements AfterViewInit {
         this.oscillatorsGrp.connect(this.audioCtx.destination);
         break;
       case 'ringmod':
+        this.oscillatorsGrp.connectToRingMod();
         break;
       case 'filter':
         this.oscillatorsGrp.connectToFilters();
@@ -193,6 +199,7 @@ export class SynthComponent implements AfterViewInit {
         this.oscillators2Grp.connect(this.audioCtx.destination);
         break;
       case 'ringmod':
+        this.oscillators2Grp.connectToRingMod();
         break;
       case 'filter':
         this.oscillators2Grp.connectToFilters();
@@ -211,6 +218,7 @@ export class SynthComponent implements AfterViewInit {
         this.filtersGrp.connect(this.audioCtx.destination);
         break;
       case 'ringmod':
+      //  this.filtersGrp.connect(this.ringMod.signalInput());
         break;
       case 'off':
         break;
@@ -233,7 +241,22 @@ export class SynthComponent implements AfterViewInit {
         console.error('Unknown filter output destination');
         break;
     }
-
+  }
+  protected setRingModOutPutTarget($event: string) {
+      this.ringModulator.disconnect();
+    switch ($event) {
+      case 'speaker':
+        this.ringModulator.connect(this.audioCtx.destination);
+        break;
+      case 'filter':
+        this.ringModulator.connectToFilters();
+        break;
+      case 'off':
+        break;
+      default:
+        console.error('Unknown ring mod output destination');
+        break;
+    }
   }
 
   async ngAfterViewInit(): Promise<void> {

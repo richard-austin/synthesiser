@@ -6,6 +6,7 @@ import {LevelControlComponent} from '../level-control/level-control.component';
 import {modulationType} from '../modules/gain-envelope-base';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {FilterComponent} from '../filter/filter-component';
+import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component';
 
 @Component({
   selector: 'app-oscillators',
@@ -24,6 +25,8 @@ export class OscillatorComponent implements AfterViewInit {
   private audioCtx!: AudioContext;
 
   @Input() filters!: FilterComponent;
+  @Input() ringMod!: RingModulatorComponent;
+
   @Input() numberOfOscillators!: number;
   @Input() name!: string;
 
@@ -162,12 +165,24 @@ export class OscillatorComponent implements AfterViewInit {
     return ok;
   }
 
+  connectToRingMod() : boolean {
+    const ringMod = this.ringMod;
+    let ok = false;
+    if(ringMod) {
+      ok = true;
+      for (let i = 0; i < this.oscillators.length; i++) {
+        this.oscillators[i].connect(ringMod.signalInput());
+      }
+    }
+    return ok;
+  }
+
   /**
    * connect: Connect all oscillators in this group to a single node (i.e. gain node).
    * @param node
    */
   connect(node: AudioNode) {
-    for (let i = 0; i < this.oscillators.length; i++) {
+      for (let i = 0; i < this.oscillators.length; i++) {
       this.oscillators[i].connect(node);
     }
   }
@@ -207,6 +222,7 @@ export class OscillatorComponent implements AfterViewInit {
   }
 
   protected readonly dialStyle = dialStyle;
+
 
   protected setFreqAttack($event: number) {
     this.freqBend.attackTime = $event * 3;
