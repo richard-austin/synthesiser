@@ -26,6 +26,7 @@ export class OscillatorComponent implements AfterViewInit {
 
   @Input() filters!: FilterComponent;
   @Input() ringMod!: RingModulatorComponent;
+  @Input() secondary!: boolean;  // Flag to determine whether to connect to ring mod signal or mod input
 
   @Input() numberOfOscillators!: number;
   @Input() name!: string;
@@ -170,8 +171,9 @@ export class OscillatorComponent implements AfterViewInit {
     let ok = false;
     if(ringMod) {
       ok = true;
+      const secondary = this.secondary;
       for (let i = 0; i < this.oscillators.length; i++) {
-        this.oscillators[i].connect(ringMod.signalInput());
+        this.oscillators[i].connect(secondary ? ringMod.modInput() : ringMod.signalInput());
       }
     }
     return ok;

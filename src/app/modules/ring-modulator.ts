@@ -5,7 +5,7 @@ export class RingModulator {
 
   constructor(private audioCtx: AudioContext) {
     this._ringMod = audioCtx.createGain();
-    this._ringMod.gain.setValueAtTime(1, this.audioCtx.currentTime);
+    this._ringMod.gain.setValueAtTime(0, this.audioCtx.currentTime);
     this.modulator = audioCtx.createOscillator();
     this._gainNode = audioCtx.createGain();
     this.modulator.type = "sine";
