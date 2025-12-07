@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, OnDestroy, ViewChild} from '@angular/core';
 import {FilterComponent} from "../filter/filter-component";
 import {OscillatorComponent} from "../oscillator/oscillator.component";
 import {NoiseComponent} from '../noise/noise-component';
@@ -15,7 +15,7 @@ import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component
   templateUrl: './synth-component.html',
   styleUrl: './synth-component.scss',
 })
-export class SynthComponent implements AfterViewInit {
+export class SynthComponent implements AfterViewInit, OnDestroy {
   audioCtx!: AudioContext;
 
   @ViewChild('oscillators') oscillatorsGrp!: OscillatorComponent
@@ -218,7 +218,7 @@ export class SynthComponent implements AfterViewInit {
         this.filtersGrp.connect(this.audioCtx.destination);
         break;
       case 'ringmod':
-      //  this.filtersGrp.connect(this.ringMod.signalInput());
+        //  this.filtersGrp.connect(this.ringMod.signalInput());
         break;
       case 'off':
         break;
@@ -226,6 +226,7 @@ export class SynthComponent implements AfterViewInit {
         console.error('Unknown filter output destination');
     }
   }
+
   protected setNoiseOutputTarget($event: string) {
     this.noise.disconnect();
     switch ($event) {
@@ -242,8 +243,9 @@ export class SynthComponent implements AfterViewInit {
         break;
     }
   }
+
   protected setRingModOutPutTarget($event: string) {
-      this.ringModulator.disconnect();
+    this.ringModulator.disconnect();
     switch ($event) {
       case 'speaker':
         this.ringModulator.connect(this.audioCtx.destination);
@@ -259,7 +261,44 @@ export class SynthComponent implements AfterViewInit {
     }
   }
 
+// The wake lock sentinel.
+  wakeLock: WakeLockSentinel | null = null;
+
+// Function that attempts to request a wake lock.
+  requestWakeLock = async () => {
+    try {
+      this.wakeLock = await navigator.wakeLock.request('screen');
+      this.wakeLock.addEventListener('release', () => {
+        console.log('Wake Lock was released');
+      });
+      console.log('Wake Lock is active');
+    } catch (err) {
+      // @ts-ignore
+      console.error(`${err.name}, ${err.message}`);
+    }
+  };
+
+  // Function that attempts to release the wake lock.
+  releaseWakeLock = async () => {
+    if (this.wakeLock) {
+      return;
+    }
+    try {
+      // @ts-ignore
+      await this.wakeLock.release();
+      this.wakeLock = null;
+    } catch (err) {
+      // @ts-ignore
+      console.error(`${err.name}, ${err.message}`);
+    }
+  };
+
   async ngAfterViewInit(): Promise<void> {
     await this.start();
+    await this.requestWakeLock()
+  }
+
+  async ngOnDestroy(): Promise<void> {
+    await this.releaseWakeLock();
   }
 }

@@ -23,6 +23,7 @@ export class NoiseComponent implements AfterViewInit {
   private noiseType: string = 'white';
   private gainLevel: number = 0;
   private outputTo: string = 'off';
+  private isUsingAmplitudeEnvelope: boolean = false;
 
   @Input() numberOfChannels!: number;
   @Input() filters!: FilterComponent;
@@ -37,6 +38,7 @@ export class NoiseComponent implements AfterViewInit {
   @ViewChild('noiseOutputToForm') noiseOutputToForm!: ElementRef<HTMLFormElement>;
   @ViewChild('gainControl') gainControl!: LevelControlComponent;
   @ViewChild('amplitudeEnvelopeOnOffForm') amplitudeEnvelopeOnOffForm!: ElementRef<HTMLFormElement>;
+
 
   constructor() {
   }
@@ -90,6 +92,7 @@ export class NoiseComponent implements AfterViewInit {
 
   private setNoiseType(noiseType: any) {
     this.noiseType = noiseType;
+    const gain = this.gainLevel;
 
     for (let i = 0; i < this.numberOfChannels; ++i) {
       this.whiteNoise[i].setGain(0);
@@ -98,8 +101,8 @@ export class NoiseComponent implements AfterViewInit {
     }
     const source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
     for (let i = 0; i < this.numberOfChannels; ++i) {
-      if(!source[i].useAmplitudeEnvelope)
-        source[i].setGain(this.gainLevel);
+      source[i].setGain(gain);
+      source[i].useAmplitudeEnvelope = this.isUsingAmplitudeEnvelope;
     }
   }
 
@@ -160,6 +163,7 @@ export class NoiseComponent implements AfterViewInit {
   }
 
   useAmplitudeEnvelope(useAmplitudeEnvelope: boolean) {
+    this.isUsingAmplitudeEnvelope = useAmplitudeEnvelope;
     let source : WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
     for (let i = 0; i < this.numberOfChannels; i++) {
       source[i].useAmplitudeEnvelope = useAmplitudeEnvelope;
