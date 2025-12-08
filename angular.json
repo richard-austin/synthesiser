@@ -30,7 +30,6 @@
               "src/styles.scss"
             ],
             "scripts": [
-              "./public/safariPolyfills.js"
             ],
             "webWorkerTsConfig": "tsconfig.worker.json"
           },
