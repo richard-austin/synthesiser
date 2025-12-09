@@ -4,14 +4,18 @@
     <div class="column">
       <div class="column">
         <div class="module">
-          <app-level-control #reverbTime label="Reverb Time" [style]="dialStyle.red" [divisions]="10" [calAngle]="300"
+          <app-level-control #attackTime label="Attack Time" [style]="dialStyle.red" [divisions]="10" [calAngle]="300"
                              [radius]="50"
-                             (setLevel)="setReverbTime($event)"></app-level-control>
-          <app-level-control #decay label="Pre Delay" [style]="dialStyle.red" [radius]="50" [divisions]="10"
-                             (setLevel)="setPreDelay($event)"></app-level-control>
-          <app-level-control #sustain label="Attack Time" [style]="dialStyle.red" [radius]="50" [divisions]="10"
-                             (setLevel)="setReverbAttackTime($event)"></app-level-control>
-          <app-level-control #release label="Wet/Dry" [style]="dialStyle.red" [radius]="50" [divisions]="10"
+                             (setLevel)="setAttackTime($event)"></app-level-control>
+          <app-level-control #decayTime label="Decay Time" [style]="dialStyle.red" [radius]="50" [divisions]="10"
+                             (setLevel)="setDecayTime($event)"></app-level-control>
+          <app-level-control #predelay label="Pre Delay" [style]="dialStyle.blue" [radius]="50" [divisions]="10"
+                             (setLevel)="setPreDelayTime($event)"></app-level-control>
+          <app-level-control #repeatEchoTime label="Repeat Time" [style]="dialStyle.yellow" [radius]="50" [divisions]="10"
+                             (setLevel)="setRepeatEchoTime($event)"></app-level-control>
+          <app-level-control #repeatEchoLevel label="Repeat Level" [style]="dialStyle.yellow" [radius]="50" [divisions]="10"
+                             (setLevel)="setRepeatEchoGain($event)"></app-level-control>
+          <app-level-control #release label="Wet/Dry" [plusMinus]="true" [style]="dialStyle.green" [radius]="50" [divisions]="10"
                              (setLevel)="setWetDryBalance($event)"></app-level-control>
           <form #reverbOnOffForm>
             <label><input type="radio" name="reverb" value="on"><span>On</span></label>

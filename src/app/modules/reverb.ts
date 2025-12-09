@@ -1,3 +1,4 @@
+import {timer} from 'rxjs';
 
 class AmpEnvelope {
   private context: OfflineAudioContext;
@@ -38,12 +39,8 @@ class AmpEnvelope {
   }
 
   stop(time: number) {
-    this.sustain = this.output.gain.value;
     this.output.gain.setValueAtTime(1, time+this.attack);
-    this.output.gain.linearRampToValueAtTime(0, this.release+this.attack + 0.00001);
-   // this.output.gain.cancelScheduledValues(time);
-    //this.output.gain.cancelAndHoldAtTime(time+this.attack + 0.00001);
-
+    this.output.gain.linearRampToValueAtTime(0, this.release+this.attack + 0.2);
   }
 
   set attack(value) {
@@ -52,23 +49,6 @@ class AmpEnvelope {
 
   get attack() {
     return this._attack
-  }
-
-  set decay(value) {
-    this._decay = value;
-  }
-
-  get decay() {
-    return this._decay;
-  }
-
-  set sustain(value) {
-    this.gain = value;
-    this._sustain;
-  }
-
-  get sustain() {
-    return this.gain;
   }
 
   set release(value) {
@@ -90,7 +70,6 @@ class Voice {
   value: number;
   gain: number;
   output: GainNode;
-  partials: AudioBufferSourceNode[] | OscillatorNode[];
   ampEnvelope: AmpEnvelope;
 
   constructor(context: OfflineAudioContext, gain: number = 0.1) {
@@ -98,7 +77,6 @@ class Voice {
     this.value = -1;
     this.gain = gain;
     this.output = this.context.createGain();
-    this.partials = [];
     this.output.gain.value = this.gain;
     this.ampEnvelope = new AmpEnvelope(this.context);
     this.ampEnvelope.connect(this.output);
@@ -106,27 +84,15 @@ class Voice {
 
   off(MidiEvent?: any) {
     this.ampEnvelope.off(MidiEvent);
-    this.partials.forEach((osc) => {
-      osc.stop(this.context.currentTime + this.ampEnvelope.release * 4);
-    });
   }
 
   connect(destination: AudioNode) {
     this.output.connect(destination);
   }
 
-  set detune(value: number) {
-    this.partials.forEach(p => p.detune.value = value);
-  }
-
   set attack(value: number) {
     this.ampEnvelope.attack = value;
   }
-
-  set decay(value: number) {
-    this.ampEnvelope.decay = value;
-  }
-
   set release(value: number) {
     this.ampEnvelope.release = value;
   }
@@ -166,8 +132,6 @@ class Noise extends Voice {
     bufferSource.loopEnd = 2;
     bufferSource.start(this.context.currentTime);
     bufferSource.connect(this.ampEnvelope.output);
-    // @ts-ignore
-    this.partials.push(bufferSource);
   }
 
   on(MidiEvent: any) {
@@ -187,8 +151,9 @@ export class Reverb {
   release!: number;
   preDelay!: DelayNode;
   repeatEcho!: DelayNode;
-  multitapGain!: GainNode;
+  repeatEchoGain!: GainNode;
   wet!: GainNode;
+  dry!:GainNode;
   tailNoise!: Noise;
 
   constructor(private readonly context:AudioContext, private input:AudioNode, private output: AudioNode){
@@ -202,21 +167,25 @@ export class Reverb {
 
     this.attack = attackTime;
     this.decay = 0;
-    this.release = decayTime;
+    this.release = decayTime+0.03;
 
-    this.preDelay = this.context.createDelay(attackTime+decayTime+0.5);
+    this.preDelay = this.context.createDelay(10);
     this.preDelay.delayTime.setValueAtTime(preDelay, this.context.currentTime);
-    this.repeatEcho = this.context.createDelay(attackTime+decayTime+0.5);
+    this.repeatEcho = this.context.createDelay(10);
     this.repeatEcho.delayTime.setValueAtTime(repeatEchoTime, this.context.currentTime);
-    this.multitapGain = this.context.createGain();
-    this.repeatEcho.connect(this.multitapGain)
-    this.multitapGain.connect(this.repeatEcho)
-    this.multitapGain.gain.value = repeatEchoGain;
-
-    this.multitapGain.connect(this.input);
+    this.repeatEchoGain = this.context.createGain();
+    // Create the repeat echo feedback loop
+    this.repeatEcho.connect(this.repeatEchoGain)
+    this.repeatEchoGain.connect(this.repeatEcho)
+    this.repeatEchoGain.gain.value = repeatEchoGain;
+    this.input.connect(this.repeatEchoGain);
+;
     this.wet = this.context.createGain();
+    this.repeatEchoGain.connect(this.wet);
+    this.dry = this.context.createGain();
 
     this.input.connect(this.wet);
+    this.input.connect(this.dry);
     this.wet.connect(this.preDelay);
     this.wet.connect(this.repeatEcho);
     this.preDelay.connect(this.effect);
@@ -224,63 +193,58 @@ export class Reverb {
     this.tailNoise = this.renderTail();
   }
 
+  disconnectInput() {
+    this.input.disconnect();
+    if(this.repeatEchoGain.gain.value > .45) {
+      this.repeatEchoGain.gain.value =.45;
+    }
+  }
+
+  tearDown() {
+    this.input.disconnect();
+    this.wet.disconnect();
+    this.dry.disconnect();
+    this.preDelay.disconnect();
+    this.effect.disconnect();
+    this.repeatEcho.disconnect();
+    this.repeatEchoGain.disconnect();
+    // @ts-ignore
+    this.input = this.output = null;
+  }
 //...AdvancedReverb Class
   renderTail (): Noise {
-    const tailContext = new OfflineAudioContext(2, this.context.sampleRate * this.reverbTime, this.context.sampleRate);
+    const tailContext = new OfflineAudioContext(2, this.context.sampleRate * (this.reverbTime+1), this.context.sampleRate);
     const tailNoise = new Noise(tailContext, 1);
     tailNoise.length = this.reverbTime;
-    const tailLPFilter = tailContext.createBiquadFilter()// new Filter(tailContext, "lowpass", 5000, 1);
+    const tailLPFilter = tailContext.createBiquadFilter()
     tailLPFilter.type = "lowpass";
     tailLPFilter.frequency.value = 5000;
     tailLPFilter.Q.value = 1;
-    const tailHPFilter = tailContext.createBiquadFilter(); // new Filter(tailContext, "highpass", 500, 1);
+    const tailHPFilter = tailContext.createBiquadFilter();
     tailHPFilter.type = "highpass";
     tailHPFilter.frequency.value = 500;
     tailHPFilter.Q.value = 1;
 
     tailNoise.init();
     tailNoise.connect(tailHPFilter);
-    //tailNoise.connect(tailContext.destination);
     tailHPFilter.connect(tailLPFilter);
     tailLPFilter.connect(tailContext.destination);
     tailNoise.attack = this.attack;
-    tailNoise.decay = this.decay;
     tailNoise.release = this.release;
 
     let bufferSource = this.context.createBufferSource();
 
-    setTimeout(()=>{
+    timer(300).subscribe(()=>{
       tailContext.startRendering().then((buffer) => {
         bufferSource.buffer = buffer;
-        bufferSource.connect(this.context.destination);
-       // bufferSource.start();
+ //       bufferSource.connect(this.context.destination);
+ //       bufferSource.start();
         this.effect.buffer = buffer;
       });
 
       tailNoise.on({frequency: 500, velocity: 127});
       tailNoise.off();
-    }, 20);
+    });
     return tailNoise;
-  }
-
-  public setReverbTime($event: number) {
-    this.reverbTime = $event;
-    this.release = $event/3;
-    this.preDelay.delayTime.setValueAtTime($event, this.context.currentTime);
-    this.tailNoise = this.renderTail();
-  }
-
-  public setPreDelay($event: number) {
-    this.preDelay.delayTime.setValueAtTime($event, this.context.currentTime);
-    // this.multitap.map((t,i)=>{
-    //   if(this.multitap[i+1]) {
-    //     t.connect(this.multitap[i+1])
-    //   }
-    //   t.delayTime.setValueAtTime(0.001+(i*($event/2)), this.context.currentTime);
-    // })
-  }
-
-  public setReverbAttackTime($event: number) {
-    this.tailNoise.attack = $event;
   }
 }

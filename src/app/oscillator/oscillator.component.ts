@@ -7,6 +7,7 @@ import {modulationType} from '../modules/gain-envelope-base';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {FilterComponent} from '../filter/filter-component';
 import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component';
+import {ReverbComponent} from '../reverb-component/reverb-component';
 
 @Component({
   selector: 'app-oscillators',
@@ -26,6 +27,8 @@ export class OscillatorComponent implements AfterViewInit {
 
   @Input() filters!: FilterComponent;
   @Input() ringMod!: RingModulatorComponent;
+  @Input() reverb!: ReverbComponent;
+
   @Input() secondary!: boolean;  // Flag to determine whether to connect to ring mod signal or mod input
 
   @Input() numberOfOscillators!: number;
@@ -174,6 +177,18 @@ export class OscillatorComponent implements AfterViewInit {
       const secondary = this.secondary;
       for (let i = 0; i < this.oscillators.length; i++) {
         this.oscillators[i].connect(secondary ? ringMod.modInput() : ringMod.signalInput());
+      }
+    }
+    return ok;
+  }
+
+  connectToReverb(): boolean {
+    const reverb = this.reverb;
+    let ok = false;
+    if(reverb) {
+      ok = true;
+      for (let i = 0; i < this.oscillators.length; i++) {
+        this.oscillators[i].connect(reverb.input);
       }
     }
     return ok;

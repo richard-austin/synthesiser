@@ -20,14 +20,13 @@ import {ReverbComponent} from '../reverb-component/reverb-component';
 })
 export class SynthComponent implements AfterViewInit, OnDestroy {
   audioCtx!: AudioContext;
-  reverb!: Reverb;
-  delme!: GainNode;
 
   @ViewChild('oscillators') oscillatorsGrp!: OscillatorComponent
   @ViewChild('oscillators2') oscillators2Grp!: OscillatorComponent
   @ViewChild(FilterComponent) filtersGrp!: FilterComponent;
   @ViewChild(NoiseComponent) noise!: NoiseComponent;
   @ViewChild(RingModulatorComponent) ringModulator!: RingModulatorComponent;
+  @ViewChild(ReverbComponent) reverb!: ReverbComponent;
 
   protected async start(): Promise<void> {
     this.audioCtx = new AudioContext();
@@ -35,16 +34,11 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.oscillators2Grp.start(this.audioCtx);
     this.filtersGrp.start(this.audioCtx);
 
-    this.delme = this.audioCtx.createGain();
-    this.delme.gain.value = 1;
-    this.oscillatorsGrp.connect(this.delme);
-
-    this.reverb = new Reverb(this.audioCtx, this.delme, this.audioCtx.destination);
-    this.reverb.setup(0, 5, 0, 0.5, .4);
-    this.delme.connect(this.audioCtx.destination);
+    this.oscillatorsGrp.connect(this.audioCtx.destination);
     this.oscillators2Grp.connect(this.audioCtx.destination);
     await this.noise.start(this.audioCtx);
     this.ringModulator.start(this.audioCtx);
+    this.reverb.start(this.audioCtx);
 
     window.addEventListener('click', () => {
     })
@@ -197,6 +191,9 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       case 'filter':
         this.oscillatorsGrp.connectToFilters();
         break;
+      case 'reverb':
+        this.oscillatorsGrp.connectToReverb();
+        break;
       case 'off':
         break;
       default:
@@ -215,6 +212,9 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
         break;
       case 'filter':
         this.oscillators2Grp.connectToFilters();
+        break;
+      case 'reverb':
+        this.oscillators2Grp.connectToReverb();
         break;
       case 'off':
         break;

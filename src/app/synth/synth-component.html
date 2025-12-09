@@ -1,7 +1,7 @@
 <div style="display: flex; flex-direction: row">
-  <app-oscillators #oscillators [filters]="filters" [ringMod]="ringMod" [numberOfOscillators]="50"
+  <app-oscillators #oscillators [filters]="filters" [ringMod]="ringMod" [reverb]="reverb" [numberOfOscillators]="50"
                    (output)="setOscOutputTarget($event)"></app-oscillators>
-  <app-oscillators #oscillators2 [name]="'Oscillators 2'" [secondary]="true" [filters]="filters" [ringMod]="ringMod"
+  <app-oscillators #oscillators2 [name]="'Oscillators 2'" [secondary]="true" [filters]="filters" [ringMod]="ringMod" [reverb]="reverb"
                    [numberOfOscillators]="50" (output)="setOsc2OutputTarget($event)"></app-oscillators>
   <app-filters #filters [numberOfFilters]="50" (output)="setFilterOutputTarget($event)"></app-filters>
   <app-noise [filters]="filters" [numberOfChannels]="50" (output)="setNoiseOutputTarget($event)"></app-noise>
