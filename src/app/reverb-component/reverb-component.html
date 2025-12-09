@@ -1,0 +1,24 @@
+<div class="group-container metallic-button">
+  <h1>Reverb</h1>
+  <div class="group">
+    <div class="column">
+      <div class="column">
+        <div class="module">
+          <app-level-control #reverbTime label="Reverb Time" [style]="dialStyle.red" [divisions]="10" [calAngle]="300"
+                             [radius]="50"
+                             (setLevel)="setReverbTime($event)"></app-level-control>
+          <app-level-control #decay label="Pre Delay" [style]="dialStyle.red" [radius]="50" [divisions]="10"
+                             (setLevel)="setPreDelay($event)"></app-level-control>
+          <app-level-control #sustain label="Attack Time" [style]="dialStyle.red" [radius]="50" [divisions]="10"
+                             (setLevel)="setReverbAttackTime($event)"></app-level-control>
+          <app-level-control #release label="Wet/Dry" [style]="dialStyle.red" [radius]="50" [divisions]="10"
+                             (setLevel)="setWetDryBalance($event)"></app-level-control>
+          <form #reverbOnOffForm>
+            <label><input type="radio" name="reverb" value="on"><span>On</span></label>
+            <label><input type="radio" name="reverb" value="off" checked><span>Off</span></label>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

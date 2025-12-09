@@ -33,15 +33,17 @@ class AmpEnvelope {
   start(time: number) {
     this.output.gain.value = 0;
     this.output.gain.setValueAtTime(0, time);
-    this.output.gain.setTargetAtTime(1, time, this.attack + 0.00001);
-    this.output.gain.setTargetAtTime(this.sustain * this.velocity, time + this.attack, this.decay);
+    this.output.gain.linearRampToValueAtTime(1, this.attack);
+    // this.output.gain.setTargetAtTime(this.sustain * this.velocity, time + this.attack, this.decay);
   }
 
   stop(time: number) {
     this.sustain = this.output.gain.value;
-    this.output.gain.cancelScheduledValues(time);
-    this.output.gain.setValueAtTime(this.sustain, time);
-    this.output.gain.setTargetAtTime(0, time, this.release + 0.00001);
+    this.output.gain.setValueAtTime(1, time+this.attack);
+    this.output.gain.linearRampToValueAtTime(0, this.release+this.attack + 0.00001);
+   // this.output.gain.cancelScheduledValues(time);
+    //this.output.gain.cancelAndHoldAtTime(time+this.attack + 0.00001);
+
   }
 
   set attack(value) {
@@ -157,22 +159,23 @@ class Noise extends Voice {
     buffer.copyToChannel(lBuffer, 0);
     buffer.copyToChannel(rBuffer, 1);
 
-    let osc = this.context.createBufferSource();
-    osc.buffer = buffer;
-    osc.loop = true;
-    osc.loopStart = 0;
-    osc.loopEnd = 2;
-    osc.start(this.context.currentTime);
-    osc.connect(this.ampEnvelope.output);
+    let bufferSource = this.context.createBufferSource();
+    bufferSource.buffer = buffer;
+    bufferSource.loop = false;
+    bufferSource.loopStart = 0;
+    bufferSource.loopEnd = 2;
+    bufferSource.start(this.context.currentTime);
+    bufferSource.connect(this.ampEnvelope.output);
     // @ts-ignore
-    this.partials.push(osc);
+    this.partials.push(bufferSource);
   }
 
   on(MidiEvent: any) {
-    this.value = MidiEvent.value;
+    if(MidiEvent.value) {
+      this.value = MidiEvent.value;
+    }
     this.ampEnvelope.on(MidiEvent.velocity || MidiEvent);
   }
-
 }
 
 
@@ -183,59 +186,49 @@ export class Reverb {
   decay!: number;
   release!: number;
   preDelay!: DelayNode;
-  multitap!: DelayNode[];
+  repeatEcho!: DelayNode;
   multitapGain!: GainNode;
   wet!: GainNode;
+  tailNoise!: Noise;
 
   constructor(private readonly context:AudioContext, private input:AudioNode, private output: AudioNode){
   }
 
   // Advanced Reverb Setup
-  setup() {
+  setup(attackTime: number, decayTime: number, preDelay: number, repeatEchoTime: number, repeatEchoGain: number) {
     this.effect = this.context.createConvolver();
 
-    let reverbTime = 3;  // Minimum value 1.07 ?
-    let preDelay = 0.1;
+    this.reverbTime = attackTime+decayTime;
 
-    this.reverbTime = reverbTime;
-
-    this.attack = 0;
+    this.attack = attackTime;
     this.decay = 0;
-    this.release = reverbTime/3;
+    this.release = decayTime;
 
-    this.preDelay = this.context.createDelay(reverbTime);
-    this.preDelay.delayTime.setValueAtTime(preDelay,    this.context.currentTime);
-    this.multitap = [];
-    for(let i = 2; i > 0; i--) {   // Delays repeat echo
-      this.multitap.push(this.context.createDelay(reverbTime));
-    }
-    this.multitap.map((t,i)=>{
-      if(this.multitap[i+1]) {
-        t.connect(this.multitap[i+1])
-      }
-      t.delayTime.setValueAtTime(0.001+(i*(preDelay/2)), this.context.currentTime);
-    })
-
+    this.preDelay = this.context.createDelay(attackTime+decayTime+0.5);
+    this.preDelay.delayTime.setValueAtTime(preDelay, this.context.currentTime);
+    this.repeatEcho = this.context.createDelay(attackTime+decayTime+0.5);
+    this.repeatEcho.delayTime.setValueAtTime(repeatEchoTime, this.context.currentTime);
     this.multitapGain = this.context.createGain();
-    this.multitap[this.multitap.length-1].connect(this.multitapGain);
-    this.multitapGain.gain.value = .2;
+    this.repeatEcho.connect(this.multitapGain)
+    this.multitapGain.connect(this.repeatEcho)
+    this.multitapGain.gain.value = repeatEchoGain;
 
-    this.multitapGain.connect(this.output);
+    this.multitapGain.connect(this.input);
     this.wet = this.context.createGain();
 
     this.input.connect(this.wet);
     this.wet.connect(this.preDelay);
-    this.wet.connect(this.multitap[0]);
+    this.wet.connect(this.repeatEcho);
     this.preDelay.connect(this.effect);
     this.effect.connect(this.output);
-
-    this.renderTail();
+    this.tailNoise = this.renderTail();
   }
 
 //...AdvancedReverb Class
-  renderTail () {
+  renderTail (): Noise {
     const tailContext = new OfflineAudioContext(2, this.context.sampleRate * this.reverbTime, this.context.sampleRate);
-    const tailOsc = new Noise(tailContext, 1);
+    const tailNoise = new Noise(tailContext, 1);
+    tailNoise.length = this.reverbTime;
     const tailLPFilter = tailContext.createBiquadFilter()// new Filter(tailContext, "lowpass", 5000, 1);
     tailLPFilter.type = "lowpass";
     tailLPFilter.frequency.value = 5000;
@@ -245,22 +238,49 @@ export class Reverb {
     tailHPFilter.frequency.value = 500;
     tailHPFilter.Q.value = 1;
 
-    tailOsc.init();
-    tailOsc.connect(tailHPFilter);
-    //tailOsc.connect(tailContext.destination);
+    tailNoise.init();
+    tailNoise.connect(tailHPFilter);
+    //tailNoise.connect(tailContext.destination);
     tailHPFilter.connect(tailLPFilter);
     tailLPFilter.connect(tailContext.destination);
-    tailOsc.attack = this.attack;
-    tailOsc.decay = this.decay;
-    tailOsc.release = this.release;
+    tailNoise.attack = this.attack;
+    tailNoise.decay = this.decay;
+    tailNoise.release = this.release;
+
+    let bufferSource = this.context.createBufferSource();
 
     setTimeout(()=>{
       tailContext.startRendering().then((buffer) => {
+        bufferSource.buffer = buffer;
+        bufferSource.connect(this.context.destination);
+       // bufferSource.start();
         this.effect.buffer = buffer;
       });
 
-    tailOsc.on({frequency: 500, velocity: 127});
-    tailOsc.off();
+      tailNoise.on({frequency: 500, velocity: 127});
+      tailNoise.off();
     }, 20);
+    return tailNoise;
+  }
+
+  public setReverbTime($event: number) {
+    this.reverbTime = $event;
+    this.release = $event/3;
+    this.preDelay.delayTime.setValueAtTime($event, this.context.currentTime);
+    this.tailNoise = this.renderTail();
+  }
+
+  public setPreDelay($event: number) {
+    this.preDelay.delayTime.setValueAtTime($event, this.context.currentTime);
+    // this.multitap.map((t,i)=>{
+    //   if(this.multitap[i+1]) {
+    //     t.connect(this.multitap[i+1])
+    //   }
+    //   t.delayTime.setValueAtTime(0.001+(i*($event/2)), this.context.currentTime);
+    // })
+  }
+
+  public setReverbAttackTime($event: number) {
+    this.tailNoise.attack = $event;
   }
 }

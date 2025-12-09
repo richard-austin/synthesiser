@@ -4,6 +4,7 @@ import {OscillatorComponent} from "../oscillator/oscillator.component";
 import {NoiseComponent} from '../noise/noise-component';
 import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component';
 import {Reverb} from '../modules/reverb';
+import {ReverbComponent} from '../reverb-component/reverb-component';
 
 @Component({
   selector: 'app-synth-component',
@@ -11,7 +12,8 @@ import {Reverb} from '../modules/reverb';
     FilterComponent,
     OscillatorComponent,
     NoiseComponent,
-    RingModulatorComponent
+    RingModulatorComponent,
+    ReverbComponent
   ],
   templateUrl: './synth-component.html',
   styleUrl: './synth-component.scss',
@@ -29,9 +31,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
   protected async start(): Promise<void> {
     this.audioCtx = new AudioContext();
-
-
-
     this.oscillatorsGrp.start(this.audioCtx);
     this.oscillators2Grp.start(this.audioCtx);
     this.filtersGrp.start(this.audioCtx);
@@ -41,8 +40,8 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.oscillatorsGrp.connect(this.delme);
 
     this.reverb = new Reverb(this.audioCtx, this.delme, this.audioCtx.destination);
-    this.reverb.setup();
-
+    this.reverb.setup(0, 5, 0, 0.5, .4);
+    this.delme.connect(this.audioCtx.destination);
     this.oscillators2Grp.connect(this.audioCtx.destination);
     await this.noise.start(this.audioCtx);
     this.ringModulator.start(this.audioCtx);
