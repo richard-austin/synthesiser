@@ -5,7 +5,7 @@ class Noise/* extends Voice*/ {
   context: OfflineAudioContext;
   output: GainNode;
   private _attack: number;
-  private _release: number;
+  private _decay: number;
 
   constructor(context: OfflineAudioContext, gain: number) {
     this.context = context;
@@ -13,7 +13,7 @@ class Noise/* extends Voice*/ {
     this.output = context.createGain();
     this.output.gain.value = gain;
     this._attack = 0;
-    this._release = 0.001;
+    this._decay = 0.001;
 
   }
 
@@ -53,7 +53,7 @@ class Noise/* extends Voice*/ {
 
   stop(time: number) {
     this.output.gain.setValueAtTime(1, time + this.attack);
-    this.output.gain.linearRampToValueAtTime(0, this.release + this.attack + 0.2);
+    this.output.gain.linearRampToValueAtTime(0, this.decay + this.attack + 0.2);
   }
 
   set attack(value) {
@@ -64,12 +64,12 @@ class Noise/* extends Voice*/ {
     return this._attack
   }
 
-  set release(value) {
-    this._release = value;
+  set decay(value) {
+    this._decay = value;
   }
 
-  get release() {
-    return this._release;
+  get decay() {
+    return this._decay;
   }
 
   connect(destination: AudioNode) {
@@ -79,17 +79,14 @@ class Noise/* extends Voice*/ {
 
 
 export class Reverb {
-  effect!: ConvolverNode;
-  reverbTime!: number;
-  attack!: number
-  decay!: number;
-  release!: number;
-  preDelay!: DelayNode;
-  repeatEcho!: DelayNode;
-  repeatEchoGain!: GainNode;
-  wet!: GainNode;
-  dry!: GainNode;
-  tailNoise!: Noise;
+  private effect!: ConvolverNode;
+  private attack!: number
+  private decay!: number;
+  private preDelay!: DelayNode;
+  private repeatEcho!: DelayNode;
+  private repeatEchoGain!: GainNode;
+  private wet!: GainNode;
+  private dry!: GainNode;
 
   constructor(private readonly context: AudioContext, private input: AudioNode, private output: AudioNode) {
   }
@@ -98,11 +95,8 @@ export class Reverb {
   setup(attackTime: number, decayTime: number, preDelay: number, repeatEchoTime: number, repeatEchoGain: number) {
     this.effect = this.context.createConvolver();
 
-    this.reverbTime = attackTime + decayTime;
-
     this.attack = attackTime;
-    this.decay = 0;
-    this.release = decayTime + 0.03;
+    this.decay = decayTime + 0.03;
 
     this.preDelay = this.context.createDelay(10);
     this.preDelay.delayTime.setValueAtTime(preDelay, this.context.currentTime);
@@ -125,7 +119,7 @@ export class Reverb {
     this.wet.connect(this.repeatEcho);
     this.preDelay.connect(this.effect);
     this.effect.connect(this.output);
-    this.tailNoise = this.renderTail();
+    this.renderTail();
   }
 
   disconnectInput() {
@@ -133,18 +127,6 @@ export class Reverb {
     if (this.repeatEchoGain.gain.value > .45) {
       this.repeatEchoGain.gain.value = .45;
     }
-  }
-
-  tearDown() {
-    this.input.disconnect();
-    this.wet.disconnect();
-    this.dry.disconnect();
-    this.preDelay.disconnect();
-    this.effect.disconnect();
-    this.repeatEcho.disconnect();
-    this.repeatEchoGain.disconnect();
-    // @ts-ignore
-    this.input = this.output = null;
   }
 
   public setRepeatEchoTime($event: number) {
@@ -155,19 +137,28 @@ export class Reverb {
     this.repeatEchoGain.gain.value = $event;
   }
 
+  public setAttack(attack: number) {
+    this.attack = attack;
+  }
 
-//...AdvancedReverb Class
-  renderTail(): Noise {
-    const tailContext = new OfflineAudioContext(2, this.context.sampleRate * (this.reverbTime + 1), this.context.sampleRate);
+  public setDecay(decay: number) {
+    this.decay = decay;
+  }
+  public setPreDelay(delay: number) {
+    this.preDelay.delayTime.value = delay;
+  }
+
+  public renderTail(): Noise {
+    const tailContext = new OfflineAudioContext(2, this.context.sampleRate * ((this.attack + this.decay) + 1), this.context.sampleRate);
     const tailNoise = new Noise(tailContext, 1);
-    tailNoise.length = this.reverbTime;
+    tailNoise.length = this.attack + this.decay;
     const tailLPFilter = tailContext.createBiquadFilter()
     tailLPFilter.type = "lowpass";
     tailLPFilter.frequency.value = 5000;
     tailLPFilter.Q.value = 1;
     const tailHPFilter = tailContext.createBiquadFilter();
     tailHPFilter.type = "highpass";
-    tailHPFilter.frequency.value = 500;
+    tailHPFilter.frequency.value = 50;
     tailHPFilter.Q.value = 1;
 
     tailNoise.init();
@@ -175,15 +166,15 @@ export class Reverb {
     tailHPFilter.connect(tailLPFilter);
     tailLPFilter.connect(tailContext.destination);
     tailNoise.attack = this.attack;
-    tailNoise.release = this.release;
+    tailNoise.decay = this.decay;
 
     let bufferSource = this.context.createBufferSource();
 
     timer(300).subscribe(() => {
       tailContext.startRendering().then((buffer) => {
         bufferSource.buffer = buffer;
-        //       bufferSource.connect(this.context.destination);
-        //       bufferSource.start();
+        // bufferSource.connect(this.context.destination);
+        // bufferSource.start();
         this.effect.buffer = buffer;
       });
 

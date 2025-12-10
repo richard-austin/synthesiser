@@ -2,7 +2,6 @@ import {AfterViewInit, Component} from '@angular/core';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {Reverb} from '../modules/reverb';
-import {Subscription, timer} from 'rxjs';
 
 @Component({
   selector: 'app-reverb-component',
@@ -21,6 +20,8 @@ export class ReverbComponent implements AfterViewInit {
   predelay = 0;
   repeatEchoTime = 0.7;
   repeatEchoGain = 0.3;
+ // removalQueue: ReverbForRemoval[] = [];
+
 
   protected readonly dialStyle = dialStyle;
 
@@ -32,42 +33,21 @@ export class ReverbComponent implements AfterViewInit {
     this.reverb.setup(this.attackTime, this.decayTime, this.predelay, this.repeatEchoTime, this.repeatEchoGain);
   }
 
-  sub: Subscription | null = null;
-
-  here:Reverb[] = [];
-  applyChange(): void {
-    if (this.sub)
-      this.sub.unsubscribe();
-
-    this.sub = timer(20).subscribe(() => {
-      this.reverb.disconnectInput();
-      this.here.push(this.reverb);
-      //this.reverb.tearDown();
-      // @ts-ignore
-     // this.reverb = undefined;
-      this.reverb = new Reverb(this.audioCtx, this.input, this.audioCtx.destination);
-      this.reverb.setup(this.attackTime, this.decayTime, this.predelay, this.repeatEchoTime, this.repeatEchoGain);
-      console.log("Hello");
-      if (this.sub) {
-        this.sub.unsubscribe();
-        this.sub = null;
-      }
-    });
-  }
-
   protected setAttackTime($event: number) {
     this.attackTime = $event * 10;
-    this.applyChange();
+    this.reverb.setAttack(this.attackTime);
+    this.reverb.renderTail();
   }
 
   protected setDecayTime($event: number) {
     this.decayTime = $event * 10;
-    this.applyChange();
+    this.reverb.setDecay(this.decayTime);
+    this.reverb.renderTail();
   }
 
   protected setPreDelayTime($event: number) {
     this.predelay = $event;
-    this.applyChange();
+    this.reverb.setPreDelay($event);
   }
 
   protected setRepeatEchoTime($event: number) {
@@ -82,6 +62,7 @@ export class ReverbComponent implements AfterViewInit {
 
   protected setWetDryBalance($event: number) {
   }
+
   ngAfterViewInit(): void {
   }
 }
