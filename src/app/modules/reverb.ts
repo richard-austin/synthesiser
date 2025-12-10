@@ -1,109 +1,20 @@
 import {timer} from 'rxjs';
 
-class AmpEnvelope {
-  private context: OfflineAudioContext;
+class Noise/* extends Voice*/ {
+  private _length: number;
+  context: OfflineAudioContext;
   output: GainNode;
-  private velocity: number;
-  private gain: number;
   private _attack: number;
-  private _decay: number;
-  private readonly _sustain: number;
   private _release: number;
 
-  constructor(context: OfflineAudioContext, gain: number = 1) {
-    this.context = context;
-    this.output = this.context.createGain();
-    this.output.gain.value = gain;
-    this.velocity = 0;
-    this.gain = gain;
-    this._attack = 0;
-    this._decay = 0.001;
-    this._sustain = this.output.gain.value;
-    this._release = 0.001;
-  }
-
-  on(velocity: number) {
-    this.velocity = velocity / 127;
-    this.start(this.context.currentTime);
-  }
-
-  off(MidiEvent?: any) {
-    return this.stop(this.context.currentTime);
-  }
-
-  start(time: number) {
-    this.output.gain.value = 0;
-    this.output.gain.setValueAtTime(0, time);
-    this.output.gain.linearRampToValueAtTime(1, this.attack);
-    // this.output.gain.setTargetAtTime(this.sustain * this.velocity, time + this.attack, this.decay);
-  }
-
-  stop(time: number) {
-    this.output.gain.setValueAtTime(1, time+this.attack);
-    this.output.gain.linearRampToValueAtTime(0, this.release+this.attack + 0.2);
-  }
-
-  set attack(value) {
-    this._attack = value;
-  }
-
-  get attack() {
-    return this._attack
-  }
-
-  set release(value) {
-    this._release = value;
-  }
-
-  get release() {
-    return this._release;
-  }
-
-  connect(destination: AudioNode) {
-    this.output.connect(destination);
-  }
-}
-
-
-class Voice {
-  context: OfflineAudioContext;
-  value: number;
-  gain: number;
-  output: GainNode;
-  ampEnvelope: AmpEnvelope;
-
-  constructor(context: OfflineAudioContext, gain: number = 0.1) {
-    this.context = context;
-    this.value = -1;
-    this.gain = gain;
-    this.output = this.context.createGain();
-    this.output.gain.value = this.gain;
-    this.ampEnvelope = new AmpEnvelope(this.context);
-    this.ampEnvelope.connect(this.output);
-  }
-
-  off(MidiEvent?: any) {
-    this.ampEnvelope.off(MidiEvent);
-  }
-
-  connect(destination: AudioNode) {
-    this.output.connect(destination);
-  }
-
-  set attack(value: number) {
-    this.ampEnvelope.attack = value;
-  }
-  set release(value: number) {
-    this.ampEnvelope.release = value;
-  }
-}
-
-class Noise extends Voice {
-  private _length: number;
-
   constructor(context: OfflineAudioContext, gain: number) {
-    super(context, gain);
+    this.context = context;
     this._length = 2;
+    this.output = context.createGain();
+    this.output.gain.value = gain;
+    this._attack = 0;
+    this._release = 0.001;
+
   }
 
   get length() {
@@ -131,14 +42,38 @@ class Noise extends Voice {
     bufferSource.loopStart = 0;
     bufferSource.loopEnd = 2;
     bufferSource.start(this.context.currentTime);
-    bufferSource.connect(this.ampEnvelope.output);
+    bufferSource.connect(this.output);
   }
 
-  on(MidiEvent: any) {
-    if(MidiEvent.value) {
-      this.value = MidiEvent.value;
-    }
-    this.ampEnvelope.on(MidiEvent.velocity || MidiEvent);
+  start(time: number) {
+    this.output.gain.value = 0;
+    this.output.gain.setValueAtTime(0, time);
+    this.output.gain.linearRampToValueAtTime(1, this.attack);
+  }
+
+  stop(time: number) {
+    this.output.gain.setValueAtTime(1, time + this.attack);
+    this.output.gain.linearRampToValueAtTime(0, this.release + this.attack + 0.2);
+  }
+
+  set attack(value) {
+    this._attack = value;
+  }
+
+  get attack() {
+    return this._attack
+  }
+
+  set release(value) {
+    this._release = value;
+  }
+
+  get release() {
+    return this._release;
+  }
+
+  connect(destination: AudioNode) {
+    this.output.connect(destination);
   }
 }
 
@@ -153,21 +88,21 @@ export class Reverb {
   repeatEcho!: DelayNode;
   repeatEchoGain!: GainNode;
   wet!: GainNode;
-  dry!:GainNode;
+  dry!: GainNode;
   tailNoise!: Noise;
 
-  constructor(private readonly context:AudioContext, private input:AudioNode, private output: AudioNode){
+  constructor(private readonly context: AudioContext, private input: AudioNode, private output: AudioNode) {
   }
 
   // Advanced Reverb Setup
   setup(attackTime: number, decayTime: number, preDelay: number, repeatEchoTime: number, repeatEchoGain: number) {
     this.effect = this.context.createConvolver();
 
-    this.reverbTime = attackTime+decayTime;
+    this.reverbTime = attackTime + decayTime;
 
     this.attack = attackTime;
     this.decay = 0;
-    this.release = decayTime+0.03;
+    this.release = decayTime + 0.03;
 
     this.preDelay = this.context.createDelay(10);
     this.preDelay.delayTime.setValueAtTime(preDelay, this.context.currentTime);
@@ -195,8 +130,8 @@ export class Reverb {
 
   disconnectInput() {
     this.input.disconnect();
-    if(this.repeatEchoGain.gain.value > .45) {
-      this.repeatEchoGain.gain.value =.45;
+    if (this.repeatEchoGain.gain.value > .45) {
+      this.repeatEchoGain.gain.value = .45;
     }
   }
 
@@ -222,8 +157,8 @@ export class Reverb {
 
 
 //...AdvancedReverb Class
-  renderTail (): Noise {
-    const tailContext = new OfflineAudioContext(2, this.context.sampleRate * (this.reverbTime+1), this.context.sampleRate);
+  renderTail(): Noise {
+    const tailContext = new OfflineAudioContext(2, this.context.sampleRate * (this.reverbTime + 1), this.context.sampleRate);
     const tailNoise = new Noise(tailContext, 1);
     tailNoise.length = this.reverbTime;
     const tailLPFilter = tailContext.createBiquadFilter()
@@ -244,16 +179,16 @@ export class Reverb {
 
     let bufferSource = this.context.createBufferSource();
 
-    timer(300).subscribe(()=>{
+    timer(300).subscribe(() => {
       tailContext.startRendering().then((buffer) => {
         bufferSource.buffer = buffer;
- //       bufferSource.connect(this.context.destination);
- //       bufferSource.start();
+        //       bufferSource.connect(this.context.destination);
+        //       bufferSource.start();
         this.effect.buffer = buffer;
       });
 
-      tailNoise.on({frequency: 500, velocity: 127});
-      tailNoise.off();
+      tailNoise.start(this.context.currentTime);
+      tailNoise.stop(this.context.currentTime);
     });
     return tailNoise;
   }
