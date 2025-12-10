@@ -6,6 +6,8 @@ import {ADSRValues} from '../util-classes/adsrvalues';
 import {FreqBendValues} from '../util-classes/freq-bend-values';
 import {Oscillator} from '../modules/oscillator';
 import {modulationType} from '../modules/gain-envelope-base';
+import {ReverbComponent} from '../reverb-component/reverb-component';
+import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component';
 
 @Component({
   selector: 'app-filters',
@@ -23,15 +25,14 @@ export class FilterComponent implements AfterViewInit {
   private lfo!: Oscillator;
   private audioCtx!: AudioContext;
 
-  private set filters(filters: Filter[]) {
-    this._filters = filters;
-  }
-
   public get filters(): Filter[] {
     return this._filters;
   }
 
   @Input() numberOfFilters!: number;
+  @Input() reverb!: ReverbComponent;
+  @Input() ringMod!: RingModulatorComponent;
+
   @Output() output = new EventEmitter<string>();
   @ViewChild('frequency') frequency!: LevelControlComponent;
   @ViewChild('gain') gain!: LevelControlComponent;
@@ -173,6 +174,30 @@ export class FilterComponent implements AfterViewInit {
     for (let i = 0; i < this.filters.length; i++) {
       this.filters[i].connect(node);
     }
+  }
+  connectToRingMod() : boolean {
+    const ringMod = this.ringMod;
+    let ok = false;
+    if(ringMod) {
+      ok = true;
+      for (let i = 0; i < this.filters.length; i++) {
+        this.filters[i].connect(ringMod.signalInput());
+      }
+    }
+    return ok;
+  }
+
+
+  connectToReverb(): boolean {
+    const reverb = this.reverb;
+    let ok = false;
+    if(reverb) {
+      ok = true;
+      for (let i = 0; i < this.filters.length; i++) {
+        this.filters[i].connect(reverb.input);
+      }
+    }
+    return ok;
   }
 
   disconnect() {

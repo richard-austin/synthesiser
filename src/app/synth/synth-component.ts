@@ -229,7 +229,10 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
         this.filtersGrp.connect(this.audioCtx.destination);
         break;
       case 'ringmod':
-        //  this.filtersGrp.connect(this.ringMod.signalInput());
+        this.filtersGrp.connectToRingMod();
+        break;
+      case 'reverb':
+        this.filtersGrp.connectToReverb();
         break;
       case 'off':
         break;
