@@ -110,7 +110,7 @@ export class Reverb {
     this.input.connect(this.repeatEchoGain);
 
     this.wet = this.context.createGain();
-    this.repeatEchoGain.connect(this.wet);
+    this.repeatEchoGain.connect(this.effect);
     this.dry = this.context.createGain();
 
     this.input.connect(this.dry);

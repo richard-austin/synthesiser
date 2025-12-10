@@ -61,7 +61,7 @@ export class ReverbComponent implements AfterViewInit {
   }
 
   protected setRepeatEchoGain($event: number) {
-    this.repeatEchoGain = $event * 0.5;
+    this.repeatEchoGain = $event;
     this.reverb.setRepeatEchoGain(this.repeatEchoGain);
   }
 
