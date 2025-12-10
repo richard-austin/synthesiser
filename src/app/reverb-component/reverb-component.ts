@@ -72,16 +72,15 @@ export class ReverbComponent implements AfterViewInit {
 
   protected setRepeatEchoTime($event: number) {
     this.repeatEchoTime = $event;
-    this.applyChange();
+    this.reverb.setRepeatEchoTime($event);
   }
 
   protected setRepeatEchoGain($event: number) {
     this.repeatEchoGain = $event * 0.5;
-    this.applyChange();
+    this.reverb.setRepeatEchoGain(this.repeatEchoGain);
   }
 
   protected setWetDryBalance($event: number) {
-
   }
   ngAfterViewInit(): void {
   }

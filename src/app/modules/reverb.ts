@@ -179,7 +179,7 @@ export class Reverb {
     this.repeatEchoGain.connect(this.repeatEcho)
     this.repeatEchoGain.gain.value = repeatEchoGain;
     this.input.connect(this.repeatEchoGain);
-;
+
     this.wet = this.context.createGain();
     this.repeatEchoGain.connect(this.wet);
     this.dry = this.context.createGain();
@@ -211,6 +211,16 @@ export class Reverb {
     // @ts-ignore
     this.input = this.output = null;
   }
+
+  public setRepeatEchoTime($event: number) {
+    this.repeatEcho.delayTime.value = $event;
+  }
+
+  public setRepeatEchoGain($event: number) {
+    this.repeatEchoGain.gain.value = $event;
+  }
+
+
 //...AdvancedReverb Class
   renderTail (): Noise {
     const tailContext = new OfflineAudioContext(2, this.context.sampleRate * (this.reverbTime+1), this.context.sampleRate);

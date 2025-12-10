@@ -3,7 +3,6 @@ import {FilterComponent} from "../filter/filter-component";
 import {OscillatorComponent} from "../oscillator/oscillator.component";
 import {NoiseComponent} from '../noise/noise-component';
 import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component';
-import {Reverb} from '../modules/reverb';
 import {ReverbComponent} from '../reverb-component/reverb-component';
 
 @Component({
