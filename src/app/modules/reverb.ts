@@ -88,7 +88,7 @@ export class Reverb {
   private wet!: GainNode;
   private dry!: GainNode;
 
-  constructor(private readonly context: AudioContext, private input: AudioNode, private output: AudioNode) {
+  constructor(private readonly context: AudioContext, private input: AudioNode, private wetOutput: AudioNode, private dryOutput : AudioNode) {
   }
 
   // Advanced Reverb Setup
@@ -113,20 +113,14 @@ export class Reverb {
     this.repeatEchoGain.connect(this.wet);
     this.dry = this.context.createGain();
 
-    this.input.connect(this.wet);
     this.input.connect(this.dry);
-    this.wet.connect(this.preDelay);
-    this.wet.connect(this.repeatEcho);
+    this.input.connect(this.preDelay);
+    this.input.connect(this.repeatEcho);
     this.preDelay.connect(this.effect);
-    this.effect.connect(this.output);
+    this.effect.connect(this.wet);
+    this.wet.connect(this.wetOutput);
+    this.dry.connect(this.dryOutput);
     this.renderTail();
-  }
-
-  disconnectInput() {
-    this.input.disconnect();
-    if (this.repeatEchoGain.gain.value > .45) {
-      this.repeatEchoGain.gain.value = .45;
-    }
   }
 
   public setRepeatEchoTime($event: number) {
@@ -146,6 +140,14 @@ export class Reverb {
   }
   public setPreDelay(delay: number) {
     this.preDelay.delayTime.value = delay;
+  }
+
+  public setWetGain(gain: number) {
+    this.wet.gain.value = gain;
+  }
+
+  public setDryGain(gain: number) {
+    this.dry.gain.value = gain;
   }
 
   public renderTail(): Noise {
@@ -172,7 +174,8 @@ export class Reverb {
 
     timer(300).subscribe(() => {
       tailContext.startRendering().then((buffer) => {
-        bufferSource.buffer = buffer;
+        // This stuff commented out is for listening to the impulse from the Noise source
+        //bufferSource.buffer = buffer;
         // bufferSource.connect(this.context.destination);
         // bufferSource.start();
         this.effect.buffer = buffer;
