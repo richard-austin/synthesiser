@@ -1,0 +1,36 @@
+<div class="group-container metallic-button">
+  <h1>Phasor</h1>
+  <div class="group">
+    <div class="column">
+      <div class="module">
+        <app-level-control #phase label="Phase" [plusMinus]=true [style]="dialStyle.red" [divisions]="10"
+                           [calAngle]="300"
+                           [radius]="50" (setLevel)="setPhase($event)"></app-level-control>
+
+        <app-level-control #level2 label="Level" [style]="dialStyle.blue" [radius]="50" [divisions]="10"
+                           (setLevel)="setLevel($event)"></app-level-control>
+        <form #phasorOnOffForm>
+          <label><input type="radio" name="phasor" value="on"><span>On</span></label>
+          <label><input type="radio" name="phasor" value="off" checked><span>Off</span></label>
+        </form>
+      </div>
+    </div>
+
+    <div>
+      <app-level-control #modFreq label="LFO Frequency" [style]="dialStyle.green" [divisions]="10" [calAngle]="300"
+                         [radius]="50" (setLevel)="setModFrequency($event)"></app-level-control>
+      <app-level-control #modDepth label="Mod Depth" [style]="dialStyle.green" [divisions]="10" [calAngle]="300"
+                         [radius]="50" (setLevel)="setModLevel($event)"></app-level-control>
+      <form #lfoWaveForm>
+        <label><input type="radio" name="waveform" value="sine" checked><span>Sine</span></label>
+        <label><input type="radio" name="waveform" value="square"><span>Square</span></label>
+        <label><input type="radio" name="waveform" value="sawtooth"><span>Sawtooth</span></label>
+        <label><input type="radio" name="waveform" value="triangle"><span>Triangle</span></label>
+      </form>
+      <form #modOnOffForm>
+        <label><input type="radio" name="phasorMod" value="on"><span>On</span></label>
+        <label><input type="radio" name="phasorMod" value="off" checked><span>&nbsp;Off&nbsp;</span></label>
+      </form>
+    </div>
+  </div>
+</div>

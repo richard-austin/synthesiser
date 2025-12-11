@@ -8,6 +8,7 @@ import {dialStyle} from '../level-control/levelControlParameters';
 import {FilterComponent} from '../filter/filter-component';
 import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component';
 import {ReverbComponent} from '../reverb-component/reverb-component';
+import {PhasorComponent} from '../phasor/phasor-component';
 
 @Component({
   selector: 'app-oscillators',
@@ -28,7 +29,7 @@ export class OscillatorComponent implements AfterViewInit {
   @Input() filters!: FilterComponent;
   @Input() ringMod!: RingModulatorComponent;
   @Input() reverb!: ReverbComponent;
-
+  @Input() phasor!: PhasorComponent;
   @Input() secondary!: boolean;  // Flag to determine whether to connect to ring mod signal or mod input
 
   @Input() numberOfOscillators!: number;
@@ -194,6 +195,18 @@ export class OscillatorComponent implements AfterViewInit {
     return ok;
   }
 
+  connectToPhasor(): boolean {
+    const phasor = this.phasor;
+    let ok = false;
+    if(phasor) {
+      ok = true;
+      for (let i = 0; i < this.oscillators.length; i++) {
+        this.oscillators[i].connect(phasor.input);
+      }
+    }
+    return ok;
+  }
+
   /**
    * connect: Connect all oscillators in this group to a single node (i.e. gain node).
    * @param node
@@ -239,7 +252,6 @@ export class OscillatorComponent implements AfterViewInit {
   }
 
   protected readonly dialStyle = dialStyle;
-
 
   protected setFreqAttack($event: number) {
     this.freqBend.attackTime = $event * 3;

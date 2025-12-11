@@ -8,6 +8,7 @@ import {Oscillator} from '../modules/oscillator';
 import {modulationType} from '../modules/gain-envelope-base';
 import {ReverbComponent} from '../reverb-component/reverb-component';
 import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component';
+import {PhasorComponent} from '../phasor/phasor-component';
 
 @Component({
   selector: 'app-filters',
@@ -32,6 +33,7 @@ export class FilterComponent implements AfterViewInit {
   @Input() numberOfFilters!: number;
   @Input() reverb!: ReverbComponent;
   @Input() ringMod!: RingModulatorComponent;
+  @Input() phasor!: PhasorComponent;
 
   @Output() output = new EventEmitter<string>();
   @ViewChild('frequency') frequency!: LevelControlComponent;
@@ -175,6 +177,7 @@ export class FilterComponent implements AfterViewInit {
       this.filters[i].connect(node);
     }
   }
+
   connectToRingMod() : boolean {
     const ringMod = this.ringMod;
     let ok = false;
@@ -187,6 +190,17 @@ export class FilterComponent implements AfterViewInit {
     return ok;
   }
 
+  connectToPhasor() : boolean {
+    const phasor = this.phasor;
+    let ok = false;
+    if(phasor) {
+      ok = true;
+      for (let i = 0; i < this.filters.length; i++) {
+        this.filters[i].connect(phasor.input);
+      }
+    }
+    return ok;
+  }
 
   connectToReverb(): boolean {
     const reverb = this.reverb;
@@ -235,6 +249,7 @@ export class FilterComponent implements AfterViewInit {
   }
 
   protected readonly dialStyle = dialStyle;
+
 
   protected setFreqAttack($event: number) {
     this.freqBend.attackTime = $event * 3;

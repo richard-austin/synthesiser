@@ -4,6 +4,7 @@ import {OscillatorComponent} from "../oscillator/oscillator.component";
 import {NoiseComponent} from '../noise/noise-component';
 import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component';
 import {ReverbComponent} from '../reverb-component/reverb-component';
+import {PhasorComponent} from '../phasor/phasor-component';
 
 @Component({
   selector: 'app-synth-component',
@@ -12,7 +13,8 @@ import {ReverbComponent} from '../reverb-component/reverb-component';
     OscillatorComponent,
     NoiseComponent,
     RingModulatorComponent,
-    ReverbComponent
+    ReverbComponent,
+    PhasorComponent
   ],
   templateUrl: './synth-component.html',
   styleUrl: './synth-component.scss',
@@ -26,6 +28,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChild(NoiseComponent) noise!: NoiseComponent;
   @ViewChild(RingModulatorComponent) ringModulator!: RingModulatorComponent;
   @ViewChild(ReverbComponent) reverb!: ReverbComponent;
+  @ViewChild(PhasorComponent) phasor!: PhasorComponent;
 
   protected async start(): Promise<void> {
     this.audioCtx = new AudioContext();
@@ -38,6 +41,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     await this.noise.start(this.audioCtx);
     this.ringModulator.start(this.audioCtx);
     this.reverb.start(this.audioCtx);
+    this.phasor.setUp(this.audioCtx);
 
     window.addEventListener('click', () => {
     })
@@ -193,6 +197,9 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       case 'reverb':
         this.oscillatorsGrp.connectToReverb();
         break;
+      case 'phasor':
+        this.oscillatorsGrp.connectToPhasor();
+        break
       case 'off':
         break;
       default:
@@ -215,6 +222,9 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       case 'reverb':
         this.oscillators2Grp.connectToReverb();
         break;
+      case 'phasor':
+        this.oscillators2Grp.connectToPhasor();
+        break
       case 'off':
         break;
       default:
@@ -234,6 +244,9 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       case 'reverb':
         this.filtersGrp.connectToReverb();
         break;
+        case 'phasor':
+          this.filtersGrp.connectToPhasor();
+          break;
       case 'off':
         break;
       default:
