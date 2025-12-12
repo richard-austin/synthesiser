@@ -15,7 +15,7 @@
                              (setLevel)="setRepeatEchoTime($event)"></app-level-control>
           <app-level-control #repeatEchoLevel label="Repeat Level" [style]="dialStyle.yellow" [radius]="50" [divisions]="10"
                              (setLevel)="setRepeatEchoGain($event)"></app-level-control>
-          <app-level-control #release label="Wet/Dry" [plusMinus]="true" [style]="dialStyle.green" [radius]="50" [divisions]="10"
+          <app-level-control #wetDry label="Wet/Dry" [plusMinus]="true" [style]="dialStyle.green" [radius]="50" [divisions]="10"
                              (setLevel)="setWetDryBalance($event)"></app-level-control>
           <form #reverbOnOffForm>
             <label><input type="radio" name="reverb" value="on"><span>On</span></label>

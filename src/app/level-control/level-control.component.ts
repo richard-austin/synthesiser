@@ -44,7 +44,7 @@ export class LevelControlComponent implements AfterViewInit {
     this.drawOperationsWorker.postMessage("blur");
   }
 
-  setAngle(currentAngle: number, delta: number): number {
+  setAngle(currentAngle: number, delta: number, sendEvent:boolean = true): number {
     currentAngle += delta;
     const p = this.params;
     const upperLimit = p.plusMinus ? p.calAngle/2 : p.calAngle;
@@ -53,7 +53,9 @@ export class LevelControlComponent implements AfterViewInit {
       currentAngle = upperLimit;
     else if (currentAngle < lowerLimit)
       currentAngle = lowerLimit;
-    this.setLevel.emit(currentAngle / p.calAngle);
+    if(sendEvent)  // Don't send event if called from setValue
+      this.setLevel.emit(currentAngle / p.calAngle);
+
     this.drawOperationsWorker.postMessage({angle: currentAngle});
     return currentAngle;
   }
@@ -62,7 +64,7 @@ export class LevelControlComponent implements AfterViewInit {
 
   setValue(value: number) {
     let p = this.params;
-    this.currentAngle = this.setAngle(p.calAngle * value / p.divisions, 0);
+    this.currentAngle = this.setAngle(p.calAngle * value / p.divisions, 0, false);
   }
 
   ngAfterViewInit(): void {

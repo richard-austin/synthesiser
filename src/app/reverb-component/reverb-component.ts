@@ -2,6 +2,9 @@ import {AfterViewInit, Component, ElementRef, ViewChild} from '@angular/core';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {Reverb} from '../modules/reverb';
+import {ReverbSettings} from '../settings/reverb';
+import {onOff} from '../enums/enums';
+import {SetRadioButtons} from '../settings/set-radio-buttons';
 
 @Component({
   selector: 'app-reverb-component',
@@ -21,9 +24,15 @@ export class ReverbComponent implements AfterViewInit {
   predelay = 0;
   repeatEchoTime = 0.7;
   repeatEchoGain = 0.3;
+  settings!: ReverbSettings;
+
   @ViewChild('reverbOnOffForm') reverbOnOffForm!: ElementRef<HTMLFormElement>;
-
-
+  @ViewChild('attackTime') attackTimeDial!: LevelControlComponent;
+  @ViewChild('decayTime') decayTimeDial!: LevelControlComponent;
+  @ViewChild('predelay') predelayDial!: LevelControlComponent;
+  @ViewChild('repeatEchoTime') repeatEchoTimeDial!: LevelControlComponent;
+  @ViewChild('repeatEchoLevel') repeatEchoLevelDial!: LevelControlComponent;
+  @ViewChild('wetDry') wetDryDial!: LevelControlComponent;
 
   protected readonly dialStyle = dialStyle;
 
@@ -34,7 +43,22 @@ export class ReverbComponent implements AfterViewInit {
     this.gain = this.audioCtx.createGain();
     this.gain.gain.value = 0;
     this.reverb = new Reverb(audioCtx, this.input, this.gain, this.gain);
+    this.settings = new ReverbSettings();
+    this.attackTime = this.settings.attackTime;
+    this.attackTimeDial.setValue(this.attackTime);
+    this.decayTime = this.settings.decayTime;
+    this.decayTimeDial.setValue(this.decayTime);
+    this.predelay = this.settings.predelay;
+    this.predelayDial.setValue(this.predelay);
+    this.repeatEchoTime = this.settings.repeatEchoTime;
+    this.repeatEchoTimeDial.setValue(this.repeatEchoTime);
+    this.repeatEchoGain = this.settings.repeatEchoGain;
+    this.repeatEchoLevelDial.setValue(this.repeatEchoGain);
+    this.reverbOnOff(this.settings.output === onOff.on);
+    SetRadioButtons.set(this.reverbOnOffForm, this.settings.output);
     this.reverb.setup(this.attackTime, this.decayTime, this.predelay, this.repeatEchoTime, this.repeatEchoGain);
+    this.setWetDryBalance(this.settings.wetDry);
+    this.wetDryDial.setValue(this.settings.wetDry);
     this.gain.connect(audioCtx.destination);
   }
 
@@ -82,6 +106,7 @@ export class ReverbComponent implements AfterViewInit {
       reverbOnOff.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value;
+        this.settings.output = value as onOff;
         this.reverbOnOff(value === 'on');
       });
     }
