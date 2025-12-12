@@ -4,7 +4,7 @@ import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {RingModSettings} from '../settings/ring-mod';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
-import {onOff} from '../enums/enums';
+import {modWaveforms, onOff, ringModOutput} from '../enums/enums';
 import {FilterComponent} from '../filter/filter-component';
 import {ReverbComponent} from '../reverb-component/reverb-component';
 
@@ -18,6 +18,7 @@ import {ReverbComponent} from '../reverb-component/reverb-component';
 })
 export class RingModulatorComponent implements AfterViewInit {
   ringMod!: RingModulator;
+  settings!: RingModSettings;
 
   @Input() filters!: FilterComponent;
   @Input() reverb!: ReverbComponent;
@@ -33,20 +34,23 @@ export class RingModulatorComponent implements AfterViewInit {
   start(audioCtx: AudioContext) {
     this.ringMod = new RingModulator(audioCtx);
 
-    const settings:RingModSettings = new RingModSettings()
+    this.settings = new RingModSettings()
     // Set default ring mod settings
-    this.applySettings(settings);
+    this.applySettings(this.settings);
   }
 
   protected readonly dialStyle = dialStyle
 
 
-  protected setFrequency($event: number) {
+  protected setFrequency($event: number)
+  {
+    this.settings.modFrequency = $event;
     const freq = 4500 * (Math.pow(Math.pow(2, 1 / 12), $event) - 1);
     this.ringMod.setModFrequency(freq);
   }
 
   protected setModDepth($event: number) {
+    this.settings.modDepth = $event;
     this.ringMod.setModDepth($event);
   }
 
@@ -113,6 +117,7 @@ export class RingModulatorComponent implements AfterViewInit {
       internalModForm.elements[j].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value as string;
+        this.settings.internalMod = value as onOff;
         this.ringMod.internalMod(value==='on');
       });
     }
@@ -121,6 +126,7 @@ export class RingModulatorComponent implements AfterViewInit {
       modWaveForm.elements[j].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value as OscillatorType;
+        this.settings.modWaveform = value as modWaveforms;
         this.ringMod.setModWaveform(value);
       });
     }
@@ -129,6 +135,7 @@ export class RingModulatorComponent implements AfterViewInit {
       outputToForm.elements[j].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value as string;
+        this.settings.output = value as ringModOutput;
         this.output.emit(value);
       });
     }
