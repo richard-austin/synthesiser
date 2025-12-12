@@ -1,10 +1,12 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, Output, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild} from '@angular/core';
 import {RingModulator} from '../modules/ring-modulator';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {RingModSettings} from '../settings/ring-mod';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {onOff} from '../enums/enums';
+import {FilterComponent} from '../filter/filter-component';
+import {ReverbComponent} from '../reverb-component/reverb-component';
 
 @Component({
   selector: 'app-ring-modulator',
@@ -16,8 +18,10 @@ import {onOff} from '../enums/enums';
 })
 export class RingModulatorComponent implements AfterViewInit {
   ringMod!: RingModulator;
-  private audioCtx!: AudioContext;
 
+  @Input() filters!: FilterComponent;
+  @Input() reverb!: ReverbComponent;
+  @Input() numberOfChannels!: number;
   @Output() output: EventEmitter<string> = new EventEmitter();
 
   @ViewChild('modFreq') modFreq!: LevelControlComponent;
@@ -27,7 +31,6 @@ export class RingModulatorComponent implements AfterViewInit {
   @ViewChild('outputToForm') outputToForm!: ElementRef<HTMLFormElement>;
 
   start(audioCtx: AudioContext) {
-    this.audioCtx = audioCtx;
     this.ringMod = new RingModulator(audioCtx);
 
     const settings:RingModSettings = new RingModSettings()
@@ -35,7 +38,8 @@ export class RingModulatorComponent implements AfterViewInit {
     this.applySettings(settings);
   }
 
-  protected readonly dialStyle = dialStyle;
+  protected readonly dialStyle = dialStyle
+
 
   protected setFrequency($event: number) {
     const freq = 4500 * (Math.pow(Math.pow(2, 1 / 12), $event) - 1);
@@ -59,8 +63,27 @@ export class RingModulatorComponent implements AfterViewInit {
   }
 
   connectToFilters() {
-
+    const filters = this.filters.filters;
+    let ok = false;
+    if (filters && filters.length === this.numberOfChannels) {
+      ok = true;
+      for (let i = 0; i < this.numberOfChannels; i++) {
+        this.ringMod.connect(filters[i].filter);
+      }
+    } else
+      console.log("Filter array is a different size to numberOfChannels")
+    return ok;
   }
+  connectToReverb(): boolean {
+    const reverb = this.reverb;
+    let ok = false;
+    if(reverb) {
+      ok = true;
+      this.ringMod.connect(reverb.input);
+    }
+    return ok;
+  }
+
 
   disconnect() {
     this.ringMod.disconnect();

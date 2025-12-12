@@ -133,7 +133,7 @@ export class NoiseComponent implements AfterViewInit {
         this.brownNoise[i].connect(filters[i].filter);
       }
     } else
-      console.log("Filter array is a different size to the oscillator array")
+      console.log("Filter array is a different size to numberOfChannels")
     return ok;
   }
 

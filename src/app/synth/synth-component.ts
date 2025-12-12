@@ -280,6 +280,9 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       case 'filter':
         this.ringModulator.connectToFilters();
         break;
+      case 'reverb':
+        this.ringModulator.connectToReverb();
+        break;
       case 'off':
         break;
       default:
