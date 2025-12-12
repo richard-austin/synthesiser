@@ -15,13 +15,8 @@
   margin: 3px;
 }
 .column {
-  width: fit-content;
-  height: fit-content;
-}
-
-.noise-width {
-  min-width: 240px;
-}
+  max-width: 300px;
+ }
 
 .group-container {
   > h1,h2 {

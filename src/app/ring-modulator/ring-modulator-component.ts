@@ -2,6 +2,9 @@ import {AfterViewInit, Component, ElementRef, EventEmitter, Output, ViewChild} f
 import {RingModulator} from '../modules/ring-modulator';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
+import {RingModSettings} from '../settings/ring-mod';
+import {SetRadioButtons} from '../settings/set-radio-buttons';
+import {onOff} from '../enums/enums';
 
 @Component({
   selector: 'app-ring-modulator',
@@ -18,7 +21,7 @@ export class RingModulatorComponent implements AfterViewInit {
   @Output() output: EventEmitter<string> = new EventEmitter();
 
   @ViewChild('modFreq') modFreq!: LevelControlComponent;
-  @ViewChild('modDepth') modLevel!: LevelControlComponent;
+  @ViewChild('modDepth') modDepth!: LevelControlComponent;
   @ViewChild('modWaveForm') modWaveForm!: ElementRef<HTMLFormElement>;
   @ViewChild('internalModForm') internalModForm!: ElementRef<HTMLFormElement>;
   @ViewChild('outputToForm') outputToForm!: ElementRef<HTMLFormElement>;
@@ -26,9 +29,10 @@ export class RingModulatorComponent implements AfterViewInit {
   start(audioCtx: AudioContext) {
     this.audioCtx = audioCtx;
     this.ringMod = new RingModulator(audioCtx);
-    this.ringMod.internalMod(false);
-    this.ringMod.setModDepth(0);
-    this.ringMod.setModDepth(0);
+
+    const settings:RingModSettings = new RingModSettings()
+    // Set default ring mod settings
+    this.applySettings(settings);
   }
 
   protected readonly dialStyle = dialStyle;
@@ -60,6 +64,24 @@ export class RingModulatorComponent implements AfterViewInit {
 
   disconnect() {
     this.ringMod.disconnect();
+  }
+
+  applySettings(settings: RingModSettings = new RingModSettings()) {
+    this.ringMod.internalMod(settings.internalMod===onOff.on);
+    this.ringMod.setModDepth(settings.modDepth);
+
+
+    // Set up the dial positions
+    this.modFreq.setValue(settings.modFrequency);
+    this.modDepth.setValue(settings.modDepth);
+
+    // Set the mod waveform buttons and ring mod settings
+    SetRadioButtons.set(this.modWaveForm, settings.modWaveform);
+    this.ringMod.setModWaveform(settings.modWaveform);
+    SetRadioButtons.set(this.internalModForm, settings.internalMod);
+    this.ringMod.internalMod(settings.internalMod==='on');
+    SetRadioButtons.set(this.outputToForm, settings.output);
+    this.output.emit(settings.output);
   }
 
   ngAfterViewInit(): void {
