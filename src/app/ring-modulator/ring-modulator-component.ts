@@ -94,8 +94,8 @@ export class RingModulatorComponent implements AfterViewInit {
   }
 
   applySettings(settings: RingModSettings = new RingModSettings()) {
-    this.ringMod.internalMod(settings.internalMod===onOff.on);
-    this.ringMod.setModDepth(settings.modDepth);
+    // this.ringMod.internalMod(settings.internalMod===onOff.on);
+    // this.ringMod.setModDepth(settings.modDepth);
 
 
     // Set up the dial positions
@@ -104,9 +104,7 @@ export class RingModulatorComponent implements AfterViewInit {
 
     // Set the mod waveform buttons and ring mod settings
     SetRadioButtons.set(this.modWaveForm, settings.modWaveform);
-    this.ringMod.setModWaveform(settings.modWaveform);
     SetRadioButtons.set(this.internalModForm, settings.internalMod);
-    this.ringMod.internalMod(settings.internalMod==='on');
     SetRadioButtons.set(this.outputToForm, settings.output);
     this.output.emit(settings.output);
   }

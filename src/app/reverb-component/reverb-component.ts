@@ -44,20 +44,15 @@ export class ReverbComponent implements AfterViewInit {
     this.gain.gain.value = 0;
     this.reverb = new Reverb(audioCtx, this.input, this.gain, this.gain);
     this.settings = new ReverbSettings();
-    this.attackTime = this.settings.attackTime;
-    this.attackTimeDial.setValue(this.attackTime);
-    this.decayTime = this.settings.decayTime;
-    this.decayTimeDial.setValue(this.decayTime);
-    this.predelay = this.settings.predelay;
-    this.predelayDial.setValue(this.predelay);
-    this.repeatEchoTime = this.settings.repeatEchoTime;
-    this.repeatEchoTimeDial.setValue(this.repeatEchoTime);
-    this.repeatEchoGain = this.settings.repeatEchoGain;
-    this.repeatEchoLevelDial.setValue(this.repeatEchoGain);
+    this.reverb.setup(this.attackTime, this.decayTime, this.predelay, this.repeatEchoTime, this.repeatEchoGain);
+    this.attackTimeDial.setValue(this.settings.attackTime);
+    this.decayTimeDial.setValue(this.settings.decayTime);
+    this.predelayDial.setValue(this.settings.predelay);
+    this.repeatEchoTimeDial.setValue(this.settings.repeatEchoTime);
+    this.repeatEchoLevelDial.setValue(this.settings.repeatEchoGain);
     this.reverbOnOff(this.settings.output === onOff.on);
     SetRadioButtons.set(this.reverbOnOffForm, this.settings.output);
-    this.reverb.setup(this.attackTime, this.decayTime, this.predelay, this.repeatEchoTime, this.repeatEchoGain);
-    this.setWetDryBalance(this.settings.wetDry);
+
     this.wetDryDial.setValue(this.settings.wetDry);
     this.gain.connect(audioCtx.destination);
   }

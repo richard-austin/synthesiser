@@ -94,7 +94,7 @@ export class OscillatorComponent implements AfterViewInit {
       this.sustain.setValue(this.adsr.sustainLevel);
       this.release.setValue(this.adsr.releaseTime);
 
-      // Set up default frequency bend e=velope values
+      // Set up default frequency bend envelope values
       this.freqAttack.setValue(this.freqBend.attackTime);
       this.freqAttackLevel.setValue(this.freqBend.attackLevel);
       this.freqDecay.setValue(this.freqBend.decayTime);
@@ -104,9 +104,9 @@ export class OscillatorComponent implements AfterViewInit {
 
       // Set up LFO default values
       this.modFreq.setValue(4);  // Set dial
-      this.lfo.setFrequency(4 * 2);   // Set actual mod frequency
+     // this.lfo.setFrequency(4 * 2);   // Set actual mod frequency
       this.modLevel.setValue(0);  // Set dial
-      this.setModLevel(0); // Set actual mod depth
+    //  this.setModLevel(0); // Set actual mod depth
       this.modulation(this.lfo.oscillator, modulationType.off);
     }
     return ok;

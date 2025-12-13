@@ -1,4 +1,5 @@
 import {ElementRef} from '@angular/core';
+import {timer} from 'rxjs';
 
 export class SetRadioButtons {
   public static set(formElRef: ElementRef<HTMLFormElement>, setting: any) {
@@ -8,6 +9,8 @@ export class SetRadioButtons {
       if (form[elementsKey].value === setting) {
         // @ts-ignore
         form[elementsKey].checked = true;
+        const event = new Event('change');
+        form[elementsKey].dispatchEvent(event);  // Trigger change event to update the actual value
         break;
       }
     }
