@@ -2,13 +2,13 @@ import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewC
 import {dialStyle} from '../level-control/levelControlParameters';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {Filter} from '../modules/filter';
-import {ADSRValues} from '../util-classes/adsrvalues';
-import {FreqBendValues} from '../util-classes/freq-bend-values';
 import {Oscillator} from '../modules/oscillator';
 import {ReverbComponent} from '../reverb-component/reverb-component';
 import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component';
 import {PhasorComponent} from '../phasor/phasor-component';
-import {filterModType} from '../enums/enums';
+import {filterModType, onOff} from '../enums/enums';
+import {SetRadioButtons} from '../settings/set-radio-buttons';
+import {FilterSettings} from '../settings/filter';
 
 @Component({
   selector: 'app-filters',
@@ -20,11 +20,10 @@ import {filterModType} from '../enums/enums';
 })
 export class FilterComponent implements AfterViewInit {
   private _filters: Filter[] = [];
-  private adsr!: ADSRValues;
-  private freqBend!: FreqBendValues;
   protected tuningDivisions = 6;
   private lfo!: Oscillator;
   private audioCtx!: AudioContext;
+  settings!: FilterSettings
 
   public get filters(): Filter[] {
     return this._filters;
@@ -63,46 +62,46 @@ export class FilterComponent implements AfterViewInit {
     if (this.numberOfFilters) {
       this.lfo = new Oscillator(this.audioCtx);
 
-      ok = true;
-      this.adsr = new ADSRValues(0.2, 0.5, 1, 4);
-      this.freqBend = new FreqBendValues(0, 1.5, .2, 1.5, 0.2, 0.0);
-
-      for (let i = 0; i < this.numberOfFilters; ++i) {
-        this.filters.push(new Filter(this.audioCtx));
-        this.filters[i].setFrequency(20 * Math.pow(Math.pow(2, 1 / 12), (i + 1)));
-        this.filters[i].setAmplitudeEnvelope(this.adsr)
-        this.filters[i].useAmplitudeEnvelope = false;
-        this.filters[i].setGain(.1);
-        this.filters[i].setFreqBendEnvelope(this.freqBend);
-        this.filters[i].useFreqBendEnvelope(false);
-        this.filters[i].setType('lowpass');
-        //
-        // this.filters[i].modulation(this.lfo.oscillator, modulationType.frequency);
-        //      //  this.filters[i].modulationOff();
-        //      this.filters[i].setModLevel(23.4);
-        //
-      }
-
-      this.frequency.setValue(0);  // Set frequency dial initial value.
-      this.gain.setValue(4);
-      this.qfactor.setValue(10);
-
-      // Set up default frequency bend e=velope values
-      this.freqAttack.setValue(this.freqBend.attackTime);
-      this.freqAttackLevel.setValue(this.freqBend.attackLevel);
-      this.freqDecay.setValue(this.freqBend.decayTime);
-      this.freqSustain.setValue(this.freqBend.sustainLevel);
-      this.freqRelease.setValue(this.freqBend.releaseTime);
-      this.freqReleaseLevel.setValue(this.freqBend.releaseLevel);
-
-      // Set up LFO default values
-      this.modFreq.setValue(4);  // Set dial
-      this.lfo.setFrequency(4 * 2);   // Set actual mod frequency
-      this.modLevel.setValue(0);  // Set dial
-      this.setModLevel(0); // Set actual mod depth
+      this.applySettings();
     }
     return ok;
   }
+
+  applySettings(settings: FilterSettings = new FilterSettings()) {
+    this.settings = settings;
+    for (let i = 0; i < this.numberOfFilters; ++i) {
+      this.filters.push(new Filter(this.audioCtx));
+      this.filters[i].setFrequency(this.settings.frequency * Math.pow(Math.pow(2, 1 / 12), (i + 1)));
+      this.filters[i].setFreqBendEnvelope(this.settings.freqBend);
+      this.filters[i].useFreqBendEnvelope(this.settings.useFrequencyEnvelope === onOff.off);
+      this.filters[i].setType(this.settings.filterType);
+    }
+
+    this.frequency.setValue(this.settings.frequency);  // Set frequency dial initial value.
+    this.gain.setValue(this.settings.gain);
+    this.qfactor.setValue(this.settings.qFactor);
+
+    // Set up default frequency bend e=velope values
+    this.freqAttack.setValue(this.settings.freqBend.attackTime);
+    this.freqAttackLevel.setValue(this.settings.freqBend.attackLevel);
+    this.freqDecay.setValue(this.settings.freqBend.decayTime);
+    this.freqSustain.setValue(this.settings.freqBend.sustainLevel);
+    this.freqSustain.setValue(this.settings.freqBend.sustainLevel);
+    this.freqRelease.setValue(this.settings.freqBend.releaseTime);
+    this.freqReleaseLevel.setValue(this.settings.freqBend.releaseLevel);
+
+    // Set up LFO default values
+    this.modFreq.setValue(this.settings.modFreq);  // Set dial
+    this.modLevel.setValue(this.settings.modLevel);  // Set dial
+
+    // Set up the buttons
+    SetRadioButtons.set(this.filterOutputTo, this.settings.output);
+    SetRadioButtons.set(this.filterType, this.settings.filterType);
+    SetRadioButtons.set(this.freqEnveOnOff, this.settings.useFrequencyEnvelope);
+    SetRadioButtons.set(this.modSettingsForm, this.settings.modType);
+    SetRadioButtons.set(this.lfoWaveForm, this.settings.modWaveform);
+  }
+
 
   protected setFrequency(freq: number) {
     for (let i = 0; i < this.filters.length; i++) {
@@ -232,47 +231,31 @@ export class FilterComponent implements AfterViewInit {
     }
   }
 
-  protected setAttack($event: number) {
-    this.adsr.attackTime = $event;
-  }
-
-  protected setDecayTime($event: number) {
-    this.adsr.decayTime = $event * 10;
-  }
-
-  protected setSustainLevel($event: number) {
-    this.adsr.sustainLevel = $event;
-  }
-
-  protected setReleaseTime($event: number) {
-    this.adsr.releaseTime = $event * 10;
-  }
-
   protected readonly dialStyle = dialStyle;
 
 
   protected setFreqAttack($event: number) {
-    this.freqBend.attackTime = $event * 3;
+    this.settings.freqBend.attackTime = $event * 3;
   }
 
   protected setFreqAttackLevel($event: number) {
-    this.freqBend.attackLevel = $event * 5;
+    this.settings.freqBend.attackLevel = $event * 5;
   }
 
   protected setFreqDecayTime($event: number) {
-    this.freqBend.decayTime = $event * 3;
+    this.settings.freqBend.decayTime = $event * 3;
   }
 
   protected setFreqSustainLevel($event: number) {
-    this.freqBend.sustainLevel = $event * 5;
+    this.settings.freqBend.sustainLevel = $event * 5;
   }
 
   protected setFreqReleaseTime($event: number) {
-    this.freqBend.releaseTime = $event * 3;
+    this.settings.freqBend.releaseTime = $event * 3;
   }
 
   protected setFreqReleaseLevel($event: number) {
-    this.freqBend.releaseLevel = $event * 5;
+    this.settings.freqBend.releaseLevel = $event * 5;
   }
 
   protected setModFrequency(freq: number) {
@@ -292,9 +275,9 @@ export class FilterComponent implements AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    const oscOutForm = this.filterOutputTo.nativeElement;
-    for (let i = 0; i < oscOutForm.elements.length; ++i) {
-      oscOutForm.elements[i].addEventListener('change', ($event) => {
+    const filterOutForm = this.filterOutputTo.nativeElement;
+    for (let i = 0; i < filterOutForm.elements.length; ++i) {
+      filterOutForm.elements[i].addEventListener('change', ($event) => {
         const target = $event.target;
         // @ts-ignore
         this.output.emit(target.value);
@@ -308,9 +291,9 @@ export class FilterComponent implements AfterViewInit {
         this.useFreqBendEnvelope(value === 'on')
       })
     }
-    const waveform = this.filterType.nativeElement;
-    for (let i = 0; i < waveform.elements.length; ++i) {
-      waveform.elements[i].addEventListener('change', ($event) => {
+    const filterType = this.filterType.nativeElement;
+    for (let i = 0; i < filterType.elements.length; ++i) {
+      filterType.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value as OscillatorType;
         this.setFilterType(value as BiquadFilterType);
