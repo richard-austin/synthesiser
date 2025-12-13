@@ -34,7 +34,6 @@ export class RingModulatorComponent implements AfterViewInit {
   start(audioCtx: AudioContext) {
     this.ringMod = new RingModulator(audioCtx);
 
-    this.settings = new RingModSettings()
     // Set default ring mod settings
     this.applySettings(this.settings);
   }
@@ -94,6 +93,7 @@ export class RingModulatorComponent implements AfterViewInit {
   }
 
   applySettings(settings: RingModSettings = new RingModSettings()) {
+    this.settings = settings;
     // Set up the dial positions
     this.modFreq.setValue(settings.modFrequency);
     this.modDepth.setValue(settings.modDepth);

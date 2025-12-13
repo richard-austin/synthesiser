@@ -7,7 +7,7 @@ import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component
 import {ReverbComponent} from '../reverb-component/reverb-component';
 import {PhasorComponent} from '../phasor/phasor-component';
 import {OscillatorSettings} from '../settings/oscillator';
-import {oscModType} from '../enums/enums';
+import {onOff, oscModType, oscWaveforms} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {timer} from 'rxjs';
 
@@ -114,36 +114,42 @@ export class OscillatorComponent implements AfterViewInit {
   }
 
   protected setFrequency(freq: number) {
+    this.settings.frequency = freq;
     for (let i = 0; i < this.oscillators.length; i++) {
       this.oscillators[i].setFrequency(450 * Math.pow(Math.pow(2, 1 / 12), (i + 1) + 120 * freq * this.tuningDivisions / 10));
     }
   }
 
   protected setGain(gain: number) {
+    this.settings.gain = gain;
     for (let i = 0; i < this.oscillators.length; i++) {
       this.oscillators[i].setGain(gain);
     }
   }
 
   useAmplitudeEnvelope(useAmplitudeEnvelope: boolean) {
+    this.settings.useAmplitudeEnvelope = useAmplitudeEnvelope ? onOff.on : onOff.off;
     for (let i = 0; i < this.oscillators.length; i++) {
       this.oscillators[i].useAmplitudeEnvelope = useAmplitudeEnvelope;
     }
   }
 
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
+    this.settings.useFrequencyEnvelope = useFreqBendEnvelope ? onOff.on : onOff.off;
     for (let i = 0; i < this.oscillators.length; i++) {
       this.oscillators[i].useFreqBendEnvelope(useFreqBendEnvelope);
     }
   }
 
   private setWaveForm(value: OscillatorType) {
+    this.settings.waveForm = value as oscWaveforms;
     for (let i = 0; i < this.numberOfOscillators; ++i) {
       this.oscillators[i].setType(value);
     }
   }
 
   modulation(source: AudioNode, type: oscModType) {
+    this.settings.modType = type;
     for (let i = 0; i < this.numberOfOscillators; ++i) {
       this.oscillators[i].modulation(source, type);
     }
@@ -279,16 +285,19 @@ export class OscillatorComponent implements AfterViewInit {
   }
 
   protected setModFrequency(freq: number) {
+    this.settings.modFreq = freq;
     this.lfo.setFrequency(freq * 20);
   }
 
   protected setModLevel($event: number) {
+    this.settings.modLevel = $event;
     for (let i = 0; i < this.numberOfOscillators; ++i) {
       this.oscillators[i].setModLevel($event);
     }
   }
 
   protected setModType(type: oscModType) {
+    this.settings.modType = type;
     for (let i = 0; i < this.numberOfOscillators; ++i) {
       this.oscillators[i].modulation(this.lfo.oscillator, type);
     }
@@ -347,6 +356,7 @@ export class OscillatorComponent implements AfterViewInit {
           // @ts-ignore
           const value = $event.target.value as OscillatorType;
           this.lfo.setType(value);
+          this.settings.modType = value as oscModType;
         })
       }
     }
