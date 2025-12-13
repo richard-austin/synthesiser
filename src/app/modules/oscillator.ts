@@ -1,12 +1,10 @@
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {OscFilterBase} from './osc-filter-base';
 import {FreqBendValues} from '../util-classes/freq-bend-values';
-import {modulationType} from './gain-envelope-base';
+import {filterModType, oscModType} from '../enums/enums';
 
 export class Oscillator extends OscFilterBase {
   oscillator: OscillatorNode;
-  // public static override readonly  maxLevel: number = 1;
-  // public static override readonly maxFrequency = 20000;
 
   readonly freqBendBase = 1.4;
   constructor(protected override audioCtx: AudioContext) {
@@ -32,28 +30,28 @@ export class Oscillator extends OscFilterBase {
     this.oscillator.type = type;
   }
 
-  modulation(modulator: AudioNode, type: modulationType = modulationType.frequency) {
+  modulation(modulator: AudioNode, type: oscModType | filterModType = oscModType.frequency) {
     this.modType = type;
     this.modulator = modulator;
     this.frequencyMod.disconnect();
     this.amplitudeModDepth.gain.setValueAtTime(0, this.audioCtx.currentTime);
     this.oscillator.connect(this.gain);
-    if( type === modulationType.frequency) {
+    if( type === oscModType.frequency) {
       modulator.connect(this.frequencyMod);
       this.frequencyMod.connect(this.oscillator.frequency);
       this.frequencyMod.gain.setValueAtTime(this.freq * this.modLevel, this.audioCtx.currentTime);
     }
-    else if( type === modulationType.amplitude) {
+    else if( type === oscModType.amplitude) {
       modulator.connect(this.amplitudeModDepth);
       this.amplitudeModDepth.gain.setValueAtTime(this.modLevel * 10, this.audioCtx.currentTime);
     }
-    else if( type === modulationType.off) {
+    else if( type === oscModType.off) {
       this.modulationOff();
     }
   }
 
   setModLevel(level: number) {
-    if(this.modType === modulationType.frequency) {
+    if(this.modType === oscModType.frequency) {
       this.modLevel = level * OscFilterBase.maxLevel;
       this.frequencyMod.gain.setValueAtTime(this.oscillator.frequency.value * this.modLevel, this.audioCtx.currentTime);
     }

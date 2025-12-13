@@ -1,7 +1,7 @@
 import {OscFilterBase} from './osc-filter-base';
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {FreqBendValues} from '../util-classes/freq-bend-values';
-import {modulationType} from './gain-envelope-base';
+import {filterModType, oscModType} from '../enums/enums';
 
 export class Filter extends OscFilterBase {
   filter: BiquadFilterNode;
@@ -33,7 +33,7 @@ export class Filter extends OscFilterBase {
     this.filter.type = type;
   }
 
-  modulation(modulator: AudioNode, type: modulationType = modulationType.frequency) {
+  modulation(modulator: AudioNode, type: filterModType | oscModType = filterModType.frequency) {
     this.modulator = modulator;
     if(type === 'frequency') {
       modulator.connect(this.frequencyMod);

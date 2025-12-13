@@ -5,10 +5,10 @@ import {Filter} from '../modules/filter';
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {FreqBendValues} from '../util-classes/freq-bend-values';
 import {Oscillator} from '../modules/oscillator';
-import {modulationType} from '../modules/gain-envelope-base';
 import {ReverbComponent} from '../reverb-component/reverb-component';
 import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component';
 import {PhasorComponent} from '../phasor/phasor-component';
+import {filterModType} from '../enums/enums';
 
 @Component({
   selector: 'app-filters',
@@ -285,7 +285,7 @@ export class FilterComponent implements AfterViewInit {
     }
   }
 
-  protected setModType(type: modulationType) {
+  protected setModType(type: filterModType) {
     for (let i = 0; i < this.numberOfFilters; ++i) {
       this.filters[i].modulation(this.lfo.oscillator, type);
     }

@@ -1,18 +1,13 @@
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {OscFilterBase} from './osc-filter-base';
-
-export enum modulationType {
-  frequency = 'frequency',
-  amplitude = 'amplitude',
-  off = 'off'
-}
+import {filterModType, oscModType} from '../enums/enums';
 
 export abstract class GainEnvelopeBase {
   public readonly gain: GainNode;
   frequencyMod: GainNode;
   amplitudeMod: GainNode;
   amplitudeModDepth: GainNode;
-  modType: modulationType;
+  modType: oscModType | filterModType;
   protected modLevel: number = 0;
   private _useAmplitudeEnvelope = false;
   env: ADSRValues;
@@ -35,7 +30,7 @@ export abstract class GainEnvelopeBase {
     this.amplitudeModDepth.gain.setValueAtTime(0, audioCtx.currentTime);
     this.gain.connect(this.amplitudeMod);
     this.amplitudeModDepth.connect(this.amplitudeMod.gain);
-    this.modType = modulationType.amplitude;
+    this.modType = oscModType.amplitude;
   }
 
   setGain(gain: number) {
@@ -58,7 +53,7 @@ export abstract class GainEnvelopeBase {
     this.frequencyMod.gain.setValueAtTime(1, this.audioCtx.currentTime);
   }
 
-  abstract modulation(modulator: AudioNode, type: modulationType): void;
+  abstract modulation(modulator: AudioNode, type: oscModType | filterModType): void;
 
   public set useAmplitudeEnvelope(useAmplitudeEnvelope: boolean) {
     this._useAmplitudeEnvelope = useAmplitudeEnvelope;

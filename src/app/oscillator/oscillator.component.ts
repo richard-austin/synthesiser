@@ -1,14 +1,15 @@
 import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild} from '@angular/core';
 import {Oscillator} from '../modules/oscillator';
-import {ADSRValues} from '../util-classes/adsrvalues';
-import {FreqBendValues} from '../util-classes/freq-bend-values';
 import {LevelControlComponent} from '../level-control/level-control.component';
-import {modulationType} from '../modules/gain-envelope-base';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {FilterComponent} from '../filter/filter-component';
 import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component';
 import {ReverbComponent} from '../reverb-component/reverb-component';
 import {PhasorComponent} from '../phasor/phasor-component';
+import {OscillatorSettings} from '../settings/oscillator';
+import {oscModType} from '../enums/enums';
+import {SetRadioButtons} from '../settings/set-radio-buttons';
+import {timer} from 'rxjs';
 
 @Component({
   selector: 'app-oscillators',
@@ -20,12 +21,10 @@ import {PhasorComponent} from '../phasor/phasor-component';
 })
 export class OscillatorComponent implements AfterViewInit {
   private oscillators: Oscillator[] = [];
-  private adsr!: ADSRValues;
-  private freqBend!: FreqBendValues;
   protected tuningDivisions = 6;
   private lfo!: Oscillator;
   private audioCtx!: AudioContext;
-
+  private settings!: OscillatorSettings;
   @Input() filters!: FilterComponent;
   @Input() ringMod!: RingModulatorComponent;
   @Input() reverb!: ReverbComponent;
@@ -66,45 +65,52 @@ export class OscillatorComponent implements AfterViewInit {
     this.audioCtx = audioCtx;
     if (this.numberOfOscillators) {
       this.lfo = new Oscillator(this.audioCtx);
-
+      this.applySettings();
       ok = true;
-      this.adsr = new ADSRValues(0.2, 0.5, 1, 4);
-      this.freqBend = new FreqBendValues(0, 1.5, .2, 1.5, 0.2, 0.0);
-
-      for (let i = 0; i < this.numberOfOscillators; ++i) {
-        this.oscillators.push(new Oscillator(this.audioCtx));
-        this.oscillators[i].setFrequency(20 * Math.pow(Math.pow(2, 1 / 12), (i + 1)));
-        this.oscillators[i].setAmplitudeEnvelope(this.adsr)
-        this.oscillators[i].useAmplitudeEnvelope = true;
-        this.oscillators[i].setGain(.1);
-        this.oscillators[i].setFreqBendEnvelope(this.freqBend);
-        this.oscillators[i].useFreqBendEnvelope(false);
-        this.oscillators[i].setType('sine');
-      }
-
-      this.frequency.setValue(0);  // Set frequency dial initial value.
-      this.gain.setValue(4);
-      this.attack.setValue(this.adsr.attackTime);
-      this.decay.setValue(this.adsr.decayTime);
-      this.sustain.setValue(this.adsr.sustainLevel);
-      this.release.setValue(this.adsr.releaseTime);
-
-      // Set up default frequency bend envelope values
-      this.freqAttack.setValue(this.freqBend.attackTime);
-      this.freqAttackLevel.setValue(this.freqBend.attackLevel);
-      this.freqDecay.setValue(this.freqBend.decayTime);
-      this.freqSustain.setValue(this.freqBend.sustainLevel);
-      this.freqRelease.setValue(this.freqBend.releaseTime);
-      this.freqReleaseLevel.setValue(this.freqBend.releaseLevel);
-
-      // Set up LFO default values
-      this.modFreq.setValue(4);  // Set dial
-     // this.lfo.setFrequency(4 * 2);   // Set actual mod frequency
-      this.modLevel.setValue(0);  // Set dial
-    //  this.setModLevel(0); // Set actual mod depth
-      this.modulation(this.lfo.oscillator, modulationType.off);
     }
     return ok;
+  }
+
+  applySettings(settings: OscillatorSettings = new OscillatorSettings()) {
+    this.settings = settings;
+    for (let i = 0; i < this.numberOfOscillators; ++i) {
+      this.oscillators.push(new Oscillator(this.audioCtx));
+      this.oscillators[i].setFrequency(20 * Math.pow(Math.pow(2, 1 / 12), (i + 1)));
+      this.oscillators[i].setAmplitudeEnvelope(this.settings.adsr)
+      this.oscillators[i].useAmplitudeEnvelope = true;
+      // this.oscillators[i].setGain(.1);
+      this.oscillators[i].setFreqBendEnvelope(this.settings.freqBend);
+      this.oscillators[i].useFreqBendEnvelope(false);
+      this.oscillators[i].setType(this.settings.waveForm);
+    }
+
+    this.frequency.setValue(0);  // Set frequency dial initial value.
+    this.gain.setValue(this.settings.gain);
+    this.attack.setValue(this.settings.adsr.attackTime);
+    this.decay.setValue(this.settings.adsr.decayTime);
+    this.sustain.setValue(this.settings.adsr.sustainLevel);
+    this.release.setValue(this.settings.adsr.releaseTime);
+
+    // Set up default frequency bend envelope values
+    this.freqAttack.setValue(this.settings.freqBend.attackTime);
+    this.freqAttackLevel.setValue(this.settings.freqBend.attackLevel);
+    this.freqDecay.setValue(this.settings.freqBend.decayTime);
+    this.freqSustain.setValue(this.settings.freqBend.sustainLevel);
+    this.freqRelease.setValue(this.settings.freqBend.releaseTime);
+    this.freqReleaseLevel.setValue(this.settings.freqBend.releaseLevel);
+
+    // Set up LFO default values
+    this.modFreq.setValue(this.settings.modFreq);  // Set dial
+    this.modLevel.setValue(this.settings.modLevel);  // Set dial
+    this.modulation(this.lfo.oscillator, this.settings.modType);
+
+    // Set up the buttons
+    SetRadioButtons.set(this.oscOutputToForm, this.settings.output);
+    SetRadioButtons.set(this.oscWaveForm, this.settings.waveForm);
+    SetRadioButtons.set(this.amplitudeEnvelopeOnOffForm, this.settings.useAmplitudeEnvelope);
+    SetRadioButtons.set(this.freqEnveOnOffForm, this.settings.useFrequencyEnvelope);
+    SetRadioButtons.set(this.modSettingsForm, this.settings.modType);
+    SetRadioButtons.set(this.lfoWaveForm, this.settings.modWaveform);
   }
 
   protected setFrequency(freq: number) {
@@ -137,7 +143,7 @@ export class OscillatorComponent implements AfterViewInit {
     }
   }
 
-  modulation(source: AudioNode, type: modulationType) {
+  modulation(source: AudioNode, type: oscModType) {
     for (let i = 0; i < this.numberOfOscillators; ++i) {
       this.oscillators[i].modulation(source, type);
     }
@@ -231,45 +237,45 @@ export class OscillatorComponent implements AfterViewInit {
   }
 
   protected setAttack($event: number) {
-    this.adsr.attackTime = $event;
+    this.settings.adsr.attackTime = $event;
   }
 
   protected setDecayTime($event: number) {
-    this.adsr.decayTime = $event * 10;
+    this.settings.adsr.decayTime = $event * 10;
   }
 
   protected setSustainLevel($event: number) {
-    this.adsr.sustainLevel = $event;
+    this.settings.adsr.sustainLevel = $event;
   }
 
   protected setReleaseTime($event: number) {
-    this.adsr.releaseTime = $event * 10;
+    this.settings.adsr.releaseTime = $event * 10;
   }
 
   protected readonly dialStyle = dialStyle;
 
   protected setFreqAttack($event: number) {
-    this.freqBend.attackTime = $event * 3;
+    this.settings.freqBend.attackTime = $event * 3;
   }
 
   protected setFreqAttackLevel($event: number) {
-    this.freqBend.attackLevel = $event * 5;
+    this.settings.freqBend.attackLevel = $event * 5;
   }
 
   protected setFreqDecayTime($event: number) {
-    this.freqBend.decayTime = $event * 3;
+    this.settings.freqBend.decayTime = $event * 3;
   }
 
   protected setFreqSustainLevel($event: number) {
-    this.freqBend.sustainLevel = $event * 5;
+    this.settings.freqBend.sustainLevel = $event * 5;
   }
 
   protected setFreqReleaseTime($event: number) {
-    this.freqBend.releaseTime = $event * 3;
+    this.settings.freqBend.releaseTime = $event * 3;
   }
 
   protected setFreqReleaseLevel($event: number) {
-    this.freqBend.releaseLevel = $event * 5;
+    this.settings.freqBend.releaseLevel = $event * 5;
   }
 
   protected setModFrequency(freq: number) {
@@ -282,7 +288,7 @@ export class OscillatorComponent implements AfterViewInit {
     }
   }
 
-  protected setModType(type: modulationType) {
+  protected setModType(type: oscModType) {
     for (let i = 0; i < this.numberOfOscillators; ++i) {
       this.oscillators[i].modulation(this.lfo.oscillator, type);
     }
@@ -293,8 +299,12 @@ export class OscillatorComponent implements AfterViewInit {
     for (let i = 0; i < oscOutForm.elements.length; ++i) {
       oscOutForm.elements[i].addEventListener('change', ($event) => {
         const target = $event.target;
-        // @ts-ignore
-        this.output.emit(target.value);
+
+        const sub = timer(10).subscribe(() => {
+          sub.unsubscribe();
+          // @ts-ignore
+          this.output.emit(target.value);
+        });
       });
     }
 
