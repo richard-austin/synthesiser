@@ -6,7 +6,7 @@ import {Oscillator} from '../modules/oscillator';
 import {ReverbComponent} from '../reverb-component/reverb-component';
 import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component';
 import {PhasorComponent} from '../phasor/phasor-component';
-import {filterModType, onOff} from '../enums/enums';
+import {filterModType, filterTypes, modWaveforms, onOff} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {FilterSettings} from '../settings/filter';
 
@@ -104,50 +104,37 @@ export class FilterComponent implements AfterViewInit {
 
 
   protected setFrequency(freq: number) {
+    this.settings.frequency = freq;
     for (let i = 0; i < this.filters.length; i++) {
       this.filters[i].setFrequency(450 * Math.pow(Math.pow(2, 1 / 12), (i + 1) + 120 * freq * this.tuningDivisions / 10));
     }
   }
 
   protected setGain(gain: number) {
+    this.settings.gain = gain;
     for (let i = 0; i < this.filters.length; i++) {
       this.filters[i].setGain(gain);
     }
   }
 
   protected setQFactor(qfactor: number) {
+    this.settings.qFactor = qfactor;
     for (let i = 0; i < this.filters.length; i++) {
       this.filters[i].setQ(qfactor * 100);
     }
   }
 
-  useAmplitudeEnvelope(useAmplitudeEnvelope: boolean) {
-    for (let i = 0; i < this.filters.length; i++) {
-      this.filters[i].useAmplitudeEnvelope = useAmplitudeEnvelope;
-    }
-  }
-
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
+    this.settings.useFrequencyEnvelope = useFreqBendEnvelope ? onOff.on : onOff.off;
     for (let i = 0; i < this.filters.length; i++) {
       this.filters[i].useFreqBendEnvelope(useFreqBendEnvelope);
     }
   }
 
   private setFilterType(value: BiquadFilterType) {
+    this.settings.filterType = value as filterTypes;
     for (let i = 0; i < this.numberOfFilters; ++i) {
       this.filters[i].setType(value);
-    }
-  }
-
-  modulation(source: AudioNode) {
-    for (let i = 0; i < this.numberOfFilters; ++i) {
-      this.filters[i].modulation(source);
-    }
-  }
-
-  modulationOff() {
-    for (let i = 0; i < this.numberOfFilters; ++i) {
-      this.filters[i].modulationOff();
     }
   }
 
@@ -259,16 +246,19 @@ export class FilterComponent implements AfterViewInit {
   }
 
   protected setModFrequency(freq: number) {
+    this.settings.modFreq = freq;
     this.lfo.setFrequency(freq * 20);
   }
 
   protected setModLevel($event: number) {
+    this.settings.modLevel = $event;
     for (let i = 0; i < this.numberOfFilters; ++i) {
       this.filters[i].setModLevel($event);
     }
   }
 
   protected setModType(type: filterModType) {
+    this.settings.modType = type;
     for (let i = 0; i < this.numberOfFilters; ++i) {
       this.filters[i].modulation(this.lfo.oscillator, type);
     }
@@ -314,9 +304,9 @@ export class FilterComponent implements AfterViewInit {
           // @ts-ignore
           const value = $event.target.value as OscillatorType;
           this.lfo.setType(value);
+          this.settings.modWaveform = value as modWaveforms;
         })
       }
     }
   }
-
 }
