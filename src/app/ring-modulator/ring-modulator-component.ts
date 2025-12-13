@@ -94,10 +94,6 @@ export class RingModulatorComponent implements AfterViewInit {
   }
 
   applySettings(settings: RingModSettings = new RingModSettings()) {
-    // this.ringMod.internalMod(settings.internalMod===onOff.on);
-    // this.ringMod.setModDepth(settings.modDepth);
-
-
     // Set up the dial positions
     this.modFreq.setValue(settings.modFrequency);
     this.modDepth.setValue(settings.modDepth);

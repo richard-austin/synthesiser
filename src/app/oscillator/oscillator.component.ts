@@ -80,11 +80,6 @@ export class OscillatorComponent implements AfterViewInit {
         this.oscillators[i].setFreqBendEnvelope(this.freqBend);
         this.oscillators[i].useFreqBendEnvelope(false);
         this.oscillators[i].setType('sine');
-        //
-        // this.oscillators[i].modulation(this.lfo.oscillator, modulationType.frequency);
-        //      //  this.oscillators[i].modulationOff();
-        //      this.oscillators[i].setModLevel(23.4);
-        //
       }
 
       this.frequency.setValue(0);  // Set frequency dial initial value.
