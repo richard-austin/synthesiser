@@ -9,3 +9,4 @@ export enum onOff {on='on', off='off'}
 export enum ringModOutput {speaker='speaker', filter='filter', off='off'}
 export enum noiseTypes {white='white', pink='pink', brown='brown'}
 export enum noiseOutputs {speaker='speaker', filter='filter', off='off'}
+export enum phasorOutputs{on='on', off='off'}
