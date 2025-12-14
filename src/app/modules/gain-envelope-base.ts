@@ -60,6 +60,7 @@ export abstract class GainEnvelopeBase {
     let gainToUse = this.setLevel;
     if (this._useAmplitudeEnvelope)
       gainToUse = this.clampLevel(gainToUse * OscFilterBase.minLevel);
+    this.gain.gain.cancelAndHoldAtTime(this.audioCtx.currentTime);
     this.gain.gain.setValueAtTime(this.clampLevel(gainToUse), this.audioCtx.currentTime);
   }
 

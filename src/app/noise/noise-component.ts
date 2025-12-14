@@ -8,8 +8,6 @@ import {dialStyle} from '../level-control/levelControlParameters';
 import {NoiseSettings} from '../settings/noise';
 import {noiseOutputs, onOff} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
-import {GainEnvelopeBase} from '../modules/gain-envelope-base';
-import {OscFilterBase} from '../modules/osc-filter-base';
 
 @Component({
   selector: 'app-noise',
@@ -20,12 +18,9 @@ import {OscFilterBase} from '../modules/osc-filter-base';
   styleUrl: './noise-component.scss',
 })
 export class NoiseComponent implements AfterViewInit {
-  private audioCtx!: AudioContext;
-  private whiteNoise!: WhiteNoise;
-  private pinkNoise!: PinkNoise;
-  private brownNoise!: BrownNoise;
-
-  private gainArray: GainNode[] = [];
+  private whiteNoise: WhiteNoise[] = [];
+  private pinkNoise: PinkNoise[] = [];
+  private brownNoise: BrownNoise[] = [];
   private settings!: NoiseSettings;
 
   @Input() numberOfChannels!: number;
@@ -42,26 +37,19 @@ export class NoiseComponent implements AfterViewInit {
   @ViewChild('gainControl') gainControl!: LevelControlComponent;
   @ViewChild('amplitudeEnvelopeOnOffForm') amplitudeEnvelopeOnOffForm!: ElementRef<HTMLFormElement>;
 
+
   constructor() {
   }
 
   async start(audioCtx: AudioContext) {
-    this.audioCtx = audioCtx;
-
     if (this.numberOfChannels) {
-      this.whiteNoise = new WhiteNoise(audioCtx);
-      this.pinkNoise = new PinkNoise(audioCtx);
-      this.brownNoise = new BrownNoise(audioCtx);
-
-      await this.whiteNoise.start();
-      await this.pinkNoise.start();
-      await this.brownNoise.start();
-
       for (let i = 0; i < this.numberOfChannels; ++i) {
-        this.gainArray.push(new GainNode(audioCtx));
-        this.whiteNoise.connect(this.gainArray[i])
-        this.pinkNoise.connect(this.gainArray[i]);
-        this.brownNoise.connect(this.gainArray[i]);
+        this.whiteNoise.push(new WhiteNoise(audioCtx));
+        this.pinkNoise.push(new PinkNoise(audioCtx));
+         this.brownNoise.push(new BrownNoise(audioCtx));
+        await this.whiteNoise[i].start();
+        await this.pinkNoise[i].start();
+        await this.brownNoise[i].start();
       }
     }
     this.applySettings();
@@ -69,12 +57,16 @@ export class NoiseComponent implements AfterViewInit {
 
   applySettings(settings: NoiseSettings = new NoiseSettings()) {
     this.settings = settings;
-
     for (let i = 0; i < this.numberOfChannels; ++i) {
-      if (settings.useAmplitudeEnvelope === onOff.on)
-        this.gainArray[i].gain.value = GainEnvelopeBase.minLevel;
-      else
-        this.gainArray[i].gain.value = this.settings.gain;
+      this.whiteNoise[i].setGain(settings.gain);
+      this.whiteNoise[i].setAmplitudeEnvelope(settings.adsr);
+      this.whiteNoise[i].useAmplitudeEnvelope = settings.useAmplitudeEnvelope === onOff.on;
+      this.pinkNoise[i].setGain(settings.gain);
+      this.pinkNoise[i].setAmplitudeEnvelope(settings.adsr);
+      this.pinkNoise[i].useAmplitudeEnvelope = settings.useAmplitudeEnvelope === onOff.on;
+      this.brownNoise[i].setGain(settings.gain);
+      this.brownNoise[i].setAmplitudeEnvelope(settings.adsr);
+      this.brownNoise[i].useAmplitudeEnvelope = settings.useAmplitudeEnvelope === onOff.on;
     }
     this.attack.setValue(this.settings.adsr.attackTime);
     this.decay.setValue(this.settings.adsr.decayTime);
@@ -89,44 +81,49 @@ export class NoiseComponent implements AfterViewInit {
 
   protected setGain(gain: number) {
     this.settings.gain = gain;
-    switch (this.settings.type) {
-      case 'white':
-        this.whiteNoise.setGain(gain);
-        break;
-      case 'pink':
-        this.pinkNoise.setGain(gain);
-        break;
-      case 'brown':
-        this.brownNoise.setGain(gain);
-        break;
+    const noiseType = this.settings.type;
+
+    for (let i = 0; i < this.numberOfChannels; i++) {
+      switch (noiseType) {
+        case 'white':
+          this.whiteNoise[i].setGain(gain);
+          break;
+        case 'pink':
+          this.pinkNoise[i].setGain(gain);
+          break;
+        case 'brown':
+          this.brownNoise[i].setGain(gain);
+          break;
+      }
     }
   }
 
   private setNoiseType(noiseType: any) {
     this.settings.type = noiseType;
-    this.whiteNoise.setGain(0);
-    this.pinkNoise.setGain(0);
-    this.brownNoise.setGain(0);
     const gain = this.settings.gain;
-    switch (noiseType) {
-      case 'white':
-        this.whiteNoise.setGain(gain);
-        break;
-      case 'pink':
-        this.pinkNoise.setGain(gain);
-        break;
-      case 'brown':
-        this.brownNoise.setGain(gain);
-        break;
+
+    for (let i = 0; i < this.numberOfChannels; ++i) {
+      this.whiteNoise[i].setGain(0);
+      this.pinkNoise[i].setGain(0);
+      this.brownNoise[i].setGain(0);
+    }
+    const source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
+    for (let i = 0; i < this.numberOfChannels; ++i) {
+      source[i].setGain(gain);
+      source[i].useAmplitudeEnvelope = this.settings.useAmplitudeEnvelope == onOff.on;
     }
   }
 
   connect(node: AudioNode) {
     this.settings.output = noiseOutputs.speaker;
     for (let i = 0; i < this.numberOfChannels; ++i) {
-      this.gainArray[i].disconnect();
+      this.whiteNoise[i].disconnect();
+      this.pinkNoise[i].disconnect();
+      this.brownNoise[i].disconnect();
     }
-    this.gainArray[0].connect(node);
+    this.whiteNoise[0].connect(node);
+    this.pinkNoise[0].connect(node);
+    this.brownNoise[0].connect(node);
   }
 
   /**
@@ -139,7 +136,9 @@ export class NoiseComponent implements AfterViewInit {
     if (filters && filters.length === this.numberOfChannels) {
       ok = true;
       for (let i = 0; i < this.numberOfChannels; i++) {
-        this.gainArray[i].connect(filters[i].filter);
+        this.whiteNoise[i].connect(filters[i].filter);
+        this.pinkNoise[i].connect(filters[i].filter);
+        this.brownNoise[i].connect(filters[i].filter);
       }
     } else
       console.log("Filter array is a different size to numberOfChannels")
@@ -149,52 +148,51 @@ export class NoiseComponent implements AfterViewInit {
   disconnect() {
     this.settings.output = noiseOutputs.off;
     for (let i = 0; i < this.numberOfChannels; i++) {
-      this.gainArray[i].disconnect();
+      this.whiteNoise[i].disconnect();
+      this.pinkNoise[i].disconnect();
+      this.brownNoise[i].disconnect();
     }
   }
+
+  private noiseSource(): WhiteNoise[] | PinkNoise[] | BrownNoise[] {
+    let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.whiteNoise;
+    switch (this.settings.type) {
+      case 'white':
+        source = this.whiteNoise;
+        break;
+      case 'pink':
+        source = this.pinkNoise;
+        break;
+      case 'brown':
+        source = this.brownNoise;
+        break;
+    }
+    return source;
+  }
+
   useAmplitudeEnvelope(useAmplitudeEnvelope: boolean) {
     this.settings.useAmplitudeEnvelope = useAmplitudeEnvelope ? onOff.on : onOff.off;
-
-    let gainToUse = this.settings.gain;
-    if (this.settings.useAmplitudeEnvelope === onOff.on)
-      gainToUse = OscFilterBase.minLevel;
-    for (let i = 0; i < this.numberOfChannels; ++i) {
-      this.gainArray[i].gain.cancelAndHoldAtTime(this.audioCtx.currentTime);
-      this.gainArray[i].gain.setValueAtTime(gainToUse, this.audioCtx.currentTime);
+    let source : WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
+    for (let i = 0; i < this.numberOfChannels; i++) {
+      source[i].useAmplitudeEnvelope = useAmplitudeEnvelope;
     }
   }
 
   keyDown(keyIndex: number) {
-    this.whiteNoise.keyDown()
     if (keyIndex >= 0 && keyIndex < this.numberOfChannels) {
-      let source: GainNode[] = this.gainArray;
-      if (this.settings.output === noiseOutputs.speaker)
+      let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
+      if(this.settings.output === noiseOutputs.speaker)
         keyIndex = 0;  // Wired straight to the output, so we only use a single channel to avoid overload
-      const ctx = this.audioCtx;
-      if (this.settings.useAmplitudeEnvelope === onOff.on) {
-        const adsr = this.settings.adsr;
-        const node = source[keyIndex];
-        node.gain.cancelAndHoldAtTime(ctx.currentTime);
-        node.gain.setValueAtTime(GainEnvelopeBase.minLevel, ctx.currentTime);
-        node.gain.exponentialRampToValueAtTime(GainEnvelopeBase.maxLevel, ctx.currentTime + adsr.attackTime);
-        node.gain.exponentialRampToValueAtTime(adsr.sustainLevel, ctx.currentTime + adsr.attackTime + adsr.decayTime);
-      }
+      source[keyIndex].keyDown();
     }
   }
 
   keyUp(keyIndex: number) {
     if (keyIndex >= 0 && keyIndex < this.numberOfChannels) {
-      let source: GainNode[] = this.gainArray;
-      if (this.settings.output === noiseOutputs.speaker)
+      let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
+      if(this.settings.output === noiseOutputs.speaker)
         keyIndex = 0; // Wired straight to the output, so we only use a single channel to avoid overload
-
-      const adsr = this.settings.adsr;
-      const node = source[keyIndex];
-      const ctx = this.audioCtx;
-      if (this.settings.useAmplitudeEnvelope === onOff.on) {
-        node.gain.cancelAndHoldAtTime(ctx.currentTime);
-        node.gain.exponentialRampToValueAtTime(GainEnvelopeBase.minLevel, ctx.currentTime + adsr.releaseTime);
-      }
+      source[keyIndex].keyUp();
     }
   }
 
