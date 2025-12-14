@@ -307,12 +307,13 @@ export class OscillatorComponent implements AfterViewInit {
     const oscOutForm = this.oscOutputToForm.nativeElement;
     for (let i = 0; i < oscOutForm.elements.length; ++i) {
       oscOutForm.elements[i].addEventListener('change', ($event) => {
-        const target = $event.target;
-
+        // @ts-ignore
+        const value = $event.target.value;
         const sub = timer(10).subscribe(() => {
           sub.unsubscribe();
           // @ts-ignore
-          this.output.emit(target.value);
+          this.output.emit(value);
+          this.settings.output = value;
         });
       });
     }

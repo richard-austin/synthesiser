@@ -268,9 +268,10 @@ export class FilterComponent implements AfterViewInit {
     const filterOutForm = this.filterOutputTo.nativeElement;
     for (let i = 0; i < filterOutForm.elements.length; ++i) {
       filterOutForm.elements[i].addEventListener('change', ($event) => {
-        const target = $event.target;
         // @ts-ignore
-        this.output.emit(target.value);
+        const value = $event.target.value;
+        this.output.emit(value);
+        this.settings.output = value;
       });
     }
     const freqEnveOnOffForm = this.freqEnveOnOff.nativeElement;
