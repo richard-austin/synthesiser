@@ -11,11 +11,11 @@ export class ReverbSettings {
 
   // Constructor sets up default values
   constructor(attackTime: number = 0,
-              decayTime: number = 2,
+              decayTime: number = .2,
               predelayTime: number = 0,
               repeatEchoTime: number = 0.7,
               repeatEchoGain: number = 0.3,
-              wetDry: number = -3,
+              wetDry: number = -.3,
               output: onOff = onOff.off) {
     this.attackTime = attackTime;
     this.decayTime = decayTime;

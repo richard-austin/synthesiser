@@ -120,7 +120,7 @@ export class FilterComponent implements AfterViewInit {
   protected setQFactor(qfactor: number) {
     this.settings.qFactor = qfactor;
     for (let i = 0; i < this.filters.length; i++) {
-      this.filters[i].setQ(qfactor * 100);
+      this.filters[i].setQ(qfactor);
     }
   }
 

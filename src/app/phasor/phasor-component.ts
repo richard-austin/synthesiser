@@ -6,6 +6,7 @@ import {Oscillator} from '../modules/oscillator';
 import {PhasorSettings} from '../settings/phasor';
 import {modWaveforms, onOff, phasorOutputs} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
+import {Cookies} from '../settings/cookies/cookies';
 
 @Component({
   selector: 'app-phasor',
@@ -20,6 +21,8 @@ export class PhasorComponent implements AfterViewInit {
   private gain!: GainNode;
   phasor!:Phasor;
   settings!: PhasorSettings;
+  settingsProxy!: PhasorSettings;
+  cookies!: Cookies;
 
   protected readonly dialStyle = dialStyle;
   private lfo!: Oscillator;
@@ -47,13 +50,33 @@ export class PhasorComponent implements AfterViewInit {
     this.gain.gain.value = 1;
     this.gain.connect(audioCtx.destination);
     this.phasor = new Phasor(audioCtx, this.input, this.gain);
+    this.cookies = new Cookies();
 
     // Set up LFO default values
     this.applySettings();
+    this.lfo.connect(this.phasor.delay1.delayTime);
+    this.negModGain.connect(this.phasor.delay2.delayTime);
   }
 
   applySettings(settings:PhasorSettings = new PhasorSettings()) {
-    this.settings = settings;
+    const savedSettings = this.cookies.getSettings('phasor');
+
+    if(Object.keys(savedSettings).length > 0)
+      this.settings = settings = savedSettings as PhasorSettings;  // Use values from cookie
+    else
+      this.settings = settings;  // Use default values
+
+    this.settingsProxy = new Proxy(this.settings, {
+      set: (target, key, value) => {
+        // @ts-ignore
+        console.log(`${key} set from ${this.settings[key]} to ${value}`);
+        // @ts-ignore
+        target[key] = value;
+        this.cookies.saveSettings(target, 'phasor');
+        return true;
+      },
+    });
+
 
     // Set up the dials
     this.modFreq.setValue(settings.lfoFrequency);
@@ -61,18 +84,18 @@ export class PhasorComponent implements AfterViewInit {
     this.phase.setValue(settings.phase);
     this.level.setValue(settings.gain);
 
-    SetRadioButtons.set(this.phasorOnOffForm, this.settings.output);
-    SetRadioButtons.set(this.lfoWaveForm, this.settings.modWaveform);
-    SetRadioButtons.set(this.modOnOff, this.settings.output);
+    SetRadioButtons.set(this.phasorOnOffForm, this.settingsProxy.output);
+    SetRadioButtons.set(this.lfoWaveForm, this.settingsProxy.modWaveform);
+    SetRadioButtons.set(this.modOnOff, this.settingsProxy.output);
   }
 
   protected setPhase($event: number) {
-    this.settings.phase = $event;
+    this.settingsProxy.phase = $event;
     this.phasor.setPhase($event/80);
   }
 
   protected setLevel($event: number) {
-    this.settings.gain = $event;
+    this.settingsProxy.gain = $event;
     this.phasor.setLevel($event);
   }
 
@@ -81,13 +104,13 @@ export class PhasorComponent implements AfterViewInit {
   }
 
   protected setModFrequency(freq: number) {
-    this.settings.lfoFrequency = freq;
+    this.settingsProxy.lfoFrequency = freq;
     this.lfo.setFrequency(freq/3);
   }
 
   lastLevel: number = 0;
   protected setModLevel($event: number) {
-    this.settings.lfoFrequency = $event;
+    this.settingsProxy.modDepth = $event;
     const level = $event /60;
     this.lastLevel = level;
     this.lfo.setGain(level);
@@ -101,7 +124,7 @@ export class PhasorComponent implements AfterViewInit {
         // @ts-ignore
         const value = $event.target.value;
         this.phasorOnOff(value === 'on');
-        this.settings.output = value as phasorOutputs;
+        this.settingsProxy.output = value as phasorOutputs;
       });
     }
 
@@ -111,7 +134,7 @@ export class PhasorComponent implements AfterViewInit {
         // @ts-ignore
         const value = $event.target.value as OscillatorType;
         this.lfo.setType(value);
-        this.settings.modWaveform = value as modWaveforms;
+        this.settingsProxy.modWaveform = value as modWaveforms;
       })
     }
     const modOnOff = this.modOnOff.nativeElement;
@@ -123,7 +146,7 @@ export class PhasorComponent implements AfterViewInit {
           this.lfo.setGain(this.lastLevel);
         else
           this.lfo.setGain(0);
-        this.settings.modulation = value as onOff;
+        this.settingsProxy.modulation = value as onOff;
       });
     }
   }

@@ -5,9 +5,24 @@
       <div class="module filter-width">
         <h2>Filters</h2>
         <div style="display: flex; flex-direction: row">
-          <app-level-control #frequency label="Tuning" [plusMinus]="true" [divisions]="tuningDivisions" [calAngle]="300" [radius]="50" (setLevel)="setFrequency($event)"></app-level-control>
-          <app-level-control #gain label="Gain" [radius]="50" [divisions]="10" (setLevel)="setGain($event)"></app-level-control>
-          <app-level-control #qfactor label="Q Factor" [radius]="50" [divisions]="100" (setLevel)="setQFactor($event)"></app-level-control>
+          <app-level-control #frequency
+                             label="Tuning"
+                             [plusMinus]="true"
+                             [divisions]="tuningDivisions"
+                             [calAngle]="300"
+                             [radius]="50"
+                             (setLevel)="setFrequency($event)"></app-level-control>
+          <app-level-control #gain
+                             label="Gain"
+                             [radius]="50"
+                             [divisions]="10"
+                             (setLevel)="setGain($event)"></app-level-control>
+          <app-level-control #qfactor
+                             label="Q Factor"
+                             [radius]="50"
+                             [divisions]="100"
+                             [valueRange]="100"
+                             (setLevel)="setQFactor($event)"></app-level-control>
         </div>
         <h2>Filter Type</h2>
         <div style="height: 3px;"></div>
@@ -30,8 +45,21 @@
       </div>
       <div class="module filter-width">
         <h2>Modulation</h2>
-        <app-level-control #modFreq label="LFO Frequency" [style]="dialStyle.green" [divisions]="10" [calAngle]="300" [radius]="50" (setLevel)="setModFrequency($event)"></app-level-control>
-        <app-level-control #modDepth label="Mod Depth" [style]="dialStyle.green" [divisions]="10" [calAngle]="300" [radius]="50" (setLevel)="setModLevel($event)"></app-level-control>
+        <app-level-control #modFreq
+                           label="LFO Frequency"
+                           [style]="dialStyle.green"
+                           [divisions]="10"
+                           [valueRange]="10"
+                           [calAngle]="300"
+                           [radius]="50"
+                           (setLevel)="setModFrequency($event)"></app-level-control>
+        <app-level-control #modDepth
+                           label="Mod Depth"
+                           [style]="dialStyle.green"
+                           [divisions]="10"
+                           [calAngle]="300"
+                           [radius]="50"
+                           (setLevel)="setModLevel($event)"></app-level-control>
         <h2>Waveform</h2>
         <div style="height: 3px;"></div>
         <form #lfoWaveForm>

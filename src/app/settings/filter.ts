@@ -20,15 +20,15 @@ export class FilterSettings {
   modWaveform: modWaveforms;
   useFrequencyEnvelope: onOff;
 
-  constructor(freqBend: FreqBendValues = new FreqBendValues(3, 2.5, 2, 1, 2, 0.0),
+  constructor(freqBend: FreqBendValues = new FreqBendValues(0, 1, 2, 0.5, 0.1, 0.0),
               useFrequencyEnvelope: onOff = onOff.off,
-              frequency: number = -2,
-              qFactor: number = 10,
-              gain: number = 4,
+              frequency: number = 0,
+              qFactor: number = 20,
+              gain: number = .4,
               filterType: filterTypes = filterTypes.lowpass,
               output: filterOutputs = filterOutputs.off,
-              modFreq: number = 1,
-              modLevel: number=4,
+              modFreq: number = 2,
+              modLevel: number=.4,
               modWaveForm: modWaveforms = modWaveforms.sine,
               modType: filterModType = filterModType.off)
   {

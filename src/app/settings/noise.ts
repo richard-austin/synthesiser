@@ -8,9 +8,9 @@ export class NoiseSettings {
   type: noiseTypes;
   output: noiseOutputs;
 
-  constructor(adsr: ADSRValues = new ADSRValues(0.2, 0.5, 1, 4),
+  constructor(adsr: ADSRValues = new ADSRValues(0.0, 0.5, .1, .4),
               useAmplitudeEnvelope: onOff = onOff.on,
-              gain: number = 1,
+              gain: number = .11,
               type:noiseTypes = noiseTypes.white,
               output: noiseOutputs = noiseOutputs.off) {
     this.adsr = adsr;

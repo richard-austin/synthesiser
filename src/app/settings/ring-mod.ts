@@ -8,8 +8,8 @@ export class RingModSettings {
   output: ringModOutput;
 
   // Constructor sets default values
-  constructor(modFrequency: number=5,
-              modDepth: number=5,
+  constructor(modFrequency: number=.5,
+              modDepth: number=.5,
               modWaveform: modWaveforms=modWaveforms.sine,
               internalMod: onOff = onOff.off,
               output: ringModOutput=ringModOutput.off) {

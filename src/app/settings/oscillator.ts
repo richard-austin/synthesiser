@@ -16,16 +16,16 @@ export class OscillatorSettings {
   useAmplitudeEnvelope: onOff;
   useFrequencyEnvelope: onOff;
 
-  constructor(adsr: ADSRValues= new ADSRValues(0.0, 3, 4, 3),
-              freqBend: FreqBendValues = new FreqBendValues(8, 1.5, 2, 1, 2, 0.0),
+  constructor(adsr: ADSRValues= new ADSRValues(0.0, 3, .4, 3),
+              freqBend: FreqBendValues = new FreqBendValues(0, 0.2, .2, 0, .2, 0.0),
               useAmplitudeEnvelope: onOff = onOff.on,
               useFrequencyEnvelope: onOff = onOff.off,
               frequency: number = 0,
-              gain: number = 4,
+              gain: number = .2,
               waveForm: oscWaveforms = oscWaveforms.sine,
               output: oscOutputs = oscOutputs.speaker,
               modFreq: number = 0,
-              modLevel: number=4,
+              modLevel: number=.4,
               modWaveForm: modWaveforms = modWaveforms.sine,
               modType: oscModType = oscModType.off)
   {

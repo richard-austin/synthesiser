@@ -16,6 +16,7 @@ export class LevelControlComponent implements AfterViewInit {
   @Input() radius: number = 50;
   @Input() calAngle: number = 330;
   @Input() divisions: number = 10;
+  @Input() valueRange: number = 1;
   @Input() label: string = '???';
   @Input() plusMinus: boolean = false;
   @Input() style: dialStyle = dialStyle.blue
@@ -53,7 +54,7 @@ export class LevelControlComponent implements AfterViewInit {
       currentAngle = upperLimit;
     else if (currentAngle < lowerLimit)
       currentAngle = lowerLimit;
-    this.setLevel.emit(currentAngle / p.calAngle);
+    this.setLevel.emit(this.valueRange * currentAngle / p.calAngle);
 
     this.drawOperationsWorker.postMessage({angle: currentAngle});
     return currentAngle;
@@ -63,7 +64,7 @@ export class LevelControlComponent implements AfterViewInit {
 
   setValue(value: number) {
     let p = this.params;
-    this.currentAngle = this.setAngle(p.calAngle * value / p.divisions, 0);
+    this.currentAngle = this.setAngle(p.calAngle * value/this.valueRange, 0);
   }
 
   ngAfterViewInit(): void {
