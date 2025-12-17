@@ -11,8 +11,8 @@ export class PhasorSettings {
 
   constructor(phase: number = 0,
               gain: number = 0,
-              lfoFrequency: number = 2,
-              modDepth: number = 3,
+              lfoFrequency: number = .2,
+              modDepth: number = .3,
               modWaveform: modWaveforms = modWaveforms.sine,
               modulation: onOff = onOff.off,
               output: phasorOutputs = phasorOutputs.off ) {
