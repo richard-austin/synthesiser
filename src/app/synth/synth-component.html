@@ -1,11 +1,38 @@
 <div style="display: flex; flex-direction: row">
-  <app-oscillators #oscillators [filters]="filters" [ringMod]="ringMod" [reverb]="reverb" [phasor]="phasor" [numberOfOscillators]="50"
-                   (output)="setOscOutputTarget($event)"></app-oscillators>
-  <app-oscillators #oscillators2 [name]="'Oscillators 2'" [secondary]="true" [filters]="filters" [ringMod]="ringMod" [reverb]="reverb" [phasor]="phasor"
-                   [numberOfOscillators]="50" (output)="setOsc2OutputTarget($event)"></app-oscillators>
-  <app-filters #filters [numberOfFilters]="50" [ringMod]="ringMod" [reverb]="reverb" [phasor]="phasor" (output)="setFilterOutputTarget($event)"></app-filters>
-  <app-noise [filters]="filters" [numberOfChannels]="50" (output)="setNoiseOutputTarget($event)"></app-noise>
-  <app-ring-modulator #ringMod [numberOfChannels]="50" [filters]="filters" [reverb]="reverb" (output)="setRingModOutPutTarget($event)"></app-ring-modulator>
+  <app-oscillators #oscillators
+                   [filters]="filters"
+                   [ringMod]="ringMod"
+                   [reverb]="reverb"
+                   [phasor]="phasor"
+                   [numberOfOscillators]="50"
+                   (output)="setOscOutputTarget($event)">
+  </app-oscillators>
+  <app-oscillators #oscillators2
+                   [name]="'Oscillators 2'"
+                   [secondary]="true"
+                   [filters]="filters"
+                   [ringMod]="ringMod"
+                   [reverb]="reverb"
+                   [phasor]="phasor"
+                   [numberOfOscillators]="50"
+                   (output)="setOsc2OutputTarget($event)">
+  </app-oscillators>
+  <app-filters #filters
+               [numberOfFilters]="50"
+               [ringMod]="ringMod"
+               [reverb]="reverb"
+               [phasor]="phasor"
+               (output)="setFilterOutputTarget($event)"></app-filters>
+  <app-noise [filters]="filters"
+             [numberOfChannels]="50"
+             (output)="setNoiseOutputTarget($event)">
+  </app-noise>
+  <app-ring-modulator #ringMod
+                      [numberOfChannels]="50"
+                      [filters]="filters"
+                      [reverb]="reverb"
+                      (output)="setRingModOutPutTarget($event)">
+  </app-ring-modulator>
 </div>
 <div style="display: flex; flex-direction: row">
   <app-reverb-component #reverb></app-reverb-component>

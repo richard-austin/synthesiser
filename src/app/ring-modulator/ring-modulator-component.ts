@@ -37,6 +37,24 @@ export class RingModulatorComponent implements AfterViewInit {
     // Set default ring mod settings
     this.applySettings(this.settings);
   }
+  // Called after all synth components have been started
+  setOutputConnection () {
+    SetRadioButtons.set(this.outputToForm, this.settings.output);
+  }
+
+  applySettings(settings: RingModSettings = new RingModSettings()) {
+    this.settings = settings;
+    // Set up the dial positions
+    this.modFreq.setValue(settings.modFrequency);
+    this.modDepth.setValue(settings.modDepth);
+
+    // Set the mod waveform buttons and ring mod settings
+    SetRadioButtons.set(this.modWaveForm, settings.modWaveform);
+    SetRadioButtons.set(this.internalModForm, settings.internalMod);
+ //   SetRadioButtons.set(this.outputToForm, settings.output);
+    this.output.emit(settings.output);
+  }
+
 
   protected readonly dialStyle = dialStyle
 
@@ -90,19 +108,6 @@ export class RingModulatorComponent implements AfterViewInit {
 
   disconnect() {
     this.ringMod.disconnect();
-  }
-
-  applySettings(settings: RingModSettings = new RingModSettings()) {
-    this.settings = settings;
-    // Set up the dial positions
-    this.modFreq.setValue(settings.modFrequency);
-    this.modDepth.setValue(settings.modDepth);
-
-    // Set the mod waveform buttons and ring mod settings
-    SetRadioButtons.set(this.modWaveForm, settings.modWaveform);
-    SetRadioButtons.set(this.internalModForm, settings.internalMod);
-    SetRadioButtons.set(this.outputToForm, settings.output);
-    this.output.emit(settings.output);
   }
 
   ngAfterViewInit(): void {

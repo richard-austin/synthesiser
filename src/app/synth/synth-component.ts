@@ -32,16 +32,27 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
   protected async start(): Promise<void> {
     this.audioCtx = new AudioContext();
+
+    // Start the module components
     this.oscillatorsGrp.start(this.audioCtx);
     this.oscillators2Grp.start(this.audioCtx);
     this.filtersGrp.start(this.audioCtx);
 
-    this.oscillatorsGrp.connect(this.audioCtx.destination);
-    this.oscillators2Grp.connect(this.audioCtx.destination);
+    //this.oscillatorsGrp.connect(this.audioCtx.destination);
+    //this.oscillators2Grp.connect(this.audioCtx.destination);
     await this.noise.start(this.audioCtx);
     this.ringModulator.start(this.audioCtx);
     this.reverb.start(this.audioCtx);
     this.phasor.setUp(this.audioCtx);
+
+    // Connect the module component outputs
+    this.oscillatorsGrp.setOutputConnection();
+    this.oscillators2Grp.setOutputConnection();
+    this.ringModulator.setOutputConnection();
+    this.noise.setOutputConnection();
+    this.filtersGrp.setOutputConnection();
+    this.reverb.setOutputConnection();
+    this.phasor.setOutputConnection();
 
     window.addEventListener('click', () => {
     })
@@ -188,7 +199,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       case 'speaker':
         this.oscillatorsGrp.connect(this.audioCtx.destination);
         break;
-      case 'ringmod':
+      case 'ringmod':false
         this.oscillatorsGrp.connectToRingMod();
         break;
       case 'filter':

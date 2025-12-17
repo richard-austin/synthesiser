@@ -1,8 +1,8 @@
 import {ADSRValues} from './adsrvalues';
 
 export class FreqBendValues extends ADSRValues {
-  private _attackLevel: number;
-  private _releaseLevel: number;
+  attackLevel: number;
+  releaseLevel: number;
   constructor(attackTime: number,
               attackLevel: number,
               decayTime: number,
@@ -14,22 +14,7 @@ export class FreqBendValues extends ADSRValues {
     if(attackLevel < sustainLevel) {
       throw new DOMException("attackLevel must be >= sustainLevel");
     }
-    this._attackLevel = attackLevel;
-    this._releaseLevel = releaseLevel;
-  }
-
-  get attackLevel() {
-    return this._attackLevel;
-  }
-
-  set attackLevel(level: number) {
-    this._attackLevel = level;
-  }
-  get releaseLevel() {
-    return this._releaseLevel;
-  }
-
-  set releaseLevel(level: number) {
-    this._releaseLevel = level;
+    this.attackLevel = attackLevel;
+    this.releaseLevel = releaseLevel;
   }
 }

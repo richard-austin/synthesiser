@@ -67,6 +67,12 @@ export class FilterComponent implements AfterViewInit {
     return ok;
   }
 
+  // Called after all synth components have been started
+  setOutputConnection () {
+    SetRadioButtons.set(this.filterOutputTo, this.settings.output);
+  }
+
+
   applySettings(settings: FilterSettings = new FilterSettings()) {
     this.settings = settings;
     for (let i = 0; i < this.numberOfFilters; ++i) {
@@ -95,7 +101,7 @@ export class FilterComponent implements AfterViewInit {
     this.modLevel.setValue(this.settings.modLevel);  // Set dial
 
     // Set up the buttons
-    SetRadioButtons.set(this.filterOutputTo, this.settings.output);
+ //   SetRadioButtons.set(this.filterOutputTo, this.settings.output);
     SetRadioButtons.set(this.filterType, this.settings.filterType);
     SetRadioButtons.set(this.freqEnveOnOff, this.settings.useFrequencyEnvelope);
     SetRadioButtons.set(this.modSettingsForm, this.settings.modType);

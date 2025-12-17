@@ -53,9 +53,14 @@ export class PhasorComponent implements AfterViewInit {
     this.cookies = new Cookies();
 
     // Set up LFO default values
-    this.applySettings();
     this.lfo.connect(this.phasor.delay1.delayTime);
     this.negModGain.connect(this.phasor.delay2.delayTime);
+    this.applySettings();
+  }
+
+  // Called after all synth components have been started
+  setOutputConnection () {
+    SetRadioButtons.set(this.phasorOnOffForm, this.settingsProxy.output);
   }
 
   applySettings(settings:PhasorSettings = new PhasorSettings()) {
@@ -66,17 +71,7 @@ export class PhasorComponent implements AfterViewInit {
     else
       this.settings = settings;  // Use default values
 
-    this.settingsProxy = new Proxy(this.settings, {
-      set: (target, key, value) => {
-        // @ts-ignore
-        console.log(`${key} set from ${this.settings[key]} to ${value}`);
-        // @ts-ignore
-        target[key] = value;
-        this.cookies.saveSettings(target, 'phasor');
-        return true;
-      },
-    });
-
+    this.settingsProxy = this.cookies.getSettingsProxy(this.settings, 'phasor');
 
     // Set up the dials
     this.modFreq.setValue(settings.lfoFrequency);
@@ -84,7 +79,7 @@ export class PhasorComponent implements AfterViewInit {
     this.phase.setValue(settings.phase);
     this.level.setValue(settings.gain);
 
-    SetRadioButtons.set(this.phasorOnOffForm, this.settingsProxy.output);
+ //   SetRadioButtons.set(this.phasorOnOffForm, this.settingsProxy.output);
     SetRadioButtons.set(this.lfoWaveForm, this.settingsProxy.modWaveform);
     SetRadioButtons.set(this.modOnOff, this.settingsProxy.output);
   }

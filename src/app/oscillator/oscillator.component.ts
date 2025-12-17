@@ -7,9 +7,10 @@ import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component
 import {ReverbComponent} from '../reverb-component/reverb-component';
 import {PhasorComponent} from '../phasor/phasor-component';
 import {OscillatorSettings} from '../settings/oscillator';
-import {onOff, oscModType, oscWaveforms} from '../enums/enums';
+import {modWaveforms, onOff, oscModType, oscWaveforms} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {timer} from 'rxjs';
+import {Cookies} from '../settings/cookies/cookies';
 
 @Component({
   selector: 'app-oscillators',
@@ -24,7 +25,10 @@ export class OscillatorComponent implements AfterViewInit {
   protected tuningDivisions = 6;
   private lfo!: Oscillator;
   private audioCtx!: AudioContext;
+  private proxySettings!: OscillatorSettings;
   private settings!: OscillatorSettings;
+  private cookies!: Cookies;
+
   @Input() filters!: FilterComponent;
   @Input() ringMod!: RingModulatorComponent;
   @Input() reverb!: ReverbComponent;
@@ -63,6 +67,7 @@ export class OscillatorComponent implements AfterViewInit {
   start(audioCtx: AudioContext): boolean {
     let ok = false;
     this.audioCtx = audioCtx;
+    this.cookies = new Cookies();
     if (this.numberOfOscillators) {
       this.lfo = new Oscillator(this.audioCtx);
       this.applySettings();
@@ -70,86 +75,101 @@ export class OscillatorComponent implements AfterViewInit {
     }
     return ok;
   }
+  // Called after all synth components have been started
+  setOutputConnection () {
+    SetRadioButtons.set(this.oscOutputToForm, this.proxySettings.output);
+  }
 
   applySettings(settings: OscillatorSettings = new OscillatorSettings()) {
-    this.settings = settings;
+    const cookieName = this.secondary ? 'oscillator2' : 'oscillator';
+
+    const savedSettings = this.cookies.getSettings(cookieName);
+
+    if(Object.keys(savedSettings).length > 0) {
+      // Use values from cookie
+      this.settings = settings = savedSettings as OscillatorSettings;
+    }
+    else  // Use default settings
+      this.settings = settings;  // Use default values
+
+    this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
     for (let i = 0; i < this.numberOfOscillators; ++i) {
       this.oscillators.push(new Oscillator(this.audioCtx));
-      this.oscillators[i].setFrequency(20 * Math.pow(Math.pow(2, 1 / 12), (i + 1)));
-      this.oscillators[i].setAmplitudeEnvelope(this.settings.adsr)
-      this.oscillators[i].useAmplitudeEnvelope = true;
+      this.oscillators[i].setFrequency(450 * Math.pow(Math.pow(2, 1 / 12), (i + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10));
+      this.oscillators[i].setAmplitudeEnvelope(this.proxySettings.adsr)
+      this.oscillators[i].useAmplitudeEnvelope = this.proxySettings.useAmplitudeEnvelope === onOff.on;
       // this.oscillators[i].setGain(.1);
-      this.oscillators[i].setFreqBendEnvelope(this.settings.freqBend);
-      this.oscillators[i].useFreqBendEnvelope(false);
-      this.oscillators[i].setType(this.settings.waveForm);
+      this.oscillators[i].setFreqBendEnvelope(this.proxySettings.freqBend);
+      this.oscillators[i].useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.on);
+      this.oscillators[i].setType(this.proxySettings.waveForm);
     }
 
-    this.frequency.setValue(0);  // Set frequency dial initial value.
-    this.gain.setValue(this.settings.gain);
-    this.attack.setValue(this.settings.adsr.attackTime);
-    this.decay.setValue(this.settings.adsr.decayTime);
-    this.sustain.setValue(this.settings.adsr.sustainLevel);
-    this.release.setValue(this.settings.adsr.releaseTime);
+    this.frequency.setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
+    this.gain.setValue(this.proxySettings.gain);
+    this.attack.setValue(this.proxySettings.adsr.attackTime);
+    this.decay.setValue(this.proxySettings.adsr.decayTime);
+    this.sustain.setValue(this.proxySettings.adsr.sustainLevel);
+    this.release.setValue(this.proxySettings.adsr.releaseTime);
 
     // Set up default frequency bend envelope values
-    this.freqAttack.setValue(this.settings.freqBend.attackTime);
-    this.freqAttackLevel.setValue(this.settings.freqBend.attackLevel);
-    this.freqDecay.setValue(this.settings.freqBend.decayTime);
-    this.freqSustain.setValue(this.settings.freqBend.sustainLevel);
-    this.freqRelease.setValue(this.settings.freqBend.releaseTime);
-    this.freqReleaseLevel.setValue(this.settings.freqBend.releaseLevel);
+    this.freqAttack.setValue(this.proxySettings.freqBend.attackTime);
+    this.freqAttackLevel.setValue(this.proxySettings.freqBend.attackLevel);
+    this.freqDecay.setValue(this.proxySettings.freqBend.decayTime);
+    this.freqSustain.setValue(this.proxySettings.freqBend.sustainLevel);
+    this.freqRelease.setValue(this.proxySettings.freqBend.releaseTime);
+    this.freqReleaseLevel.setValue(this.proxySettings.freqBend.releaseLevel);
 
     // Set up LFO default values
-    this.modFreq.setValue(this.settings.modFreq);  // Set dial
-    this.modLevel.setValue(this.settings.modLevel);  // Set dial
-    this.modulation(this.lfo.oscillator, this.settings.modType);
+    this.modFreq.setValue(this.proxySettings.modFreq);  // Set dial
+    this.modLevel.setValue(this.proxySettings.modLevel);  // Set dial
+    this.modulation(this.lfo.oscillator, this.proxySettings.modType);
 
     // Set up the buttons
-    SetRadioButtons.set(this.oscOutputToForm, this.settings.output);
-    SetRadioButtons.set(this.oscWaveForm, this.settings.waveForm);
-    SetRadioButtons.set(this.amplitudeEnvelopeOnOffForm, this.settings.useAmplitudeEnvelope);
-    SetRadioButtons.set(this.freqEnveOnOffForm, this.settings.useFrequencyEnvelope);
-    SetRadioButtons.set(this.modSettingsForm, this.settings.modType);
-    SetRadioButtons.set(this.lfoWaveForm, this.settings.modWaveform);
+  //  SetRadioButtons.set(this.oscOutputToForm, this.proxySettings.output);
+    SetRadioButtons.set(this.oscWaveForm, this.proxySettings.waveForm);
+    SetRadioButtons.set(this.amplitudeEnvelopeOnOffForm, this.proxySettings.useAmplitudeEnvelope);
+    SetRadioButtons.set(this.freqEnveOnOffForm, this.proxySettings.useFrequencyEnvelope);
+    SetRadioButtons.set(this.modSettingsForm, this.proxySettings.modType);
+    SetRadioButtons.set(this.lfoWaveForm, this.proxySettings.modWaveform);
   }
 
   protected setFrequency(freq: number) {
-    this.settings.frequency = freq;
+    this.proxySettings.frequency = freq;
     for (let i = 0; i < this.oscillators.length; i++) {
       this.oscillators[i].setFrequency(450 * Math.pow(Math.pow(2, 1 / 12), (i + 1) + 120 * freq * this.tuningDivisions / 10));
     }
   }
 
   protected setGain(gain: number) {
-    this.settings.gain = gain;
+    this.proxySettings.gain = gain;
     for (let i = 0; i < this.oscillators.length; i++) {
       this.oscillators[i].setGain(gain);
     }
   }
 
   useAmplitudeEnvelope(useAmplitudeEnvelope: boolean) {
-    this.settings.useAmplitudeEnvelope = useAmplitudeEnvelope ? onOff.on : onOff.off;
+    this.proxySettings.useAmplitudeEnvelope = useAmplitudeEnvelope ? onOff.on : onOff.off;
     for (let i = 0; i < this.oscillators.length; i++) {
       this.oscillators[i].useAmplitudeEnvelope = useAmplitudeEnvelope;
     }
   }
 
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
-    this.settings.useFrequencyEnvelope = useFreqBendEnvelope ? onOff.on : onOff.off;
+    this.proxySettings.useFrequencyEnvelope = useFreqBendEnvelope ? onOff.on : onOff.off;
     for (let i = 0; i < this.oscillators.length; i++) {
       this.oscillators[i].useFreqBendEnvelope(useFreqBendEnvelope);
     }
   }
 
   private setWaveForm(value: OscillatorType) {
-    this.settings.waveForm = value as oscWaveforms;
+    this.proxySettings.waveForm = value as oscWaveforms;
     for (let i = 0; i < this.numberOfOscillators; ++i) {
       this.oscillators[i].setType(value);
     }
   }
 
   modulation(source: AudioNode, type: oscModType) {
-    this.settings.modType = type;
+    this.proxySettings.modType = type;
     for (let i = 0; i < this.numberOfOscillators; ++i) {
       this.oscillators[i].modulation(source, type);
     }
@@ -243,61 +263,61 @@ export class OscillatorComponent implements AfterViewInit {
   }
 
   protected setAttack($event: number) {
-    this.settings.adsr.attackTime = $event;
+    this.proxySettings.adsr.attackTime = $event;
   }
 
   protected setDecayTime($event: number) {
-    this.settings.adsr.decayTime = $event * 10;
+    this.proxySettings.adsr.decayTime = $event;
   }
 
   protected setSustainLevel($event: number) {
-    this.settings.adsr.sustainLevel = $event;
+    this.proxySettings.adsr.sustainLevel = $event;
   }
 
   protected setReleaseTime($event: number) {
-    this.settings.adsr.releaseTime = $event * 10;
+    this.proxySettings.adsr.releaseTime = $event;
   }
 
   protected readonly dialStyle = dialStyle;
 
   protected setFreqAttack($event: number) {
-    this.settings.freqBend.attackTime = $event * 3;
+    this.proxySettings.freqBend.attackTime = $event;
   }
 
   protected setFreqAttackLevel($event: number) {
-    this.settings.freqBend.attackLevel = $event * 5;
+    this.proxySettings.freqBend.attackLevel = $event;
   }
 
   protected setFreqDecayTime($event: number) {
-    this.settings.freqBend.decayTime = $event * 3;
+    this.proxySettings.freqBend.decayTime = $event;
   }
 
   protected setFreqSustainLevel($event: number) {
-    this.settings.freqBend.sustainLevel = $event * 5;
+    this.proxySettings.freqBend.sustainLevel = $event;
   }
 
   protected setFreqReleaseTime($event: number) {
-    this.settings.freqBend.releaseTime = $event * 3;
+    this.proxySettings.freqBend.releaseTime = $event;
   }
 
   protected setFreqReleaseLevel($event: number) {
-    this.settings.freqBend.releaseLevel = $event * 5;
+    this.proxySettings.freqBend.releaseLevel = $event;
   }
 
   protected setModFrequency(freq: number) {
-    this.settings.modFreq = freq;
+    this.proxySettings.modFreq = freq;
     this.lfo.setFrequency(freq * 20);
   }
 
   protected setModLevel($event: number) {
-    this.settings.modLevel = $event;
+    this.proxySettings.modLevel = $event;
     for (let i = 0; i < this.numberOfOscillators; ++i) {
       this.oscillators[i].setModLevel($event);
     }
   }
 
   protected setModType(type: oscModType) {
-    this.settings.modType = type;
+    this.proxySettings.modType = type;
     for (let i = 0; i < this.numberOfOscillators; ++i) {
       this.oscillators[i].modulation(this.lfo.oscillator, type);
     }
@@ -313,7 +333,7 @@ export class OscillatorComponent implements AfterViewInit {
           sub.unsubscribe();
           // @ts-ignore
           this.output.emit(value);
-          this.settings.output = value;
+          this.proxySettings.output = value;
         });
       });
     }
@@ -357,7 +377,7 @@ export class OscillatorComponent implements AfterViewInit {
           // @ts-ignore
           const value = $event.target.value as OscillatorType;
           this.lfo.setType(value);
-          this.settings.modType = value as oscModType;
+          this.proxySettings.modWaveform = value as modWaveforms;
         })
       }
     }

@@ -51,11 +51,16 @@ export class ReverbComponent implements AfterViewInit {
     this.repeatEchoTimeDial.setValue(this.settings.repeatEchoTime);
     this.repeatEchoLevelDial.setValue(this.settings.repeatEchoGain);
     this.reverbOnOff(this.settings.output === onOff.on);
-    SetRadioButtons.set(this.reverbOnOffForm, this.settings.output);
+   // SetRadioButtons.set(this.reverbOnOffForm, this.settings.output);
 
     this.wetDryDial.setValue(this.settings.wetDry);
     this.gain.connect(audioCtx.destination);
   }
+  // Called after all synth components have been started
+  setOutputConnection () {
+    SetRadioButtons.set(this.reverbOnOffForm, this.settings.output);
+  }
+
 
   protected setAttackTime($event: number) {
     this.attackTime = $event * 10;

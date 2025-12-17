@@ -55,6 +55,12 @@ export class NoiseComponent implements AfterViewInit {
     this.applySettings();
   }
 
+  // Called after all synth components have been started
+  setOutputConnection () {
+    SetRadioButtons.set(this.noiseOutputToForm, this.settings.output);
+  }
+
+
   applySettings(settings: NoiseSettings = new NoiseSettings()) {
     this.settings = settings;
     for (let i = 0; i < this.numberOfChannels; ++i) {
@@ -74,7 +80,7 @@ export class NoiseComponent implements AfterViewInit {
     this.release.setValue(this.settings.adsr.releaseTime);
     this.gainControl.setValue(settings.gain);
 
-    SetRadioButtons.set(this.noiseOutputToForm, this.settings.output);
+  //  SetRadioButtons.set(this.noiseOutputToForm, this.settings.output);
     SetRadioButtons.set(this.noiseTypeForm, this.settings.type);
     SetRadioButtons.set(this.amplitudeEnvelopeOnOffForm, this.settings.useAmplitudeEnvelope);
   }
