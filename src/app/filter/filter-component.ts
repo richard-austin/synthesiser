@@ -240,27 +240,27 @@ export class FilterComponent implements AfterViewInit {
 
 
   protected setFreqAttack($event: number) {
-    this.proxySettings.freqBend.attackTime = $event * 3;
+    this.proxySettings.freqBend.attackTime = $event;
   }
 
   protected setFreqAttackLevel($event: number) {
-    this.proxySettings.freqBend.attackLevel = $event * 5;
+    this.proxySettings.freqBend.attackLevel = $event;
   }
 
   protected setFreqDecayTime($event: number) {
-    this.proxySettings.freqBend.decayTime = $event * 3;
+    this.proxySettings.freqBend.decayTime = $event;
   }
 
   protected setFreqSustainLevel($event: number) {
-    this.proxySettings.freqBend.sustainLevel = $event * 5;
+    this.proxySettings.freqBend.sustainLevel = $event;
   }
 
   protected setFreqReleaseTime($event: number) {
-    this.proxySettings.freqBend.releaseTime = $event * 3;
+    this.proxySettings.freqBend.releaseTime = $event;
   }
 
   protected setFreqReleaseLevel($event: number) {
-    this.proxySettings.freqBend.releaseLevel = $event * 5;
+    this.proxySettings.freqBend.releaseLevel = $event;
   }
 
   protected setModFrequency(freq: number) {
