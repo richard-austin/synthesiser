@@ -4,8 +4,12 @@
     <div class="column">
       <div class="module noise-width">
         <h2>Noise</h2>
-        <app-level-control #gainControl label="Gain" [radius]="50" [divisions]="10"
-                           (setLevel)="setGain($event)"></app-level-control>
+        <app-level-control #gainControl
+                           label="Gain"
+                           [radius]="50"
+                           [divisions]="10"
+                           (setLevel)="setGain($event)">
+        </app-level-control>
         <h2>Noise Type</h2>
         <div style="height: 3px;"></div>
         <form #noiseTypeForm>
@@ -25,20 +29,41 @@
     <div class="column">
       <div class="module">
         <h2>Envelope</h2>
-        <app-level-control #attack label="Attack" [style]="dialStyle.red" [divisions]="10" [calAngle]="300"
+        <app-level-control #attack
+                           label="Attack"
+                           [style]="dialStyle.red"
+                           [divisions]="10"
+                           [calAngle]="300"
                            [radius]="50"
-                           (setLevel)="setAttack($event)"></app-level-control>
-        <app-level-control #decay label="Decay" [style]="dialStyle.red" [radius]="50" [divisions]="10"
-                           (setLevel)="setDecayTime($event)"></app-level-control>
-        <app-level-control #sustain label="Sustain" [style]="dialStyle.red" [radius]="50" [divisions]="10"
-                           (setLevel)="setSustainLevel($event)"></app-level-control>
-        <app-level-control #release label="Release" [style]="dialStyle.red" [radius]="50" [divisions]="10"
-                           (setLevel)="setReleaseTime($event)"></app-level-control>
+                           (setLevel)="setAttack($event)">
+        </app-level-control>
+        <app-level-control #decay
+                           label="Decay"
+                           [style]="dialStyle.red"
+                           [radius]="50"
+                           [divisions]="10"
+                           [factor]="10"
+                           (setLevel)="setDecayTime($event)">
+        </app-level-control>
+        <app-level-control #sustain
+                           label="Sustain"
+                           [style]="dialStyle.red"
+                           [radius]="50"
+                           [divisions]="10"
+                           (setLevel)="setSustainLevel($event)">
+        </app-level-control>
+        <app-level-control #release
+                           label="Release"
+                           [style]="dialStyle.red"
+                           [radius]="50"
+                           [divisions]="10"
+                           [factor]="10"
+                           (setLevel)="setReleaseTime($event)">
+        </app-level-control>
         <form #amplitudeEnvelopeOnOffForm>
           <label><input type="radio" name="envelope" value="on"><span>On</span></label>
           <label><input type="radio" name="envelope" value="off" checked><span>Off</span></label>
         </form>
-
       </div>
     </div>
   </div>

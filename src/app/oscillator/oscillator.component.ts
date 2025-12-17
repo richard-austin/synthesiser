@@ -26,7 +26,6 @@ export class OscillatorComponent implements AfterViewInit {
   private lfo!: Oscillator;
   private audioCtx!: AudioContext;
   private proxySettings!: OscillatorSettings;
-  private settings!: OscillatorSettings;
   private cookies!: Cookies;
 
   @Input() filters!: FilterComponent;
@@ -87,10 +86,9 @@ export class OscillatorComponent implements AfterViewInit {
 
     if(Object.keys(savedSettings).length > 0) {
       // Use values from cookie
-      this.settings = settings = savedSettings as OscillatorSettings;
+      settings = savedSettings as OscillatorSettings;
     }
-    else  // Use default settings
-      this.settings = settings;  // Use default values
+    // else use default settings
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
     for (let i = 0; i < this.numberOfOscillators; ++i) {

@@ -9,6 +9,7 @@ import {PhasorComponent} from '../phasor/phasor-component';
 import {filterModType, filterTypes, modWaveforms, onOff} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {FilterSettings} from '../settings/filter';
+import {Cookies} from '../settings/cookies/cookies';
 
 @Component({
   selector: 'app-filters',
@@ -23,7 +24,8 @@ export class FilterComponent implements AfterViewInit {
   protected tuningDivisions = 6;
   private lfo!: Oscillator;
   private audioCtx!: AudioContext;
-  settings!: FilterSettings
+  proxySettings!: FilterSettings
+  private cookies!: Cookies;
 
   public get filters(): Filter[] {
     return this._filters;
@@ -61,7 +63,7 @@ export class FilterComponent implements AfterViewInit {
     let ok = false;
     if (this.numberOfFilters) {
       this.lfo = new Oscillator(this.audioCtx);
-
+      this.cookies = new Cookies();
       this.applySettings();
     }
     return ok;
@@ -69,76 +71,86 @@ export class FilterComponent implements AfterViewInit {
 
   // Called after all synth components have been started
   setOutputConnection () {
-    SetRadioButtons.set(this.filterOutputTo, this.settings.output);
+    SetRadioButtons.set(this.filterOutputTo, this.proxySettings.output);
   }
 
-
   applySettings(settings: FilterSettings = new FilterSettings()) {
-    this.settings = settings;
+    const cookieName = 'filter';
+
+    const savedSettings = this.cookies.getSettings(cookieName);
+
+    if(Object.keys(savedSettings).length > 0) {
+      // Use values from cookie
+      settings = savedSettings as FilterSettings;
+    }
+    // else use default settings
+
+    this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
+
     for (let i = 0; i < this.numberOfFilters; ++i) {
       this.filters.push(new Filter(this.audioCtx));
-      this.filters[i].setFrequency(this.settings.frequency * Math.pow(Math.pow(2, 1 / 12), (i + 1)));
-      this.filters[i].setFreqBendEnvelope(this.settings.freqBend);
-      this.filters[i].useFreqBendEnvelope(this.settings.useFrequencyEnvelope === onOff.off);
-      this.filters[i].setType(this.settings.filterType);
+      this.filters[i].setFrequency(this.proxySettings.frequency * Math.pow(Math.pow(2, 1 / 12), (i + 1)));
+      this.filters[i].setFreqBendEnvelope(this.proxySettings.freqBend);
+      this.filters[i].useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.off);
+      this.filters[i].setType(this.proxySettings.filterType);
     }
 
-    this.frequency.setValue(this.settings.frequency);  // Set frequency dial initial value.
-    this.gain.setValue(this.settings.gain);
-    this.qfactor.setValue(this.settings.qFactor);
+    this.frequency.setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
+    this.gain.setValue(this.proxySettings.gain);
+    this.qfactor.setValue(this.proxySettings.qFactor);
 
     // Set up default frequency bend e=velope values
-    this.freqAttack.setValue(this.settings.freqBend.attackTime);
-    this.freqAttackLevel.setValue(this.settings.freqBend.attackLevel);
-    this.freqDecay.setValue(this.settings.freqBend.decayTime);
-    this.freqSustain.setValue(this.settings.freqBend.sustainLevel);
-    this.freqSustain.setValue(this.settings.freqBend.sustainLevel);
-    this.freqRelease.setValue(this.settings.freqBend.releaseTime);
-    this.freqReleaseLevel.setValue(this.settings.freqBend.releaseLevel);
+    this.freqAttack.setValue(this.proxySettings.freqBend.attackTime);
+    this.freqAttackLevel.setValue(this.proxySettings.freqBend.attackLevel);
+    this.freqDecay.setValue(this.proxySettings.freqBend.decayTime);
+    this.freqSustain.setValue(this.proxySettings.freqBend.sustainLevel);
+    this.freqSustain.setValue(this.proxySettings.freqBend.sustainLevel);
+    this.freqRelease.setValue(this.proxySettings.freqBend.releaseTime);
+    this.freqReleaseLevel.setValue(this.proxySettings.freqBend.releaseLevel);
 
     // Set up LFO default values
-    this.modFreq.setValue(this.settings.modFreq);  // Set dial
-    this.modLevel.setValue(this.settings.modLevel);  // Set dial
+    this.modFreq.setValue(this.proxySettings.modFreq);  // Set dial
+    this.modLevel.setValue(this.proxySettings.modLevel);  // Set dial
 
     // Set up the buttons
  //   SetRadioButtons.set(this.filterOutputTo, this.settings.output);
-    SetRadioButtons.set(this.filterType, this.settings.filterType);
-    SetRadioButtons.set(this.freqEnveOnOff, this.settings.useFrequencyEnvelope);
-    SetRadioButtons.set(this.modSettingsForm, this.settings.modType);
-    SetRadioButtons.set(this.lfoWaveForm, this.settings.modWaveform);
+    SetRadioButtons.set(this.filterType, this.proxySettings.filterType);
+    SetRadioButtons.set(this.freqEnveOnOff, this.proxySettings.useFrequencyEnvelope);
+    SetRadioButtons.set(this.modSettingsForm, this.proxySettings.modType);
+    SetRadioButtons.set(this.lfoWaveForm, this.proxySettings.modWaveform);
   }
 
 
   protected setFrequency(freq: number) {
-    this.settings.frequency = freq;
+    this.proxySettings.frequency = freq;
     for (let i = 0; i < this.filters.length; i++) {
       this.filters[i].setFrequency(450 * Math.pow(Math.pow(2, 1 / 12), (i + 1) + 120 * freq * this.tuningDivisions / 10));
     }
   }
 
   protected setGain(gain: number) {
-    this.settings.gain = gain;
+    this.proxySettings.gain = gain;
     for (let i = 0; i < this.filters.length; i++) {
       this.filters[i].setGain(gain);
     }
   }
 
   protected setQFactor(qfactor: number) {
-    this.settings.qFactor = qfactor;
+    this.proxySettings.qFactor = qfactor;
     for (let i = 0; i < this.filters.length; i++) {
       this.filters[i].setQ(qfactor);
     }
   }
 
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
-    this.settings.useFrequencyEnvelope = useFreqBendEnvelope ? onOff.on : onOff.off;
+    this.proxySettings.useFrequencyEnvelope = useFreqBendEnvelope ? onOff.on : onOff.off;
     for (let i = 0; i < this.filters.length; i++) {
       this.filters[i].useFreqBendEnvelope(useFreqBendEnvelope);
     }
   }
 
   private setFilterType(value: BiquadFilterType) {
-    this.settings.filterType = value as filterTypes;
+    this.proxySettings.filterType = value as filterTypes;
     for (let i = 0; i < this.numberOfFilters; ++i) {
       this.filters[i].setType(value);
     }
@@ -228,43 +240,43 @@ export class FilterComponent implements AfterViewInit {
 
 
   protected setFreqAttack($event: number) {
-    this.settings.freqBend.attackTime = $event * 3;
+    this.proxySettings.freqBend.attackTime = $event * 3;
   }
 
   protected setFreqAttackLevel($event: number) {
-    this.settings.freqBend.attackLevel = $event * 5;
+    this.proxySettings.freqBend.attackLevel = $event * 5;
   }
 
   protected setFreqDecayTime($event: number) {
-    this.settings.freqBend.decayTime = $event * 3;
+    this.proxySettings.freqBend.decayTime = $event * 3;
   }
 
   protected setFreqSustainLevel($event: number) {
-    this.settings.freqBend.sustainLevel = $event * 5;
+    this.proxySettings.freqBend.sustainLevel = $event * 5;
   }
 
   protected setFreqReleaseTime($event: number) {
-    this.settings.freqBend.releaseTime = $event * 3;
+    this.proxySettings.freqBend.releaseTime = $event * 3;
   }
 
   protected setFreqReleaseLevel($event: number) {
-    this.settings.freqBend.releaseLevel = $event * 5;
+    this.proxySettings.freqBend.releaseLevel = $event * 5;
   }
 
   protected setModFrequency(freq: number) {
-    this.settings.modFreq = freq;
+    this.proxySettings.modFreq = freq;
     this.lfo.setFrequency(freq * 20);
   }
 
   protected setModLevel($event: number) {
-    this.settings.modLevel = $event;
+    this.proxySettings.modLevel = $event;
     for (let i = 0; i < this.numberOfFilters; ++i) {
       this.filters[i].setModLevel($event);
     }
   }
 
   protected setModType(type: filterModType) {
-    this.settings.modType = type;
+    this.proxySettings.modType = type;
     for (let i = 0; i < this.numberOfFilters; ++i) {
       this.filters[i].modulation(this.lfo.oscillator, type);
     }
@@ -277,7 +289,7 @@ export class FilterComponent implements AfterViewInit {
         // @ts-ignore
         const value = $event.target.value;
         this.output.emit(value);
-        this.settings.output = value;
+        this.proxySettings.output = value;
       });
     }
     const freqEnveOnOffForm = this.freqEnveOnOff.nativeElement;
@@ -311,7 +323,7 @@ export class FilterComponent implements AfterViewInit {
           // @ts-ignore
           const value = $event.target.value as OscillatorType;
           this.lfo.setType(value);
-          this.settings.modWaveform = value as modWaveforms;
+          this.proxySettings.modWaveform = value as modWaveforms;
         })
       }
     }

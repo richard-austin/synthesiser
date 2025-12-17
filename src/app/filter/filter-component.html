@@ -21,7 +21,7 @@
                              label="Q Factor"
                              [radius]="50"
                              [divisions]="100"
-                             [valueRange]="100"
+                             [factor]="100"
                              (setLevel)="setQFactor($event)"></app-level-control>
         </div>
         <h2>Filter Type</h2>
@@ -49,7 +49,7 @@
                            label="LFO Frequency"
                            [style]="dialStyle.green"
                            [divisions]="10"
-                           [valueRange]="10"
+                           [factor]="2"
                            [calAngle]="300"
                            [radius]="50"
                            (setLevel)="setModFrequency($event)"></app-level-control>

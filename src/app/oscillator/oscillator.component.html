@@ -15,7 +15,7 @@
                            label="Gain"
                            [radius]="50"
                            [divisions]="10"
-                           [valueRange]="0.4"
+                           [factor]="0.4"
                            (setLevel)="setGain($event)"></app-level-control>
         <h2>Waveform</h2>
         <div style="height: 3px;"></div>
@@ -42,6 +42,7 @@
                            label="LFO Frequency"
                            [style]="dialStyle.green"
                            [divisions]="10"
+                           [factor]="2"
                            [calAngle]="300"
                            [radius]="50"
                            (setLevel)="setModFrequency($event)"></app-level-control>
@@ -71,14 +72,14 @@
                          [divisions]="10"
                          [calAngle]="300"
                          [radius]="50"
-                         [valueRange]="3"
+                         [factor]="3"
                          (setLevel)="setAttack($event)"></app-level-control>
       <app-level-control #decay
                          label="Decay"
                          [style]="dialStyle.red"
                          [radius]="50"
                          [divisions]="10"
-                         [valueRange]="6"
+                         [factor]="6"
                          (setLevel)="setDecayTime($event)"></app-level-control>
       <app-level-control #sustain
                          label="Sustain"
@@ -91,7 +92,7 @@
                          [style]="dialStyle.red"
                          [radius]="50"
                          [divisions]="10"
-                         [valueRange]="6"
+                         [factor]="6"
                          (setLevel)="setReleaseTime($event)"></app-level-control>
       <form #amplitudeEnvelopeOnOffForm>
         <label><input type="radio" name="envelope" value="on" checked><span>On</span></label>
@@ -105,7 +106,7 @@
                          label="Attack"
                          [style]="dialStyle.yellow"
                          [divisions]="10"
-                         [valueRange]="3"
+                         [factor]="3"
                          [calAngle]="300"
                          [radius]="50"
                          (setLevel)="setFreqAttack($event)"></app-level-control>
@@ -113,7 +114,7 @@
                          label="Attack Level"
                          [style]="dialStyle.yellow"
                          [divisions]="10"
-                         [valueRange]="4"
+                         [factor]="4"
                          [calAngle]="300"
                          [radius]="50"
                          [plusMinus]="true"
@@ -123,14 +124,14 @@
                          [radius]="50"
                          [style]="dialStyle.yellow"
                          [divisions]="10"
-                         [valueRange]="4"
+                         [factor]="4"
                          (setLevel)="setFreqDecayTime($event)"></app-level-control>
       <app-level-control #freqSustain
                          label="Sustain"
                          [radius]="50"
                          [style]="dialStyle.yellow"
                          [divisions]="10"
-                         [valueRange]="3"
+                         [factor]="3"
                          [plusMinus]="true"
                          (setLevel)="setFreqSustainLevel($event)"></app-level-control>
       <app-level-control #freqRelease
@@ -138,12 +139,12 @@
                          [radius]="50"
                          [style]="dialStyle.yellow"
                          [divisions]="10"
-                         [valueRange]="3"
+                         [factor]="3"
                          (setLevel)="setFreqReleaseTime($event)"></app-level-control>
       <app-level-control #freqReleaseLevel label="Release Level" [style]="dialStyle.yellow" [radius]="50"
                          [divisions]="10"
                          [plusMinus]="true"
-                         [valueRange]="3"
+                         [factor]="3"
                          (setLevel)="setFreqReleaseLevel($event)"></app-level-control>
       <form #freqEnveOnOffForm>
         <label><input type="radio" name="freqenvelope" value="on"><span>On</span></label>

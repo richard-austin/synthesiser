@@ -4,18 +4,45 @@
     <div class="column">
       <div class="column">
         <div class="module" style="min-height:214px">
-          <app-level-control #attackTime label="Attack Time" [style]="dialStyle.red" [divisions]="10" [calAngle]="300"
+          <app-level-control #attackTime
+                             label="Attack Time"
+                             [style]="dialStyle.red"
+                             [divisions]="10"
+                             [calAngle]="300"
                              [radius]="50"
+                             [factor]="10"
                              (setLevel)="setAttackTime($event)"></app-level-control>
-          <app-level-control #decayTime label="Decay Time" [style]="dialStyle.red" [radius]="50" [divisions]="10"
+          <app-level-control #decayTime
+                             label="Decay Time"
+                             [style]="dialStyle.red"
+                             [radius]="50"
+                             [factor]="10"
+                             [divisions]="10"
                              (setLevel)="setDecayTime($event)"></app-level-control>
-          <app-level-control #predelay label="Pre Delay" [style]="dialStyle.blue" [radius]="50" [divisions]="10"
+          <app-level-control #predelay
+                             label="Pre Delay"
+                             [style]="dialStyle.blue"
+                             [radius]="50"
+                             [divisions]="10"
                              (setLevel)="setPreDelayTime($event)"></app-level-control>
-          <app-level-control #repeatEchoTime label="Repeat Time" [style]="dialStyle.yellow" [radius]="50" [divisions]="10"
+          <app-level-control #repeatEchoTime
+                             label="Repeat Time"
+                             [style]="dialStyle.yellow"
+                             [radius]="50"
+                             [divisions]="10"
                              (setLevel)="setRepeatEchoTime($event)"></app-level-control>
-          <app-level-control #repeatEchoLevel label="Repeat Level" [style]="dialStyle.yellow" [radius]="50" [divisions]="10"
+          <app-level-control #repeatEchoLevel
+                             label="Repeat Level"
+                             [style]="dialStyle.yellow"
+                             [radius]="50"
+                             [divisions]="10"
                              (setLevel)="setRepeatEchoGain($event)"></app-level-control>
-          <app-level-control #wetDry label="Wet/Dry" [plusMinus]="true" [style]="dialStyle.green" [radius]="50" [divisions]="10"
+          <app-level-control #wetDry
+                             label="Wet/Dry"
+                             [plusMinus]="true"
+                             [style]="dialStyle.green"
+                             [radius]="50"
+                             [divisions]="10"
                              (setLevel)="setWetDryBalance($event)"></app-level-control>
           <form #reverbOnOffForm>
             <label><input type="radio" name="reverb" value="on"><span>On</span></label>

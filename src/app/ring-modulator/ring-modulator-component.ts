@@ -7,6 +7,7 @@ import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {modWaveforms, onOff, ringModOutput} from '../enums/enums';
 import {FilterComponent} from '../filter/filter-component';
 import {ReverbComponent} from '../reverb-component/reverb-component';
+import {Cookies} from '../settings/cookies/cookies';
 
 @Component({
   selector: 'app-ring-modulator',
@@ -18,7 +19,8 @@ import {ReverbComponent} from '../reverb-component/reverb-component';
 })
 export class RingModulatorComponent implements AfterViewInit {
   ringMod!: RingModulator;
-  settings!: RingModSettings;
+  proxySettings!: RingModSettings;
+  private cookies!: Cookies;
 
   @Input() filters!: FilterComponent;
   @Input() reverb!: ReverbComponent;
@@ -33,17 +35,29 @@ export class RingModulatorComponent implements AfterViewInit {
 
   start(audioCtx: AudioContext) {
     this.ringMod = new RingModulator(audioCtx);
+    this.cookies = new Cookies();
 
     // Set default ring mod settings
-    this.applySettings(this.settings);
+    this.applySettings(this.proxySettings);
   }
   // Called after all synth components have been started
   setOutputConnection () {
-    SetRadioButtons.set(this.outputToForm, this.settings.output);
+    SetRadioButtons.set(this.outputToForm, this.proxySettings.output);
   }
 
   applySettings(settings: RingModSettings = new RingModSettings()) {
-    this.settings = settings;
+    const cookieName = 'ringMod';
+
+    const savedSettings = this.cookies.getSettings(cookieName);
+
+    if(Object.keys(savedSettings).length > 0) {
+      // Use values from cookie
+      settings = savedSettings as RingModSettings;
+    }
+    // else use default settings
+
+    this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
+
     // Set up the dial positions
     this.modFreq.setValue(settings.modFrequency);
     this.modDepth.setValue(settings.modDepth);
@@ -51,7 +65,6 @@ export class RingModulatorComponent implements AfterViewInit {
     // Set the mod waveform buttons and ring mod settings
     SetRadioButtons.set(this.modWaveForm, settings.modWaveform);
     SetRadioButtons.set(this.internalModForm, settings.internalMod);
- //   SetRadioButtons.set(this.outputToForm, settings.output);
     this.output.emit(settings.output);
   }
 
@@ -61,13 +74,13 @@ export class RingModulatorComponent implements AfterViewInit {
 
   protected setFrequency($event: number)
   {
-    this.settings.modFrequency = $event;
+    this.proxySettings.modFrequency = $event;
     const freq = 4500 * (Math.pow(Math.pow(2, 1 / 12), $event) - 1);
     this.ringMod.setModFrequency(freq);
   }
 
   protected setModDepth($event: number) {
-    this.settings.modDepth = $event;
+    this.proxySettings.modDepth = $event;
     this.ringMod.setModDepth($event);
   }
 
@@ -116,7 +129,7 @@ export class RingModulatorComponent implements AfterViewInit {
       internalModForm.elements[j].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value as string;
-        this.settings.internalMod = value as onOff;
+        this.proxySettings.internalMod = value as onOff;
         this.ringMod.internalMod(value==='on');
       });
     }
@@ -125,7 +138,7 @@ export class RingModulatorComponent implements AfterViewInit {
       modWaveForm.elements[j].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value as OscillatorType;
-        this.settings.modWaveform = value as modWaveforms;
+        this.proxySettings.modWaveform = value as modWaveforms;
         this.ringMod.setModWaveform(value);
       });
     }
@@ -134,7 +147,7 @@ export class RingModulatorComponent implements AfterViewInit {
       outputToForm.elements[j].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value as string;
-        this.settings.output = value as ringModOutput;
+        this.proxySettings.output = value as ringModOutput;
         this.output.emit(value);
       });
     }

@@ -5,6 +5,7 @@ import {Reverb} from '../modules/reverb';
 import {ReverbSettings} from '../settings/reverb';
 import {onOff} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
+import {Cookies} from '../settings/cookies/cookies';
 
 @Component({
   selector: 'app-reverb-component',
@@ -19,12 +20,8 @@ export class ReverbComponent implements AfterViewInit {
   reverb!: Reverb;
   gain!: GainNode;
   input!: GainNode;
-  attackTime = 0;
-  decayTime = 2;
-  predelay = 0;
-  repeatEchoTime = 0.7;
-  repeatEchoGain = 0.3;
-  settings!: ReverbSettings;
+  proxySettings!: ReverbSettings;
+  private cookies!: Cookies;
 
   @ViewChild('reverbOnOffForm') reverbOnOffForm!: ElementRef<HTMLFormElement>;
   @ViewChild('attackTime') attackTimeDial!: LevelControlComponent;
@@ -43,50 +40,62 @@ export class ReverbComponent implements AfterViewInit {
     this.gain = this.audioCtx.createGain();
     this.gain.gain.value = 0;
     this.reverb = new Reverb(audioCtx, this.input, this.gain, this.gain);
-    this.settings = new ReverbSettings();
-    this.reverb.setup(this.attackTime, this.decayTime, this.predelay, this.repeatEchoTime, this.repeatEchoGain);
-    this.attackTimeDial.setValue(this.settings.attackTime);
-    this.decayTimeDial.setValue(this.settings.decayTime);
-    this.predelayDial.setValue(this.settings.predelay);
-    this.repeatEchoTimeDial.setValue(this.settings.repeatEchoTime);
-    this.repeatEchoLevelDial.setValue(this.settings.repeatEchoGain);
-    this.reverbOnOff(this.settings.output === onOff.on);
-   // SetRadioButtons.set(this.reverbOnOffForm, this.settings.output);
-
-    this.wetDryDial.setValue(this.settings.wetDry);
-    this.gain.connect(audioCtx.destination);
+    this.cookies = new Cookies();
+   this.gain.connect(audioCtx.destination);
+   this.applySettings();
   }
   // Called after all synth components have been started
   setOutputConnection () {
-    SetRadioButtons.set(this.reverbOnOffForm, this.settings.output);
+    SetRadioButtons.set(this.reverbOnOffForm, this.proxySettings.output);
   }
 
+  applySettings(settings: ReverbSettings = new ReverbSettings()) {
+    const cookieName = 'reverb'
+    const savedSettings = this.cookies.getSettings(cookieName);
+
+    if(Object.keys(savedSettings).length > 0) {
+      // Use values from cookie
+      settings = savedSettings as ReverbSettings;
+    }
+
+    this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
+    this.reverb.setup(this.proxySettings.attackTime, this.proxySettings.decayTime, this.proxySettings.predelay, this.proxySettings.repeatEchoTime, this.proxySettings.repeatEchoGain);
+    this.attackTimeDial.setValue(this.proxySettings.attackTime);
+    this.decayTimeDial.setValue(this.proxySettings.decayTime);
+    this.predelayDial.setValue(this.proxySettings.predelay);
+    this.repeatEchoTimeDial.setValue(this.proxySettings.repeatEchoTime);
+    this.repeatEchoLevelDial.setValue(this.proxySettings.repeatEchoGain);
+    this.reverbOnOff(this.proxySettings.output === onOff.on);
+
+    this.wetDryDial.setValue(this.proxySettings.wetDry);
+
+  }
 
   protected setAttackTime($event: number) {
-    this.attackTime = $event * 10;
-    this.reverb.setAttack(this.attackTime);
+    this.proxySettings.attackTime = $event;
+    this.reverb.setAttack(this.proxySettings.attackTime);
     this.reverb.renderTail();
   }
 
   protected setDecayTime($event: number) {
-    this.decayTime = $event * 10;
-    this.reverb.setDecay(this.decayTime);
+    this.proxySettings.decayTime = $event;
+    this.reverb.setDecay(this.proxySettings.decayTime);
     this.reverb.renderTail();
   }
 
   protected setPreDelayTime($event: number) {
-    this.predelay = $event;
+    this.proxySettings.predelay = $event;
     this.reverb.setPreDelay($event);
   }
 
   protected setRepeatEchoTime($event: number) {
-    this.repeatEchoTime = $event;
+    this.proxySettings.repeatEchoTime = $event;
     this.reverb.setRepeatEchoTime($event);
   }
 
   protected setRepeatEchoGain($event: number) {
-    this.repeatEchoGain = $event;
-    this.reverb.setRepeatEchoGain(this.repeatEchoGain);
+    this.proxySettings.repeatEchoGain = $event;
+    this.reverb.setRepeatEchoGain(this.proxySettings.repeatEchoGain);
   }
 
 
@@ -106,7 +115,7 @@ export class ReverbComponent implements AfterViewInit {
       reverbOnOff.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value;
-        this.settings.output = value as onOff;
+        this.proxySettings.output = value as onOff;
         this.reverbOnOff(value === 'on');
       });
     }

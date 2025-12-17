@@ -8,6 +8,7 @@ import {dialStyle} from '../level-control/levelControlParameters';
 import {NoiseSettings} from '../settings/noise';
 import {noiseOutputs, onOff} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
+import {Cookies} from '../settings/cookies/cookies';
 
 @Component({
   selector: 'app-noise',
@@ -21,7 +22,8 @@ export class NoiseComponent implements AfterViewInit {
   private whiteNoise: WhiteNoise[] = [];
   private pinkNoise: PinkNoise[] = [];
   private brownNoise: BrownNoise[] = [];
-  private settings!: NoiseSettings;
+  private proxySettings!: NoiseSettings;
+  private cookies!: Cookies;
 
   @Input() numberOfChannels!: number;
   @Input() filters!: FilterComponent;
@@ -52,17 +54,27 @@ export class NoiseComponent implements AfterViewInit {
         await this.brownNoise[i].start();
       }
     }
+    this.cookies = new Cookies();
     this.applySettings();
   }
 
   // Called after all synth components have been started
   setOutputConnection () {
-    SetRadioButtons.set(this.noiseOutputToForm, this.settings.output);
+    SetRadioButtons.set(this.noiseOutputToForm, this.proxySettings.output);
   }
 
-
   applySettings(settings: NoiseSettings = new NoiseSettings()) {
-    this.settings = settings;
+    const cookieName = 'noise';
+
+    const savedSettings = this.cookies.getSettings(cookieName);
+
+    if(Object.keys(savedSettings).length > 0) {
+      // Use values from cookie
+      settings = savedSettings as NoiseSettings;
+    }
+    // else use default settings
+
+    this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
     for (let i = 0; i < this.numberOfChannels; ++i) {
       this.whiteNoise[i].setGain(settings.gain);
       this.whiteNoise[i].setAmplitudeEnvelope(settings.adsr);
@@ -74,20 +86,20 @@ export class NoiseComponent implements AfterViewInit {
       this.brownNoise[i].setAmplitudeEnvelope(settings.adsr);
       this.brownNoise[i].useAmplitudeEnvelope = settings.useAmplitudeEnvelope === onOff.on;
     }
-    this.attack.setValue(this.settings.adsr.attackTime);
-    this.decay.setValue(this.settings.adsr.decayTime);
-    this.sustain.setValue(this.settings.adsr.sustainLevel);
-    this.release.setValue(this.settings.adsr.releaseTime);
+    this.attack.setValue(this.proxySettings.adsr.attackTime);
+    this.decay.setValue(this.proxySettings.adsr.decayTime);
+    this.sustain.setValue(this.proxySettings.adsr.sustainLevel);
+    this.release.setValue(this.proxySettings.adsr.releaseTime);
     this.gainControl.setValue(settings.gain);
 
   //  SetRadioButtons.set(this.noiseOutputToForm, this.settings.output);
-    SetRadioButtons.set(this.noiseTypeForm, this.settings.type);
-    SetRadioButtons.set(this.amplitudeEnvelopeOnOffForm, this.settings.useAmplitudeEnvelope);
+    SetRadioButtons.set(this.noiseTypeForm, this.proxySettings.type);
+    SetRadioButtons.set(this.amplitudeEnvelopeOnOffForm, this.proxySettings.useAmplitudeEnvelope);
   }
 
   protected setGain(gain: number) {
-    this.settings.gain = gain;
-    const noiseType = this.settings.type;
+    this.proxySettings.gain = gain;
+    const noiseType = this.proxySettings.type;
 
     for (let i = 0; i < this.numberOfChannels; i++) {
       switch (noiseType) {
@@ -105,8 +117,8 @@ export class NoiseComponent implements AfterViewInit {
   }
 
   private setNoiseType(noiseType: any) {
-    this.settings.type = noiseType;
-    const gain = this.settings.gain;
+    this.proxySettings.type = noiseType;
+    const gain = this.proxySettings.gain;
 
     for (let i = 0; i < this.numberOfChannels; ++i) {
       this.whiteNoise[i].setGain(0);
@@ -116,12 +128,12 @@ export class NoiseComponent implements AfterViewInit {
     const source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
     for (let i = 0; i < this.numberOfChannels; ++i) {
       source[i].setGain(gain);
-      source[i].useAmplitudeEnvelope = this.settings.useAmplitudeEnvelope == onOff.on;
+      source[i].useAmplitudeEnvelope = this.proxySettings.useAmplitudeEnvelope == onOff.on;
     }
   }
 
   connect(node: AudioNode) {
-    this.settings.output = noiseOutputs.speaker;
+    this.proxySettings.output = noiseOutputs.speaker;
     for (let i = 0; i < this.numberOfChannels; ++i) {
       this.whiteNoise[i].disconnect();
       this.pinkNoise[i].disconnect();
@@ -136,7 +148,7 @@ export class NoiseComponent implements AfterViewInit {
    * connectToFilters: Connect to a group of filters
    */
   connectToFilters(): boolean {
-    this.settings.output = noiseOutputs.filter;
+    this.proxySettings.output = noiseOutputs.filter;
     const filters = this.filters.filters;
     let ok = false;
     if (filters && filters.length === this.numberOfChannels) {
@@ -152,7 +164,7 @@ export class NoiseComponent implements AfterViewInit {
   }
 
   disconnect() {
-    this.settings.output = noiseOutputs.off;
+    this.proxySettings.output = noiseOutputs.off;
     for (let i = 0; i < this.numberOfChannels; i++) {
       this.whiteNoise[i].disconnect();
       this.pinkNoise[i].disconnect();
@@ -162,7 +174,7 @@ export class NoiseComponent implements AfterViewInit {
 
   private noiseSource(): WhiteNoise[] | PinkNoise[] | BrownNoise[] {
     let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.whiteNoise;
-    switch (this.settings.type) {
+    switch (this.proxySettings.type) {
       case 'white':
         source = this.whiteNoise;
         break;
@@ -177,7 +189,7 @@ export class NoiseComponent implements AfterViewInit {
   }
 
   useAmplitudeEnvelope(useAmplitudeEnvelope: boolean) {
-    this.settings.useAmplitudeEnvelope = useAmplitudeEnvelope ? onOff.on : onOff.off;
+    this.proxySettings.useAmplitudeEnvelope = useAmplitudeEnvelope ? onOff.on : onOff.off;
     let source : WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
     for (let i = 0; i < this.numberOfChannels; i++) {
       source[i].useAmplitudeEnvelope = useAmplitudeEnvelope;
@@ -187,7 +199,7 @@ export class NoiseComponent implements AfterViewInit {
   keyDown(keyIndex: number) {
     if (keyIndex >= 0 && keyIndex < this.numberOfChannels) {
       let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
-      if(this.settings.output === noiseOutputs.speaker)
+      if(this.proxySettings.output === noiseOutputs.speaker)
         keyIndex = 0;  // Wired straight to the output, so we only use a single channel to avoid overload
       source[keyIndex].keyDown();
     }
@@ -196,26 +208,26 @@ export class NoiseComponent implements AfterViewInit {
   keyUp(keyIndex: number) {
     if (keyIndex >= 0 && keyIndex < this.numberOfChannels) {
       let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
-      if(this.settings.output === noiseOutputs.speaker)
+      if(this.proxySettings.output === noiseOutputs.speaker)
         keyIndex = 0; // Wired straight to the output, so we only use a single channel to avoid overload
       source[keyIndex].keyUp();
     }
   }
 
   protected setAttack($event: number) {
-    this.settings.adsr.attackTime = $event;
+    this.proxySettings.adsr.attackTime = $event;
   }
 
   protected setDecayTime($event: number) {
-    this.settings.adsr.decayTime = $event * 10;
+    this.proxySettings.adsr.decayTime = $event;
   }
 
   protected setSustainLevel($event: number) {
-    this.settings.adsr.sustainLevel = $event;
+    this.proxySettings.adsr.sustainLevel = $event;
   }
 
   protected setReleaseTime($event: number) {
-    this.settings.adsr.releaseTime = $event * 10;
+    this.proxySettings.adsr.releaseTime = $event;
   }
 
   protected readonly dialStyle = dialStyle;
@@ -227,7 +239,7 @@ export class NoiseComponent implements AfterViewInit {
         // @ts-ignore
         const value = $event.target.value;
         this.output.emit(value);
-        this.settings.output = value;
+        this.proxySettings.output = value;
       });
     }
 
@@ -237,7 +249,7 @@ export class NoiseComponent implements AfterViewInit {
         // @ts-ignore
         const value = $event.target.value;
         this.setNoiseType(value);
-        this.settings.type = value;
+        this.proxySettings.type = value;
       });
     }
 
@@ -247,7 +259,7 @@ export class NoiseComponent implements AfterViewInit {
         // @ts-ignore
         const value = $event.target.value;
         this.useAmplitudeEnvelope(value === 'on');
-        this.settings.useAmplitudeEnvelope = value;
+        this.proxySettings.useAmplitudeEnvelope = value;
       });
     }
   }
