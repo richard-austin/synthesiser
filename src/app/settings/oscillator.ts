@@ -6,6 +6,7 @@ export class OscillatorSettings {
   adsr: ADSRValues;
   freqBend: FreqBendValues;
   frequency: number;
+  deTune: number;
   gain: number;
   waveForm: oscWaveforms;
   output: oscOutputs;
@@ -21,6 +22,7 @@ export class OscillatorSettings {
               useAmplitudeEnvelope: onOff = onOff.on,
               useFrequencyEnvelope: onOff = onOff.off,
               frequency: number = 0,
+              deTune: number = 0,
               gain: number = .2,
               waveForm: oscWaveforms = oscWaveforms.sine,
               output: oscOutputs = oscOutputs.speaker,
@@ -34,6 +36,7 @@ export class OscillatorSettings {
     this.useAmplitudeEnvelope = useAmplitudeEnvelope;
     this.useFrequencyEnvelope = useFrequencyEnvelope;
     this.frequency = frequency;
+    this.deTune = deTune;
     this.gain = gain;
     this.waveForm = waveForm;
     this.output = output;

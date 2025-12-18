@@ -19,10 +19,12 @@ export class FilterSettings {
   modType: filterModType;
   modWaveform: modWaveforms;
   useFrequencyEnvelope: onOff;
+  deTune: number;
 
   constructor(freqBend: FreqBendValues = new FreqBendValues(0, 1, 2, 0.5, 0.1, 0.0),
               useFrequencyEnvelope: onOff = onOff.off,
               frequency: number = 0,
+              deTune: number = 0,
               qFactor: number = 20,
               gain: number = .4,
               filterType: filterTypes = filterTypes.lowpass,
@@ -33,9 +35,9 @@ export class FilterSettings {
               modType: filterModType = filterModType.off)
   {
     this.freqBend = freqBend;
-
     this.useFrequencyEnvelope = useFrequencyEnvelope;
     this.frequency = frequency;
+    this.deTune = deTune;
     this.qFactor = qFactor;
     this.gain = gain;
     this.filterType = filterType;

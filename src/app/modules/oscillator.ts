@@ -26,6 +26,10 @@ export class Oscillator extends OscFilterBase {
     this.freq = f;
   }
 
+  setDetune(deTune: number) {
+    this.oscillator.detune.value = deTune;
+  }
+
   setType(type: OscillatorType) {
     this.oscillator.type = type;
   }

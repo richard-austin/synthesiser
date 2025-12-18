@@ -38,6 +38,7 @@ export class FilterComponent implements AfterViewInit {
 
   @Output() output = new EventEmitter<string>();
   @ViewChild('frequency') frequency!: LevelControlComponent;
+  @ViewChild('deTune') deTune!: LevelControlComponent;
   @ViewChild('gain') gain!: LevelControlComponent;
   @ViewChild('qfactor') qfactor!: LevelControlComponent;
 
@@ -89,13 +90,15 @@ export class FilterComponent implements AfterViewInit {
 
     for (let i = 0; i < this.numberOfFilters; ++i) {
       this.filters.push(new Filter(this.audioCtx));
-      this.filters[i].setFrequency(this.proxySettings.frequency * Math.pow(Math.pow(2, 1 / 12), (i + 1)));
+      this.filters[i].setFrequency(this.keyToFrequency(i));
+      this.filters[i].setDeTune(this.proxySettings.deTune);
       this.filters[i].setFreqBendEnvelope(this.proxySettings.freqBend);
       this.filters[i].useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.off);
       this.filters[i].setType(this.proxySettings.filterType);
     }
 
     this.frequency.setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
+    this.deTune.setValue(this.proxySettings.deTune);
     this.gain.setValue(this.proxySettings.gain);
     this.qfactor.setValue(this.proxySettings.qFactor);
 
@@ -124,7 +127,7 @@ export class FilterComponent implements AfterViewInit {
   protected setFrequency(freq: number) {
     this.proxySettings.frequency = freq;
     for (let i = 0; i < this.filters.length; i++) {
-      this.filters[i].setFrequency(450 * Math.pow(Math.pow(2, 1 / 12), (i + 1) + 120 * freq * this.tuningDivisions / 10));
+      this.filters[i].setFrequency(this.keyToFrequency(i));
     }
   }
 
@@ -132,6 +135,13 @@ export class FilterComponent implements AfterViewInit {
     this.proxySettings.gain = gain;
     for (let i = 0; i < this.filters.length; i++) {
       this.filters[i].setGain(gain);
+    }
+  }
+
+  protected setDetune(deTune: number) {
+    this.proxySettings.deTune = deTune;
+    for (let i = 0; i < this.filters.length; i++) {
+      this.filters[i].setDeTune(deTune);
     }
   }
 
@@ -156,20 +166,8 @@ export class FilterComponent implements AfterViewInit {
     }
   }
 
-  /**
-   * connectToFilters: Connect to a group of filters
-   * @param filters
-   */
-  connectToFilters(filters: Filter[]): boolean {
-    let ok = false;
-    if (filters && filters.length === this.filters.length) {
-      ok = true;
-      for (let i = 0; i < this.filters.length; i++) {
-        this.filters[i].connect(filters[i].filter);
-      }
-    } else
-      console.log("Filter array is a different size to the oscillator array")
-    return ok;
+  keyToFrequency(key: number) {
+    return 225 * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
   }
 
   /**

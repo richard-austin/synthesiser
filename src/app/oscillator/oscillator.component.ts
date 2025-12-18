@@ -39,6 +39,7 @@ export class OscillatorComponent implements AfterViewInit {
 
   @Output() output = new EventEmitter<string>();
   @ViewChild('frequency') frequency!: LevelControlComponent;
+  @ViewChild('deTune') deTune!: LevelControlComponent;
   @ViewChild('gain') gain!: LevelControlComponent;
   @ViewChild('attack') attack!: LevelControlComponent;
   @ViewChild('decay') decay!: LevelControlComponent;
@@ -93,16 +94,16 @@ export class OscillatorComponent implements AfterViewInit {
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
     for (let i = 0; i < this.numberOfOscillators; ++i) {
       this.oscillators.push(new Oscillator(this.audioCtx));
-      this.oscillators[i].setFrequency(450 * Math.pow(Math.pow(2, 1 / 12), (i + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10));
+      this.oscillators[i].setFrequency(this.keyToFrequency(i));
       this.oscillators[i].setAmplitudeEnvelope(this.proxySettings.adsr)
       this.oscillators[i].useAmplitudeEnvelope = this.proxySettings.useAmplitudeEnvelope === onOff.on;
-      // this.oscillators[i].setGain(.1);
       this.oscillators[i].setFreqBendEnvelope(this.proxySettings.freqBend);
       this.oscillators[i].useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.on);
       this.oscillators[i].setType(this.proxySettings.waveForm);
     }
 
     this.frequency.setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
+    this.deTune.setValue(this.proxySettings.deTune);
     this.gain.setValue(this.proxySettings.gain);
     this.attack.setValue(this.proxySettings.adsr.attackTime);
     this.decay.setValue(this.proxySettings.adsr.decayTime);
@@ -134,7 +135,7 @@ export class OscillatorComponent implements AfterViewInit {
   protected setFrequency(freq: number) {
     this.proxySettings.frequency = freq;
     for (let i = 0; i < this.oscillators.length; i++) {
-      this.oscillators[i].setFrequency(450 * Math.pow(Math.pow(2, 1 / 12), (i + 1) + 120 * freq * this.tuningDivisions / 10));
+      this.oscillators[i].setFrequency(this.keyToFrequency(i));
     }
   }
 
@@ -142,6 +143,13 @@ export class OscillatorComponent implements AfterViewInit {
     this.proxySettings.gain = gain;
     for (let i = 0; i < this.oscillators.length; i++) {
       this.oscillators[i].setGain(gain);
+    }
+  }
+
+  protected setDetune(detune: number) {
+    this.proxySettings.deTune = detune;
+    for (let i = 0; i < this.oscillators.length; i++) {
+      this.oscillators[i].setDetune(detune);
     }
   }
 
@@ -164,6 +172,10 @@ export class OscillatorComponent implements AfterViewInit {
     for (let i = 0; i < this.numberOfOscillators; ++i) {
       this.oscillators[i].setType(value);
     }
+  }
+
+  keyToFrequency(key: number) {
+    return 225 * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
   }
 
   modulation(source: AudioNode, type: oscModType) {

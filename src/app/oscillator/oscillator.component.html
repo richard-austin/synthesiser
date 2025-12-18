@@ -1,22 +1,31 @@
 <div class="group-container metallic-button">
-  <h1>{{name ? name : 'Oscillators'}}</h1>
+  <h1>{{ name ? name : 'Oscillators' }}</h1>
   <div class="group">
     <div class="column">
       <div class="module osc-width">
         <h2>Oscillators</h2>
-        <app-level-control #frequency
-                           label="Tuning"
+        <div class="row">
+          <app-level-control #frequency
+                             label="Tuning"
+                             [plusMinus]="true"
+                             [divisions]="tuningDivisions"
+                             [calAngle]="300"
+                             [radius]="50"
+                             (setLevel)="setFrequency($event)"></app-level-control>
+          <app-level-control #gain
+                             label="Gain"
+                             [radius]="50"
+                             [divisions]="10"
+                             [factor]="0.4"
+                             (setLevel)="setGain($event)"></app-level-control>
+        </div>
+        <app-level-control #deTune
+                           label="Detune"
                            [plusMinus]="true"
-                           [divisions]="tuningDivisions"
-                           [calAngle]="300"
-                           [radius]="50"
-                           (setLevel)="setFrequency($event)"></app-level-control>
-        <app-level-control #gain
-                           label="Gain"
-                           [radius]="50"
-                           [divisions]="10"
-                           [factor]="0.4"
-                           (setLevel)="setGain($event)"></app-level-control>
+                           [divisions]="24"
+                           [factor]="2400"
+                           (setLevel)="setDetune($event)">
+        </app-level-control>
         <h2>Waveform</h2>
         <div style="height: 3px;"></div>
         <form #oscWaveForm>

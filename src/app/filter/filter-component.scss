@@ -29,6 +29,12 @@
   min-width: 332px;
 }
 
+div.row {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
 .group-container {
   > h1,h2 {
     text-align: center;

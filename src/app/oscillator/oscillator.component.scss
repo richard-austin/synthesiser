@@ -25,8 +25,14 @@
   margin-right: auto;
   margin-left: auto;
 }
-.osc-width {
+div.osc-width {
   min-width: 280px;
+}
+
+div.row {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
 }
 
 .group-container {

@@ -4,7 +4,7 @@
     <div class="column">
       <div class="module filter-width">
         <h2>Filters</h2>
-        <div style="display: flex; flex-direction: row">
+        <div class="row">
           <app-level-control #frequency
                              label="Tuning"
                              [plusMinus]="true"
@@ -24,6 +24,14 @@
                              [factor]="100"
                              (setLevel)="setQFactor($event)"></app-level-control>
         </div>
+        <app-level-control #deTune
+                            label="Detune"
+                           [plusMinus]="true"
+                           [divisions]="24"
+                           [factor]="2400"
+                           (setLevel)="setDetune($event)">
+        </app-level-control>
+
         <h2>Filter Type</h2>
         <div style="height: 3px;"></div>
         <form #filterTypeForm>
