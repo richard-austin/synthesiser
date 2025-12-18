@@ -5,7 +5,7 @@ import {filterModType, oscModType} from '../enums/enums';
 
 export class Filter extends OscFilterBase {
   filter: BiquadFilterNode;
-  readonly freqBendBase = 5;
+  readonly freqBendBase = 16;
 
   constructor(protected override audioCtx: AudioContext) {
     super(audioCtx);
