@@ -1,0 +1,6 @@
+div.analyser {
+  position: relative;
+  > app-analyser {
+    position: absolute;
+  }
+}

@@ -23,10 +23,14 @@
                [reverb]="reverb"
                [phasor]="phasor"
                (output)="setFilterOutputTarget($event)"></app-filters>
-  <app-noise [filters]="filters"
+  <div class="analyser">
+    <app-noise [filters]="filters"
              [numberOfChannels]="50"
              (output)="setNoiseOutputTarget($event)">
   </app-noise>
+
+    <app-analyser></app-analyser>
+  </div>
   <app-ring-modulator #ringMod
                       [numberOfChannels]="50"
                       [filters]="filters"
@@ -41,6 +45,6 @@
   <app-phasor #phasor
               (output)="setPhasorOutputTarget($event)">
   </app-phasor>
-  <app-analyser></app-analyser>
+
 </div>
 
