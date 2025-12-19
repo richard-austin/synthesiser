@@ -35,6 +35,12 @@
   </app-ring-modulator>
 </div>
 <div style="display: flex; flex-direction: row">
-  <app-reverb-component #reverb></app-reverb-component>
-  <app-phasor #phasor></app-phasor>
+  <app-reverb-component #reverb
+                        (output)="setReverbOutputTarget($event)">
+  </app-reverb-component>
+  <app-phasor #phasor
+              (output)="setPhasorOutputTarget($event)">
+  </app-phasor>
+  <app-analyser></app-analyser>
 </div>
+

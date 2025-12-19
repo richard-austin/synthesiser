@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, EventEmitter, Output, ViewChild} from '@angular/core';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {Reverb} from '../modules/reverb';
@@ -23,6 +23,8 @@ export class ReverbComponent implements AfterViewInit {
   proxySettings!: ReverbSettings;
   private cookies!: Cookies;
 
+  @Output() output = new EventEmitter();
+
   @ViewChild('reverbOnOffForm') reverbOnOffForm!: ElementRef<HTMLFormElement>;
   @ViewChild('attackTime') attackTimeDial!: LevelControlComponent;
   @ViewChild('decayTime') decayTimeDial!: LevelControlComponent;
@@ -38,11 +40,10 @@ export class ReverbComponent implements AfterViewInit {
     this.input = this.audioCtx.createGain();
     this.input.gain.value = 1;
     this.gain = this.audioCtx.createGain();
-    this.gain.gain.value = 0;
+    this.gain.gain.value = 1;
     this.reverb = new Reverb(audioCtx, this.input, this.gain, this.gain);
     this.cookies = new Cookies();
-   this.gain.connect(audioCtx.destination);
-   this.applySettings();
+    this.applySettings();
   }
   // Called after all synth components have been started
   setOutputConnection () {
@@ -65,10 +66,9 @@ export class ReverbComponent implements AfterViewInit {
     this.predelayDial.setValue(this.proxySettings.predelay);
     this.repeatEchoTimeDial.setValue(this.proxySettings.repeatEchoTime);
     this.repeatEchoLevelDial.setValue(this.proxySettings.repeatEchoGain);
-    this.reverbOnOff(this.proxySettings.output === onOff.on);
-
     this.wetDryDial.setValue(this.proxySettings.wetDry);
 
+    SetRadioButtons.set(this.reverbOnOffForm, this.proxySettings.output);
   }
 
   protected setAttackTime($event: number) {
@@ -104,9 +104,12 @@ export class ReverbComponent implements AfterViewInit {
     this.reverb.setDryGain(0.5+$event);
   }
 
+  connect(node: AudioNode) {
+    this.gain.connect(node);
+  }
 
-  private reverbOnOff(reverb: boolean) {
-      this.gain.gain.value = reverb ? 1 : 0;
+  disconnect() {
+    this.gain.disconnect();
   }
 
   ngAfterViewInit(): void {
@@ -116,7 +119,7 @@ export class ReverbComponent implements AfterViewInit {
         // @ts-ignore
         const value = $event.target.value;
         this.proxySettings.output = value as onOff;
-        this.reverbOnOff(value === 'on');
+        this.output.emit(value);
       });
     }
   }

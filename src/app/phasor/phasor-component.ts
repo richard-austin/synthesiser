@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, EventEmitter, Output, ViewChild} from '@angular/core';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {Phasor} from '../modules/phasor';
 import {dialStyle} from '../level-control/levelControlParameters';
@@ -28,6 +28,8 @@ export class PhasorComponent implements AfterViewInit {
   private lfo!: Oscillator;
   private negModGain!: GainNode;
 
+  @Output() output: EventEmitter<string> = new EventEmitter();
+
   @ViewChild('phasorOnOffForm') phasorOnOffForm!: ElementRef<HTMLFormElement>;
   @ViewChild('modFreq') modFreq!: LevelControlComponent;
   @ViewChild('modDepth') modLevel!: LevelControlComponent;
@@ -48,7 +50,6 @@ export class PhasorComponent implements AfterViewInit {
 
     this.gain = audioCtx.createGain();
     this.gain.gain.value = 1;
-    this.gain.connect(audioCtx.destination);
     this.phasor = new Phasor(audioCtx, this.input, this.gain);
     this.cookies = new Cookies();
 
@@ -79,9 +80,8 @@ export class PhasorComponent implements AfterViewInit {
     this.phase.setValue(settings.phase);
     this.level.setValue(settings.gain);
 
- //   SetRadioButtons.set(this.phasorOnOffForm, this.settingsProxy.output);
     SetRadioButtons.set(this.lfoWaveForm, this.settingsProxy.modWaveform);
-    SetRadioButtons.set(this.modOnOff, this.settingsProxy.output);
+    SetRadioButtons.set(this.modOnOff, this.settingsProxy.modulation);
   }
 
   protected setPhase($event: number) {
@@ -92,10 +92,6 @@ export class PhasorComponent implements AfterViewInit {
   protected setLevel($event: number) {
     this.settingsProxy.gain = $event;
     this.phasor.setLevel($event);
-  }
-
-  private phasorOnOff(phasor: boolean) {
-    this.gain.gain.value = phasor ? 1 : 0;
   }
 
   protected setModFrequency(freq: number) {
@@ -112,13 +108,21 @@ export class PhasorComponent implements AfterViewInit {
     this.negModGain.gain.value =-1;
   }
 
+  connect(node: AudioNode) {
+    this.gain.connect(node);
+  }
+
+  disconnect() {
+    this.gain.disconnect();
+  }
+
   ngAfterViewInit(): void {
     const phasorOnOff = this.phasorOnOffForm.nativeElement;
     for (let i = 0; i < phasorOnOff.elements.length; ++i) {
       phasorOnOff.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value;
-        this.phasorOnOff(value === 'on');
+        this.output.emit(value);
         this.settingsProxy.output = value as phasorOutputs;
       });
     }

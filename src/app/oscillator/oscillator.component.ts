@@ -341,7 +341,6 @@ export class OscillatorComponent implements AfterViewInit {
         const value = $event.target.value;
         const sub = timer(10).subscribe(() => {
           sub.unsubscribe();
-          // @ts-ignore
           this.output.emit(value);
           this.proxySettings.output = value;
         });

@@ -5,6 +5,7 @@ import {NoiseComponent} from '../noise/noise-component';
 import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component';
 import {ReverbComponent} from '../reverb-component/reverb-component';
 import {PhasorComponent} from '../phasor/phasor-component';
+import {AnalyserComponent} from '../analyser/analyser-component';
 
 @Component({
   selector: 'app-synth-component',
@@ -14,7 +15,8 @@ import {PhasorComponent} from '../phasor/phasor-component';
     NoiseComponent,
     RingModulatorComponent,
     ReverbComponent,
-    PhasorComponent
+    PhasorComponent,
+    AnalyserComponent
   ],
   templateUrl: './synth-component.html',
   styleUrl: './synth-component.scss',
@@ -29,6 +31,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChild(RingModulatorComponent) ringModulator!: RingModulatorComponent;
   @ViewChild(ReverbComponent) reverb!: ReverbComponent;
   @ViewChild(PhasorComponent) phasor!: PhasorComponent;
+  @ViewChild(AnalyserComponent) analyser!: AnalyserComponent;
 
   protected async start(): Promise<void> {
     this.audioCtx = new AudioContext();
@@ -38,12 +41,11 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.oscillators2Grp.start(this.audioCtx);
     this.filtersGrp.start(this.audioCtx);
 
-    //this.oscillatorsGrp.connect(this.audioCtx.destination);
-    //this.oscillators2Grp.connect(this.audioCtx.destination);
     await this.noise.start(this.audioCtx);
     this.ringModulator.start(this.audioCtx);
     this.reverb.start(this.audioCtx);
     this.phasor.setUp(this.audioCtx);
+    await this.analyser.start(this.audioCtx);
 
     // Connect the module component outputs
     this.oscillatorsGrp.setOutputConnection();
@@ -68,6 +70,22 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
         this.keyup(e);
       }
     });
+    navigator.requestMIDIAccess()
+      .then(onMIDISuccess, onMIDIFailure);
+
+    function onMIDISuccess(midiAccess:any) {
+      console.log(midiAccess);
+
+      for (const input of midiAccess.inputs.values())
+        input.onmidimessage = getMIDIMessage;
+    }
+
+    function getMIDIMessage(midiMessage:any) {
+      console.log(midiMessage);
+    }
+    function onMIDIFailure() {
+      console.log('Could not access your MIDI devices.');
+    }
 
   }
 
@@ -198,6 +216,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     switch ($event) {
       case 'speaker':
         this.oscillatorsGrp.connect(this.audioCtx.destination);
+        this.oscillatorsGrp.connect(this.analyser.analyser);
         break;
       case 'ringmod':false
         this.oscillatorsGrp.connectToRingMod();
@@ -223,6 +242,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     switch ($event) {
       case 'speaker':
         this.oscillators2Grp.connect(this.audioCtx.destination);
+        this.oscillators2Grp.connect(this.analyser.analyser);
         break;
       case 'ringmod':
         this.oscillators2Grp.connectToRingMod();
@@ -248,6 +268,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     switch ($event) {
       case 'speaker':
         this.filtersGrp.connect(this.audioCtx.destination);
+        this.filtersGrp.connect(this.analyser.analyser);
         break;
       case 'ringmod':
         this.filtersGrp.connectToRingMod();
@@ -270,6 +291,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     switch ($event) {
       case 'speaker':
         this.noise.connect(this.audioCtx.destination);
+        this.noise.connect(this.analyser.analyser);
         break;
       case 'filter':
         this.noise.connectToFilters();
@@ -287,6 +309,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     switch ($event) {
       case 'speaker':
         this.ringModulator.connect(this.audioCtx.destination);
+        this.ringModulator.connect(this.analyser.analyser);
         break;
       case 'filter':
         this.ringModulator.connectToFilters();
@@ -298,6 +321,30 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
         break;
       default:
         console.error('Unknown ring mod output destination');
+        break;
+    }
+  }
+
+  protected setReverbOutputTarget($event: string) {
+    this.reverb.disconnect();
+    switch ($event) {
+      case 'speaker':
+        this.reverb.connect(this.audioCtx.destination);
+        this.reverb.connect(this.analyser.analyser);
+        break;
+      case 'off':
+        break;
+    }
+  }
+
+  protected setPhasorOutputTarget($event: string) {
+    this.phasor.disconnect();
+    switch ($event) {
+      case 'speaker':
+        this.phasor.connect(this.audioCtx.destination);
+        this.phasor.connect(this.analyser.analyser);
+        break;
+      case 'off':
         break;
     }
   }

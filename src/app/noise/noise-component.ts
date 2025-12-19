@@ -134,11 +134,11 @@ export class NoiseComponent implements AfterViewInit {
 
   connect(node: AudioNode) {
     this.proxySettings.output = noiseOutputs.speaker;
-    for (let i = 0; i < this.numberOfChannels; ++i) {
-      this.whiteNoise[i].disconnect();
-      this.pinkNoise[i].disconnect();
-      this.brownNoise[i].disconnect();
-    }
+    // for (let i = 0; i < this.numberOfChannels; ++i) {
+    //   this.whiteNoise[i].disconnect();
+    //   this.pinkNoise[i].disconnect();
+    //   this.brownNoise[i].disconnect();
+    // }
     this.whiteNoise[0].connect(node);
     this.pinkNoise[0].connect(node);
     this.brownNoise[0].connect(node);
