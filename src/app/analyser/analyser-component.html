@@ -3,13 +3,22 @@
   <div class="group">
     <div class="column">
       <div class="module noise-width">
-        <h2>Spectrum</h2>
-        <canvas
-          #canvas
-          class="canvas"
-          width="640"
-          height="320">
-        </canvas>
+        <h2>{{ getAnalyserType() }}</h2>
+        <div [style]="{'opacity' : analyserUsed() ? '1' : '0'}">
+          <canvas
+            #canvas
+            class="canvas"
+            width="640"
+            height="320">
+          </canvas>
+        </div>
+        <h2>Output</h2>
+        <div style="height: 3px;"></div>
+        <form #analyserTypeForm>
+          <label><input type="radio" name="analyserType" value="spectrum"><span>Spectrum</span></label>
+          <label><input type="radio" name="analyserType" value="oscilloscope"><span>Oscilloscope</span></label>
+          <label><input type="radio" name="analyserType" value="off"><span>Off</span></label>
+        </form>
       </div>
     </div>
   </div>

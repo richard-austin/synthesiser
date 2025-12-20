@@ -45,8 +45,9 @@ export class ReverbComponent implements AfterViewInit {
     this.cookies = new Cookies();
     this.applySettings();
   }
+
   // Called after all synth components have been started
-  setOutputConnection () {
+  setOutputConnection() {
     SetRadioButtons.set(this.reverbOnOffForm, this.proxySettings.output);
   }
 
@@ -54,7 +55,7 @@ export class ReverbComponent implements AfterViewInit {
     const cookieName = 'reverb'
     const savedSettings = this.cookies.getSettings(cookieName);
 
-    if(Object.keys(savedSettings).length > 0) {
+    if (Object.keys(savedSettings).length > 0) {
       // Use values from cookie
       settings = savedSettings as ReverbSettings;
     }
@@ -67,8 +68,6 @@ export class ReverbComponent implements AfterViewInit {
     this.repeatEchoTimeDial.setValue(this.proxySettings.repeatEchoTime);
     this.repeatEchoLevelDial.setValue(this.proxySettings.repeatEchoGain);
     this.wetDryDial.setValue(this.proxySettings.wetDry);
-
-    SetRadioButtons.set(this.reverbOnOffForm, this.proxySettings.output);
   }
 
   protected setAttackTime($event: number) {
@@ -100,8 +99,8 @@ export class ReverbComponent implements AfterViewInit {
 
 
   protected setWetDryBalance($event: number) {
-    this.reverb.setWetGain(0.5-$event);
-    this.reverb.setDryGain(0.5+$event);
+    this.reverb.setWetGain(0.5 - $event);
+    this.reverb.setDryGain(0.5 + $event);
   }
 
   connect(node: AudioNode) {

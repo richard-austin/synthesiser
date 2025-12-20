@@ -72,7 +72,7 @@ export class Cookies {
       },
       set(target: any, key:string, value: any) {
         // @ts-ignore
-        console.log(`${key} set from ${target[key]} to ${value}`);
+       // console.log(`${key} set from ${target[key]} to ${value}`);
         target[key] = value;
         saveSettings(settings, cookieName);
         return true;

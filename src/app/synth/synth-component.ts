@@ -73,16 +73,17 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     navigator.requestMIDIAccess()
       .then(onMIDISuccess, onMIDIFailure);
 
-    function onMIDISuccess(midiAccess:any) {
+    function onMIDISuccess(midiAccess: any) {
       console.log(midiAccess);
 
       for (const input of midiAccess.inputs.values())
         input.onmidimessage = getMIDIMessage;
     }
 
-    function getMIDIMessage(midiMessage:any) {
+    function getMIDIMessage(midiMessage: any) {
       console.log(midiMessage);
     }
+
     function onMIDIFailure() {
       console.log('Could not access your MIDI devices.');
     }
@@ -218,7 +219,8 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
         this.oscillatorsGrp.connect(this.audioCtx.destination);
         this.oscillatorsGrp.connect(this.analyser.analyser);
         break;
-      case 'ringmod':false
+      case 'ringmod':
+        false
         this.oscillatorsGrp.connectToRingMod();
         break;
       case 'filter':
@@ -276,9 +278,9 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       case 'reverb':
         this.filtersGrp.connectToReverb();
         break;
-        case 'phasor':
-          this.filtersGrp.connectToPhasor();
-          break;
+      case 'phasor':
+        this.filtersGrp.connectToPhasor();
+        break;
       case 'off':
         break;
       default:
@@ -309,6 +311,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     switch ($event) {
       case 'speaker':
         this.ringModulator.connect(this.audioCtx.destination);
+        //   if(this.analyser.analyser)
         this.ringModulator.connect(this.analyser.analyser);
         break;
       case 'filter':
