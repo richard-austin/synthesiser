@@ -41,7 +41,9 @@
   flex-wrap: nowrap;
   justify-content: center;
 }
-
+div.reverb-width {
+  min-width: 810px;
+}
 .metallic-button {
   font-size: 14px;
   padding: 6px 16px;

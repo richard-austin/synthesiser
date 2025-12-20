@@ -45,15 +45,14 @@ class Noise/* extends Voice*/ {
     bufferSource.connect(this.output);
   }
 
-  start(time: number) {
+  start() {
     this.output.gain.value = 0;
-    this.output.gain.setValueAtTime(0, time);
     this.output.gain.linearRampToValueAtTime(1, this.attack);
   }
 
-  stop(time: number) {
-    this.output.gain.setValueAtTime(1, time + this.attack);
-    this.output.gain.linearRampToValueAtTime(0, this.decay + this.attack + 0.2);
+  stop() {
+    this.output.gain.setValueAtTime(1, this.attack);
+    this.output.gain.linearRampToValueAtTime(0, this.decay + this.attack);
   }
 
   set attack(value) {
@@ -96,7 +95,7 @@ export class Reverb {
     this.effect = this.context.createConvolver();
 
     this.attack = attackTime;
-    this.decay = decayTime + 0.03;
+    this.decay = decayTime;
 
     this.preDelay = this.context.createDelay(10);
     this.preDelay.delayTime.setValueAtTime(preDelay, this.context.currentTime);
@@ -107,16 +106,18 @@ export class Reverb {
     this.repeatEcho.connect(this.repeatEchoGain)
     this.repeatEchoGain.connect(this.repeatEcho)
     this.repeatEchoGain.gain.value = repeatEchoGain;
-    this.input.connect(this.repeatEchoGain);
+ //   this.input.connect(this.repeatEchoGain);
+
 
     this.wet = this.context.createGain();
-    this.repeatEchoGain.connect(this.effect);
     this.dry = this.context.createGain();
 
     this.input.connect(this.dry);
     this.input.connect(this.preDelay);
-    this.input.connect(this.repeatEcho);
+    this.preDelay.connect(this.repeatEchoGain);
     this.preDelay.connect(this.effect);
+    this.repeatEchoGain.connect(this.effect);
+    this.repeatEchoGain.connect(this.wet);
     this.effect.connect(this.wet);
     this.wet.connect(this.wetOutput);
     this.dry.connect(this.dryOutput);
@@ -170,19 +171,18 @@ export class Reverb {
     tailNoise.attack = this.attack;
     tailNoise.decay = this.decay;
 
-    let bufferSource = this.context.createBufferSource();
-
     timer(300).subscribe(() => {
       tailContext.startRendering().then((buffer) => {
         // This stuff commented out is for listening to the impulse from the Noise source
-        //bufferSource.buffer = buffer;
+        // let bufferSource = this.context.createBufferSource();
+        // bufferSource.buffer = buffer;
         // bufferSource.connect(this.context.destination);
         // bufferSource.start();
         this.effect.buffer = buffer;
       });
 
-      tailNoise.start(this.context.currentTime);
-      tailNoise.stop(this.context.currentTime);
+      tailNoise.start();
+      tailNoise.stop();
     });
     return tailNoise;
   }

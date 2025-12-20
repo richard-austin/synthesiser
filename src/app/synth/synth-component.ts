@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, OnDestroy, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, OnDestroy, ViewChild} from '@angular/core';
 import {FilterComponent} from "../filter/filter-component";
 import {OscillatorComponent} from "../oscillator/oscillator.component";
 import {NoiseComponent} from '../noise/noise-component';
@@ -32,6 +32,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChild(ReverbComponent) reverb!: ReverbComponent;
   @ViewChild(PhasorComponent) phasor!: PhasorComponent;
   @ViewChild(AnalyserComponent) analyser!: AnalyserComponent;
+  @ViewChild('synth') synth!: ElementRef<HTMLDivElement>;
 
   protected async start(): Promise<void> {
     this.audioCtx = new AudioContext();
@@ -384,9 +385,34 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     }
   };
 
+  scaleToFitSmallWindow() {
+    const synth = this.synth.nativeElement;
+    const topClearance = 35;
+
+    let vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+    let vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)-topClearance;
+
+    console.log("client width = "+vw+" client height = "+vh);
+    console.log("width = "+window.innerWidth+" height = "+window.innerHeight);
+    const requiredWidth = 2400;
+    const requiredHeight = 1300 -topClearance;
+    if (vw < requiredWidth || vh < requiredHeight) {
+      synth.style.transformOrigin = `0 ${topClearance}px`;
+      if(vw/requiredWidth < vh/requiredHeight)
+        synth.style.transform = `scale(${vw/requiredWidth})`;
+      else
+        synth.style.transform = `scale(${vh/requiredHeight})`;
+    } else
+      synth.style.transform = `scale(1)`;
+  }
+
   async ngAfterViewInit(): Promise<void> {
     await this.start();
     await this.requestWakeLock()
+    this.scaleToFitSmallWindow();
+    window.onresize = () => {
+      this.scaleToFitSmallWindow();
+    }
   }
 
   async ngOnDestroy(): Promise<void> {

@@ -62,12 +62,12 @@ export class ReverbComponent implements AfterViewInit {
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
     this.reverb.setup(this.proxySettings.attackTime, this.proxySettings.decayTime, this.proxySettings.predelay, this.proxySettings.repeatEchoTime, this.proxySettings.repeatEchoGain);
-    this.attackTimeDial.setValue(this.proxySettings.attackTime);
-    this.decayTimeDial.setValue(this.proxySettings.decayTime);
     this.predelayDial.setValue(this.proxySettings.predelay);
     this.repeatEchoTimeDial.setValue(this.proxySettings.repeatEchoTime);
     this.repeatEchoLevelDial.setValue(this.proxySettings.repeatEchoGain);
     this.wetDryDial.setValue(this.proxySettings.wetDry);
+    this.attackTimeDial.setValue(this.proxySettings.attackTime);
+    this.decayTimeDial.setValue(this.proxySettings.decayTime);
   }
 
   protected setAttackTime($event: number) {
@@ -99,6 +99,7 @@ export class ReverbComponent implements AfterViewInit {
 
 
   protected setWetDryBalance($event: number) {
+    this.proxySettings.wetDry = $event;
     this.reverb.setWetGain(0.5 - $event);
     this.reverb.setDryGain(0.5 + $event);
   }
