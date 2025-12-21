@@ -348,6 +348,9 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
         this.phasor.connect(this.audioCtx.destination);
         this.phasor.connect(this.analyser.analyser);
         break;
+      case 'reverb':
+        this.phasor.connect(this.reverb.input);
+        break;
       case 'off':
         break;
     }
@@ -390,18 +393,18 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     const topClearance = 35;
 
     let vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
-    let vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)-topClearance;
+    let vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0) - topClearance;
 
-    console.log("client width = "+vw+" client height = "+vh);
-    console.log("width = "+window.innerWidth+" height = "+window.innerHeight);
+    console.log("client width = " + vw + " client height = " + vh);
+    console.log("width = " + window.innerWidth + " height = " + window.innerHeight);
     const requiredWidth = 2400;
-    const requiredHeight = 1300 -topClearance;
+    const requiredHeight = 1300 - topClearance;
     if (vw < requiredWidth || vh < requiredHeight) {
       synth.style.transformOrigin = `0 ${topClearance}px`;
-      if(vw/requiredWidth < vh/requiredHeight)
-        synth.style.transform = `scale(${vw/requiredWidth})`;
+      if (vw / requiredWidth < vh / requiredHeight)
+        synth.style.transform = `scale(${vw / requiredWidth})`;
       else
-        synth.style.transform = `scale(${vh/requiredHeight})`;
+        synth.style.transform = `scale(${vh / requiredHeight})`;
     } else
       synth.style.transform = `scale(1)`;
   }
