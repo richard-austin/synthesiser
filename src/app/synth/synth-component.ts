@@ -397,7 +397,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
     console.log("client width = " + vw + " client height = " + vh);
     console.log("width = " + window.innerWidth + " height = " + window.innerHeight);
-    const requiredWidth = 2400;
+    const requiredWidth = 2350;
     const requiredHeight = 1300 - topClearance;
     if (vw < requiredWidth || vh < requiredHeight) {
       synth.style.transformOrigin = `0 ${topClearance}px`;
