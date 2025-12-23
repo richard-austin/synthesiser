@@ -1,4 +1,4 @@
-import {Component, ElementRef, EventEmitter, Input, Output, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild} from '@angular/core';
 import {LevelControlComponent} from "../../level-control/level-control.component";
 import {Oscillator} from '../../modules/oscillator';
 import {OscillatorSettings} from '../../settings/oscillator';
@@ -20,7 +20,7 @@ import {timer} from 'rxjs';
   templateUrl: './monophonic-oscillator-component.html',
   styleUrl: './monophonic-oscillator-component.scss',
 })
-export class MonophonicOscillatorComponent {
+export class MonophonicOscillatorComponent implements AfterViewInit {
   private oscillator!: Oscillator;
   protected tuningDivisions = 6;
   private lfo!: Oscillator;
@@ -52,6 +52,7 @@ export class MonophonicOscillatorComponent {
   @ViewChild('freqSustain') freqSustain!: LevelControlComponent;
   @ViewChild('freqRelease') freqRelease!: LevelControlComponent;
   @ViewChild('freqReleaseLevel') freqReleaseLevel!: LevelControlComponent;
+  @ViewChild('portamento') portamento!: LevelControlComponent;
 
   @ViewChild('oscOutputToForm') oscOutputToForm!: ElementRef<HTMLFormElement>;
 
@@ -82,7 +83,7 @@ export class MonophonicOscillatorComponent {
   }
 
   applySettings(settings: OscillatorSettings = new OscillatorSettings()) {
-    const cookieName = this.secondary ? 'oscillator2' : 'oscillator';
+    const cookieName = this.secondary ? 'monoOscillator2' : 'monoOscillator';
 
     const savedSettings = this.cookies.getSettings(cookieName);
 
@@ -102,8 +103,11 @@ export class MonophonicOscillatorComponent {
     this.oscillator.setType(this.proxySettings.waveForm);
 
     this.frequency.setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
+
     this.deTune.setValue(this.proxySettings.deTune);
     this.gain.setValue(this.proxySettings.gain);
+    this.portamento.setValue(this.proxySettings.portamento);
+
     this.attack.setValue(this.proxySettings.adsr.attackTime);
     this.decay.setValue(this.proxySettings.adsr.decayTime);
     this.sustain.setValue(this.proxySettings.adsr.sustainLevel);
@@ -229,11 +233,12 @@ export class MonophonicOscillatorComponent {
 
   keyDown(keyIndex: number) {
     const freq = this.keyToFrequency(keyIndex);
+    this.oscillator.freq = freq;
     if (!this.downKeys.has(keyIndex))
       this.downKeys.add(keyIndex);
    // this.oscillator.oscillator.frequency.cancelAndHoldAtTime(0);
-    //this.oscillator.oscillator.frequency.setValueAtTime(this.oscillator.oscillator.frequency.value, 0);
-    this.oscillator.oscillator.frequency.exponentialRampToValueAtTime(freq, this.audioCtx.currentTime + 0.4);
+    this.oscillator.oscillator.frequency.setValueAtTime(this.oscillator.oscillator.frequency.value, 0);
+    this.oscillator.oscillator.frequency.exponentialRampToValueAtTime(freq, this.audioCtx.currentTime + this.proxySettings.portamento);
     this.oscillator.keyDown();
   }
 
@@ -242,6 +247,11 @@ export class MonophonicOscillatorComponent {
       this.downKeys.delete(keyIndex);
     if (this.downKeys.size === 0)
       this.oscillator.keyUp();
+  }
+
+
+  protected setPortamento($event: number) {
+    this.proxySettings.portamento  = $event;
   }
 
   protected setAttack($event: number) {
