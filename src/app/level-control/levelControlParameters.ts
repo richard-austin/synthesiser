@@ -1,4 +1,4 @@
-export enum dialStyle {red, blue, green, yellow}
+export enum dialStyle {red, blue, green, yellow,magenta}
 
 export class LevelControlParameters {
   canvas: OffscreenCanvas;

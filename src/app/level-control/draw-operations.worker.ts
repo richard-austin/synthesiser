@@ -62,7 +62,8 @@ class Renderer {
     [dialStyle.blue, [['#ccf', '#aaa'],['gray','darkgray'],['lightblue','darkblue']]],
       [dialStyle.red, [['#fcc', '#aaa'],['gray','darkgray'],['lightpink','darkred']]],
       [dialStyle.green, [['#cfc', '#aaa'],['gray','darkgray'],['lightgreen','green']]],
-      [dialStyle.yellow, [['#ffc', '#aaa'],['gray','darkgray'],['yellow','brown']]]
+      [dialStyle.yellow, [['#ffc', '#aaa'],['gray','darkgray'],['yellow','brown']]],
+      [dialStyle.magenta, [['#fcf', '#aaa'],['gray','darkgray'],['#d3d','#525']]]
   ]);
 
   drawDial(angle: number) {
