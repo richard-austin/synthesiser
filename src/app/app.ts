@@ -40,8 +40,7 @@ export class App implements AfterViewInit{
   }
 
   keyToFrequency(key: number) {
-    const x = 225 * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 12);
-    return x;
+    return 225 * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 12);
   }
 
 
