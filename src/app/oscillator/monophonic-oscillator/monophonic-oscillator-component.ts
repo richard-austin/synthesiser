@@ -190,7 +190,6 @@ export class MonophonicOscillatorComponent {
     let ok = false;
     if (ringMod) {
       ok = true;
-      dialStyle
       const secondary = this.secondary;
       this.oscillator.connect(secondary ? ringMod.modInput() : ringMod.signalInput());
     }
