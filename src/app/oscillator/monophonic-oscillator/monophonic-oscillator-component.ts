@@ -180,8 +180,9 @@ export class MonophonicOscillatorComponent {
    * connectToFilters: Connect to a group of filters
    */
   connectToFilters(): void {
-    // const filter = this.filter.filters;
-    // this.oscillator.connect(filter.filter);
+     const filters = this.filters.filters;
+     for(let i = 0; i < this.numberOfOscillators; ++i)
+      this.oscillator.connect(filters[i].filter);
   }
 
   connectToRingMod(): boolean {
@@ -233,7 +234,7 @@ export class MonophonicOscillatorComponent {
       this.downKeys.add(keyIndex);
    // this.oscillator.oscillator.frequency.cancelAndHoldAtTime(0);
     //this.oscillator.oscillator.frequency.setValueAtTime(this.oscillator.oscillator.frequency.value, 0);
-    this.oscillator.oscillator.frequency.linearRampToValueAtTime(freq, this.audioCtx.currentTime + 0.3);
+    this.oscillator.oscillator.frequency.exponentialRampToValueAtTime(freq, this.audioCtx.currentTime + 0.4);
     this.oscillator.keyDown();
   }
 
