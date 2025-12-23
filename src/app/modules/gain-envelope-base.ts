@@ -80,8 +80,8 @@ export abstract class GainEnvelopeBase {
       const setLevel = this.setLevel;
       this.gain.gain.cancelAndHoldAtTime(ctx.currentTime);
       this.gain.gain.setValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * setLevel), ctx.currentTime);
-      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * setLevel), ctx.currentTime + this.env.attackTime);
-      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(this.env.sustainLevel * setLevel), ctx.currentTime + this.env.attackTime + this.env.decayTime);
+      this.gain.gain.linearRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * setLevel), ctx.currentTime + this.env.attackTime);
+      this.gain.gain.linearRampToValueAtTime(this.clampLevel(this.env.sustainLevel * setLevel), ctx.currentTime + this.env.attackTime + this.env.decayTime);
     }
   }
 
@@ -89,7 +89,7 @@ export abstract class GainEnvelopeBase {
     const ctx = this.audioCtx;
     if (this.useAmplitudeEnvelope) {
       this.gain.gain.cancelAndHoldAtTime(ctx.currentTime);
-      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * this.setLevel), ctx.currentTime + this.env.releaseTime);
+      this.gain.gain.linearRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * this.setLevel), ctx.currentTime + this.env.releaseTime);
     }
   }
 
