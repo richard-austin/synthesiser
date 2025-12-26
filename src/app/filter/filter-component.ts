@@ -91,7 +91,7 @@ export class FilterComponent implements AfterViewInit {
     for (let i = 0; i < this.numberOfFilters; ++i) {
       this.filters.push(new Filter(this.audioCtx));
       this.filters[i].setFrequency(this.keyToFrequency(i));
-      this.filters[i].setDeTune(this.proxySettings.deTune);
+      this.filters[i].setDetune(this.proxySettings.deTune);
       this.filters[i].setFreqBendEnvelope(this.proxySettings.freqBend);
       this.filters[i].useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.off);
       this.filters[i].setType(this.proxySettings.filterType);
@@ -141,7 +141,7 @@ export class FilterComponent implements AfterViewInit {
   protected setDetune(deTune: number) {
     this.proxySettings.deTune = deTune;
     for (let i = 0; i < this.filters.length; i++) {
-      this.filters[i].setDeTune(deTune);
+      this.filters[i].setDetune(deTune);
     }
   }
 
@@ -167,7 +167,7 @@ export class FilterComponent implements AfterViewInit {
   }
 
   keyToFrequency(key: number) {
-    return 225 * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
+    return 7.71693 * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
   }
 
   /**
@@ -232,6 +232,16 @@ export class FilterComponent implements AfterViewInit {
     if (keyIndex >= 0 && keyIndex < this.numberOfFilters) {
       this.filters[keyIndex].keyUp();
     }
+  }
+
+  midiPitchBend(value: number) {
+    for (let i = 0; i < this.filters.length; i++) {
+      this.filters[i].setDetune((value-0x40)*5+this.proxySettings.deTune);
+    }
+  }
+
+  midiModLevel(value: number) {
+    this.modLevel.setValue(value);
   }
 
   protected readonly dialStyle = dialStyle;

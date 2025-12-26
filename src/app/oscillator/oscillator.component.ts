@@ -175,7 +175,7 @@ export class OscillatorComponent implements AfterViewInit {
   }
 
   keyToFrequency(key: number) {
-    return 225 * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
+    return 7.71693 * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
   }
 
   modulation(source: AudioNode, type: oscModType) {
@@ -262,6 +262,7 @@ export class OscillatorComponent implements AfterViewInit {
 
   keyDown(keyIndex: number) {
     if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
+      console.log("fx = "+this.oscillators[keyIndex].oscillator.frequency.value);
       this.oscillators[keyIndex].keyDown();
     }
   }
@@ -270,6 +271,16 @@ export class OscillatorComponent implements AfterViewInit {
     if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
       this.oscillators[keyIndex].keyUp();
     }
+  }
+
+  midiPitchBend(value: number) {
+    for (let i = 0; i < this.oscillators.length; i++) {
+      this.oscillators[i].setDetune((value-0x40)*5+this.proxySettings.deTune);
+    }
+  }
+
+  midiModLevel(value: number) {
+    this.modLevel.setValue(value);
   }
 
   protected setAttack($event: number) {

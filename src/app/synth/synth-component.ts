@@ -23,6 +23,7 @@ import {AnalyserComponent} from '../analyser/analyser-component';
 })
 export class SynthComponent implements AfterViewInit, OnDestroy {
   audioCtx!: AudioContext;
+  protected numberOfOscillators = 0x7f;
 
   @ViewChild('oscillators') oscillatorsGrp!: OscillatorComponent
   @ViewChild('oscillators2') oscillators2Grp!: OscillatorComponent
@@ -62,28 +63,89 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     window.addEventListener("keydown", (e) => {
       if (/^[abcdefghijklmnopqrstuvwxyz,.\/]$/.test(e.key)) {
         e.preventDefault();
-        this.keydown(e);
+        this.computerKeydown(e);
       }
     });
     window.addEventListener("keyup", (e) => {
       if (/^[abcdefghijklmnopqrstuvwxyz,.\/]$/.test(e.key)) {
         e.preventDefault();
-        this.keyup(e);
+        this.computerKeyUp(e);
       }
     });
+
     navigator.requestMIDIAccess()
       .then(onMIDISuccess, onMIDIFailure);
 
     function onMIDISuccess(midiAccess: any) {
       console.log(midiAccess);
 
-      for (const input of midiAccess.inputs.values())
-        input.onmidimessage = getMIDIMessage;
+      listInputsAndOutput(midiAccess);
+      startLoggingMIDIInput(midiAccess);
+      // midiAccess.inputs.forEach((input: any) => {
+      //   input.onmidimessage = (message: any) => {
+      //     console.log(message.data);
+      //   };
+      // });
     }
 
-    function getMIDIMessage(midiMessage: any) {
-      console.log(midiMessage);
+    const onMIDIMessage = (event: any) => {
+      let str = `MIDI message received at timestamp ${event.timeStamp}[${event.data.length} bytes]: `;
+      for (const character of event.data) {
+        str += `0x${character.toString(16)} `;
+      }
+      if (event.data[0] !== 0xfe) {
+        console.log(str);
+        switch(event.data[0]) {
+          case 0x90:
+              console.log("midi key = " + event.data[1]);
+              if (event.data[2] === 0)
+                this.keyup(event.data[1]);
+              else
+                this.keydown(event.data[1]);
+              break;
+          case 0xe0:
+            console.log("pitch bend "+event.data[2]);
+            this.pitchBend(event.data[2]);
+            break;
+          case 0xb0:
+            if(event.data[1] === 0x01) {
+              console.log("mod level "+event.data[2]);
+              this.modLevel(event.data[2]);
+              break
+            }
+            else if(event.data[1] === 0x07) {
+              console.log("volume level "+event.data[2]);
+            }
+        }
+      }
     }
+
+    function startLoggingMIDIInput(midiAccess: any) {
+      midiAccess.inputs.forEach((entry: any) => {
+        entry.onmidimessage = onMIDIMessage;
+      });
+    }
+
+
+    function listInputsAndOutput(midiAccess: any) {
+      for (const entry of midiAccess.inputs) {
+        const input = entry[1];
+        console.log(
+          `Input port [type:'${input.type}']` +
+          ` id:'${input.id}'` +
+          ` manufacturer:'${input.manufacturer}'` +
+          ` name:'${input.name}'` +
+          ` version:'${input.version}'`,
+        );
+      }
+      for (const entry of midiAccess.outputs) {
+        const output = entry[1];
+        console.log(output);
+        //  `Output port [type:'${output.type}'] id:'${output.id}' manufacturer:'${output.manufacturer}' name:'${output.name}' version:'${output.version}'`,
+        // );
+      }
+    }
+
 
     function onMIDIFailure() {
       console.log('Could not access your MIDI devices.');
@@ -93,29 +155,39 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
   downKeys: Set<number> = new Set();
 
-  protected keydown($event: KeyboardEvent) {
-    const code = this.keyCode($event);
+  protected computerKeydown($event: KeyboardEvent) {
+    let code = this.keyCode($event);
     if (code >= 0) {
+      code += 48;
       if (!this.downKeys.has(code)) {
         this.downKeys.add(code);
-        this.oscillatorsGrp.keyDown(code);
-        this.oscillators2Grp.keyDown(code);
-        this.filtersGrp.keyDown(code);
-        this.noise.keyDown(code);
+        this.keydown(code);
       }
     }
   }
 
-  protected keyup($event: KeyboardEvent) {
-    const code = this.keyCode($event);
+  protected keydown(code: number) {
+    this.oscillatorsGrp.keyDown(code);
+    this.oscillators2Grp.keyDown(code);
+    this.filtersGrp.keyDown(code);
+    this.noise.keyDown(code);
+  }
+
+  protected computerKeyUp($event: KeyboardEvent) {
+    let code = this.keyCode($event);
     if (code >= 0) {
+      code += 48;
       if (this.downKeys.has(code))
         this.downKeys.delete(code);
-      this.oscillatorsGrp.keyUp(code)
-      this.oscillators2Grp.keyUp(code)
-      this.filtersGrp.keyUp(code);
-      this.noise.keyUp(code);
+      this.keyup(code);
     }
+  }
+
+  protected keyup(code: number) {
+    this.oscillatorsGrp.keyUp(code)
+    this.oscillators2Grp.keyUp(code)
+    this.filtersGrp.keyUp(code);
+    this.noise.keyUp(code);
   }
 
   keyCode(e: KeyboardEvent) {
@@ -211,6 +283,19 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     }
     e.preventDefault();
     return code - 1;
+  }
+
+  private pitchBend(value: number) {
+    this.oscillatorsGrp.midiPitchBend(value);
+    this.oscillators2Grp.midiPitchBend(value);
+    this.filtersGrp.midiPitchBend(value);
+  }
+
+  private modLevel(value: number) {
+    value /= 512;
+    this.oscillatorsGrp.midiModLevel(value);
+    this.oscillators2Grp.midiModLevel(value);
+    this.filtersGrp.midiModLevel(value);
   }
 
   protected setOscOutputTarget($event: string) {

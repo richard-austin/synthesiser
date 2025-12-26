@@ -25,7 +25,7 @@ export class Filter extends OscFilterBase {
     this.freq = f;
   }
 
-  setDeTune(deTune: number) {
+  setDetune(deTune: number) {
     this.filter.detune.value = deTune;
   }
 
