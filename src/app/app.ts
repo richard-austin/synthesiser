@@ -9,15 +9,15 @@ import {RouterOutlet} from '@angular/router';
 })
 export class App implements AfterViewInit{
 
-  audioCtx: AudioContext;
-  osc: OscillatorNode;
+  // audioCtx: AudioContext;
+  // osc: OscillatorNode;
   constructor() {
-    this.audioCtx = new AudioContext();
-    this.osc = this.audioCtx.createOscillator();
-    this.osc.frequency.value = 1;
-    this.osc.type = 'sine';
-    this.osc.start();
-    this.osc.connect(this.audioCtx.destination);
+    // this.audioCtx = new AudioContext();
+    // this.osc = this.audioCtx.createOscillator();
+    // this.osc.frequency.value = 1;
+    // this.osc.type = 'sine';
+    // this.osc.start();
+    // this.osc.connect(this.audioCtx.destination);
   }
 
   ngAfterViewInit(): void {
@@ -46,24 +46,24 @@ export class App implements AfterViewInit{
 
   downKeys: Set<number> = new Set();
 
-  protected keydown($event: KeyboardEvent) {
-    const code = this.keyCode($event);
-    if (code >= 0) {
-      if (!this.downKeys.has(code)) {
-        this.downKeys.add(code);
-        this.osc.frequency.setValueAtTime(this.osc.frequency.value, this.audioCtx.currentTime);
-        this.osc.frequency.exponentialRampToValueAtTime(this.keyToFrequency(code), this.audioCtx.currentTime+0.1);
-      }
-    }
-  }
-
-  protected keyup($event: KeyboardEvent) {
-    const code = this.keyCode($event);
-    if (code >= 0) {
-      if (this.downKeys.has(code))
-        this.downKeys.delete(code);
-    }
-  }
+  // protected keydown($event: KeyboardEvent) {
+  //   const code = this.keyCode($event);
+  //   if (code >= 0) {
+  //     if (!this.downKeys.has(code)) {
+  //       this.downKeys.add(code);
+  //       this.osc.frequency.setValueAtTime(this.osc.frequency.value, this.audioCtx.currentTime);
+  //       this.osc.frequency.exponentialRampToValueAtTime(this.keyToFrequency(code), this.audioCtx.currentTime+0.1);
+  //     }
+  //   }
+  // }
+  //
+  // protected keyup($event: KeyboardEvent) {
+  //   const code = this.keyCode($event);
+  //   if (code >= 0) {
+  //     if (this.downKeys.has(code))
+  //       this.downKeys.delete(code);
+  //   }
+  // }
 
   keyCode(e: KeyboardEvent) {
     let code = 0;

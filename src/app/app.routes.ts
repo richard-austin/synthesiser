@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
+import {SynthComponent} from './synth/synth-component';
 
 export const routes: Routes = [
-  {path: 'polyphonicSynth', loadComponent: () => import('./synth/synth-component').then(m => m.SynthComponent)}
+  {path: 'polyphonicSynth', component: SynthComponent}
 ];
