@@ -2,7 +2,6 @@ import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewC
 import {dialStyle} from '../level-control/levelControlParameters';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {Filter} from '../modules/filter';
-import {Oscillator} from '../modules/oscillator';
 import {ReverbComponent} from '../reverb-component/reverb-component';
 import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component';
 import {PhasorComponent} from '../phasor/phasor-component';
@@ -22,7 +21,7 @@ import {Cookies} from '../settings/cookies/cookies';
 export class FilterComponent implements AfterViewInit {
   private _filters: Filter[] = [];
   protected tuningDivisions = 6;
-  private lfo!: Oscillator;
+  private lfo!: OscillatorNode;
   private audioCtx!: AudioContext;
   proxySettings!: FilterSettings
   private cookies!: Cookies;
@@ -63,7 +62,8 @@ export class FilterComponent implements AfterViewInit {
     this.audioCtx = audioCtx;
     let ok = false;
     if (this.numberOfFilters) {
-      this.lfo = new Oscillator(this.audioCtx);
+      this.lfo = new OscillatorNode(this.audioCtx);
+      this.lfo.start();
       this.cookies = new Cookies();
       this.applySettings();
     }
@@ -273,7 +273,7 @@ export class FilterComponent implements AfterViewInit {
 
   protected setModFrequency(freq: number) {
     this.proxySettings.modFreq = freq;
-    this.lfo.setFrequency(freq * 20);
+    this.lfo.frequency.value = freq * 20;
   }
 
   protected setModLevel($event: number) {
@@ -286,7 +286,7 @@ export class FilterComponent implements AfterViewInit {
   protected setModType(type: filterModType) {
     this.proxySettings.modType = type;
     for (let i = 0; i < this.numberOfFilters; ++i) {
-      this.filters[i].modulation(this.lfo.oscillator, type);
+      this.filters[i].modulation(this.lfo, type);
     }
   }
 
@@ -330,7 +330,7 @@ export class FilterComponent implements AfterViewInit {
         modWaveForm.elements[j].addEventListener('change', ($event) => {
           // @ts-ignore
           const value = $event.target.value as OscillatorType;
-          this.lfo.setType(value);
+          this.lfo.type = value;
           this.proxySettings.modWaveform = value as modWaveforms;
         })
       }
