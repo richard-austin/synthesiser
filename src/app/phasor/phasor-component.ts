@@ -2,7 +2,6 @@ import {AfterViewInit, Component, ElementRef, EventEmitter, Output, ViewChild} f
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {Phasor} from '../modules/phasor';
 import {dialStyle} from '../level-control/levelControlParameters';
-import {Oscillator} from '../modules/oscillator';
 import {PhasorSettings} from '../settings/phasor';
 import {modWaveforms, onOff, phasorOutputs} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
@@ -25,8 +24,9 @@ export class PhasorComponent implements AfterViewInit {
   cookies!: Cookies;
 
   protected readonly dialStyle = dialStyle;
-  private lfo!: Oscillator;
+  private lfo!: OscillatorNode;
   private negModGain!: GainNode;
+  private modGain!: GainNode;
 
   @Output() output: EventEmitter<string> = new EventEmitter();
 
@@ -39,15 +39,18 @@ export class PhasorComponent implements AfterViewInit {
   @ViewChild('modOnOffForm') modOnOff!: ElementRef<HTMLFormElement>;
 
   setUp(audioCtx:AudioContext){
-    this.lfo = new Oscillator(audioCtx);
-    this.lfo.setType('sine');
-    this.lfo.useAmplitudeEnvelope = false;
-    this.lfo.oscillator.start();
+    this.lfo = new OscillatorNode(audioCtx);
+    this.lfo.type = 'sine';
+  //  this.lfo.useAmplitudeEnvelope = false;
+    this.lfo.start();
     this.input = audioCtx.createGain();
     this.input.gain.value = 1;
+    this.modGain = audioCtx.createGain();
+    this.modGain.gain.value = 1;
     this.negModGain = audioCtx.createGain();
     this.negModGain.gain.value = -1;
-    this.lfo.connect(this.negModGain);
+    this.modGain.connect(this.negModGain);
+    this.lfo.connect(this.modGain);
 
     this.gain = audioCtx.createGain();
     this.gain.gain.value = 1;
@@ -55,7 +58,7 @@ export class PhasorComponent implements AfterViewInit {
     this.cookies = new Cookies();
 
     // Set up LFO default values
-    this.lfo.connect(this.phasor.delay1.delayTime);
+    this.modGain.connect(this.phasor.delay1.delayTime);
     this.negModGain.connect(this.phasor.delay2.delayTime);
     this.applySettings();
   }
@@ -97,7 +100,7 @@ export class PhasorComponent implements AfterViewInit {
 
   protected setModFrequency(freq: number) {
     this.settingsProxy.lfoFrequency = freq;
-    this.lfo.setFrequency(freq/3);
+    this.lfo.frequency.value = freq/3;
   }
 
   lastLevel: number = 0;
@@ -105,7 +108,7 @@ export class PhasorComponent implements AfterViewInit {
     this.settingsProxy.modDepth = $event;
     const level = $event /60;
     this.lastLevel = level;
-    this.lfo.setGain(level);
+    this.modGain.gain.value =  level;
     this.negModGain.gain.value =-1;
   }
 
@@ -133,9 +136,9 @@ export class PhasorComponent implements AfterViewInit {
       lfoWaveForm.elements[j].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value as OscillatorType;
-        this.lfo.setType(value);
+        this.lfo.type =value;
         this.settingsProxy.modWaveform = value as modWaveforms;
-      })
+      });
     }
     const modOnOff = this.modOnOff.nativeElement;
     for (let j = 0; j < modOnOff.elements.length; ++j) {
@@ -143,9 +146,9 @@ export class PhasorComponent implements AfterViewInit {
         // @ts-ignore
         const value = $event.target.value as string;
         if(value === 'on')
-          this.lfo.setGain(this.lastLevel);
+          this.modGain.gain.value = this.lastLevel;
         else
-          this.lfo.setGain(0);
+          this.modGain.gain.value = 0;
         this.settingsProxy.modulation = value as onOff;
       });
     }
