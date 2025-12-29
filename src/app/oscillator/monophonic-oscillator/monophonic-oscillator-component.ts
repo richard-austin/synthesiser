@@ -231,7 +231,7 @@ export class MonophonicOscillatorComponent implements AfterViewInit {
 
   downKeys: Set<number> = new Set();
 
-  keyDown(keyIndex: number) {
+  keyDown(keyIndex: number, velocity: number) {
     const freq = this.keyToFrequency(keyIndex);
     this.oscillator.freq = freq;
     if (!this.downKeys.has(keyIndex))
@@ -239,7 +239,7 @@ export class MonophonicOscillatorComponent implements AfterViewInit {
    // this.oscillator.oscillator.frequency.cancelAndHoldAtTime(0);
     this.oscillator.oscillator.frequency.setValueAtTime(this.oscillator.oscillator.frequency.value, 0);
     this.oscillator.oscillator.frequency.exponentialRampToValueAtTime(freq, this.audioCtx.currentTime + this.proxySettings.portamento);
-    this.oscillator.keyDown();
+    this.oscillator.keyDown(velocity);
   }
 
   keyUp(keyIndex: number) {

@@ -40,8 +40,8 @@ export class WhiteNoise extends GainEnvelopeBase {
     this.modulator = modulator;
     modulator.connect(this.frequencyMod);
   }
-  keyDown() {
-    super.attack();
+  keyDown(velocity: number) {
+    super.attack(velocity);
   }
 
   keyUp() {

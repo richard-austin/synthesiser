@@ -58,8 +58,8 @@ export class PinkNoise extends GainEnvelopeBase {
     modulator.connect(this.frequencyMod);
   }
 
-  keyDown() {
-    super.attack();
+  keyDown(velocity: number) {
+    super.attack(velocity);
   }
 
   keyUp() {

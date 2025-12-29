@@ -85,8 +85,8 @@ export class Filter extends OscFilterBase {
   }
 
   // Key down for this filter
-  override keyDown() {
-    super.attack();
+  override keyDown(velocity: number) {
+    super.attack(velocity);
     const ctx = this.audioCtx;
     if (this._useFreqBendEnvelope) {
       const freq = this.freq;

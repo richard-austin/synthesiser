@@ -196,12 +196,12 @@ export class NoiseComponent implements AfterViewInit {
     }
   }
 
-  keyDown(keyIndex: number) {
+  keyDown(keyIndex: number, velocity: number) {
     if (keyIndex >= 0 && keyIndex < this.numberOfChannels) {
       let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
       if(this.proxySettings.output === noiseOutputs.speaker)
         keyIndex = 0;  // Wired straight to the output, so we only use a single channel to avoid overload
-      source[keyIndex].keyDown();
+      source[keyIndex].keyDown(velocity);
     }
   }
 

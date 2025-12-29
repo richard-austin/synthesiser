@@ -261,10 +261,10 @@ export class OscillatorComponent implements AfterViewInit {
     }
   }
 
-  keyDown(keyIndex: number) {
+  keyDown(keyIndex: number, velocity: number) {
     if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
       console.log("fx = "+this.oscillators[keyIndex].oscillator.frequency.value);
-      this.oscillators[keyIndex].keyDown();
+      this.oscillators[keyIndex].keyDown(velocity);
     }
   }
 

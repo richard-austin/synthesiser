@@ -101,7 +101,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
               if (event.data[2] === 0)
                 this.keyup(event.data[1]);
               else
-                this.keydown(event.data[1]);
+                this.keydown(event.data[1], event.data[2]);
               break;
           case 0xe0:
             console.log("pitch bend "+event.data[2]);
@@ -161,16 +161,16 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       code += 48;
       if (!this.downKeys.has(code)) {
         this.downKeys.add(code);
-        this.keydown(code);
+        this.keydown(code, 127);
       }
     }
   }
 
-  protected keydown(code: number) {
-    this.oscillatorsGrp.keyDown(code);
-    this.oscillators2Grp.keyDown(code);
-    this.filtersGrp.keyDown(code);
-    this.noise.keyDown(code);
+  protected keydown(code: number, velocity: number) {
+    this.oscillatorsGrp.keyDown(code, velocity);
+    this.oscillators2Grp.keyDown(code, velocity);
+    this.filtersGrp.keyDown(code, velocity);
+    this.noise.keyDown(code, velocity);
   }
 
   protected computerKeyUp($event: KeyboardEvent) {

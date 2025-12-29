@@ -222,9 +222,9 @@ export class FilterComponent implements AfterViewInit {
     }
   }
 
-  keyDown(keyIndex: number) {
+  keyDown(keyIndex: number, velocity: number) {
     if (keyIndex >= 0 && keyIndex < this.numberOfFilters) {
-      this.filters[keyIndex].keyDown();
+      this.filters[keyIndex].keyDown(velocity);
     }
   }
 

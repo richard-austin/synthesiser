@@ -74,13 +74,13 @@ export abstract class GainEnvelopeBase {
         level;
   }
 
-  attack() {
+  attack(velocity: number) {
     const ctx = this.audioCtx;
     if (this.useAmplitudeEnvelope) {
       const setLevel = this.setLevel;
       this.gain.gain.cancelAndHoldAtTime(ctx.currentTime);
       this.gain.gain.setValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * setLevel), ctx.currentTime);
-      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * setLevel), ctx.currentTime + this.env.attackTime);
+      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * setLevel * velocity/127), ctx.currentTime + this.env.attackTime);
       this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(this.env.sustainLevel * setLevel), ctx.currentTime + this.env.attackTime + this.env.decayTime);
     }
   }
