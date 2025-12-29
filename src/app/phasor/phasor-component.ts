@@ -42,6 +42,7 @@ export class PhasorComponent implements AfterViewInit {
     this.lfo = new Oscillator(audioCtx);
     this.lfo.setType('sine');
     this.lfo.useAmplitudeEnvelope = false;
+    this.lfo.oscillator.start();
     this.input = audioCtx.createGain();
     this.input.gain.value = 1;
     this.negModGain = audioCtx.createGain();
