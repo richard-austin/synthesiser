@@ -24,6 +24,7 @@ export class NoiseComponent implements AfterViewInit {
   private brownNoise: BrownNoise[] = [];
   private proxySettings!: NoiseSettings;
   private cookies!: Cookies;
+  private velocitySensitive: boolean = true;
 
   @Input() numberOfChannels!: number;
   @Input() filters!: FilterComponent;
@@ -38,6 +39,7 @@ export class NoiseComponent implements AfterViewInit {
   @ViewChild('noiseOutputToForm') noiseOutputToForm!: ElementRef<HTMLFormElement>;
   @ViewChild('gainControl') gainControl!: LevelControlComponent;
   @ViewChild('amplitudeEnvelopeOnOffForm') amplitudeEnvelopeOnOffForm!: ElementRef<HTMLFormElement>;
+  @ViewChild('velocity') velocityOnOffForm!: ElementRef<HTMLFormElement>;
 
 
   constructor() {
@@ -95,6 +97,7 @@ export class NoiseComponent implements AfterViewInit {
   //  SetRadioButtons.set(this.noiseOutputToForm, this.settings.output);
     SetRadioButtons.set(this.noiseTypeForm, this.proxySettings.type);
     SetRadioButtons.set(this.amplitudeEnvelopeOnOffForm, this.proxySettings.useAmplitudeEnvelope);
+    SetRadioButtons.set(this.velocityOnOffForm, this.proxySettings.velocitySensitive);
   }
 
   protected setGain(gain: number) {
@@ -196,11 +199,18 @@ export class NoiseComponent implements AfterViewInit {
     }
   }
 
+  useVelocitySensitive(velocitySensitive: boolean) {
+    this.proxySettings.velocitySensitive = velocitySensitive ? onOff.on : onOff.off;
+    this.velocitySensitive = velocitySensitive;
+  }
+
   keyDown(keyIndex: number, velocity: number) {
     if (keyIndex >= 0 && keyIndex < this.numberOfChannels) {
       let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
       if(this.proxySettings.output === noiseOutputs.speaker)
         keyIndex = 0;  // Wired straight to the output, so we only use a single channel to avoid overload
+      if(!this.velocitySensitive)
+        velocity = 0x7f;
       source[keyIndex].keyDown(velocity);
     }
   }
@@ -260,6 +270,15 @@ export class NoiseComponent implements AfterViewInit {
         const value = $event.target.value;
         this.useAmplitudeEnvelope(value === 'on');
         this.proxySettings.useAmplitudeEnvelope = value;
+      });
+    }
+
+    const velocityOnOffForm = this.velocityOnOffForm.nativeElement;
+    for (let i = 0; i < velocityOnOffForm.elements.length; ++i) {
+      velocityOnOffForm.elements[i].addEventListener('change', ($event) => {
+        // @ts-ignore
+        const value = $event.target.value;
+        this.useVelocitySensitive(value === 'on');
       });
     }
   }

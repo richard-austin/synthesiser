@@ -15,12 +15,15 @@ export class OscillatorSettings {
   modType: oscModType;
   modWaveform: modWaveforms;
   useAmplitudeEnvelope: onOff;
+  velocitySensitive: onOff;
   useFrequencyEnvelope: onOff;
   portamento: number
+
 
   constructor(adsr: ADSRValues= new ADSRValues(0.0, 3, .4, 3),
               freqBend: FreqBendValues = new FreqBendValues(0, 0.2, .2, 0, .2, 0.0),
               useAmplitudeEnvelope: onOff = onOff.on,
+              velocitySensitive: onOff = onOff.on,
               useFrequencyEnvelope: onOff = onOff.off,
               frequency: number = 0,
               deTune: number = 0,
@@ -36,6 +39,7 @@ export class OscillatorSettings {
     this.adsr = adsr;
     this.freqBend = freqBend;
     this.useAmplitudeEnvelope = useAmplitudeEnvelope;
+    this.velocitySensitive = velocitySensitive;
     this.useFrequencyEnvelope = useFrequencyEnvelope;
     this.frequency = frequency;
     this.deTune = deTune;

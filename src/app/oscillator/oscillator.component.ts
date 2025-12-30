@@ -27,6 +27,7 @@ export class OscillatorComponent implements AfterViewInit {
   private audioCtx!: AudioContext;
   private proxySettings!: OscillatorSettings;
   private cookies!: Cookies;
+  private velocitySensitive: boolean = true;
 
   @Input() filters!: FilterComponent;
   @Input() ringMod!: RingModulatorComponent;
@@ -57,6 +58,7 @@ export class OscillatorComponent implements AfterViewInit {
 
   @ViewChild('freqEnveOnOffForm') freqEnveOnOffForm!: ElementRef<HTMLFormElement>;
   @ViewChild('amplitudeEnvelopeOnOffForm') amplitudeEnvelopeOnOffForm!: ElementRef<HTMLFormElement>;
+  @ViewChild('velocity') velocityOnOffForm!: ElementRef<HTMLFormElement>;
   @ViewChild('oscWaveForm') oscWaveForm!: ElementRef<HTMLFormElement>;
 
   @ViewChild('modSettingsForm') modSettingsForm!: ElementRef<HTMLFormElement>;
@@ -128,6 +130,7 @@ export class OscillatorComponent implements AfterViewInit {
   //  SetRadioButtons.set(this.oscOutputToForm, this.proxySettings.output);
     SetRadioButtons.set(this.oscWaveForm, this.proxySettings.waveForm);
     SetRadioButtons.set(this.amplitudeEnvelopeOnOffForm, this.proxySettings.useAmplitudeEnvelope);
+    SetRadioButtons.set(this.velocityOnOffForm, this.proxySettings.velocitySensitive);
     SetRadioButtons.set(this.freqEnveOnOffForm, this.proxySettings.useFrequencyEnvelope);
     SetRadioButtons.set(this.modSettingsForm, this.proxySettings.modType);
     SetRadioButtons.set(this.lfoWaveForm, this.proxySettings.modWaveform);
@@ -159,6 +162,10 @@ export class OscillatorComponent implements AfterViewInit {
     for (let i = 0; i < this.oscillators.length; i++) {
       this.oscillators[i].useAmplitudeEnvelope = useAmplitudeEnvelope;
     }
+  }
+  useVelocitySensitive(velocitySensitive: boolean) {
+    this.proxySettings.velocitySensitive = velocitySensitive ? onOff.on : onOff.off;
+    this.velocitySensitive = velocitySensitive;
   }
 
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
@@ -264,6 +271,8 @@ export class OscillatorComponent implements AfterViewInit {
   keyDown(keyIndex: number, velocity: number) {
     if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
       console.log("fx = "+this.oscillators[keyIndex].oscillator.frequency.value);
+      if(!this.velocitySensitive)
+        velocity = 0x7f;
       this.oscillators[keyIndex].keyDown(velocity);
     }
   }
@@ -373,6 +382,14 @@ export class OscillatorComponent implements AfterViewInit {
         // @ts-ignore
         const value = $event.target.value;
         this.useAmplitudeEnvelope(value === 'on');
+      });
+    }
+    const velocityOnOffForm = this.velocityOnOffForm.nativeElement;
+    for (let i = 0; i < velocityOnOffForm.elements.length; ++i) {
+      velocityOnOffForm.elements[i].addEventListener('change', ($event) => {
+        // @ts-ignore
+        const value = $event.target.value;
+        this.useVelocitySensitive(value === 'on');
       });
     }
     const waveform = this.oscWaveForm.nativeElement;
