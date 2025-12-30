@@ -11,13 +11,13 @@ import {SetRadioButtons} from '../settings/set-radio-buttons';
   styleUrl: './analyser-component.scss',
 })
 export class AnalyserComponent implements AfterViewInit {
-  audioCtx!: AudioContext;
-  analyser!: AnalyserNode;
-  data!: Uint8Array<ArrayBuffer>;
-  canvasCtx!: CanvasRenderingContext2D | null;
-  canvasEL!: HTMLCanvasElement;
-  cookies: Cookies;
-  proxySettings!: AnalyserSettings;
+  private audioCtx!: AudioContext;
+  private analyser!: AnalyserNode;
+  private data!: Uint8Array<ArrayBuffer>;
+  private canvasCtx!: CanvasRenderingContext2D | null;
+  private canvasEL!: HTMLCanvasElement;
+  private cookies: Cookies;
+  private proxySettings!: AnalyserSettings;
 
   @ViewChild('canvas') canvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('analyserTypeForm') analyserTypeForm!: ElementRef<HTMLFormElement>;
@@ -137,6 +137,9 @@ export class AnalyserComponent implements AfterViewInit {
   protected analyserUsed() {
     return this.proxySettings?.analyserType !== analyserTypes.off;
   }
+  node(): AudioNode {
+    return this.analyser;
+  }
 
   async ngAfterViewInit(): Promise<void> {
     const analyserTypeForm = this.analyserTypeForm.nativeElement;
@@ -152,4 +155,5 @@ export class AnalyserComponent implements AfterViewInit {
 
 //  protected readonly analyserTypes = analyserTypes;
   protected readonly analyserTypes = analyserTypes;
+
 }

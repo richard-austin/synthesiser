@@ -1,3 +1,5 @@
+import {GainEnvelopeBase} from './gain-envelope-base';
+
 export class Phasor {
   delay1: DelayNode;
   delay2: DelayNode;
@@ -29,6 +31,6 @@ export class Phasor {
   }
 
   setLevel(level: number) {
-    this.gain.gain.value = level;
+    this.gain.gain.value = GainEnvelopeBase.exponentiateGain(level);
   }
 }

@@ -6,6 +6,7 @@ import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component
 import {ReverbComponent} from '../reverb-component/reverb-component';
 import {PhasorComponent} from '../phasor/phasor-component';
 import {AnalyserComponent} from '../analyser/analyser-component';
+import {MasterVolumeComponent} from '../master-volume/master-volume-component';
 
 @Component({
   selector: 'app-synth-component',
@@ -16,7 +17,8 @@ import {AnalyserComponent} from '../analyser/analyser-component';
     RingModulatorComponent,
     ReverbComponent,
     PhasorComponent,
-    AnalyserComponent
+    AnalyserComponent,
+    MasterVolumeComponent
   ],
   templateUrl: './synth-component.html',
   styleUrl: './synth-component.scss',
@@ -34,6 +36,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChild(PhasorComponent) phasor!: PhasorComponent;
   @ViewChild(AnalyserComponent) analyser!: AnalyserComponent;
   @ViewChild('synth') synth!: ElementRef<HTMLDivElement>;
+  @ViewChild('masterVolume') masterVolume!: MasterVolumeComponent;
 
   protected async start(): Promise<void> {
     this.audioCtx = new AudioContext();
@@ -48,6 +51,8 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.reverb.start(this.audioCtx);
     this.phasor.setUp(this.audioCtx);
     await this.analyser.start(this.audioCtx);
+    this.masterVolume.start(this.audioCtx);
+    this.masterVolume.connect(this.analyser.node())
 
     // Connect the module component outputs
     this.oscillatorsGrp.setOutputConnection();
@@ -115,6 +120,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
             }
             else if(event.data[1] === 0x07) {
               console.log("volume level "+event.data[2]);
+              this.setMasterVolume(event.data[2]);
             }
         }
       }
@@ -297,13 +303,16 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.oscillators2Grp.midiModLevel(value);
     this.filtersGrp.midiModLevel(value);
   }
+  private setMasterVolume(value: number) {
+    value /= 127;
+    this.masterVolume.setVolume(value);
+  }
 
   protected setOscOutputTarget($event: string) {
     this.oscillatorsGrp.disconnect();
     switch ($event) {
       case 'speaker':
-        this.oscillatorsGrp.connect(this.audioCtx.destination);
-        this.oscillatorsGrp.connect(this.analyser.analyser);
+        this.oscillatorsGrp.connect(this.masterVolume.node());
         break;
       case 'ringmod':
         false
@@ -329,8 +338,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.oscillators2Grp.disconnect();
     switch ($event) {
       case 'speaker':
-        this.oscillators2Grp.connect(this.audioCtx.destination);
-        this.oscillators2Grp.connect(this.analyser.analyser);
+        this.oscillators2Grp.connect(this.masterVolume.node());
         break;
       case 'ringmod':
         this.oscillators2Grp.connectToRingMod();
@@ -355,8 +363,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.filtersGrp.disconnect();
     switch ($event) {
       case 'speaker':
-        this.filtersGrp.connect(this.audioCtx.destination);
-        this.filtersGrp.connect(this.analyser.analyser);
+        this.filtersGrp.connect(this.masterVolume.node());
         break;
       case 'ringmod':
         this.filtersGrp.connectToRingMod();
@@ -378,8 +385,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.noise.disconnect();
     switch ($event) {
       case 'speaker':
-        this.noise.connect(this.audioCtx.destination);
-        this.noise.connect(this.analyser.analyser);
+        this.noise.connect(this.masterVolume.node());
         break;
       case 'filter':
         this.noise.connectToFilters();
@@ -396,9 +402,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.ringModulator.disconnect();
     switch ($event) {
       case 'speaker':
-        this.ringModulator.connect(this.audioCtx.destination);
-        //   if(this.analyser.analyser)
-        this.ringModulator.connect(this.analyser.analyser);
+        this.ringModulator.connect(this.masterVolume.node());
         break;
       case 'filter':
         this.ringModulator.connectToFilters();
@@ -418,8 +422,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.reverb.disconnect();
     switch ($event) {
       case 'speaker':
-        this.reverb.connect(this.audioCtx.destination);
-        this.reverb.connect(this.analyser.analyser);
+        this.reverb.connect(this.masterVolume.node());
         break;
       case 'off':
         break;
@@ -430,8 +433,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.phasor.disconnect();
     switch ($event) {
       case 'speaker':
-        this.phasor.connect(this.audioCtx.destination);
-        this.phasor.connect(this.analyser.analyser);
+        this.phasor.connect(this.masterVolume.node());
         break;
       case 'reverb':
         this.phasor.connect(this.reverb.input);

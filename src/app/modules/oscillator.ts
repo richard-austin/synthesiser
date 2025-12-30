@@ -106,7 +106,7 @@ export class Oscillator extends OscFilterBase {
       this.oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
       this.oscillator.frequency.linearRampToValueAtTime(this.clampFrequency(this.freq * Math.pow(this.freqBendBase, this.freqBendEnv.releaseLevel)), this.audioCtx.currentTime + this.freqBendEnv.releaseTime);
     }
-    this.timerSub = timer(this.env.releaseTime * 1000).subscribe(() => {
+    this.timerSub = timer(this.env.releaseTime * 1000+2).subscribe(() => {
       const oldOsc = this.oscillator;
       oldOsc.disconnect();
       oldOsc.stop();

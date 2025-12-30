@@ -34,11 +34,15 @@ export abstract class GainEnvelopeBase {
   }
 
   setGain(gain: number) {
-    this.setLevel = this.clampLevel(gain);
+    this.setLevel = this.clampLevel(GainEnvelopeBase.exponentiateGain(gain));
     let gainToUse = gain;
     if (this._useAmplitudeEnvelope)
       gainToUse = this.clampLevel(gain * OscFilterBase.minLevel);
-    this.gain.gain.setValueAtTime(this.clampLevel(gainToUse), this.audioCtx.currentTime);
+    this.gain.gain.value = this.clampLevel(GainEnvelopeBase.exponentiateGain(gainToUse));
+  }
+
+  public static exponentiateGain(gain: number) {
+    return (Math.exp(gain)-1)/(Math.exp(1)-1);
   }
 
   setAmplitudeEnvelope(env: ADSRValues) {

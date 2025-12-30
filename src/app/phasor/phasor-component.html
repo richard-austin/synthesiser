@@ -7,7 +7,7 @@
                            [calAngle]="300"
                            [radius]="50" (setLevel)="setPhase($event)"></app-level-control>
 
-        <app-level-control #level label="Level" [style]="dialStyle.blue" [radius]="50" [divisions]="10"
+        <app-level-control #level label="Gain" [style]="dialStyle.blue" [radius]="50" [divisions]="10"
                            (setLevel)="setLevel($event)"></app-level-control>
         <form #phasorOnOffForm>
           <label><input type="radio" name="phasor" value="speaker"><span>Speaker</span></label>
