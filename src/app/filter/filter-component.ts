@@ -9,6 +9,7 @@ import {filterModType, filterTypes, modWaveforms, onOff} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {FilterSettings} from '../settings/filter';
 import {Cookies} from '../settings/cookies/cookies';
+import {Oscillator} from '../modules/oscillator';
 
 @Component({
   selector: 'app-filters',
@@ -167,7 +168,7 @@ export class FilterComponent implements AfterViewInit {
   }
 
   keyToFrequency(key: number) {
-    return 7.71693 * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
+    return Oscillator.frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
   }
 
   /**

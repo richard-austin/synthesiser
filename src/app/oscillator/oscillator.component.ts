@@ -183,7 +183,7 @@ export class OscillatorComponent implements AfterViewInit {
   }
 
   keyToFrequency(key: number) {
-    return 7.71693 * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
+    return Oscillator.frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
   }
 
   modulation(source: AudioNode, type: oscModType) {

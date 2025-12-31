@@ -20,6 +20,7 @@ export class FilterSettings {
   modWaveform: modWaveforms;
   useFrequencyEnvelope: onOff;
   deTune: number;
+  portamento: number
 
   constructor(freqBend: FreqBendValues = new FreqBendValues(0, 1, 2, 0.5, 0.1, 0.0),
               useFrequencyEnvelope: onOff = onOff.off,
@@ -32,7 +33,8 @@ export class FilterSettings {
               modFreq: number = 2,
               modLevel: number=.4,
               modWaveForm: modWaveforms = modWaveforms.sine,
-              modType: filterModType = filterModType.off)
+              modType: filterModType = filterModType.off,
+              portamento: number = 0)
   {
     this.freqBend = freqBend;
     this.useFrequencyEnvelope = useFrequencyEnvelope;
@@ -46,5 +48,6 @@ export class FilterSettings {
     this.modLevel = modLevel;
     this.modWaveform = modWaveForm;
     this.modType = modType;
+    this.portamento = portamento;
   }
 }

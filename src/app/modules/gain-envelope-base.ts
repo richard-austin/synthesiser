@@ -85,7 +85,7 @@ export abstract class GainEnvelopeBase {
       this.gain.gain.cancelAndHoldAtTime(ctx.currentTime);
       this.gain.gain.setValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * setLevel), ctx.currentTime);
       this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * setLevel * velocity/127), ctx.currentTime + this.env.attackTime);
-      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(this.env.sustainLevel * setLevel), ctx.currentTime + this.env.attackTime + this.env.decayTime);
+      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(this.env.sustainLevel * setLevel * velocity/127), ctx.currentTime + this.env.attackTime + this.env.decayTime);
     }
   }
 

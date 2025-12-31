@@ -152,7 +152,7 @@ export class NoiseComponent implements AfterViewInit {
    */
   connectToFilters(): boolean {
     this.proxySettings.output = noiseOutputs.filter;
-    const filters = this.filters.filters;
+    const filters = this.filters?.filters;
     let ok = false;
     if (filters && filters.length === this.numberOfChannels) {
       ok = true;
