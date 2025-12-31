@@ -25,7 +25,7 @@ import {MasterVolumeComponent} from '../master-volume/master-volume-component';
 })
 export class SynthComponent implements AfterViewInit, OnDestroy {
   audioCtx!: AudioContext;
-  protected numberOfOscillators = 0x7f;
+  protected numberOfOscillators: 1|0x7f = 1;// 0x7f;
 
   @ViewChild('oscillators') oscillatorsGrp!: OscillatorComponent
   @ViewChild('oscillators2') oscillators2Grp!: OscillatorComponent

@@ -24,14 +24,25 @@
                              [factor]="100"
                              (setLevel)="setQFactor($event)"></app-level-control>
         </div>
-        <app-level-control #deTune
-                            label="Detune"
-                           [plusMinus]="true"
-                           [divisions]="24"
-                           [factor]="2400"
-                           (setLevel)="setDetune($event)">
-        </app-level-control>
-
+        <div class="row">
+          <app-level-control #deTune
+                             label="Detune"
+                             [plusMinus]="true"
+                             [divisions]="24"
+                             [factor]="2400"
+                             (setLevel)="setDetune($event)">
+          </app-level-control>
+          @if (numberOfFilters === 1) {
+            <!-- Monophonic mode -->
+               <app-level-control #portamento
+                                 label="Glide" [style]="dialStyle.magenta"
+                                 [divisions]="10"
+                                 [calAngle]="300"
+                                 [radius]="50"
+                                 [factor]="1.5"
+                                 (setLevel)="setPortamento($event)"></app-level-control>
+          }
+        </div>
         <h2>Filter Type</h2>
         <div style="height: 3px;"></div>
         <form #filterTypeForm>

@@ -53,6 +53,7 @@ export class OscillatorComponent implements AfterViewInit {
   @ViewChild('freqSustain') freqSustain!: LevelControlComponent;
   @ViewChild('freqRelease') freqRelease!: LevelControlComponent;
   @ViewChild('freqReleaseLevel') freqReleaseLevel!: LevelControlComponent;
+  @ViewChild('portamento') portamento!: LevelControlComponent;
 
   @ViewChild('oscOutputToForm') oscOutputToForm!: ElementRef<HTMLFormElement>;
 
@@ -108,6 +109,10 @@ export class OscillatorComponent implements AfterViewInit {
     this.frequency.setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
     this.deTune.setValue(this.proxySettings.deTune);
     this.gain.setValue(this.proxySettings.gain);
+
+    if(this.numberOfOscillators === 1)
+       this.portamento.setValue(this.proxySettings.portamento);
+
     this.attack.setValue(this.proxySettings.adsr.attackTime);
     this.decay.setValue(this.proxySettings.adsr.decayTime);
     this.sustain.setValue(this.proxySettings.adsr.sustainLevel);
@@ -268,19 +273,45 @@ export class OscillatorComponent implements AfterViewInit {
     }
   }
 
+  downKeys: Set<number> = new Set();
   keyDown(keyIndex: number, velocity: number) {
-    if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
+    if(!this.velocitySensitive)
+      velocity = 0x7f;
+
+    // Monophonic mode
+    if(this.numberOfOscillators === 1) {
+      const freq = this.keyToFrequency(keyIndex);
+      this.oscillators[0].freq = freq;
+      if (!this.downKeys.has(keyIndex))
+        this.downKeys.add(keyIndex);
+      // this.oscillators[0].oscillators[0].frequency.cancelAndHoldAtTime(0);
+      this.oscillators[0].oscillator.frequency.setValueAtTime(this.oscillators[0].oscillator.frequency.value, 0);
+      this.oscillators[0].oscillator.frequency.exponentialRampToValueAtTime(freq, this.audioCtx.currentTime + this.proxySettings.portamento);
+      this.oscillators[0].keyDown(velocity);
+    }
+    // Polyphonic mode
+    else if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
       console.log("fx = "+this.oscillators[keyIndex].oscillator.frequency.value);
-      if(!this.velocitySensitive)
-        velocity = 0x7f;
       this.oscillators[keyIndex].keyDown(velocity);
     }
   }
 
   keyUp(keyIndex: number) {
-    if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
+    // Monophonic mode
+    if(this.numberOfOscillators === 1) {
+      if (this.downKeys.has(keyIndex))
+        this.downKeys.delete(keyIndex);
+      if (this.downKeys.size === 0)
+        this.oscillators[0].keyUp();
+    }
+    // Polyphonic mode
+    else if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
       this.oscillators[keyIndex].keyUp();
     }
+  }
+
+  protected setPortamento($event: number) {
+    this.proxySettings.portamento = $event;
   }
 
   midiPitchBend(value: number) {

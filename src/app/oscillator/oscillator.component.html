@@ -74,45 +74,60 @@
         </form>
       </div>
     </div>
-    <div class="module">
-      <h2>Envelope</h2>
-      <app-level-control #attack
-                         label="Attack" [style]="dialStyle.red"
-                         [divisions]="10"
-                         [calAngle]="300"
-                         [radius]="50"
-                         [factor]="0.9"
-                         (setLevel)="setAttack($event)"></app-level-control>
-      <app-level-control #decay
-                         label="Decay"
-                         [style]="dialStyle.red"
-                         [radius]="50"
-                         [divisions]="10"
-                         [factor]="6"
-                         (setLevel)="setDecayTime($event)"></app-level-control>
-      <app-level-control #sustain
-                         label="Sustain"
-                         [style]="dialStyle.red"
-                         [radius]="50"
-                         [divisions]="10"
-                         (setLevel)="setSustainLevel($event)"></app-level-control>
-      <app-level-control #release
-                         label="Release"
-                         [style]="dialStyle.red"
-                         [radius]="50"
-                         [divisions]="10"
-                         [factor]="6"
-                         (setLevel)="setReleaseTime($event)"></app-level-control>
-      <h4>Envelope</h4>
-      <form #amplitudeEnvelopeOnOffForm>
-        <label><input type="radio" name="envelope" value="on" checked><span>On</span></label>
-        <label><input type="radio" name="envelope" value="off"><span>Off</span></label>
-      </form>
-      <h4>Velocity Sens</h4>
-      <form #velocity>
-        <label><input type="radio" name="velocity" value="on" checked><span>On</span></label>
-        <label><input type="radio" name="velocity" value="off"><span>Off</span></label>
-      </form>
+    <div class="column">
+      @if (numberOfOscillators === 1) {
+        <!-- Monophonic mode -->
+        <div class="module">
+          <h2>Portamento</h2>
+          <app-level-control #portamento
+                             label="Glide" [style]="dialStyle.magenta"
+                             [divisions]="10"
+                             [calAngle]="300"
+                             [radius]="50"
+                             [factor]="1.5"
+                             (setLevel)="setPortamento($event)"></app-level-control>
+        </div>
+      }
+      <div class="module">
+        <h2>Envelope</h2>
+        <app-level-control #attack
+                           label="Attack" [style]="dialStyle.red"
+                           [divisions]="10"
+                           [calAngle]="300"
+                           [radius]="50"
+                           [factor]="0.9"
+                           (setLevel)="setAttack($event)"></app-level-control>
+        <app-level-control #decay
+                           label="Decay"
+                           [style]="dialStyle.red"
+                           [radius]="50"
+                           [divisions]="10"
+                           [factor]="6"
+                           (setLevel)="setDecayTime($event)"></app-level-control>
+        <app-level-control #sustain
+                           label="Sustain"
+                           [style]="dialStyle.red"
+                           [radius]="50"
+                           [divisions]="10"
+                           (setLevel)="setSustainLevel($event)"></app-level-control>
+        <app-level-control #release
+                           label="Release"
+                           [style]="dialStyle.red"
+                           [radius]="50"
+                           [divisions]="10"
+                           [factor]="6"
+                           (setLevel)="setReleaseTime($event)"></app-level-control>
+        <h4>Envelope</h4>
+        <form #amplitudeEnvelopeOnOffForm>
+          <label><input type="radio" name="envelope" value="on" checked><span>On</span></label>
+          <label><input type="radio" name="envelope" value="off"><span>Off</span></label>
+        </form>
+        <h4>Velocity Sens</h4>
+        <form #velocity>
+          <label><input type="radio" name="velocity" value="on" checked><span>On</span></label>
+          <label><input type="radio" name="velocity" value="off"><span>Off</span></label>
+        </form>
+      </div>
     </div>
     <div class="module">
       <h2>Freq&nbsp;Envelope</h2>

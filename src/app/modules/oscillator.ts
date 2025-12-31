@@ -115,6 +115,7 @@ export class Oscillator extends OscFilterBase {
       this.oscillator.connect(this.gain);
       this.oscillator.frequency.value = this.freq;
       this.setType(oldOsc.type);
+      this.setDetune(oldOsc.detune.value);
       this.setOscModulation();
       this.started = false;
     });

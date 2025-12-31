@@ -205,6 +205,9 @@ export class NoiseComponent implements AfterViewInit {
   }
 
   keyDown(keyIndex: number, velocity: number) {
+    if(this.numberOfChannels === 1)
+      keyIndex = 0;
+
     if (keyIndex >= 0 && keyIndex < this.numberOfChannels) {
       let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
       if(this.proxySettings.output === noiseOutputs.speaker)
@@ -216,6 +219,9 @@ export class NoiseComponent implements AfterViewInit {
   }
 
   keyUp(keyIndex: number) {
+    if(this.numberOfChannels === 1)
+      keyIndex = 0;
+
     if (keyIndex >= 0 && keyIndex < this.numberOfChannels) {
       let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
       if(this.proxySettings.output === noiseOutputs.speaker)
