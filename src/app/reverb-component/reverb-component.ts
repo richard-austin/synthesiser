@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, Output, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild} from '@angular/core';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {Reverb} from '../modules/reverb';
@@ -22,6 +22,8 @@ export class ReverbComponent implements AfterViewInit {
   input!: GainNode;
   proxySettings!: ReverbSettings;
   private cookies!: Cookies;
+
+  @Input() numberOfOscillators!: number;
 
   @Output() output = new EventEmitter();
 
@@ -52,7 +54,11 @@ export class ReverbComponent implements AfterViewInit {
   }
 
   applySettings(settings: ReverbSettings = new ReverbSettings()) {
-    const cookieName = 'reverb'
+    let cookieSuffix  = '';
+    if(this.numberOfOscillators === 1)
+      cookieSuffix = 'm';
+    const cookieName = 'reverb'+cookieSuffix;
+
     const savedSettings = this.cookies.getSettings(cookieName);
 
     if (Object.keys(savedSettings).length > 0) {

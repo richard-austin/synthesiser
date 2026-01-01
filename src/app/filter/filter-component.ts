@@ -78,7 +78,11 @@ export class FilterComponent implements AfterViewInit {
   }
 
   applySettings(settings: FilterSettings = new FilterSettings()) {
-    const cookieName = 'filter';
+    let cookieSuffix  = '';
+    if(this.numberOfFilters === 1)
+      cookieSuffix = 'm';
+
+    const cookieName = 'filter'+cookieSuffix;
 
     const savedSettings = this.cookies.getSettings(cookieName);
 

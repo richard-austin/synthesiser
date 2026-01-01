@@ -26,7 +26,7 @@ export class NoiseComponent implements AfterViewInit {
   private cookies!: Cookies;
   private velocitySensitive: boolean = true;
 
-  @Input() numberOfChannels!: number;
+  @Input() numberOfOscillators!: number;
   @Input() filters!: FilterComponent;
   @Output() output = new EventEmitter<string>();
 
@@ -46,8 +46,8 @@ export class NoiseComponent implements AfterViewInit {
   }
 
   async start(audioCtx: AudioContext) {
-    if (this.numberOfChannels) {
-      for (let i = 0; i < this.numberOfChannels; ++i) {
+    if (this.numberOfOscillators) {
+      for (let i = 0; i < this.numberOfOscillators; ++i) {
         this.whiteNoise.push(new WhiteNoise(audioCtx));
         this.pinkNoise.push(new PinkNoise(audioCtx));
          this.brownNoise.push(new BrownNoise(audioCtx));
@@ -66,7 +66,11 @@ export class NoiseComponent implements AfterViewInit {
   }
 
   applySettings(settings: NoiseSettings = new NoiseSettings()) {
-    const cookieName = 'noise';
+    let cookieSuffix  = '';
+    if(this.numberOfOscillators === 1)
+      cookieSuffix = 'm';
+
+    const cookieName = 'noise'+cookieSuffix;
 
     const savedSettings = this.cookies.getSettings(cookieName);
 
@@ -77,7 +81,7 @@ export class NoiseComponent implements AfterViewInit {
     // else use default settings
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
-    for (let i = 0; i < this.numberOfChannels; ++i) {
+    for (let i = 0; i < this.numberOfOscillators; ++i) {
       this.whiteNoise[i].setGain(settings.gain);
       this.whiteNoise[i].setAmplitudeEnvelope(settings.adsr);
       this.whiteNoise[i].useAmplitudeEnvelope = settings.useAmplitudeEnvelope === onOff.on;
@@ -104,7 +108,7 @@ export class NoiseComponent implements AfterViewInit {
     this.proxySettings.gain = gain;
     const noiseType = this.proxySettings.type;
 
-    for (let i = 0; i < this.numberOfChannels; i++) {
+    for (let i = 0; i < this.numberOfOscillators; i++) {
       switch (noiseType) {
         case 'white':
           this.whiteNoise[i].setGain(gain);
@@ -123,13 +127,13 @@ export class NoiseComponent implements AfterViewInit {
     this.proxySettings.type = noiseType;
     const gain = this.proxySettings.gain;
 
-    for (let i = 0; i < this.numberOfChannels; ++i) {
+    for (let i = 0; i < this.numberOfOscillators; ++i) {
       this.whiteNoise[i].setGain(0);
       this.pinkNoise[i].setGain(0);
       this.brownNoise[i].setGain(0);
     }
     const source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
-    for (let i = 0; i < this.numberOfChannels; ++i) {
+    for (let i = 0; i < this.numberOfOscillators; ++i) {
       source[i].setGain(gain);
       source[i].useAmplitudeEnvelope = this.proxySettings.useAmplitudeEnvelope == onOff.on;
     }
@@ -154,9 +158,9 @@ export class NoiseComponent implements AfterViewInit {
     this.proxySettings.output = noiseOutputs.filter;
     const filters = this.filters?.filters;
     let ok = false;
-    if (filters && filters.length === this.numberOfChannels) {
+    if (filters && filters.length === this.numberOfOscillators) {
       ok = true;
-      for (let i = 0; i < this.numberOfChannels; i++) {
+      for (let i = 0; i < this.numberOfOscillators; i++) {
         this.whiteNoise[i].connect(filters[i].filter);
         this.pinkNoise[i].connect(filters[i].filter);
         this.brownNoise[i].connect(filters[i].filter);
@@ -168,7 +172,7 @@ export class NoiseComponent implements AfterViewInit {
 
   disconnect() {
     this.proxySettings.output = noiseOutputs.off;
-    for (let i = 0; i < this.numberOfChannels; i++) {
+    for (let i = 0; i < this.numberOfOscillators; i++) {
       this.whiteNoise[i].disconnect();
       this.pinkNoise[i].disconnect();
       this.brownNoise[i].disconnect();
@@ -194,7 +198,7 @@ export class NoiseComponent implements AfterViewInit {
   useAmplitudeEnvelope(useAmplitudeEnvelope: boolean) {
     this.proxySettings.useAmplitudeEnvelope = useAmplitudeEnvelope ? onOff.on : onOff.off;
     let source : WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
-    for (let i = 0; i < this.numberOfChannels; i++) {
+    for (let i = 0; i < this.numberOfOscillators; i++) {
       source[i].useAmplitudeEnvelope = useAmplitudeEnvelope;
     }
   }
@@ -205,10 +209,10 @@ export class NoiseComponent implements AfterViewInit {
   }
 
   keyDown(keyIndex: number, velocity: number) {
-    if(this.numberOfChannels === 1)
+    if(this.numberOfOscillators === 1)
       keyIndex = 0;
 
-    if (keyIndex >= 0 && keyIndex < this.numberOfChannels) {
+    if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
       let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
       if(this.proxySettings.output === noiseOutputs.speaker)
         keyIndex = 0;  // Wired straight to the output, so we only use a single channel to avoid overload
@@ -219,10 +223,10 @@ export class NoiseComponent implements AfterViewInit {
   }
 
   keyUp(keyIndex: number) {
-    if(this.numberOfChannels === 1)
+    if(this.numberOfOscillators === 1)
       keyIndex = 0;
 
-    if (keyIndex >= 0 && keyIndex < this.numberOfChannels) {
+    if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
       let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
       if(this.proxySettings.output === noiseOutputs.speaker)
         keyIndex = 0; // Wired straight to the output, so we only use a single channel to avoid overload

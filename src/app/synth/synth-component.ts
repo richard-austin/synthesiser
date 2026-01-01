@@ -7,6 +7,7 @@ import {ReverbComponent} from '../reverb-component/reverb-component';
 import {PhasorComponent} from '../phasor/phasor-component';
 import {AnalyserComponent} from '../analyser/analyser-component';
 import {MasterVolumeComponent} from '../master-volume/master-volume-component';
+import {ActivatedRoute} from '@angular/router';
 
 @Component({
   selector: 'app-synth-component',
@@ -25,7 +26,7 @@ import {MasterVolumeComponent} from '../master-volume/master-volume-component';
 })
 export class SynthComponent implements AfterViewInit, OnDestroy {
   audioCtx!: AudioContext;
-  protected numberOfOscillators: 1|0x7f = 1;// 0x7f;
+  protected numberOfOscillators: 1|0x7f =  1;
 
   @ViewChild('oscillators') oscillatorsGrp!: OscillatorComponent
   @ViewChild('oscillators2') oscillators2Grp!: OscillatorComponent
@@ -37,6 +38,11 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChild(AnalyserComponent) analyser!: AnalyserComponent;
   @ViewChild('synth') synth!: ElementRef<HTMLDivElement>;
   @ViewChild('masterVolume') masterVolume!: MasterVolumeComponent;
+
+  constructor(private route: ActivatedRoute) {
+    const type = this.route.snapshot.paramMap.get('type');
+    this.numberOfOscillators = type === 'poly' ? 0x7f : 1;
+  }
 
   protected async start(): Promise<void> {
     this.audioCtx = new AudioContext();

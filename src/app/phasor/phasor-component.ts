@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, Output, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild} from '@angular/core';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {Phasor} from '../modules/phasor';
 import {dialStyle} from '../level-control/levelControlParameters';
@@ -27,6 +27,8 @@ export class PhasorComponent implements AfterViewInit {
   private lfo!: OscillatorNode;
   private negModGain!: GainNode;
   private modGain!: GainNode;
+
+  @Input() numberOfOscillators!: number;
 
   @Output() output: EventEmitter<string> = new EventEmitter();
 
@@ -69,7 +71,11 @@ export class PhasorComponent implements AfterViewInit {
   }
 
   applySettings(settings:PhasorSettings = new PhasorSettings()) {
-    const savedSettings = this.cookies.getSettings('phasor');
+    let cookieSuffix  = '';
+    if(this.numberOfOscillators === 1)
+      cookieSuffix = 'm';
+
+    const savedSettings = this.cookies.getSettings('phasor'+cookieSuffix);
 
     if(Object.keys(savedSettings).length > 0)
       this.settings = settings = savedSettings as PhasorSettings;  // Use values from cookie

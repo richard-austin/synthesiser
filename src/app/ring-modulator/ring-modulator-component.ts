@@ -24,7 +24,7 @@ export class RingModulatorComponent implements AfterViewInit {
 
   @Input() filters!: FilterComponent;
   @Input() reverb!: ReverbComponent;
-  @Input() numberOfChannels!: number;
+  @Input() numberOfOscillators!: number;
   @Output() output: EventEmitter<string> = new EventEmitter();
 
   @ViewChild('modFreq') modFreq!: LevelControlComponent;
@@ -47,7 +47,11 @@ export class RingModulatorComponent implements AfterViewInit {
   }
 
   applySettings(settings: RingModSettings = new RingModSettings()) {
-    const cookieName = 'ringMod';
+    let cookieSuffix  = '';
+    if(this.numberOfOscillators === 1)
+      cookieSuffix = 'm';
+
+    const cookieName = 'ringMod'+cookieSuffix;
 
     const savedSettings = this.cookies.getSettings(cookieName);
 
@@ -96,9 +100,9 @@ export class RingModulatorComponent implements AfterViewInit {
   connectToFilters() {
     const filters = this.filters.filters;
     let ok = false;
-    if (filters && filters.length === this.numberOfChannels) {
+    if (filters && filters.length === this.numberOfOscillators) {
       ok = true;
-      for (let i = 0; i < this.numberOfChannels; i++) {
+      for (let i = 0; i < this.numberOfOscillators; i++) {
         this.ringMod.connect(filters[i].filter);
       }
     } else

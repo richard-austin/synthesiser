@@ -26,14 +26,14 @@
                  (output)="setFilterOutputTarget($event)"></app-filters>
     <div class="analyser">
       <app-noise [filters]="filters"
-                 [numberOfChannels]="numberOfOscillators"
+                 [numberOfOscillators]="numberOfOscillators"
                  (output)="setNoiseOutputTarget($event)">
       </app-noise>
 
       <app-analyser></app-analyser>
     </div>
     <app-ring-modulator #ringMod
-                        [numberOfChannels]="numberOfOscillators"
+                        [numberOfOscillators]="numberOfOscillators"
                         [filters]="filters"
                         [reverb]="reverb"
                         (output)="setRingModOutPutTarget($event)">
@@ -41,9 +41,11 @@
   </div>
   <div style="display: flex; flex-direction: row">
     <app-reverb-component #reverb
+                          [numberOfOscillators]="numberOfOscillators"
                           (output)="setReverbOutputTarget($event)">
     </app-reverb-component>
     <app-phasor #phasor
+                [numberOfOscillators]="numberOfOscillators"
                 (output)="setPhasorOutputTarget($event)">
     </app-phasor>
     <app-master-volume #masterVolume></app-master-volume>

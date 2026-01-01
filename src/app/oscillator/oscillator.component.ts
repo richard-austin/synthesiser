@@ -85,8 +85,11 @@ export class OscillatorComponent implements AfterViewInit {
   }
 
   applySettings(settings: OscillatorSettings = new OscillatorSettings()) {
-    const cookieName = this.secondary ? 'oscillator2' : 'oscillator';
+    let cookieSuffix  = '';
+    if(this.numberOfOscillators === 1)
+      cookieSuffix = 'm';
 
+    const cookieName = (this.secondary ? 'oscillator2' : 'oscillator') + cookieSuffix;
     const savedSettings = this.cookies.getSettings(cookieName);
 
     if(Object.keys(savedSettings).length > 0) {
