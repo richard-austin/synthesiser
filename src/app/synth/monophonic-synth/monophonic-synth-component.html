@@ -1,0 +1,55 @@
+<div #synth>
+  <div style="display: flex; flex-direction: row">
+    <app-oscillators #oscillators
+                     [filters]="filters"
+                     [ringMod]="ringMod"
+                     [reverb]="reverb"
+                     [phasor]="phasor"
+                     [numberOfOscillators]="numberOfOscillators"
+                     (output)="setOscOutputTarget($event)">
+    </app-oscillators>
+    <app-oscillators #oscillators2
+                     [name]="'Oscillators 2'"
+                     [secondary]="true"
+                     [filters]="filters"
+                     [ringMod]="ringMod"
+                     [reverb]="reverb"
+                     [phasor]="phasor"
+                     [numberOfOscillators]="numberOfOscillators"
+                     (output)="setOsc2OutputTarget($event)">
+    </app-oscillators>
+    <app-filters #filters
+                 [numberOfFilters]="numberOfOscillators"
+                 [ringMod]="ringMod"
+                 [reverb]="reverb"
+                 [phasor]="phasor"
+                 (output)="setFilterOutputTarget($event)"></app-filters>
+    <div class="analyser">
+      <app-noise [filters]="filters"
+                 [numberOfOscillators]="numberOfOscillators"
+                 (output)="setNoiseOutputTarget($event)">
+      </app-noise>
+
+      <app-analyser></app-analyser>
+    </div>
+    <app-ring-modulator #ringMod
+                        [numberOfOscillators]="numberOfOscillators"
+                        [filters]="filters"
+                        [reverb]="reverb"
+                        (output)="setRingModOutPutTarget($event)">
+    </app-ring-modulator>
+  </div>
+  <div style="display: flex; flex-direction: row">
+    <app-reverb-component #reverb
+                          [numberOfOscillators]="numberOfOscillators"
+                          (output)="setReverbOutputTarget($event)">
+    </app-reverb-component>
+    <app-phasor #phasor
+                [numberOfOscillators]="numberOfOscillators"
+                (output)="setPhasorOutputTarget($event)">
+    </app-phasor>
+    <app-master-volume #masterVolume></app-master-volume>
+  </div>
+</div>
+
+

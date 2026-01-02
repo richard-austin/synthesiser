@@ -7,7 +7,6 @@ import {ReverbComponent} from '../reverb-component/reverb-component';
 import {PhasorComponent} from '../phasor/phasor-component';
 import {AnalyserComponent} from '../analyser/analyser-component';
 import {MasterVolumeComponent} from '../master-volume/master-volume-component';
-import {ActivatedRoute} from '@angular/router';
 
 @Component({
   selector: 'app-synth-component',
@@ -21,14 +20,29 @@ import {ActivatedRoute} from '@angular/router';
     AnalyserComponent,
     MasterVolumeComponent
   ],
-  templateUrl: './synth-component.html',
+  templateUrl: `./synth-component.html`,
   styleUrl: './synth-component.scss',
 })
 export class SynthComponent implements AfterViewInit, OnDestroy {
   audioCtx!: AudioContext;
   protected numberOfOscillators: 1|0x7f =  1;
+  midiInputs: MIDIInput[] = [];
 
-  @ViewChild('oscillators') oscillatorsGrp!: OscillatorComponent
+  keydownHandler = (e: KeyboardEvent) => {
+    if (/^[abcdefghijklmnopqrstuvwxyz,.\/]$/.test(e.key)) {
+      e.preventDefault();
+      this.computerKeydown(e);
+    }
+  }
+
+  keyupHandler = (e: KeyboardEvent) => {
+    if (/^[abcdefghijklmnopqrstuvwxyz,.\/]$/.test(e.key)) {
+      e.preventDefault();
+      this.computerKeyUp(e);
+    }
+  }
+
+@ViewChild('oscillators') oscillatorsGrp!: OscillatorComponent
   @ViewChild('oscillators2') oscillators2Grp!: OscillatorComponent
   @ViewChild(FilterComponent) filtersGrp!: FilterComponent;
   @ViewChild(NoiseComponent) noise!: NoiseComponent;
@@ -39,9 +53,8 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChild('synth') synth!: ElementRef<HTMLDivElement>;
   @ViewChild('masterVolume') masterVolume!: MasterVolumeComponent;
 
-  constructor(private route: ActivatedRoute) {
-    const type = this.route.snapshot.paramMap.get('type');
-    this.numberOfOscillators = type === 'poly' ? 0x7f : 1;
+  constructor() {
+    this.numberOfOscillators = 0x7f;
   }
 
   protected async start(): Promise<void> {
@@ -69,20 +82,8 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.reverb.setOutputConnection();
     this.phasor.setOutputConnection();
 
-    window.addEventListener('click', () => {
-    })
-    window.addEventListener("keydown", (e) => {
-      if (/^[abcdefghijklmnopqrstuvwxyz,.\/]$/.test(e.key)) {
-        e.preventDefault();
-        this.computerKeydown(e);
-      }
-    });
-    window.addEventListener("keyup", (e) => {
-      if (/^[abcdefghijklmnopqrstuvwxyz,.\/]$/.test(e.key)) {
-        e.preventDefault();
-        this.computerKeyUp(e);
-      }
-    });
+    window.addEventListener("keydown", this.keydownHandler);
+    window.addEventListener("keyup", this.keyupHandler);
 
     navigator.requestMIDIAccess()
       .then(onMIDISuccess, onMIDIFailure);
@@ -92,11 +93,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
       listInputsAndOutput(midiAccess);
       startLoggingMIDIInput(midiAccess);
-      // midiAccess.inputs.forEach((input: any) => {
-      //   input.onmidimessage = (message: any) => {
-      //     console.log(message.data);
-      //   };
-      // });
     }
 
     const onMIDIMessage = (event: any) => {
@@ -132,7 +128,10 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       }
     }
 
-    function startLoggingMIDIInput(midiAccess: any) {
+
+    const startLoggingMIDIInput = (midiAccess: any) => {
+      this.midiInputs = midiAccess.inputs;
+
       midiAccess.inputs.forEach((entry: any) => {
         entry.onmidimessage = onMIDIMessage;
       });
@@ -513,5 +512,15 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
   async ngOnDestroy(): Promise<void> {
     await this.releaseWakeLock();
+    this.ringModulator.disconnect();
+    this.reverb.disconnect();
+    this.phasor.disconnect();
+
+    this.midiInputs.forEach(input => {
+      input.close();
+    });
+    window.onresize = null;
+    window.removeEventListener('keydown', this.keydownHandler);
+    window.removeEventListener('keyup', this.keyupHandler);
   }
 }

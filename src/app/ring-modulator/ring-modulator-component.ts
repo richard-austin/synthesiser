@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild} from '@angular/core';
 import {RingModulator} from '../modules/ring-modulator';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
@@ -17,7 +17,7 @@ import {Cookies} from '../settings/cookies/cookies';
   templateUrl: './ring-modulator-component.html',
   styleUrl: './ring-modulator-component.scss',
 })
-export class RingModulatorComponent implements AfterViewInit {
+export class RingModulatorComponent implements AfterViewInit, OnDestroy {
   ringMod!: RingModulator;
   proxySettings!: RingModSettings;
   private cookies!: Cookies;
@@ -153,5 +153,9 @@ export class RingModulatorComponent implements AfterViewInit {
         this.output.emit(value);
       });
     }
+  }
+
+  ngOnDestroy(): void {
+    this.ringMod.disconnect();
   }
 }

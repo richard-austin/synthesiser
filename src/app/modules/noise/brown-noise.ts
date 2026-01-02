@@ -1,7 +1,7 @@
 import {GainEnvelopeBase} from '../gain-envelope-base';
 
 export class BrownNoise extends GainEnvelopeBase{
-  private static theNode: AudioWorkletNode | undefined = undefined;
+  public static theNode: AudioWorkletNode | undefined = undefined;
   constructor(audioCtx: AudioContext) {
     super(audioCtx);
   }

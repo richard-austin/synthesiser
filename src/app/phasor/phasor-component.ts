@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild} from '@angular/core';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {Phasor} from '../modules/phasor';
 import {dialStyle} from '../level-control/levelControlParameters';
@@ -15,7 +15,7 @@ import {Cookies} from '../settings/cookies/cookies';
   templateUrl: './phasor-component.html',
   styleUrl: './phasor-component.scss',
 })
-export class PhasorComponent implements AfterViewInit {
+export class PhasorComponent implements AfterViewInit, OnDestroy {
   public input!: GainNode;
   private gain!: GainNode;
   phasor!:Phasor;
@@ -82,7 +82,7 @@ export class PhasorComponent implements AfterViewInit {
     else
       this.settings = settings;  // Use default values
 
-    this.settingsProxy = this.cookies.getSettingsProxy(this.settings, 'phasor');
+    this.settingsProxy = this.cookies.getSettingsProxy(this.settings, 'phasor'+cookieSuffix);
 
     // Set up the dials
     this.modFreq.setValue(settings.lfoFrequency);
@@ -158,5 +158,11 @@ export class PhasorComponent implements AfterViewInit {
         this.settingsProxy.modulation = value as onOff;
       });
     }
+  }
+  ngOnDestroy(): void {
+    this.lfo.disconnect();
+    this.modGain.disconnect();
+    this.negModGain.disconnect();
+    this.disconnect();
   }
 }

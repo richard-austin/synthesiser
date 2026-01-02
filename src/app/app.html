@@ -1,4 +1,2 @@
-<button (click)="mono()">Mono</button>
-&nbsp;
-<button (click)="poly()">Poly</button>
+<app-options [disappearOnMouseOut]="removeOptionsOnMouseOut" (synthType)="synthType($event)"></app-options>
 <router-outlet />

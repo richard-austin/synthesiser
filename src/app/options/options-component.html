@@ -1,0 +1,11 @@
+<div #html (mouseenter)="onmouseenter()"
+     (mouseleave)="onmouseleave()"
+     class="options">
+  <div class="metallic-button">
+    <h2>Select Synthesiser Type</h2>
+    <form #synthOptions>
+      <label><input type="radio" name="synthType" value="poly"><span>Polyphonic</span></label>
+      <label><input type="radio" name="synthType" value="mono"><span>Monophonic</span></label>
+    </form>
+  </div>
+</div>

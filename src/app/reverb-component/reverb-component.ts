@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild} from '@angular/core';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {Reverb} from '../modules/reverb';
@@ -15,7 +15,7 @@ import {Cookies} from '../settings/cookies/cookies';
   templateUrl: './reverb-component.html',
   styleUrl: './reverb-component.scss',
 })
-export class ReverbComponent implements AfterViewInit {
+export class ReverbComponent implements AfterViewInit, OnDestroy {
   audioCtx!: AudioContext;
   reverb!: Reverb;
   gain!: GainNode;
@@ -128,5 +128,8 @@ export class ReverbComponent implements AfterViewInit {
         this.output.emit(value);
       });
     }
+  }
+  ngOnDestroy(): void {
+    this.disconnect();
   }
 }

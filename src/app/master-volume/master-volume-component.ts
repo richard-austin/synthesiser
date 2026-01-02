@@ -1,4 +1,4 @@
-import {Component, ViewChild} from '@angular/core';
+import {Component, OnDestroy, ViewChild} from '@angular/core';
 import {LevelControlComponent} from "../level-control/level-control.component";
 import {dialStyle} from '../level-control/levelControlParameters';
 import {Cookies} from '../settings/cookies/cookies';
@@ -14,7 +14,7 @@ import {GainEnvelopeBase} from '../modules/gain-envelope-base';
   templateUrl: './master-volume-component.html',
   styleUrl: './master-volume-component.scss',
 })
-export class MasterVolumeComponent {
+export class MasterVolumeComponent implements OnDestroy{
   protected readonly dialStyle = dialStyle;
   private compressor!: DynamicsCompressorNode;
   private volume!: GainNode;
@@ -69,5 +69,8 @@ export class MasterVolumeComponent {
 
   connect(node: AudioNode) {
     this.volume.connect(node);
+  }
+  ngOnDestroy(): void {
+    this.volume.disconnect();
   }
 }

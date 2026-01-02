@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild} from '@angular/core';
 import {WhiteNoise} from '../modules/noise/white-noise';
 import {PinkNoise} from '../modules/noise/pink-noise';
 import {BrownNoise} from '../modules/noise/brown-noise';
@@ -18,7 +18,7 @@ import {Cookies} from '../settings/cookies/cookies';
   templateUrl: './noise-component.html',
   styleUrl: './noise-component.scss',
 })
-export class NoiseComponent implements AfterViewInit {
+export class NoiseComponent implements AfterViewInit, OnDestroy {
   private whiteNoise: WhiteNoise[] = [];
   private pinkNoise: PinkNoise[] = [];
   private brownNoise: BrownNoise[] = [];
@@ -290,6 +290,22 @@ export class NoiseComponent implements AfterViewInit {
         const value = $event.target.value;
         this.useVelocitySensitive(value === 'on');
       });
+    }
+  }
+
+  ngOnDestroy(): void {
+    WhiteNoise.theNode = PinkNoise.theNode = BrownNoise.theNode = undefined;
+    for(let i = 0; i < this.whiteNoise.length; i++) {
+      // @ts-ignore
+      this.whiteNoise[i] = null;
+    }
+    for(let i = 0; i < this.pinkNoise.length; i++) {
+      // @ts-ignore
+      this.pinkNoise[i] = null;
+    }
+    for(let i = 0; i < this.brownNoise.length; i++) {
+      // @ts-ignore
+      this.brownNoise[i] = null;
     }
   }
 }

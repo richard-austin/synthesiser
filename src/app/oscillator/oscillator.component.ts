@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild} from '@angular/core';
 import {Oscillator} from '../modules/oscillator';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
@@ -20,7 +20,7 @@ import {Cookies} from '../settings/cookies/cookies';
   templateUrl: './oscillator.component.html',
   styleUrl: './oscillator.component.scss',
 })
-export class OscillatorComponent implements AfterViewInit {
+export class OscillatorComponent implements AfterViewInit, OnDestroy {
   private oscillators: Oscillator[] = [];
   protected tuningDivisions = 6;
   private lfo!: OscillatorNode;
@@ -452,6 +452,13 @@ export class OscillatorComponent implements AfterViewInit {
           this.proxySettings.modWaveform = value as modWaveforms;
         })
       }
+    }
+  }
+
+  ngOnDestroy(): void {
+    for(let i = 0; i < this.oscillators.length; i ++) {
+      // @ts-ignore
+      this.oscillators[i] = undefined;
     }
   }
 }
