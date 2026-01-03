@@ -31,9 +31,9 @@ export class App implements AfterViewInit {
     const sub = timer(100).subscribe(() => {
       sub.unsubscribe();
       if ($event === 'mono')
-        this.router.navigate(['/mono']).then();
+        this.router.navigate(['synth', 'mono']).then();
       else if ($event === 'poly')
-        this.router.navigate(['/poly']).then();
+        this.router.navigate(['synth', 'poly']).then();
    });
   }
 }
