@@ -38,7 +38,7 @@ export class AnalyserComponent implements AfterViewInit {
   applySettings(settings: AnalyserSettings = new AnalyserSettings()) {
     const cookieName = 'analyser';
 
-    const savedSettings = this.cookies.getSettings(cookieName);
+    const savedSettings = this.cookies.getSettings(cookieName, settings);
 
     if (Object.keys(savedSettings).length > 0) {
       // Use values from cookie

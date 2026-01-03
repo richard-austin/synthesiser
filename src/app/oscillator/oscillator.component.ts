@@ -90,7 +90,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       cookieSuffix = 'm';
 
     const cookieName = (this.secondary ? 'oscillator2' : 'oscillator') + cookieSuffix;
-    const savedSettings = this.cookies.getSettings(cookieName);
+    const savedSettings = this.cookies.getSettings(cookieName, settings);
 
     if(Object.keys(savedSettings).length > 0) {
       // Use values from cookie

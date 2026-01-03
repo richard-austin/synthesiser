@@ -53,7 +53,7 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
 
     const cookieName = 'ringMod'+cookieSuffix;
 
-    const savedSettings = this.cookies.getSettings(cookieName);
+    const savedSettings = this.cookies.getSettings(cookieName, settings);
 
     if (Object.keys(savedSettings).length > 0) {
       // Use values from cookie

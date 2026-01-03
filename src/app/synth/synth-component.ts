@@ -108,10 +108,14 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
           case 0x90:
               console.log("midi key = " + event.data[1]);
               if (event.data[2] === 0)
-                this.keyup(event.data[1]);
+                this.keyup(event.data[1]);  // Zero velocity on keydown event === keyup
               else
                 this.keydown(event.data[1], event.data[2]);
               break;
+          case 0x80:
+            console.log("midi key = " + event.data[0]+" (keyup)");
+            this.keyup(event.data[1]);
+            break;
           case 0xe0:
             console.log("pitch bend "+event.data[2]);
             this.pitchBend(event.data[2]);

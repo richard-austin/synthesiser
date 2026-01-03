@@ -37,11 +37,19 @@ export class Cookies {
     });
   }
 
-  public getSettings(name: string): {} {
+  public getSettings(name: string, settings: {}): {} {
     let retVal:{} = {};
     try {
       const jsonString = this.getCookie(name);
       retVal = JSON.parse(jsonString);
+
+      // Check if all the fields in settings are obtained from the cookie
+      for (const prop in settings) {
+        if(!retVal.hasOwnProperty(prop)) {
+          retVal = settings;
+          break;
+        }
+      }
     }
     catch (ex) {}
 

@@ -43,7 +43,7 @@ export class MasterVolumeComponent implements OnDestroy{
   applySettings(settings: MasterVolumeSettings = new MasterVolumeSettings()) {
     const cookieName = 'masterVolume';
 
-    const savedSettings = this.cookies.getSettings(cookieName);
+    const savedSettings = this.cookies.getSettings(cookieName, settings);
 
     if (Object.keys(savedSettings).length > 0) {
       // Use values from cookie
