@@ -60,7 +60,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   @ViewChild('freqEnveOnOffForm') freqEnveOnOffForm!: ElementRef<HTMLFormElement>;
   @ViewChild('amplitudeEnvelopeOnOffForm') amplitudeEnvelopeOnOffForm!: ElementRef<HTMLFormElement>;
   @ViewChild('velocity') velocityOnOffForm!: ElementRef<HTMLFormElement>;
-  @ViewChild('oscWaveForm') oscWaveForm!: ElementRef<HTMLFormElement>;
+  @ViewChild('oscWaveform') oscWaveForm!: ElementRef<HTMLSelectElement>;
 
   @ViewChild('modSettingsForm') modSettingsForm!: ElementRef<HTMLFormElement>;
   @ViewChild('modFreq') modFreq!: LevelControlComponent;
@@ -79,20 +79,21 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     }
     return ok;
   }
+
   // Called after all synth components have been started
-  setOutputConnection () {
+  setOutputConnection() {
     SetRadioButtons.set(this.oscOutputToForm, this.proxySettings.output);
   }
 
   applySettings(settings: OscillatorSettings = new OscillatorSettings()) {
-    let cookieSuffix  = '';
-    if(this.numberOfOscillators === 1)
+    let cookieSuffix = '';
+    if (this.numberOfOscillators === 1)
       cookieSuffix = 'm';
 
     const cookieName = (this.secondary ? 'oscillator2' : 'oscillator') + cookieSuffix;
     const savedSettings = this.cookies.getSettings(cookieName, settings);
 
-    if(Object.keys(savedSettings).length > 0) {
+    if (Object.keys(savedSettings).length > 0) {
       // Use values from cookie
       settings = savedSettings as OscillatorSettings;
     }
@@ -113,8 +114,8 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.deTune.setValue(this.proxySettings.deTune);
     this.gain.setValue(this.proxySettings.gain);
 
-    if(this.numberOfOscillators === 1)
-       this.portamento.setValue(this.proxySettings.portamento);
+    if (this.numberOfOscillators === 1)
+      this.portamento.setValue(this.proxySettings.portamento);
 
     this.attack.setValue(this.proxySettings.adsr.attackTime);
     this.decay.setValue(this.proxySettings.adsr.decayTime);
@@ -134,9 +135,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.modLevel.setValue(this.proxySettings.modLevel);  // Set dial
     this.modulation(this.lfo, this.proxySettings.modType);
 
-    // Set up the buttons
-  //  SetRadioButtons.set(this.oscOutputToForm, this.proxySettings.output);
-    SetRadioButtons.set(this.oscWaveForm, this.proxySettings.waveForm);
+    // Set up the buttons and selectlor
+    //  SetRadioButtons.set(this.oscOutputToForm, this.proxySettings.output);
+    this.oscWaveForm.nativeElement.value = this.proxySettings.waveForm;
     SetRadioButtons.set(this.amplitudeEnvelopeOnOffForm, this.proxySettings.useAmplitudeEnvelope);
     SetRadioButtons.set(this.velocityOnOffForm, this.proxySettings.velocitySensitive);
     SetRadioButtons.set(this.freqEnveOnOffForm, this.proxySettings.useFrequencyEnvelope);
@@ -171,6 +172,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       this.oscillators[i].useAmplitudeEnvelope = useAmplitudeEnvelope;
     }
   }
+
   useVelocitySensitive(velocitySensitive: boolean) {
     this.proxySettings.velocitySensitive = velocitySensitive ? onOff.on : onOff.off;
     this.velocitySensitive = velocitySensitive;
@@ -223,10 +225,10 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     return ok;
   }
 
-  connectToRingMod() : boolean {
+  connectToRingMod(): boolean {
     const ringMod = this.ringMod;
     let ok = false;
-    if(ringMod) {
+    if (ringMod) {
       ok = true;
       const secondary = this.secondary;
       for (let i = 0; i < this.oscillators.length; i++) {
@@ -239,7 +241,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   connectToReverb(): boolean {
     const reverb = this.reverb;
     let ok = false;
-    if(reverb) {
+    if (reverb) {
       ok = true;
       for (let i = 0; i < this.oscillators.length; i++) {
         this.oscillators[i].connect(reverb.input);
@@ -251,7 +253,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   connectToPhasor(): boolean {
     const phasor = this.phasor;
     let ok = false;
-    if(phasor) {
+    if (phasor) {
       ok = true;
       for (let i = 0; i < this.oscillators.length; i++) {
         this.oscillators[i].connect(phasor.input);
@@ -265,7 +267,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
    * @param node
    */
   connect(node: AudioNode) {
-      for (let i = 0; i < this.oscillators.length; i++) {
+    for (let i = 0; i < this.oscillators.length; i++) {
       this.oscillators[i].connect(node);
     }
   }
@@ -277,12 +279,13 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   downKeys: Set<number> = new Set();
+
   keyDown(keyIndex: number, velocity: number) {
-    if(!this.velocitySensitive)
+    if (!this.velocitySensitive)
       velocity = 0x7f;
 
     // Monophonic mode
-    if(this.numberOfOscillators === 1) {
+    if (this.numberOfOscillators === 1) {
       const freq = this.keyToFrequency(keyIndex);
       this.oscillators[0].freq = freq;
       if (!this.downKeys.has(keyIndex))
@@ -294,14 +297,14 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     }
     // Polyphonic mode
     else if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
-      console.log("fx = "+this.oscillators[keyIndex].oscillator.frequency.value);
+      console.log("fx = " + this.oscillators[keyIndex].oscillator.frequency.value);
       this.oscillators[keyIndex].keyDown(velocity);
     }
   }
 
   keyUp(keyIndex: number) {
     // Monophonic mode
-    if(this.numberOfOscillators === 1) {
+    if (this.numberOfOscillators === 1) {
       if (this.downKeys.has(keyIndex))
         this.downKeys.delete(keyIndex);
       if (this.downKeys.size === 0)
@@ -319,7 +322,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   midiPitchBend(value: number) {
     for (let i = 0; i < this.oscillators.length; i++) {
-      this.oscillators[i].setDetune((value-0x40)*5+this.proxySettings.deTune);
+      this.oscillators[i].setDetune((value - 0x40) * 5 + this.proxySettings.deTune);
     }
   }
 
@@ -427,38 +430,45 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       });
     }
     const waveform = this.oscWaveForm.nativeElement;
-    for (let i = 0; i < waveform.elements.length; ++i) {
-      waveform.elements[i].addEventListener('change', ($event) => {
+    waveform.addEventListener('change', ($event) => {
+      // @ts-ignore
+      const value = $event.target.value as OscillatorType;
+      this.setWaveForm(value as OscillatorType);
+    });
+
+    const modSettingsForm = this.modSettingsForm.nativeElement;
+    for (let j = 0; j < modSettingsForm.elements.length; ++j) {
+      modSettingsForm.elements[j].addEventListener('change', ($event) => {
+        // @ts-ignore
+        const value = $event.target.value as modulationType;
+        this.setModType(value);
+      });
+    }
+
+    const modWaveForm = this.lfoWaveForm.nativeElement;
+    for (let j = 0; j < modWaveForm.elements.length; ++j) {
+      modWaveForm.elements[j].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value as OscillatorType;
-        this.setWaveForm(value as OscillatorType);
-      });
-
-      const modSettingsForm = this.modSettingsForm.nativeElement;
-      for (let j = 0; j < modSettingsForm.elements.length; ++j) {
-        modSettingsForm.elements[j].addEventListener('change', ($event) => {
-          // @ts-ignore
-          const value = $event.target.value as modulationType;
-          this.setModType(value);
-        });
-      }
-
-      const modWaveForm = this.lfoWaveForm.nativeElement;
-      for (let j = 0; j < modWaveForm.elements.length; ++j) {
-        modWaveForm.elements[j].addEventListener('change', ($event) => {
-          // @ts-ignore
-          const value = $event.target.value as OscillatorType;
-          this.lfo.type = value;
-          this.proxySettings.modWaveform = value as modWaveforms;
-        })
-      }
+        this.lfo.type = value;
+        this.proxySettings.modWaveform = value as modWaveforms;
+      })
     }
   }
 
   ngOnDestroy(): void {
-    for(let i = 0; i < this.oscillators.length; i ++) {
+    for (let i = 0; i < this.oscillators.length; i++) {
       // @ts-ignore
       this.oscillators[i] = undefined;
     }
   }
+
+  showWaveformSelector = false;
+
+  protected selectWaveform($event: Event) {
+    // @ts-ignore
+    this.showWaveformSelector = $event.target.checked;
+  }
+
+  protected readonly Oscillator = Oscillator;
 }

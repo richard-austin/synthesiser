@@ -3,10 +3,60 @@ import {OscFilterBase} from './osc-filter-base';
 import {FreqBendValues} from '../util-classes/freq-bend-values';
 import {filterModType, oscModType} from '../enums/enums';
 import {Subscription, timer} from 'rxjs';
+import {WaveTableDetails} from './WaveTableDetails';
 
 export class Oscillator extends OscFilterBase {
   oscillator: OscillatorNode;
   started = false;
+  type: string;
+
+  public static readonly wavetables: WaveTableDetails[] = [
+    new WaveTableDetails(
+      "Sine", "sine",
+      {imag:[], real:[]}
+    ),
+    new WaveTableDetails(
+      "Square", "square",
+      {imag:[], real:[]}
+    ),
+    new WaveTableDetails(
+      "Sawtooth", "sawtooth",
+      {imag:[], real:[]}
+    ),
+    new WaveTableDetails(
+      "Triangle", "triangle",
+      {imag:[], real:[]}
+    ),
+    new WaveTableDetails(
+      "Bass", "bass",
+      {imag:[ 0, 1, 0.8144329896907216, 0.20618556701030927, 0.020618556701030927],
+        real:new Array(5).fill(0)}),
+    new WaveTableDetails(
+      "Organ", "organ",
+      {real: new Array(13).fill(0),
+       imag:[0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1]}),
+    new WaveTableDetails(
+      "Organ 2", "organ2",
+      {real: [0, 0.8, 0.6, 0.6, 0.7, 0.6, 0, 0.8, 0.3, 1],
+       imag:new Array(10).fill(0)}),
+    new WaveTableDetails(
+      "Hammond full", "hammondFull",
+      {real:[0,1,1,1,1,0,1,0,1,0,1,0,1,0,0,0,1],
+        imag:new Array(17).fill(0)}),
+    new WaveTableDetails(
+      "Dulciana", "dulciana",
+      {real:[0,0,0.25,0,0.25,0,0.1768,0,0.125,0,0,0,0,0,0,0,0],
+        imag:new Array(17).fill(0)}),
+    new WaveTableDetails(
+      "French Horn", "frenchHorn",
+      {real:[0,0,1,0,.7071,0,.25,0,0,0,0,0,0,0,0,0,0],
+        imag:new Array(17).fill(0)}),
+    new WaveTableDetails(
+      "Trumpet", "trumpet",
+      {real:[0,0,0.5,0,1,0,0.71,0,0.5,0,0.35,0,.25,0,0,0,0],
+        imag:new Array(17).fill(0)}),
+
+  ];
   public static readonly frequencyFactor = 7.717057388; // To give middle C at 261.63 Hz on key 60
 
   readonly freqBendBase = 2;
@@ -15,7 +65,7 @@ export class Oscillator extends OscFilterBase {
     super(audioCtx);
     this.useAmplitudeEnvelope = true;
     this.oscillator = audioCtx.createOscillator();
-    this.oscillator.type = "sine";
+    this.type = this.oscillator.type = "sine";
     // Default ADSR values
     this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
     this.oscillator.connect(this.gain);
@@ -30,10 +80,6 @@ export class Oscillator extends OscFilterBase {
 
   setDetune(deTune: number) {
     this.oscillator.detune.value = deTune;
-  }
-
-  setType(type: OscillatorType) {
-    this.oscillator.type = type;
   }
 
   modulation(modulator: AudioNode, type: oscModType | filterModType = oscModType.frequency) {
@@ -78,6 +124,21 @@ export class Oscillator extends OscFilterBase {
     this.oscillator.frequency.setValueAtTime(super.clampFrequency(this.freq), this.audioCtx.currentTime);
   }
 
+  setType(type: string) {
+    this.type = type;
+    if(/^(sine|square|sawtooth|triangle)$/.test(type)) {
+      this.oscillator.type = type as OscillatorType;
+    } else {
+      const wtDetails = Oscillator.wavetables.find(el => el.value === type);
+      if(wtDetails)
+        this.oscillator.setPeriodicWave(this.audioCtx.createPeriodicWave(wtDetails?.waveTable.real, wtDetails?.waveTable.imag));
+      else {
+        console.error("Cannot find wave table for "+"hammondFull")
+        this.type = this.oscillator.type = "sine";
+      }
+    }
+  }
+
   // Key down for this oscillator
   override keyDown(velocity: number) {
     if (!this.started) {
@@ -114,7 +175,7 @@ export class Oscillator extends OscFilterBase {
       this.oscillator = this.audioCtx.createOscillator();
       this.oscillator.connect(this.gain);
       this.oscillator.frequency.value = this.freq;
-      this.setType(oldOsc.type);
+      this.setType(this.type);
       this.setDetune(oldOsc.detune.value);
       this.setOscModulation();
       this.started = false;

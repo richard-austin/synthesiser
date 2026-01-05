@@ -32,7 +32,7 @@ export abstract class OscFilterBase extends GainEnvelopeBase{
 
   abstract setFrequency(freq: number): void;
 
-  abstract setType(type: OscillatorType | BiquadFilterType): void;
+  abstract setType(type: OscillatorType | 'organ' | BiquadFilterType): void;
 
   abstract setModLevel(level: number): void;
 

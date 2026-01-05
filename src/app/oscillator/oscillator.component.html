@@ -28,12 +28,18 @@
         </app-level-control>
         <h2>Waveform</h2>
         <div style="height: 3px;"></div>
-        <form #oscWaveForm>
-          <label><input type="radio" name="waveform" value="sine" checked><span>Sine</span></label>
-          <label><input type="radio" name="waveform" value="square"><span>Square</span></label>
-          <label><input type="radio" name="waveform" value="sawtooth"><span>Sawtooth</span></label>
-          <label><input type="radio" name="waveform" value="triangle"><span>Triangle</span></label>
-        </form>
+        <select #oscWaveform>
+          @for(detail of Oscillator.wavetables; track detail ) {
+            <option [value]="detail.value">{{detail.name}}</option>
+          }
+        </select>
+<!--        <form #oscWaveForm>-->
+<!--          <label><input type="radio" name="waveform" value="sine" checked><span>Sine</span></label>-->
+<!--          <label><input type="radio" name="waveform" value="square"><span>Square</span></label>-->
+<!--          <label><input type="radio" name="waveform" value="sawtooth"><span>Sawtooth</span></label>-->
+<!--          <label><input type="radio" name="waveform" value="triangle"><span>Triangle</span></label>-->
+<!--        </form>-->
+
         <h2>Output</h2>
         <div style="height: 3px;"></div>
         <form #oscOutputToForm>
