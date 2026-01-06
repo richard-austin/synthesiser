@@ -163,6 +163,9 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
+    if(useFreqBendEnvelope && this.numberOfFilters === 1)
+      this.portamento.setValue(0); // Cannot use portamento with frequency envelope
+
     this.proxySettings.useFrequencyEnvelope = useFreqBendEnvelope ? onOff.on : onOff.off;
     for (let i = 0; i < this.filters.length; i++) {
       this.filters[i].useFreqBendEnvelope(useFreqBendEnvelope);
@@ -246,6 +249,8 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
       // this.oscillators[0].oscillators[0].frequency.cancelAndHoldAtTime(0);
       this.filters[0].filter.frequency.setValueAtTime(this.filters[0].filter.frequency.value, 0);
       this.filters[0].filter.frequency.exponentialRampToValueAtTime(freq, this.audioCtx.currentTime + this.proxySettings.portamento);
+      this.filters[0].filter2.frequency.setValueAtTime(this.filters[0].filter2.frequency.value, 0);
+      this.filters[0].filter2.frequency.exponentialRampToValueAtTime(freq, this.audioCtx.currentTime + this.proxySettings.portamento);
       this.filters[0].keyDown(velocity);
     }
     // Polyphonic mode
@@ -270,6 +275,11 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   protected setPortamento($event: number) {
     this.proxySettings.portamento = $event;
+    if($event > 0) {
+      // Can't use frequency bend envelope with portamento
+      this.proxySettings.useFrequencyEnvelope = onOff.off;
+      SetRadioButtons.set(this.freqEnveOnOff, this.proxySettings.useFrequencyEnvelope);
+    }
   }
 
   midiPitchBend(value: number) {
@@ -283,7 +293,6 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   protected readonly dialStyle = dialStyle;
-
 
   protected setFreqAttack($event: number) {
     this.proxySettings.freqBend.attackTime = $event;

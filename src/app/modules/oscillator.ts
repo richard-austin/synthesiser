@@ -180,6 +180,7 @@ export class Oscillator extends OscFilterBase {
     super.release();
     if (this._useFreqBendEnvelope) {
       this.oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
+      this.oscillator.frequency.value = this.freq * Math.pow(this.freqBendBase, this.freqBendEnv.sustainLevel);
       this.oscillator.frequency.exponentialRampToValueAtTime(this.clampFrequency(this.freq * Math.pow(this.freqBendBase, this.freqBendEnv.releaseLevel)), this.audioCtx.currentTime + this.freqBendEnv.releaseTime);
     }
     this.timerSub = timer(this.env.releaseTime * 1000+2000).subscribe(() => {

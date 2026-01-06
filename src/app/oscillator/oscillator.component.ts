@@ -179,6 +179,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
+    if(useFreqBendEnvelope && this.numberOfOscillators === 1)
+      this.portamento.setValue(0); // Cannot use portamento with frequency envelope
+
     this.proxySettings.useFrequencyEnvelope = useFreqBendEnvelope ? onOff.on : onOff.off;
     for (let i = 0; i < this.oscillators.length; i++) {
       this.oscillators[i].useFreqBendEnvelope(useFreqBendEnvelope);
@@ -318,6 +321,11 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   protected setPortamento($event: number) {
     this.proxySettings.portamento = $event;
+    if($event > 0) {
+      // Can't use frequency bend envelope with portamento
+      this.proxySettings.useFrequencyEnvelope = onOff.off;
+      SetRadioButtons.set(this.freqEnveOnOffForm, this.proxySettings.useFrequencyEnvelope);
+    }
   }
 
   midiPitchBend(value: number) {

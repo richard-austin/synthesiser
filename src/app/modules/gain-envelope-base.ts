@@ -90,10 +90,10 @@ export abstract class GainEnvelopeBase {
   }
 
   release() {
-    const ctx = this.audioCtx;
     if (this.useAmplitudeEnvelope) {
-      this.gain.gain.cancelAndHoldAtTime(ctx.currentTime);
-      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * this.setLevel), ctx.currentTime + this.env.releaseTime);
+      this.gain.gain.cancelAndHoldAtTime(0);
+      this.gain.gain.setValueAtTime(this.gain.gain.value, 0);  // Ensure that the release phase stars from the last level
+      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * this.setLevel), this.audioCtx.currentTime + this.env.releaseTime);
     }
   }
 
