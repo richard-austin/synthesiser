@@ -43,7 +43,7 @@ export abstract class GainEnvelopeBase {
   }
 
   public static exponentiateGain(gain: number) {
-    return (Math.exp(gain)-1)/(Math.exp(1)-1);
+    return (Math.pow(10, gain)-1)/(Math.pow(10, 1)-1);
   }
 
   setAmplitudeEnvelope(env: ADSRValues) {
@@ -85,14 +85,13 @@ export abstract class GainEnvelopeBase {
   attack(velocity: number) {
     const ctx = this.audioCtx;
     if (this.useAmplitudeEnvelope) {
-      this.velocity = velocity;
-
+      this.velocity = Math.pow(velocity/127, .75);
       const setLevel = this.setLevel;
       this.gain.gain.cancelAndHoldAtTime(ctx.currentTime);
      // this.gain.gain.setValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * setLevel), ctx.currentTime);
-      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * setLevel * velocity/127), ctx.currentTime + this.env.attackTime);
+      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * setLevel * this.velocity), ctx.currentTime + this.env.attackTime);
       this.sub = timer(this.env.attackTime * 1000).subscribe(() => {
-        this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(this.env.sustainLevel * setLevel * velocity/127), ctx.currentTime + this.env.decayTime);
+        this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(this.env.sustainLevel * setLevel * this.velocity), ctx.currentTime + this.env.decayTime);
       });
     }
   }
@@ -101,7 +100,7 @@ export abstract class GainEnvelopeBase {
     if (this.useAmplitudeEnvelope) {
       this.sub?.unsubscribe();
       this.gain.gain.cancelAndHoldAtTime(0);
-      this.gain.gain.value = this.env.sustainLevel * this.setLevel * this.velocity / 127;  // Ensure that the release phase stars from the sustain level
+      this.gain.gain.value = this.env.sustainLevel * this.setLevel * this.velocity;  // Ensure that the release phase stars from the sustain level
       this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * this.setLevel), this.audioCtx.currentTime + this.env.releaseTime);
     }
   }

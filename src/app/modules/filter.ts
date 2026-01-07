@@ -53,8 +53,8 @@ export class Filter extends OscFilterBase {
     this.modulator = modulator;
     if(type === 'frequency') {
       modulator.connect(this.frequencyMod);
-      this.frequencyMod.connect(this.filter.frequency);
-      this.frequencyMod.gain.setValueAtTime(this.freq * this.modLevel, this.audioCtx.currentTime);
+      this.frequencyMod.connect(this.filter.detune);
+      this.frequencyMod.gain.value = this.modLevel * 2;
     }
     else if(type === 'off') {
       this.modulationOff();
@@ -62,8 +62,8 @@ export class Filter extends OscFilterBase {
   }
 
   setModLevel(level: number) {
-    this.modLevel = level * OscFilterBase.maxLevel;
-    this.frequencyMod.gain.setValueAtTime(this.freq * this.modLevel, this.audioCtx.currentTime);
+    this.modLevel = level;
+    this.frequencyMod.gain.value = this.modLevel * 2;
   }
 
   override modulationOff() {

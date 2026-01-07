@@ -87,8 +87,8 @@ export class Oscillator extends OscFilterBase {
 
   setFrequency(freq: number) {
     let f = super.clampFrequency(freq);
-    this.oscillator.frequency.setValueAtTime(f, this.audioCtx.currentTime);
-    this.frequencyMod.gain.setValueAtTime(f * this.modLevel, this.audioCtx.currentTime);
+    this.oscillator.frequency.value = f;
+ //   this.frequencyMod.gain.setValueAtTime(f * this.modLevel, this.audioCtx.currentTime);
     this.freq = f;
   }
 
@@ -100,31 +100,29 @@ export class Oscillator extends OscFilterBase {
     this.modType = type;
     this.modulator = modulator;
     this.frequencyMod.disconnect();
-    this.amplitudeModDepth.gain.setValueAtTime(0, this.audioCtx.currentTime);
+    this.amplitudeModDepth.gain.value = 0;
     this.setOscModulation();
   }
 
   setOscModulation() {
     if (this.modType === oscModType.frequency) {
       this.modulator.connect(this.frequencyMod);
-      this.frequencyMod.connect(this.oscillator.frequency);
-      this.frequencyMod.gain.setValueAtTime(this.freq * this.modLevel, this.audioCtx.currentTime);
+      this.frequencyMod.connect(this.oscillator.detune);
+      this.frequencyMod.gain.value = this.modLevel;
     } else if (this.modType === oscModType.amplitude) {
       this.modulator.connect(this.amplitudeModDepth);
-      this.amplitudeModDepth.gain.setValueAtTime(this.modLevel * 10, this.audioCtx.currentTime);
+      this.amplitudeModDepth.gain.value = this.modLevel / 200;
     } else if (this.modType === oscModType.off) {
       this.modulationOff();
     }
   }
 
   setModLevel(level: number) {
-    if (this.modType === oscModType.frequency) {
-      this.modLevel = level * OscFilterBase.maxLevel;
-      this.frequencyMod.gain.setValueAtTime(this.oscillator.frequency.value * this.modLevel, this.audioCtx.currentTime);
-    } else {
-      this.modLevel = level;
-      this.amplitudeModDepth.gain.setValueAtTime(level * 10, this.audioCtx.currentTime);
-    }
+    this.modLevel = level;
+    if (this.modType === oscModType.frequency)
+      this.frequencyMod.gain.value = this.modLevel;
+    else
+      this.amplitudeModDepth.gain.value = level /200;
   }
 
   override setFreqBendEnvelope(envelope: FreqBendValues) {
