@@ -1,6 +1,7 @@
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {OscFilterBase} from './osc-filter-base';
 import {filterModType, oscModType} from '../enums/enums';
+import {Subscription, timer} from 'rxjs';
 
 export abstract class GainEnvelopeBase {
   public readonly gain: GainNode;
@@ -78,21 +79,29 @@ export abstract class GainEnvelopeBase {
         level;
   }
 
+  sub!:Subscription;
+  velocity!: number;
+
   attack(velocity: number) {
     const ctx = this.audioCtx;
     if (this.useAmplitudeEnvelope) {
+      this.velocity = velocity;
+
       const setLevel = this.setLevel;
       this.gain.gain.cancelAndHoldAtTime(ctx.currentTime);
      // this.gain.gain.setValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * setLevel), ctx.currentTime);
       this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * setLevel * velocity/127), ctx.currentTime + this.env.attackTime);
-      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(this.env.sustainLevel * setLevel * velocity/127), ctx.currentTime + this.env.attackTime + this.env.decayTime);
+      this.sub = timer(this.env.attackTime * 1000).subscribe(() => {
+        this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(this.env.sustainLevel * setLevel * velocity/127), ctx.currentTime + this.env.decayTime);
+      });
     }
   }
 
   release() {
     if (this.useAmplitudeEnvelope) {
+      this.sub?.unsubscribe();
       this.gain.gain.cancelAndHoldAtTime(0);
-      this.gain.gain.setValueAtTime(this.gain.gain.value, 0);  // Ensure that the release phase stars from the last level
+      this.gain.gain.value = this.env.sustainLevel * this.setLevel * this.velocity / 127;  // Ensure that the release phase stars from the sustain level
       this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * this.setLevel), this.audioCtx.currentTime + this.env.releaseTime);
     }
   }

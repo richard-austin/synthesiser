@@ -2,6 +2,7 @@ import {OscFilterBase} from './osc-filter-base';
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {FreqBendValues} from '../util-classes/freq-bend-values';
 import {filterModType, oscModType} from '../enums/enums';
+import {Subscription, timer} from 'rxjs';
 
 export class Filter extends OscFilterBase {
   filter: BiquadFilterNode;
@@ -98,6 +99,7 @@ export class Filter extends OscFilterBase {
     this.filter2.frequency.setValueAtTime(super.clampFrequency(this.freq), this.audioCtx.currentTime);
   }
 
+  freqBendEnvTimerSub!: Subscription;
   // Key down for this filter
   override keyDown(velocity: number) {
     super.attack(velocity);
@@ -105,13 +107,16 @@ export class Filter extends OscFilterBase {
     if (this._useFreqBendEnvelope) {
       const freq = this.freq;
       this.filter.frequency.cancelAndHoldAtTime(ctx.currentTime);
-      this.filter.frequency.setValueAtTime(freq*Math.pow(this.freqBendBase,this.freqBendEnv.releaseLevel), this.audioCtx.currentTime);
-      this.filter.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * Math.pow(this.freqBendBase,this.freqBendEnv.attackLevel)), ctx.currentTime + this.freqBendEnv.attackTime);
-      this.filter.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * Math.pow(this.freqBendBase, this.freqBendEnv.sustainLevel)), ctx.currentTime + this.freqBendEnv.attackTime + this.freqBendEnv.decayTime);
       this.filter2.frequency.cancelAndHoldAtTime(ctx.currentTime);
+      this.filter.frequency.setValueAtTime(freq*Math.pow(this.freqBendBase,this.freqBendEnv.releaseLevel), this.audioCtx.currentTime);
       this.filter2.frequency.setValueAtTime(freq*Math.pow(this.freqBendBase,this.freqBendEnv.releaseLevel), this.audioCtx.currentTime);
+      this.filter.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * Math.pow(this.freqBendBase,this.freqBendEnv.attackLevel)), ctx.currentTime + this.freqBendEnv.attackTime);
       this.filter2.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * Math.pow(this.freqBendBase,this.freqBendEnv.attackLevel)), ctx.currentTime + this.freqBendEnv.attackTime);
-      this.filter2.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * Math.pow(this.freqBendBase, this.freqBendEnv.sustainLevel)), ctx.currentTime + this.freqBendEnv.attackTime + this.freqBendEnv.decayTime);
+      this.freqBendEnvTimerSub = timer(this.freqBendEnv.attackTime).subscribe(() => {
+        this.filter.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * Math.pow(this.freqBendBase, this.freqBendEnv.sustainLevel)), ctx.currentTime + this.freqBendEnv.decayTime);
+        this.filter2.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * Math.pow(this.freqBendBase, this.freqBendEnv.sustainLevel)), ctx.currentTime + this.freqBendEnv.decayTime);
+      });
+
     }
   }
 
@@ -120,11 +125,12 @@ export class Filter extends OscFilterBase {
     super.release();
     const ctx = this.audioCtx;
     if (this._useFreqBendEnvelope) {
+      this.freqBendEnvTimerSub.unsubscribe();
       this.filter.frequency.cancelAndHoldAtTime(ctx.currentTime);
-      this.filter.frequency.value = this.freq * Math.pow(this.freqBendBase, this.freqBendEnv.sustainLevel);
-      this.filter.frequency.exponentialRampToValueAtTime(this.clampFrequency(this.freq*Math.pow(this.freqBendBase, this.freqBendEnv.releaseLevel)), ctx.currentTime + this.freqBendEnv.releaseTime);
       this.filter2.frequency.cancelAndHoldAtTime(ctx.currentTime);
+      this.filter.frequency.value = this.freq * Math.pow(this.freqBendBase, this.freqBendEnv.sustainLevel);
       this.filter2.frequency.value = this.freq * Math.pow(this.freqBendBase, this.freqBendEnv.sustainLevel);
+      this.filter.frequency.exponentialRampToValueAtTime(this.clampFrequency(this.freq*Math.pow(this.freqBendBase, this.freqBendEnv.releaseLevel)), ctx.currentTime + this.freqBendEnv.releaseTime);
       this.filter2.frequency.exponentialRampToValueAtTime(this.clampFrequency(this.freq*Math.pow(this.freqBendBase, this.freqBendEnv.releaseLevel)), ctx.currentTime + this.freqBendEnv.releaseTime);
     }
   }

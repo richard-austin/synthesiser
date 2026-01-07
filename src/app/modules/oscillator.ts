@@ -153,6 +153,7 @@ export class Oscillator extends OscFilterBase {
     }
   }
 
+  freqBendEnvTimerSub!: Subscription;
   // Key down for this oscillator
   override keyDown(velocity: number) {
     if (!this.started) {
@@ -169,7 +170,9 @@ export class Oscillator extends OscFilterBase {
       this.oscillator.frequency.cancelAndHoldAtTime(ctx.currentTime);
       this.oscillator.frequency.setValueAtTime(freq * Math.pow(this.freqBendBase, this.freqBendEnv.releaseLevel), this.audioCtx.currentTime);
       this.oscillator.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * Math.pow(this.freqBendBase, this.freqBendEnv.attackLevel)), ctx.currentTime + this.freqBendEnv.attackTime);
-      this.oscillator.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * Math.pow(this.freqBendBase, this.freqBendEnv.sustainLevel)), ctx.currentTime + this.freqBendEnv.attackTime + this.freqBendEnv.decayTime);
+      this.freqBendEnvTimerSub = timer(this.freqBendEnv.attackTime).subscribe(() => {
+        this.oscillator.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * Math.pow(this.freqBendBase, this.freqBendEnv.sustainLevel)), ctx.currentTime + this.freqBendEnv.decayTime);
+      });
     }
   }
 
@@ -179,6 +182,7 @@ export class Oscillator extends OscFilterBase {
   keyUp() {
     super.release();
     if (this._useFreqBendEnvelope) {
+      this.freqBendEnvTimerSub?.unsubscribe();
       this.oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
       this.oscillator.frequency.value = this.freq * Math.pow(this.freqBendBase, this.freqBendEnv.sustainLevel);
       this.oscillator.frequency.exponentialRampToValueAtTime(this.clampFrequency(this.freq * Math.pow(this.freqBendBase, this.freqBendEnv.releaseLevel)), this.audioCtx.currentTime + this.freqBendEnv.releaseTime);
