@@ -88,7 +88,7 @@ export abstract class GainEnvelopeBase {
       this.velocity = Math.pow(velocity/127, .75);
       const setLevel = this.setLevel;
       this.gain.gain.cancelAndHoldAtTime(ctx.currentTime);
-     // this.gain.gain.setValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * setLevel), ctx.currentTime);
+      this.gain.gain.setValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * setLevel), ctx.currentTime);
       this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * setLevel * this.velocity), ctx.currentTime + this.env.attackTime);
       this.sub = timer(this.env.attackTime * 1000).subscribe(() => {
         this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(this.env.sustainLevel * setLevel * this.velocity), ctx.currentTime + this.env.decayTime);
@@ -100,7 +100,8 @@ export abstract class GainEnvelopeBase {
     if (this.useAmplitudeEnvelope) {
       this.sub?.unsubscribe();
       this.gain.gain.cancelAndHoldAtTime(0);
-      this.gain.gain.value = this.env.sustainLevel * this.setLevel * this.velocity;  // Ensure that the release phase stars from the sustain level
+      this.gain.gain.setValueAtTime(this.gain.gain.value, this.audioCtx.currentTime);  // Prevent clicks
+      //this.gain.gain.value = this.env.sustainLevel * this.setLevel * this.velocity;  // Ensure that the release phase stars from the sustain level#
       this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * this.setLevel), this.audioCtx.currentTime + this.env.releaseTime);
     }
   }

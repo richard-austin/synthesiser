@@ -1,5 +1,4 @@
 import {ElementRef} from '@angular/core';
-import {timer} from 'rxjs';
 
 export class SetRadioButtons {
   public static set(formElRef: ElementRef<HTMLFormElement>, setting: any) {
