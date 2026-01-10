@@ -29,7 +29,6 @@ export class Filter extends OscFilterBase {
     const f = super.clampFrequency(freq);
     this.filter.frequency.value = f;
     this.filter2.frequency.value = f;
-    this.frequencyMod.gain.value = f * this.modLevel;
     this.freq = f;
   }
 
@@ -125,7 +124,7 @@ export class Filter extends OscFilterBase {
     super.release();
     const ctx = this.audioCtx;
     if (this._useFreqBendEnvelope) {
-      this.freqBendEnvTimerSub.unsubscribe();
+      this.freqBendEnvTimerSub?.unsubscribe();
       this.filter.frequency.cancelAndHoldAtTime(ctx.currentTime);
       this.filter2.frequency.cancelAndHoldAtTime(ctx.currentTime);
       this.filter.frequency.setValueAtTime(this.filter.frequency.value, this.audioCtx.currentTime);// Prevent step changes in freq
