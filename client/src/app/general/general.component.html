@@ -20,7 +20,7 @@
                 <h2>Configurations</h2>
                 @if (!addConfigMode && !deleteConfigMode && !_confirmAddConfig && !_confirmRemoveConfig) {
                   <button (click)="addConfigMode=true" class="button">Save configuration</button>
-                  <button (click)="deleteConfigMode=true; fileToDelete=''" class="button"> Delete configuration</button>
+                  <button (click)="deleteConfigMode=true; fileValueToDelete=''" class="button"> Delete configuration</button>
                 } @else if (addConfigMode) {
                   <form class="save-config-form">
                       <div>
@@ -35,7 +35,7 @@
                 } @else if(deleteConfigMode) {
                   <form class="save-config-form">
                     <div>
-                      <select [ngModelOptions]="{standalone: true}" [(ngModel)]="fileToDelete">
+                      <select [ngModelOptions]="{standalone: true}" [(ngModel)]="fileValueToDelete" (change)="getSelectedFileName($event)">
                         <option value="">--Choose a file to delete</option>
                         <option value="1">File to delete</option>
                         <option value="2">Another file to delete</option>
@@ -43,7 +43,7 @@
                      </div>
                     <div>
                       <button (click)="deleteConfigMode=false">Cancel</button>
-                      <button (click)="confirmDeleteConfig()" [disabled]="fileToDelete===''" >Confirm</button>
+                      <button (click)="confirmDeleteConfig()" [disabled]="fileValueToDelete===''" >Confirm</button>
                     </div>
                   </form>
                 } @else if(_confirmAddConfig) {
@@ -60,7 +60,7 @@
                   </h4>
                   <div>
                     <button (click)="_confirmRemoveConfig=false">Cancel</button>
-                    <button (click)="removeConfiguration(fileToDelete)">Confirm</button>
+                    <button (click)="removeConfiguration(fileValueToDelete)">Confirm</button>
                   </div>
                 }
               </div>

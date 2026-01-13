@@ -37,7 +37,8 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   protected addConfigMode: boolean = false;
   protected deleteConfigMode: boolean = false;
   protected configFileName: string = "";
-  protected fileToDelete: string = "";
+  protected fileValueToDelete: string = "";
+  fileToDelete: string = "";
   protected _confirmAddConfig: boolean = false;
   protected _confirmRemoveConfig: boolean = false;
 
@@ -125,6 +126,12 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   protected confirmDeleteConfig() {
     this.deleteConfigMode = false;
     this._confirmRemoveConfig = true;
+  }
+
+  protected getSelectedFileName(ev: Event) {
+    const select: HTMLSelectElement = ev.target as HTMLSelectElement;
+
+    this.fileToDelete = select ? select[parseInt(select.value)].textContent : "";
   }
 
   protected addConfiguration(configFileName: string) {
