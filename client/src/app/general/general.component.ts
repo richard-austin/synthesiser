@@ -38,6 +38,8 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   protected deleteConfigMode: boolean = false;
   protected configFileName: string = "";
   protected fileToDelete: string = "";
+  protected _confirmAddConfig: boolean = false;
+  protected _confirmRemoveConfig: boolean = false;
 
   @ViewChild('masterVolume') masterVolume!: LevelControlComponent;
   @ViewChild('configEditor') configEditor!: ElementRef<HTMLDivElement>;
@@ -117,12 +119,20 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   }
   protected confirmAddConfig() {
     this.addConfigMode = false;
-    console.log(this.configFileName);
+    this._confirmAddConfig = true;
   }
 
   protected confirmDeleteConfig() {
     this.deleteConfigMode = false;
-    console.log(this.fileToDelete);
+    this._confirmRemoveConfig = true;
+  }
+
+  protected addConfiguration(configFileName: string) {
+    this._confirmAddConfig = false;
+  }
+
+  protected removeConfiguration(fileToDelete: string) {
+    this._confirmRemoveConfig = false;
   }
 
   private clickAwayHandler($event: MouseEvent) {

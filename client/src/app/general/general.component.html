@@ -18,7 +18,7 @@
                  class="group-container group metallic-button edit-configs">
               <div class="module column">
                 <h2>Configurations</h2>
-                @if (!addConfigMode && !deleteConfigMode) {
+                @if (!addConfigMode && !deleteConfigMode && !_confirmAddConfig && !_confirmRemoveConfig) {
                   <button (click)="addConfigMode=true" class="button">Save configuration</button>
                   <button (click)="deleteConfigMode=true; fileToDelete=''" class="button"> Delete configuration</button>
                 } @else if (addConfigMode) {
@@ -29,7 +29,7 @@
                       </div>
                       <div>
                         <button (click)="addConfigMode=false">Cancel</button>
-                        <button (click)="confirmAddConfig()">Confirm</button>
+                        <button (click)="confirmAddConfig()" [disabled]="configFileName===''">Confirm</button>
                       </div>
                   </form>
                 } @else if(deleteConfigMode) {
@@ -46,8 +46,22 @@
                       <button (click)="confirmDeleteConfig()" [disabled]="fileToDelete===''" >Confirm</button>
                     </div>
                   </form>
-                } @else {
-                  Unknown option!!
+                } @else if(_confirmAddConfig) {
+                  <h4>
+                    Save configuration as {{configFileName}}, Are you sure?
+                  </h4>
+                  <div>
+                    <button (click)="_confirmAddConfig=false">Cancel</button>
+                    <button (click)="addConfiguration(configFileName)">Confirm</button>
+                  </div>
+                } @else if (_confirmRemoveConfig) {
+                  <h4>
+                    Remove {{fileToDelete}} from configurations, Are you sure?
+                  </h4>
+                  <div>
+                    <button (click)="_confirmRemoveConfig=false">Cancel</button>
+                    <button (click)="removeConfiguration(fileToDelete)">Confirm</button>
+                  </div>
                 }
               </div>
               <div>
