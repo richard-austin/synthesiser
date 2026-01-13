@@ -37,6 +37,7 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   protected addConfigMode: boolean = false;
   protected deleteConfigMode: boolean = false;
   protected configFileName: string = "";
+  protected fileToDelete: string = "";
 
   @ViewChild('masterVolume') masterVolume!: LevelControlComponent;
   @ViewChild('configEditor') configEditor!: ElementRef<HTMLDivElement>;
@@ -44,6 +45,7 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
 
   animationEnter = signal('enter-animation');
   animationLeave = signal('leaving-animation');
+
 
 
   constructor(private cdr: ChangeDetectorRef) {
@@ -113,6 +115,15 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
       this.addConfigMode = this.deleteConfigMode = false;
     }
   }
+  protected confirmAddConfig() {
+    this.addConfigMode = false;
+    console.log(this.configFileName);
+  }
+
+  protected confirmDeleteConfig() {
+    this.deleteConfigMode = false;
+    console.log(this.fileToDelete);
+  }
 
   private clickAwayHandler($event: MouseEvent) {
     const target = $event.target as HTMLElement;
@@ -131,4 +142,5 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
     this.volume.disconnect();
     window.removeEventListener('mousedown', () => this.clickAwayHandler);
   }
+
 }

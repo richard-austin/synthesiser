@@ -19,35 +19,3 @@ label:first-child input[type=checkbox] {
   border-radius: 0.5em 0.5em 0.5em 0.5em;
 }
 
-select {
-  width: 80%;
-  margin-left: auto;
-  margin-right: auto;
-  margin-bottom: 1em;
-  appearance: none;
-  -webkit-appearance: none;
-  background-size: 30%;
-  background-repeat: no-repeat;
-  background-position: right;
-  background-image: linear-gradient(#ffffff 33%,#414751 58%,#837b52,#c5baa1,#c3adaa);
-  background-color: #dcdcdc;
-  border-radius: 0.5em 0.5em 0.5em 0.5em;
-  border: none;
-  padding-left: 10px;
-  box-shadow:
-    0.1em 0 0 #2726267f inset,
-    -0.1em 0 0 #27262600 inset,
-    0 0.1em 0 #afa490 inset,
-    0 -0.1em 0 #ffffff3f,
-    0 0.2em 0.5em #0000007f,
-    0 -0.1em 0 #926086 inset,
-    -0.1em -0.2em 0 #ffffff7f inset;
-  cursor: pointer;
-  display: block;
-
-  height: 1.3em;
-
-  > option {
-    background-color: #dcdcdc;
-  }
-}

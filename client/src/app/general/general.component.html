@@ -20,19 +20,34 @@
                 <h2>Configurations</h2>
                 @if (!addConfigMode && !deleteConfigMode) {
                   <button (click)="addConfigMode=true" class="button">Save configuration</button>
-                  <button (click)="deleteConfigMode=true" class="button"> Delete configuration</button>
+                  <button (click)="deleteConfigMode=true; fileToDelete=''" class="button"> Delete configuration</button>
                 } @else if (addConfigMode) {
-
                   <form class="save-config-form">
                       <div>
                         <label for="configFile">Enter Config File Name</label>
-                        <input id="configFile" type="text" autocomplete="false" [ngModelOptions]="{standalone: true}" [ngModel]="configFileName"/>
+                        <input id="configFile" type="text" autocomplete="off" placeholder="config file name" [ngModelOptions]="{standalone: true}" [(ngModel)]="configFileName"/>
                       </div>
                       <div>
                         <button (click)="addConfigMode=false">Cancel</button>
-                        <button>Confirm</button>
+                        <button (click)="confirmAddConfig()">Confirm</button>
                       </div>
                   </form>
+                } @else if(deleteConfigMode) {
+                  <form class="save-config-form">
+                    <div>
+                      <select [ngModelOptions]="{standalone: true}" [(ngModel)]="fileToDelete">
+                        <option value="">--Choose a file to delete</option>
+                        <option value="1">File to delete</option>
+                        <option value="2">Another file to delete</option>
+                      </select>
+                     </div>
+                    <div>
+                      <button (click)="deleteConfigMode=false">Cancel</button>
+                      <button (click)="confirmDeleteConfig()" [disabled]="fileToDelete===''" >Confirm</button>
+                    </div>
+                  </form>
+                } @else {
+                  Unknown option!!
                 }
               </div>
               <div>
