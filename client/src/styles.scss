@@ -18,6 +18,8 @@
   margin: 3px !important;
 }
 .column {
+  display: flex;
+  flex-direction: column;
   width: fit-content;
   height: fit-content;
 }
@@ -46,11 +48,6 @@
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
   //cursor: pointer;
   // transition: all 0.2s ease-in-out;
-}
-
-.column {
-  width: fit-content;
-  height: fit-content;
 }
 
 .group-container {
@@ -108,7 +105,7 @@ label {
   -webkit-tap-highlight-color: transparent;
 }
 
-label:first-child input {
+label:first-child input[type=radio] {
   border-radius: 0.5em 0 0 0.5em;
   box-shadow:
     0.1em 0 0 #2726267f inset,
@@ -120,7 +117,7 @@ label:first-child input {
     -0.1em -0.2em 0 #ffffff7f inset,
     0.2em 0 0 #ffffff7f inset;
 }
-label:last-child input {
+label:last-child input[type=radio] {
   border-radius: 0 0.5em 0.5em 0;
   box-shadow:
     0 -0.1em 0 #926086 inset,
@@ -132,7 +129,7 @@ label:last-child input {
     0 0.2em 0.5em #0000007f,
     -0.1em -0.1em 0 0.1em #ffffff7f inset;
 }
-label:first-child input:checked {
+label:first-child input[type=radio]:checked {
   box-shadow:
     0.1em 0 0 #272626af inset,
     -0.1em 0 0 #272626 inset,
@@ -143,7 +140,7 @@ label:first-child input:checked {
     -0.1em -0.2em 0 #ffffff7f inset,
     0.2em 0 0 #ffffff7f inset;
 }
-label:last-child input:checked {
+label:last-child input[type=radio]:checked {
   box-shadow:
     0.1em 0 0 #272626af inset,
     -0.1em 0 0 #272626 inset,
@@ -154,7 +151,7 @@ label:last-child input:checked {
     0 0.1em 0 #ffffff7f,
     -0.1em -0.1em 0 0.1em #ffffff7f inset;
 }
-input {
+input[type=radio], button {
   background-image: linear-gradient(#ffffff 33%,#414751 58%,#837b52,#c5baa1,#c3adaa);
   border-radius: 0;
   box-shadow:
@@ -174,7 +171,7 @@ input {
   -webkit-appearance: none;
   appearance: none;
 }
-input:checked {
+input[type=radio]:checked, button:active {
   background-image: linear-gradient(#ffffff 33%,#414751 58%,#827a7b,#c0b6ac,#c3adaa);
   box-shadow:
     0.1em 0 0 #272626af inset,
@@ -185,13 +182,13 @@ input:checked {
     0 -0.1em 0 #722257 inset,
     -0.1em -0.2em 0 #ffffff7f inset;
 }
-input:checked + span {
+input[type=radio]:checked + span {
   opacity: 1;
 }
-input:focus {
+input[type=radio]:focus {
   outline: transparent;
 }
-input + span {
+input[type=radio] + span {
   opacity: 0.65;
   transition: opacity var(--transDur) ease-in-out;
 }
@@ -202,7 +199,7 @@ input + span {
     --bg: black;
     --fg: #e3e4e8;
   }
-  label:first-child input {
+  label:first-child input[type=radio] {
     box-shadow:
       0.1em 0 0 #2726267f inset,
       -0.1em 0 0 #27262600 inset,
@@ -213,7 +210,7 @@ input + span {
       -0.1em -0.2em 0 #ffffff7f inset,
       0.2em 0 0 #ffffff7f inset;
   }
-  label:last-child input {
+  label:last-child input[type=radio] {
     box-shadow:
       0 -0.1em 0 #926086 inset,
       0.1em 0 0 #2726267f inset,
@@ -224,7 +221,7 @@ input + span {
       0 0.2em 0.5em #0000007f,
       -0.1em -0.1em 0 0.1em #ffffff7f inset;
   }
-  label:first-child input:checked {
+  label:first-child input[type=radio]:checked {
     box-shadow:
       0.1em 0 0 #272626af inset,
       -0.1em 0 0 #272626 inset,
@@ -235,7 +232,7 @@ input + span {
       -0.1em -0.2em 0 #ffffff7f inset,
       0.2em 0 0 #ffffff7f inset
   }
-  label:last-child input:checked {
+  label:last-child input[type=radio]:checked {
     box-shadow:
       0.1em 0 0 #272626af inset,
       -0.1em 0 0 #272626 inset,
@@ -246,7 +243,7 @@ input + span {
       0 0.1em 0 #0000007f,
       -0.1em -0.1em 0 0.1em #ffffff7f inset;
   }
-  input {
+  input[type=radio] {
     box-shadow:
       0.1em 0 0 #2726267f inset,
       -0.1em 0 0 #27262600 inset,
@@ -256,7 +253,7 @@ input + span {
       0 -0.1em 0 #926086 inset,
       -0.1em -0.2em 0 #ffffff7f inset;
   }
-  input:checked {
+  input[type=radio]:checked {
     box-shadow:
       0.1em 0 0 #272626af inset,
       -0.1em 0 0 #272626af inset,

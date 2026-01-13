@@ -1,0 +1,153 @@
+div.master-volume-width {
+  min-width: 225px;
+  position: relative;
+}
+
+div.master-volume-height {
+  min-height: 268px;
+}
+
+.button-container {
+  display: flex;
+  flex-direction: column;
+
+  > div > span {
+    display: block;
+    text-align: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+button {
+  background: linear-gradient(
+      90deg,
+      #999 5%,
+      #fff 10%,
+      #ccc 30%,
+      #ddd 50%,
+      #ccc 70%,
+      #fff 80%,
+      #999 95%);
+
+  border-radius: 0.5em 0.5em 0.5em 0.5em;
+  width: 12em;
+  height: 1.5em;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 4px;
+}
+
+.module {
+  // Override justify-content in main .module definition
+  justify-content: normal;
+}
+//
+.edit-configs {
+  position: absolute;
+  border-radius: 1em;
+  background: linear-gradient(
+      45deg,
+      #999 5%,
+      #fff 10%,
+      #ccc 30%,
+      #ddd 50%,
+      #ccc 70%,
+      #fff 80%,
+      #999 95%
+  );
+  filter: drop-shadow(-2px 5px 11px #000000);
+  height: 150px;
+  width: 500px;
+
+  > div {
+    width: 100%;
+    height: 100%;
+  }
+
+  > div:last-child {
+    position: absolute;
+    margin-left: 8px;
+    overflow: hidden;
+    background: transparent;
+    height: fit-content;
+    top: 147px;
+    left: 20px;
+
+    > div {
+      width: 0;
+      height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-top: 15px solid black;
+    }
+  }
+}
+
+div.row {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.save-config-form {
+    display: flex;
+    flex-direction: column;
+    > div:first-child {
+      > label {
+        margin-right: 1em;
+      }
+      white-space: nowrap;
+      display: flex;
+      flex-direction: row;
+      margin-bottom: 1.5em;
+    }
+    > div:last-child{
+      display: flex;
+      flex-direction: row;
+      > button:first-child {
+        margin-right: 8em;
+      }
+    }
+}
+
+div.config-buttons {
+  > div {
+    display: flex;
+    flex-direction: row;
+    flex-basis: max-content;
+    justify-content: space-around;
+    width: 100%;
+  }
+  > div {
+    > input {
+      margin-top: 1em;
+    }
+
+    > input {
+      width: 170px;
+    }
+  }
+}
+
+.enter-animation {
+  opacity: 0;
+  animation: fade-in 0.5s;
+}
+
+.leaving-animation {
+  opacity: 1;
+  animation: fade-out 0.5s;
+}
+
+
+@keyframes fade-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}

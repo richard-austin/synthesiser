@@ -6,7 +6,7 @@ import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component
 import {ReverbComponent} from '../reverb-component/reverb-component';
 import {PhasorComponent} from '../phasor/phasor-component';
 import {AnalyserComponent} from '../analyser/analyser-component';
-import {MasterVolumeComponent} from '../master-volume/master-volume-component';
+import {GeneralComponent} from '../general/general.component';
 import {ActivatedRoute} from '@angular/router';
 
 @Component({
@@ -19,7 +19,7 @@ import {ActivatedRoute} from '@angular/router';
     ReverbComponent,
     PhasorComponent,
     AnalyserComponent,
-    MasterVolumeComponent
+    GeneralComponent
   ],
   templateUrl: `./synth-component.html`,
   styleUrl: './synth-component.scss',
@@ -30,6 +30,10 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   midiInputs: MIDIInput[] = [];
 
   keydownHandler = (e: KeyboardEvent) => {
+    const target = e.target as HTMLInputElement;
+    if(target.id === 'configFile') {
+      return;  // Allow input of config file name etc. to input element
+    }
     if (/^[abcdefghijklmnopqrstuvwxyz,.\/]$/.test(e.key)) {
       e.preventDefault();
       this.computerKeydown(e);
@@ -52,7 +56,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChild(PhasorComponent) phasor!: PhasorComponent;
   @ViewChild(AnalyserComponent) analyser!: AnalyserComponent;
   @ViewChild('synth') synth!: ElementRef<HTMLDivElement>;
-  @ViewChild('masterVolume') masterVolume!: MasterVolumeComponent;
+  @ViewChild('masterVolume') masterVolume!: GeneralComponent;
 
   constructor(private route: ActivatedRoute) {
     const type = this.route.snapshot.paramMap.get('type');

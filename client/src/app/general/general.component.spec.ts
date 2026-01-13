@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { MasterVolumeComponent } from './master-volume-component';
+import { GeneralComponent } from './general.component';
 
 describe('MasterVolumeComponent', () => {
-  let component: MasterVolumeComponent;
-  let fixture: ComponentFixture<MasterVolumeComponent>;
+  let component: GeneralComponent;
+  let fixture: ComponentFixture<GeneralComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [MasterVolumeComponent]
+      imports: [GeneralComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(MasterVolumeComponent);
+    fixture = TestBed.createComponent(GeneralComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

@@ -55,7 +55,7 @@ export abstract class GainEnvelopeBase {
     if (this.modulator)
       this.modulator.disconnect()
     this.frequencyMod.disconnect();
-    this.frequencyMod.gain.setValueAtTime(1, this.audioCtx.currentTime);
+    this.frequencyMod.gain.value = 1;
   }
 
   abstract modulation(modulator: AudioNode, type: oscModType | filterModType): void;

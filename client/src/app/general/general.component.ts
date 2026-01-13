@@ -1,27 +1,54 @@
-import {Component, OnDestroy, ViewChild} from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  OnDestroy,
+  signal,
+  ViewChild,
+  ViewEncapsulation
+} from '@angular/core';
 import {LevelControlComponent} from "../level-control/level-control.component";
 import {dialStyle} from '../level-control/levelControlParameters';
 import {Cookies} from '../settings/cookies/cookies';
 import {MasterVolumeSettings} from '../settings/master-volume';
 import {GainEnvelopeBase} from '../modules/gain-envelope-base';
+import {timer} from 'rxjs';
+import {FormsModule} from '@angular/forms';
 
 
 @Component({
   selector: 'app-master-volume',
   imports: [
-    LevelControlComponent
+    LevelControlComponent,
+    FormsModule
   ],
-  templateUrl: './master-volume-component.html',
-  styleUrl: './master-volume-component.scss',
+  templateUrl: './general.component.html',
+  styleUrl: './general.component.scss',
+  encapsulation: ViewEncapsulation.None
 })
-export class MasterVolumeComponent implements OnDestroy{
+export class GeneralComponent implements AfterViewInit, OnDestroy {
   protected readonly dialStyle = dialStyle;
   private compressor!: DynamicsCompressorNode;
   private volume!: GainNode;
   private proxySettings!: MasterVolumeSettings;
   private cookies!: Cookies;
+  protected showConfigEditor: boolean = false;
+  protected addConfigMode: boolean = false;
+  protected deleteConfigMode: boolean = false;
+  protected configFileName: string = "";
 
   @ViewChild('masterVolume') masterVolume!: LevelControlComponent;
+  @ViewChild('configEditor') configEditor!: ElementRef<HTMLDivElement>;
+  @ViewChild('general') general!: ElementRef<HTMLDivElement>;
+
+  animationEnter = signal('enter-animation');
+  animationLeave = signal('leaving-animation');
+
+
+  constructor(private cdr: ChangeDetectorRef) {
+
+  }
 
   start(audioCtx: AudioContext): boolean {
     let ok = true;
@@ -70,7 +97,38 @@ export class MasterVolumeComponent implements OnDestroy{
   connect(node: AudioNode) {
     this.volume.connect(node);
   }
+
+  protected manageConfigurations($event: PointerEvent) {
+    this.showConfigEditor = !this.showConfigEditor;
+    if(this.showConfigEditor) {
+      const sub = timer(0).subscribe(() => {
+        if (this.configEditor) {
+          sub.unsubscribe();
+          const configEditor = this.configEditor.nativeElement;
+          configEditor.style.top = -configEditor.scrollHeight + 'px';
+        }
+      });
+    }
+    else {
+      this.addConfigMode = this.deleteConfigMode = false;
+    }
+  }
+
+  private clickAwayHandler($event: MouseEvent) {
+    const target = $event.target as HTMLElement;
+    const general = this.general?.nativeElement;
+    if (!general?.contains(target)) {
+      this.addConfigMode = this.deleteConfigMode = this.showConfigEditor = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  ngAfterViewInit(): void {
+    window.addEventListener('mousedown', (evt) => this.clickAwayHandler(evt));
+  }
+
   ngOnDestroy(): void {
     this.volume.disconnect();
+    window.removeEventListener('mousedown', () => this.clickAwayHandler);
   }
 }
