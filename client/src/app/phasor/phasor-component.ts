@@ -6,7 +6,6 @@ import {PhasorSettings} from '../settings/phasor';
 import {modWaveforms, onOff, phasorOutputs} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {Cookies} from '../settings/cookies/cookies';
-import {ReverbSettings} from '../settings/reverb';
 
 @Component({
   selector: 'app-phasor',
