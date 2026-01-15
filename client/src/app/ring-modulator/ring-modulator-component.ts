@@ -33,12 +33,12 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
   @ViewChild('internalModForm') internalModForm!: ElementRef<HTMLFormElement>;
   @ViewChild('outputToForm') outputToForm!: ElementRef<HTMLFormElement>;
 
-  start(audioCtx: AudioContext) {
+  start(audioCtx: AudioContext, settings: RingModSettings | null) {
     this.ringMod = new RingModulator(audioCtx);
     this.cookies = new Cookies();
 
     // Set default ring mod settings
-    this.applySettings(this.proxySettings);
+    this.applySettings(settings);
   }
 
   // Called after all synth components have been started
@@ -46,20 +46,22 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
     SetRadioButtons.set(this.outputToForm, this.proxySettings.output);
   }
 
-  applySettings(settings: RingModSettings = new RingModSettings()) {
+  applySettings(settings: RingModSettings | null) {
     let cookieSuffix  = '';
     if(this.numberOfOscillators === 1)
       cookieSuffix = 'm';
 
     const cookieName = 'ringMod'+cookieSuffix;
+    if(!settings) {
+      settings = new RingModSettings();
+      const savedSettings = this.cookies.getSettings(cookieName, settings);
 
-    const savedSettings = this.cookies.getSettings(cookieName, settings);
-
-    if (Object.keys(savedSettings).length > 0) {
-      // Use values from cookie
-      settings = savedSettings as RingModSettings;
+      if (Object.keys(savedSettings).length > 0) {
+        // Use values from cookie
+        settings = savedSettings as RingModSettings;
+      }
+      // else use default settings
     }
-    // else use default settings
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
 
@@ -70,6 +72,10 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
     // Set the mod waveform buttons and ring mod settings
     SetRadioButtons.set(this.modWaveForm, settings.modWaveform);
     SetRadioButtons.set(this.internalModForm, settings.internalMod);
+  }
+
+  public getSettings(): RingModSettings {
+    return this.proxySettings;
   }
 
   protected readonly dialStyle = dialStyle

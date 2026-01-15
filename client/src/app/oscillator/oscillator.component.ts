@@ -67,14 +67,14 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   @ViewChild('modDepth') modLevel!: LevelControlComponent;
   @ViewChild('lfoWaveForm') lfoWaveForm!: ElementRef<HTMLFormElement>;
 
-  start(audioCtx: AudioContext): boolean {
+  start(audioCtx: AudioContext, settings: OscillatorSettings | null): boolean {
     let ok = false;
     this.audioCtx = audioCtx;
     this.cookies = new Cookies();
     if (this.numberOfOscillators) {
       this.lfo = this.audioCtx.createOscillator();
       this.lfo.start();
-      this.applySettings();
+      this.applySettings(settings);
       ok = true;
     }
     return ok;
@@ -85,19 +85,23 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     SetRadioButtons.set(this.oscOutputToForm, this.proxySettings.output);
   }
 
-  applySettings(settings: OscillatorSettings = new OscillatorSettings()) {
+  applySettings(settings: OscillatorSettings | null) {
     let cookieSuffix = '';
     if (this.numberOfOscillators === 1)
       cookieSuffix = 'm';
 
     const cookieName = (this.secondary ? 'oscillator2' : 'oscillator') + cookieSuffix;
-    const savedSettings = this.cookies.getSettings(cookieName, settings);
+    if (!settings) {  // If no settings supplied, create default and check if previously saved in cookie
+      settings = new OscillatorSettings();
+      const savedSettings = this.cookies.getSettings(cookieName, settings);
 
-    if (Object.keys(savedSettings).length > 0) {
-      // Use values from cookie
-      settings = savedSettings as OscillatorSettings;
+      if (Object.keys(savedSettings).length > 0) {
+        // Use values from cookie
+        settings = savedSettings as OscillatorSettings;
+      }
+      // else use default settings
     }
-    // else use default settings
+
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
     for (let i = 0; i < this.numberOfOscillators; ++i) {
@@ -145,6 +149,10 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     SetRadioButtons.set(this.lfoWaveForm, this.proxySettings.modWaveform);
   }
 
+  public getSettings(): OscillatorSettings {
+    return this.proxySettings;
+  }
+
   protected setFrequency(freq: number) {
     this.proxySettings.frequency = freq;
     for (let i = 0; i < this.oscillators.length; i++) {
@@ -179,7 +187,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
-    if(useFreqBendEnvelope && this.numberOfOscillators === 1)
+    if (useFreqBendEnvelope && this.numberOfOscillators === 1)
       this.portamento.setValue(0); // Cannot use portamento with frequency envelope
 
     this.proxySettings.useFrequencyEnvelope = useFreqBendEnvelope ? onOff.on : onOff.off;
@@ -321,7 +329,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   protected setPortamento($event: number) {
     this.proxySettings.portamento = $event;
-    if($event > 0) {
+    if ($event > 0) {
       // Can't use frequency bend envelope with portamento
       this.proxySettings.useFrequencyEnvelope = onOff.off;
       SetRadioButtons.set(this.freqEnveOnOffForm, this.proxySettings.useFrequencyEnvelope);

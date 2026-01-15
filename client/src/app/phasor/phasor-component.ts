@@ -6,6 +6,7 @@ import {PhasorSettings} from '../settings/phasor';
 import {modWaveforms, onOff, phasorOutputs} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {Cookies} from '../settings/cookies/cookies';
+import {ReverbSettings} from '../settings/reverb';
 
 @Component({
   selector: 'app-phasor',
@@ -19,8 +20,7 @@ export class PhasorComponent implements AfterViewInit, OnDestroy {
   public input!: GainNode;
   private gain!: GainNode;
   phasor!:Phasor;
-  settings!: PhasorSettings;
-  settingsProxy!: PhasorSettings;
+  proxySettings!: PhasorSettings;
   cookies!: Cookies;
 
   protected readonly dialStyle = dialStyle;
@@ -40,7 +40,7 @@ export class PhasorComponent implements AfterViewInit, OnDestroy {
   @ViewChild('lfoWaveForm') lfoWaveForm!: ElementRef<HTMLFormElement>;
   @ViewChild('modOnOffForm') modOnOff!: ElementRef<HTMLFormElement>;
 
-  setUp(audioCtx:AudioContext){
+  setUp(audioCtx:AudioContext, settings:PhasorSettings | null):void {
     this.lfo = new OscillatorNode(audioCtx);
     this.lfo.type = 'sine';
   //  this.lfo.useAmplitudeEnvelope = false;
@@ -62,27 +62,31 @@ export class PhasorComponent implements AfterViewInit, OnDestroy {
     // Set up LFO default values
     this.modGain.connect(this.phasor.delay1.delayTime);
     this.negModGain.connect(this.phasor.delay2.delayTime);
-    this.applySettings();
+    this.applySettings(settings);
   }
 
   // Called after all synth components have been started
   setOutputConnection () {
-    SetRadioButtons.set(this.phasorOnOffForm, this.settingsProxy.output);
+    SetRadioButtons.set(this.phasorOnOffForm, this.proxySettings.output);
   }
 
-  applySettings(settings:PhasorSettings = new PhasorSettings()) {
+  applySettings(settings:PhasorSettings | null) {
     let cookieSuffix  = '';
     if(this.numberOfOscillators === 1)
       cookieSuffix = 'm';
+    const cookieName = 'phasor'+cookieSuffix;
 
-    const savedSettings = this.cookies.getSettings('phasor'+cookieSuffix, settings);
+    if(!settings) {
+      settings = new PhasorSettings();
+      const savedSettings = this.cookies.getSettings(cookieName, settings);
 
-    if(Object.keys(savedSettings).length > 0)
-      this.settings = settings = savedSettings as PhasorSettings;  // Use values from cookie
-    else
-      this.settings = settings;  // Use default values
+      if (Object.keys(savedSettings).length > 0)
+        settings = savedSettings as PhasorSettings;  // Use values from cookie
+      else
+        settings;  // Use default values
+    }
 
-    this.settingsProxy = this.cookies.getSettingsProxy(this.settings, 'phasor'+cookieSuffix);
+    this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
 
     // Set up the dials
     this.modFreq.setValue(settings.lfoFrequency);
@@ -90,28 +94,32 @@ export class PhasorComponent implements AfterViewInit, OnDestroy {
     this.phase.setValue(settings.phase);
     this.level.setValue(settings.gain);
 
-    SetRadioButtons.set(this.lfoWaveForm, this.settingsProxy.modWaveform);
-    SetRadioButtons.set(this.modOnOff, this.settingsProxy.modulation);
+    SetRadioButtons.set(this.lfoWaveForm, this.proxySettings.modWaveform);
+    SetRadioButtons.set(this.modOnOff, this.proxySettings.modulation);
+  }
+
+  public getSettings(): PhasorSettings {
+    return this.proxySettings;
   }
 
   protected setPhase($event: number) {
-    this.settingsProxy.phase = $event;
+    this.proxySettings.phase = $event;
     this.phasor.setPhase($event/80);
   }
 
   protected setLevel($event: number) {
-    this.settingsProxy.gain = $event;
+    this.proxySettings.gain = $event;
     this.phasor.setLevel($event);
   }
 
   protected setModFrequency(freq: number) {
-    this.settingsProxy.lfoFrequency = freq;
+    this.proxySettings.lfoFrequency = freq;
     this.lfo.frequency.value = freq/3;
   }
 
   lastLevel: number = 0;
   protected setModLevel($event: number) {
-    this.settingsProxy.modDepth = $event;
+    this.proxySettings.modDepth = $event;
     const level = $event /60;
     this.lastLevel = level;
     this.modGain.gain.value =  level;
@@ -133,7 +141,7 @@ export class PhasorComponent implements AfterViewInit, OnDestroy {
         // @ts-ignore
         const value = $event.target.value;
         this.output.emit(value);
-        this.settingsProxy.output = value as phasorOutputs;
+        this.proxySettings.output = value as phasorOutputs;
       });
     }
 
@@ -143,7 +151,7 @@ export class PhasorComponent implements AfterViewInit, OnDestroy {
         // @ts-ignore
         const value = $event.target.value as OscillatorType;
         this.lfo.type =value;
-        this.settingsProxy.modWaveform = value as modWaveforms;
+        this.proxySettings.modWaveform = value as modWaveforms;
       });
     }
     const modOnOff = this.modOnOff.nativeElement;
@@ -155,7 +163,7 @@ export class PhasorComponent implements AfterViewInit, OnDestroy {
           this.modGain.gain.value = this.lastLevel;
         else
           this.modGain.gain.value = 0;
-        this.settingsProxy.modulation = value as onOff;
+        this.proxySettings.modulation = value as onOff;
       });
     }
   }

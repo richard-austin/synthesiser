@@ -45,7 +45,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   constructor() {
   }
 
-  async start(audioCtx: AudioContext) {
+  async start(audioCtx: AudioContext, settings: NoiseSettings | null) {
     if (this.numberOfOscillators) {
       for (let i = 0; i < this.numberOfOscillators; ++i) {
         this.whiteNoise.push(new WhiteNoise(audioCtx));
@@ -57,7 +57,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
       }
     }
     this.cookies = new Cookies();
-    this.applySettings();
+    this.applySettings(settings);
   }
 
   // Called after all synth components have been started
@@ -65,21 +65,22 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     SetRadioButtons.set(this.noiseOutputToForm, this.proxySettings.output);
   }
 
-  applySettings(settings: NoiseSettings = new NoiseSettings()) {
+  applySettings(settings: NoiseSettings | null) {
     let cookieSuffix  = '';
     if(this.numberOfOscillators === 1)
       cookieSuffix = 'm';
 
     const cookieName = 'noise'+cookieSuffix;
+    if(!settings) {
+      settings = new NoiseSettings();
+      const savedSettings = this.cookies.getSettings(cookieName, settings);
 
-    const savedSettings = this.cookies.getSettings(cookieName, settings);
-
-    if(Object.keys(savedSettings).length > 0) {
-      // Use values from cookie
-      settings = savedSettings as NoiseSettings;
+      if(Object.keys(savedSettings).length > 0) {
+        // Use values from cookie
+        settings = savedSettings as NoiseSettings;
+      }
+      // else use default settings
     }
-    // else use default settings
-
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
     for (let i = 0; i < this.numberOfOscillators; ++i) {
       this.whiteNoise[i].setGain(settings.gain);
@@ -102,6 +103,10 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     SetRadioButtons.set(this.noiseTypeForm, this.proxySettings.type);
     SetRadioButtons.set(this.amplitudeEnvelopeOnOffForm, this.proxySettings.useAmplitudeEnvelope);
     SetRadioButtons.set(this.velocityOnOffForm, this.proxySettings.velocitySensitive);
+  }
+
+  public getSettings(): NoiseSettings {
+    return this.proxySettings;
   }
 
   protected setGain(gain: number) {

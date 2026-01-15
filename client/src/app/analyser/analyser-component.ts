@@ -26,25 +26,28 @@ export class AnalyserComponent implements AfterViewInit {
     this.cookies = new Cookies();
   }
 
-  async start(audioCtx: AudioContext) {
+  async start(audioCtx: AudioContext, settings: AnalyserSettings | null): Promise<void> {
     this.audioCtx = audioCtx;
     this.analyser = this.audioCtx.createAnalyser();
     this.analyser.fftSize = 2048;
 
     this.data = new Uint8Array(this.analyser.frequencyBinCount);
-    this.applySettings();
+    this.applySettings(settings);
   }
 
-  applySettings(settings: AnalyserSettings = new AnalyserSettings()) {
+  applySettings(settings: AnalyserSettings | null) {
     const cookieName = 'analyser';
 
-    const savedSettings = this.cookies.getSettings(cookieName, settings);
+    if(!settings) {
+      settings = new AnalyserSettings();
+      const savedSettings = this.cookies.getSettings(cookieName, settings);
 
-    if (Object.keys(savedSettings).length > 0) {
-      // Use values from cookie
-      settings = savedSettings as AnalyserSettings;
+      if (Object.keys(savedSettings).length > 0) {
+        // Use values from cookie
+        settings = savedSettings as AnalyserSettings;
+      }
+      // else use default settings
     }
-    // else use default settings
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
     SetRadioButtons.set(this.analyserTypeForm, this.proxySettings.analyserType);

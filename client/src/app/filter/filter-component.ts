@@ -60,14 +60,14 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   @ViewChild('modDepth') modLevel!: LevelControlComponent;
   @ViewChild('lfoWaveForm') lfoWaveForm!: ElementRef<HTMLFormElement>;
 
-  start(audioCtx: AudioContext): boolean {
+  start(audioCtx: AudioContext, settings: FilterSettings | null): boolean {
     this.audioCtx = audioCtx;
     let ok = false;
     if (this.numberOfFilters) {
       this.lfo = new OscillatorNode(this.audioCtx);
       this.lfo.start();
       this.cookies = new Cookies();
-      this.applySettings();
+      this.applySettings(settings);
     }
     return ok;
   }
@@ -77,19 +77,22 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     SetRadioButtons.set(this.filterOutputTo, this.proxySettings.output);
   }
 
-  applySettings(settings: FilterSettings = new FilterSettings()) {
+  applySettings(settings: FilterSettings | null) {
     let cookieSuffix  = '';
     if(this.numberOfFilters === 1)
       cookieSuffix = 'm';
 
     const cookieName = 'filter'+cookieSuffix;
+    if(!settings) {
+      settings = new FilterSettings();
+      const savedSettings = this.cookies.getSettings(cookieName, settings);
 
-    const savedSettings = this.cookies.getSettings(cookieName, settings);
-
-    if(Object.keys(savedSettings).length > 0) {
-      // Use values from cookie
-      settings = savedSettings as FilterSettings;
+      if(Object.keys(savedSettings).length > 0) {
+        // Use values from cookie
+        settings = savedSettings as FilterSettings;
+      }
     }
+
     // else use default settings
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
@@ -133,6 +136,9 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     SetRadioButtons.set(this.lfoWaveForm, this.proxySettings.modWaveform);
   }
 
+  public getSettings(): FilterSettings {
+    return this.proxySettings;
+  }
 
   protected setFrequency(freq: number) {
     this.proxySettings.frequency = freq;

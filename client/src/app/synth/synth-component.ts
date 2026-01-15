@@ -67,16 +67,16 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.audioCtx = new AudioContext();
 
     // Start the module components
-    this.oscillatorsGrp.start(this.audioCtx);
-    this.oscillators2Grp.start(this.audioCtx);
-    this.filtersGrp.start(this.audioCtx);
+    this.oscillatorsGrp.start(this.audioCtx, null);
+    this.oscillators2Grp.start(this.audioCtx, null);
+    this.filtersGrp.start(this.audioCtx, null);
 
-    await this.noise.start(this.audioCtx);
-    this.ringModulator.start(this.audioCtx);
-    this.reverb.start(this.audioCtx);
-    this.phasor.setUp(this.audioCtx);
-    await this.analyser.start(this.audioCtx);
-    this.masterVolume.start(this.audioCtx);
+    await this.noise.start(this.audioCtx, null);
+    this.ringModulator.start(this.audioCtx, null);
+    this.reverb.start(this.audioCtx, null);
+    this.phasor.setUp(this.audioCtx, null);
+    await this.analyser.start(this.audioCtx, null);
+    this.masterVolume.start(this.audioCtx, null);
     this.masterVolume.connect(this.analyser.node())
 
     // Connect the module component outputs
@@ -171,7 +171,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     function onMIDIFailure() {
       console.log('Could not access your MIDI devices.');
     }
-
   }
 
   downKeys: Set<number> = new Set();

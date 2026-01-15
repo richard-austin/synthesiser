@@ -11,7 +11,7 @@ import {
 import {LevelControlComponent} from "../level-control/level-control.component";
 import {dialStyle} from '../level-control/levelControlParameters';
 import {Cookies} from '../settings/cookies/cookies';
-import {MasterVolumeSettings} from '../settings/master-volume';
+import {GeneralSettings} from '../settings/General';
 import {GainEnvelopeBase} from '../modules/gain-envelope-base';
 import {timer} from 'rxjs';
 import {FormsModule} from '@angular/forms';
@@ -31,7 +31,7 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   protected readonly dialStyle = dialStyle;
   private compressor!: DynamicsCompressorNode;
   private volume!: GainNode;
-  private proxySettings!: MasterVolumeSettings;
+  private proxySettings!: GeneralSettings;
   private cookies!: Cookies;
   protected showConfigEditor: boolean = false;
   protected addConfigMode: boolean = false;
@@ -55,7 +55,7 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
 
   }
 
-  start(audioCtx: AudioContext): boolean {
+  start(audioCtx: AudioContext, settings: GeneralSettings | null): boolean {
     let ok = true;
     this.compressor = audioCtx.createDynamicsCompressor();
     this.compressor.knee.value = 40;
@@ -68,22 +68,29 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
     this.compressor.connect(this.volume);
     this.volume.connect(audioCtx.destination);
     this.cookies = new Cookies();
-    this.applySettings();
+    this.applySettings(settings);
     return ok;
   }
 
-  applySettings(settings: MasterVolumeSettings = new MasterVolumeSettings()) {
+  applySettings(settings: GeneralSettings | null) {
     const cookieName = 'masterVolume';
 
-    const savedSettings = this.cookies.getSettings(cookieName, settings);
+    if(!settings) {
+      settings = new GeneralSettings();
+      const savedSettings = this.cookies.getSettings(cookieName, settings);
 
-    if (Object.keys(savedSettings).length > 0) {
-      // Use values from cookie
-      settings = savedSettings as MasterVolumeSettings;
+      if (Object.keys(savedSettings).length > 0) {
+        // Use values from cookie
+        settings = savedSettings as GeneralSettings;
+      }
+      // else use default settings
     }
-    // else use default settings
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
     this.masterVolume.setValue(this.proxySettings.level);
+  }
+
+  public getSettings(): GeneralSettings {
+    return this.proxySettings;
   }
 
   protected setLevel($event: number) {

@@ -37,7 +37,7 @@ export class ReverbComponent implements AfterViewInit, OnDestroy {
 
   protected readonly dialStyle = dialStyle;
 
-  start(audioCtx: AudioContext) {
+  start(audioCtx: AudioContext, settings: ReverbSettings | null) {
     this.audioCtx = audioCtx;
     this.input = this.audioCtx.createGain();
     this.input.gain.value = 1;
@@ -45,7 +45,7 @@ export class ReverbComponent implements AfterViewInit, OnDestroy {
     this.gain.gain.value = 1;
     this.reverb = new Reverb(audioCtx, this.input, this.gain, this.gain);
     this.cookies = new Cookies();
-    this.applySettings();
+    this.applySettings(settings);
   }
 
   // Called after all synth components have been started
@@ -53,17 +53,21 @@ export class ReverbComponent implements AfterViewInit, OnDestroy {
     SetRadioButtons.set(this.reverbOnOffForm, this.proxySettings.output);
   }
 
-  applySettings(settings: ReverbSettings = new ReverbSettings()) {
+  applySettings(settings: ReverbSettings | null) {
     let cookieSuffix  = '';
     if(this.numberOfOscillators === 1)
       cookieSuffix = 'm';
     const cookieName = 'reverb'+cookieSuffix;
 
-    const savedSettings = this.cookies.getSettings(cookieName, settings);
+    if(!settings) {
+      settings = new ReverbSettings();
 
-    if (Object.keys(savedSettings).length > 0) {
-      // Use values from cookie
-      settings = savedSettings as ReverbSettings;
+      const savedSettings = this.cookies.getSettings(cookieName, settings);
+
+      if (Object.keys(savedSettings).length > 0) {
+        // Use values from cookie
+        settings = savedSettings as ReverbSettings;
+      }
     }
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
@@ -74,6 +78,10 @@ export class ReverbComponent implements AfterViewInit, OnDestroy {
     this.wetDryDial.setValue(this.proxySettings.wetDry);
     this.attackTimeDial.setValue(this.proxySettings.attackTime);
     this.decayTimeDial.setValue(this.proxySettings.decayTime);
+  }
+
+  public getSettings(): ReverbSettings {
+    return this.proxySettings;
   }
 
   protected setAttackTime($event: number) {
