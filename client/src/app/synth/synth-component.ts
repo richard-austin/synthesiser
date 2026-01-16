@@ -7,7 +7,8 @@ import {ReverbComponent} from '../reverb-component/reverb-component';
 import {PhasorComponent} from '../phasor/phasor-component';
 import {AnalyserComponent} from '../analyser/analyser-component';
 import {GeneralComponent} from '../general/general.component';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
+import {SynthSettings} from '../settings/synth-settings';
 
 @Component({
   selector: 'app-synth-component',
@@ -58,7 +59,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChild('synth') synth!: ElementRef<HTMLDivElement>;
   @ViewChild('masterVolume') masterVolume!: GeneralComponent;
 
-  constructor(private route: ActivatedRoute) {
+  constructor(private route: ActivatedRoute, private router: Router) {
     const type = this.route.snapshot.paramMap.get('type');
     this.numberOfOscillators = type === 'poly' ? 0x7f : 1;
   }
@@ -168,9 +169,24 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     }
 
 
-    function onMIDIFailure() {
+    function onMIDIFailure(fail: any) {
       console.log('Could not access your MIDI devices.');
+      console.log(fail);
     }
+  }
+
+  getSettings(): SynthSettings {
+    return new SynthSettings(
+      this.numberOfOscillators,
+      this.oscillatorsGrp.getSettings(),
+      this.oscillators2Grp.getSettings(),
+      this.filtersGrp.getSettings(),
+      this.noise.getSettings(),
+      this.ringModulator.getSettings(),
+      this.reverb.getSettings(),
+      this.phasor.getSettings(),
+      this.masterVolume.getSettings(),
+      this.analyser.getSettings());
   }
 
   downKeys: Set<number> = new Set();
@@ -457,6 +473,10 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  protected showHomeForm() {
+    this.router.navigate(['/']).then();
+  }
+
 // The wake lock sentinel.
   wakeLock: WakeLockSentinel | null = null;
 
@@ -532,4 +552,5 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     window.removeEventListener('keydown', this.keydownHandler);
     window.removeEventListener('keyup', this.keyupHandler);
   }
+
 }

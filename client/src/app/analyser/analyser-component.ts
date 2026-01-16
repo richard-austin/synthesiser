@@ -53,6 +53,10 @@ export class AnalyserComponent implements AfterViewInit {
     SetRadioButtons.set(this.analyserTypeForm, this.proxySettings.analyserType);
   }
 
+  getSettings(): AnalyserSettings {
+    return this.proxySettings;
+  }
+
   private draw = () => {
     if (this.proxySettings.analyserType === analyserTypes.off) return
     this.canvasEL = this.canvas.nativeElement;
@@ -158,5 +162,4 @@ export class AnalyserComponent implements AfterViewInit {
 
 //  protected readonly analyserTypes = analyserTypes;
   protected readonly analyserTypes = analyserTypes;
-
 }

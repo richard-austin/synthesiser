@@ -1,4 +1,7 @@
 <div #synth>
+  <div class="home-button">
+    <button class="material-icons" (click)="showHomeForm()">home</button>
+  </div>
   <div style="display: flex; flex-direction: row">
     <app-oscillators #oscillators
                      [filters]="filters"

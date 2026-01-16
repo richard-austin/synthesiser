@@ -4,3 +4,12 @@ div.analyser {
     position: absolute;
   }
 }
+div.home-button {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  z-index: 3;
+  > button {
+    width: 50px;
+  }
+}

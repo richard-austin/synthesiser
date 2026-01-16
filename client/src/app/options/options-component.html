@@ -1,11 +1,15 @@
-<div #html (mouseenter)="onmouseenter()"
-     (mouseleave)="onmouseleave()"
+<div #html
      class="options">
   <div class="metallic-button">
     <h2>Select Synthesiser Type</h2>
-    <form #synthOptions>
-      <label><input type="radio" name="synthType" value="poly"><span>Polyphonic</span></label>
-      <label><input type="radio" name="synthType" value="mono"><span>Monophonic</span></label>
-    </form>
+    <button #polyBtn value="poly" (click)="synthTypeChange($event)">Polyphonic</button>
+    <button #monoBtn value="mono" (click)="synthTypeChange($event)">Monophonic</button>
+    <h2>Select saved configuration</h2>
+    <select #configOptions [(ngModel)]="selectedConfig">
+      <option value="">Select configuration or Polyphonic or Mono synth</option>
+      <option value="1">Configuration 1</option>
+      <option value="2">Configuration 1</option>
+    </select>
+    <button #confirmSelectedConfigBtn (click)="confirmSelectedConfig($event)">Confirm Selection</button>
   </div>
 </div>

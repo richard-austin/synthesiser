@@ -1,2 +1,4 @@
-<app-options [disappearOnMouseOut]="removeOptionsOnMouseOut" (synthType)="synthType($event)"></app-options>
+<div class="options">
+  <app-options (synthType)="synthType($event)"></app-options>
+</div>
 <router-outlet />
