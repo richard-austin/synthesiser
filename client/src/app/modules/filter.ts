@@ -101,7 +101,7 @@ export class Filter extends OscFilterBase {
   freqBendEnvTimerSub!: Subscription;
   // Key down for this filter
   override keyDown(velocity: number) {
-    super.attack(velocity);
+    super.attack(velocity, this.filter2.frequency.value);
     const ctx = this.audioCtx;
     if (this._useFreqBendEnvelope) {
       const freq = this.freq;
@@ -121,7 +121,7 @@ export class Filter extends OscFilterBase {
 
   // Key released for this filter
   keyUp() {
-    super.release();
+    super.release(this.filter2.frequency.value);
     const ctx = this.audioCtx;
     if (this._useFreqBendEnvelope) {
       this.freqBendEnvTimerSub?.unsubscribe();
