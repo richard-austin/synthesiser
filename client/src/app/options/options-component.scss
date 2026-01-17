@@ -7,6 +7,15 @@ div.options {
       margin-top: 30px;
     }
     > select {
+      &:has(option[value=""]:checked) {
+        color: gray;
+      }
+      > option {
+        color: black;
+        &:first-of-type {
+          color: gray;
+        }
+      }
       background-size: 10%;
       width: 400px;
     }
