@@ -9,6 +9,7 @@ import {AnalyserComponent} from '../analyser/analyser-component';
 import {GeneralComponent} from '../general/general.component';
 import {ActivatedRoute, Router} from '@angular/router';
 import {SynthSettings} from '../settings/synth-settings';
+import {RestfulApiService} from '../services/restful-api.service';
 
 @Component({
   selector: 'app-synth-component',
@@ -27,12 +28,12 @@ import {SynthSettings} from '../settings/synth-settings';
 })
 export class SynthComponent implements AfterViewInit, OnDestroy {
   audioCtx!: AudioContext;
-  protected numberOfOscillators: 1|0x7f =  1;
+  protected numberOfOscillators: 1 | 0x7f = 1;
   midiInputs: MIDIInput[] = [];
 
   keydownHandler = (e: KeyboardEvent) => {
     const target = e.target as HTMLInputElement;
-    if(target.id === 'configFile') {
+    if (target.id === 'configFile') {
       return;  // Allow input of config file name etc. to input element
     }
     if (/^[abcdefghijklmnopqrstuvwxyz,.\/]$/.test(e.key)) {
@@ -48,7 +49,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-@ViewChild('oscillators') oscillatorsGrp!: OscillatorComponent
+  @ViewChild('oscillators') oscillatorsGrp!: OscillatorComponent
   @ViewChild('oscillators2') oscillators2Grp!: OscillatorComponent
   @ViewChild(FilterComponent) filtersGrp!: FilterComponent;
   @ViewChild(NoiseComponent) noise!: NoiseComponent;
@@ -57,9 +58,9 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChild(PhasorComponent) phasor!: PhasorComponent;
   @ViewChild(AnalyserComponent) analyser!: AnalyserComponent;
   @ViewChild('synth') synth!: ElementRef<HTMLDivElement>;
-  @ViewChild('masterVolume') masterVolume!: GeneralComponent;
+  @ViewChild('general') masterVolume!: GeneralComponent;
 
-  constructor(private route: ActivatedRoute, private router: Router) {
+  constructor(private route: ActivatedRoute, private router: Router, private restFulApi: RestfulApiService) {
     const type = this.route.snapshot.paramMap.get('type');
     this.numberOfOscillators = type === 'poly' ? 0x7f : 1;
   }
@@ -109,30 +110,29 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       }
       if (event.data[0] !== 0xfe) {
         //console.log(str);
-        switch(event.data[0]) {
+        switch (event.data[0]) {
           case 0x90:
             //  console.log("midi key = " + event.data[1]);
-              if (event.data[2] === 0)
-                this.keyup(event.data[1]);  // Zero velocity on keydown event === keyup
-              else
-                this.keydown(event.data[1], event.data[2]);
-              break;
+            if (event.data[2] === 0)
+              this.keyup(event.data[1]);  // Zero velocity on keydown event === keyup
+            else
+              this.keydown(event.data[1], event.data[2]);
+            break;
           case 0x80:
-          //  console.log("midi key = " + event.data[0]+" (keyup)");
+            //  console.log("midi key = " + event.data[0]+" (keyup)");
             this.keyup(event.data[1]);
             break;
           case 0xe0:
-          //  console.log("pitch bend "+event.data[2]);
+            //  console.log("pitch bend "+event.data[2]);
             this.pitchBend(event.data[2]);
             break;
           case 0xb0:
-            if(event.data[1] === 0x01) {
-          //    console.log("mod level "+event.data[2]);
+            if (event.data[1] === 0x01) {
+              //    console.log("mod level "+event.data[2]);
               this.modLevel(event.data[2]);
               break
-            }
-            else if(event.data[1] === 0x07) {
-        //      console.log("volume level "+event.data[2]);
+            } else if (event.data[1] === 0x07) {
+              //      console.log("volume level "+event.data[2]);
               this.setMasterVolume(event.data[2]);
             }
         }
@@ -187,6 +187,14 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       this.phasor.getSettings(),
       this.masterVolume.getSettings(),
       this.analyser.getSettings());
+  }
+
+  protected saveConfig(fileName: string) {
+    this.restFulApi.saveConfig(this.getSettings(), fileName).subscribe({
+      next: (v) => console.log("next: " + v),
+      error: (e) => console.log(e),
+      complete: () => console.log("complete")
+    });
   }
 
   downKeys: Set<number> = new Set();
@@ -328,11 +336,12 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   private modLevel(value: number) {
-    value *= 300/127;
+    value *= 300 / 127;
     this.oscillatorsGrp.midiModLevel(value);
     this.oscillators2Grp.midiModLevel(value);
     this.filtersGrp.midiModLevel(value);
   }
+
   private setMasterVolume(value: number) {
     value /= 127;
     this.masterVolume.setVolume(value);
@@ -552,5 +561,4 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     window.removeEventListener('keydown', this.keydownHandler);
     window.removeEventListener('keyup', this.keyupHandler);
   }
-
 }

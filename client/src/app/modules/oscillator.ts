@@ -164,6 +164,12 @@ export class Oscillator extends OscFilterBase {
         imag: [0, 0, 0.5, 0, 1, 0, 0.71, 0, 0.5, 0, 0.35, 0, .25, 0, 0, 0, 0],
         real: new Array(17).fill(0)
       }),
+    new WaveTableDetails(
+      "Flutes 8' & 4'", "flutes8&4",
+      {
+        imag: [0, 0, 0.35, 0, 0.25, 0, 0, 0.1768, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        real: new Array(17).fill(0)
+      })
   ];
   public static readonly frequencyFactor = 7.717057388; // To give middle C at 261.63 Hz on key 60
 

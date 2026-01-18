@@ -2,8 +2,8 @@ import {
   AfterViewInit,
   ChangeDetectorRef,
   Component,
-  ElementRef,
-  OnDestroy,
+  ElementRef, EventEmitter,
+  OnDestroy, Output,
   signal,
   ViewChild,
   ViewEncapsulation
@@ -18,7 +18,7 @@ import {FormsModule} from '@angular/forms';
 
 
 @Component({
-  selector: 'app-master-volume',
+  selector: 'app-general',
   imports: [
     LevelControlComponent,
     FormsModule
@@ -41,6 +41,8 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   fileToDelete: string = "";
   protected _confirmAddConfig: boolean = false;
   protected _confirmRemoveConfig: boolean = false;
+
+  @Output() saveConfig: EventEmitter<string> = new EventEmitter();
 
   @ViewChild('masterVolume') masterVolume!: LevelControlComponent;
   @ViewChild('configEditor') configEditor!: ElementRef<HTMLDivElement>;
@@ -143,6 +145,7 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
 
   protected addConfiguration(configFileName: string) {
     this._confirmAddConfig = false;
+    this.saveConfig.emit(this.configFileName);
   }
 
   protected removeConfiguration(fileToDelete: string) {
