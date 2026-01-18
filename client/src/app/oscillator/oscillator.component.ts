@@ -308,7 +308,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     }
     // Polyphonic mode
     else if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
-      console.log("fx = " + this.oscillators[keyIndex].oscillator.frequency.value);
+     // console.log("fx = " + this.oscillators[keyIndex].oscillator.frequency.value);
       this.oscillators[keyIndex].keyDown(velocity);
     }
   }

@@ -108,31 +108,31 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
         str += `0x${character.toString(16)} `;
       }
       if (event.data[0] !== 0xfe) {
-        console.log(str);
+        //console.log(str);
         switch(event.data[0]) {
           case 0x90:
-              console.log("midi key = " + event.data[1]);
+            //  console.log("midi key = " + event.data[1]);
               if (event.data[2] === 0)
                 this.keyup(event.data[1]);  // Zero velocity on keydown event === keyup
               else
                 this.keydown(event.data[1], event.data[2]);
               break;
           case 0x80:
-            console.log("midi key = " + event.data[0]+" (keyup)");
+          //  console.log("midi key = " + event.data[0]+" (keyup)");
             this.keyup(event.data[1]);
             break;
           case 0xe0:
-            console.log("pitch bend "+event.data[2]);
+          //  console.log("pitch bend "+event.data[2]);
             this.pitchBend(event.data[2]);
             break;
           case 0xb0:
             if(event.data[1] === 0x01) {
-              console.log("mod level "+event.data[2]);
+          //    console.log("mod level "+event.data[2]);
               this.modLevel(event.data[2]);
               break
             }
             else if(event.data[1] === 0x07) {
-              console.log("volume level "+event.data[2]);
+        //      console.log("volume level "+event.data[2]);
               this.setMasterVolume(event.data[2]);
             }
         }
