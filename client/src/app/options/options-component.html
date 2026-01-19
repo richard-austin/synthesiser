@@ -7,9 +7,10 @@
     <h2>Select saved configuration</h2>
     <select #configOptions [(ngModel)]="selectedConfig">
       <option value="">Select configuration or Polyphonic or Mono synth</option>
-      <option value="1">Configuration 1</option>
-      <option value="2">Configuration 1</option>
+      @for(fileName of configFileList; track fileName; let idx = $index) {
+        <option [value]="idx+1">{{fileName}}</option>
+      }
     </select>
-    <button #confirmSelectedConfigBtn (click)="confirmSelectedConfig($event)">Confirm Selection</button>
+    <button #confirmSelectedConfigBtn (click)="confirmSelectedConfig()">Confirm Selection</button>
   </div>
 </div>

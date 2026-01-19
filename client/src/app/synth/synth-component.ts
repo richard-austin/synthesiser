@@ -30,7 +30,8 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   audioCtx!: AudioContext;
   protected numberOfOscillators: 1 | 0x7f = 1;
   midiInputs: MIDIInput[] = [];
-
+  settings: SynthSettings | null = null;
+  configFileName: string | null = null;
   keydownHandler = (e: KeyboardEvent) => {
     const target = e.target as HTMLInputElement;
     if (target.id === 'configFile') {
@@ -60,25 +61,31 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChild('synth') synth!: ElementRef<HTMLDivElement>;
   @ViewChild('general') masterVolume!: GeneralComponent;
 
-  constructor(private route: ActivatedRoute, private router: Router, private restFulApi: RestfulApiService) {
+  constructor(private route: ActivatedRoute, private router: Router, private rest: RestfulApiService) {
     const type = this.route.snapshot.paramMap.get('type');
     this.numberOfOscillators = type === 'poly' ? 0x7f : 1;
+    const fileName = this.route.snapshot.params['fileName'];
+    if (fileName) {
+      this.configFileName = fileName;
+    } else {
+      this.configFileName = this.settings = null;
+    }
   }
 
-  protected async start(): Promise<void> {
+  protected async start(settings: SynthSettings | null): Promise<void> {
     this.audioCtx = new AudioContext();
 
     // Start the module components
-    this.oscillatorsGrp.start(this.audioCtx, null);
-    this.oscillators2Grp.start(this.audioCtx, null);
-    this.filtersGrp.start(this.audioCtx, null);
+    this.oscillatorsGrp.start(this.audioCtx, settings ? settings.oscillator1Settings : settings);
+    this.oscillators2Grp.start(this.audioCtx, settings ? settings.oscillator2Settings : settings);
+    this.filtersGrp.start(this.audioCtx, settings ? settings.filterSettings : settings);
 
-    await this.noise.start(this.audioCtx, null);
-    this.ringModulator.start(this.audioCtx, null);
-    this.reverb.start(this.audioCtx, null);
-    this.phasor.setUp(this.audioCtx, null);
-    await this.analyser.start(this.audioCtx, null);
-    this.masterVolume.start(this.audioCtx, null);
+    await this.noise.start(this.audioCtx, settings ? settings.noiseSettings : settings);
+    this.ringModulator.start(this.audioCtx, settings ? settings.ringModSettings : settings);
+    this.reverb.start(this.audioCtx, settings ? settings.reverbSettings : settings);
+    this.phasor.setUp(this.audioCtx, settings ? settings.phasorSettings : settings);
+    await this.analyser.start(this.audioCtx, settings ? settings.analyserSettings : settings);
+    this.masterVolume.start(this.audioCtx, settings ? settings.generalSettings : settings);
     this.masterVolume.connect(this.analyser.node())
 
     // Connect the module component outputs
@@ -190,7 +197,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   protected saveConfig(fileName: string) {
-    this.restFulApi.saveConfig(this.getSettings(), fileName).subscribe({
+    this.rest.saveConfig(this.getSettings(), fileName).subscribe({
       next: (v) => console.log("next: " + v),
       error: (e) => console.log(e),
       complete: () => console.log("complete")
@@ -540,7 +547,18 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   async ngAfterViewInit(): Promise<void> {
-    await this.start();
+    if(!this.configFileName)
+      await this.start(null);
+    else {
+      this.rest.getSettings(this.configFileName).subscribe({
+        next: (v) => this.settings = v,
+        error: (e) => console.log(e),
+        complete: async () => {
+          console.log("complete: settings loaded");
+          await this.start(this.settings);
+        }
+      });
+    }
     await this.requestWakeLock()
     this.scaleToFitSmallWindow();
     window.onresize = () => {

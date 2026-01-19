@@ -2,6 +2,8 @@ import {AfterViewInit, Component} from '@angular/core';
 import {Router, RouterOutlet} from '@angular/router';
 import {OptionsComponent} from './options/options-component';
 import {timer} from 'rxjs';
+import {RestfulApiService} from './services/restful-api.service';
+import {SynthSettings} from './settings/synth-settings';
 
 @Component({
   selector: 'app-root',
@@ -10,19 +12,35 @@ import {timer} from 'rxjs';
   styleUrl: './app.scss'
 })
 export class App implements AfterViewInit {
-  constructor(private router: Router) {
+  settings!: SynthSettings;
+  constructor(private router: Router, private rest: RestfulApiService) {
   }
 
-  ngAfterViewInit(): void {
-  }
   protected synthType($event: string) {
-    //this.router.navigate(['/']).then();
     const sub = timer(100).subscribe(() => {
       sub.unsubscribe();
       if ($event === 'mono')
         this.router.navigate(['synth', 'mono']).then();
       else if ($event === 'poly')
         this.router.navigate(['synth', 'poly']).then();
-   });
+    });
   }
-}
+
+  protected applySettingsFromFile(fileName: string) {
+    this.rest.getSettings(fileName).subscribe({
+      next: (v) => this.settings = v,
+      error: (e) => console.log(e),
+      complete: () => {
+        console.log("complete: settings loaded");
+        if(this.settings.numberOfOscillators === 1)
+          this.router.navigate(['synth', 'mono', fileName]).then();
+        else if (this.settings.numberOfOscillators > 1)
+          this.router.navigate(['synth', 'poly', fileName]).then();
+      }
+    });
+  }
+
+  ngAfterViewInit(): void {
+  }
+
+ }
