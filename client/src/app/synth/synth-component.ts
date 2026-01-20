@@ -490,7 +490,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   protected showHomeForm() {
-    this.router.navigate(['/']).then();
+    this.router.navigate(['/home']).then();
   }
 
 // The wake lock sentinel.

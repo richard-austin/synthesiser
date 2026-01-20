@@ -1,20 +1,28 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild} from '@angular/core';
+import {
+  AfterViewInit, ChangeDetectorRef,
+  Component,
+  ElementRef,
+  Input,
+  OnDestroy,
+  OnInit,
+  ViewChild
+} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {RestfulApiService} from '../services/restful-api.service';
+import {timer} from 'rxjs';
+import {SynthSettings} from '../settings/synth-settings';
+import {Router} from '@angular/router';
 
 @Component({
   selector: 'app-options',
   imports: [
     FormsModule
   ],
-  templateUrl: './options-component.html',
-  styleUrl: './options-component.scss',
+  templateUrl: './home.component.html',
+  styleUrl: './home.component.scss',
 })
-export class OptionsComponent implements AfterViewInit, OnDestroy {
+export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() disappearOnMouseOut!: boolean;
-
-  @Output() synthType: EventEmitter<string> = new EventEmitter();
-  @Output() selectedFile: EventEmitter<string> = new EventEmitter();
 
   @ViewChild('html') html!: ElementRef<HTMLDivElement>;
   @ViewChild('configOptions') configOptions!: ElementRef<HTMLFormElement>;
@@ -25,13 +33,13 @@ export class OptionsComponent implements AfterViewInit, OnDestroy {
   protected selectedConfig: string = "";
   protected configFileList: string[] = [];
 
-  constructor(private rest: RestfulApiService) {
+  constructor(private cdr: ChangeDetectorRef, private rest: RestfulApiService, private router: Router) {
   }
 
    synthTypeChange($event: Event) {
     // @ts-ignore
     const value = $event.target.value;
-    this.synthType.emit(value);
+    this.synthType(value);
   }
 
 
@@ -39,7 +47,10 @@ export class OptionsComponent implements AfterViewInit, OnDestroy {
     this.rest.getConfigFileList().subscribe({
       next: (v) => this.configFileList = v,
       error: (e) => console.log(e),
-      complete: () => console.log("complete")
+      complete: () => {
+        console.log("complete");
+        this.cdr.detectChanges();
+      }
     });
   }
 
@@ -61,7 +72,35 @@ export class OptionsComponent implements AfterViewInit, OnDestroy {
     const configOptions = this.configOptions.nativeElement;
     const fileNameElem = configOptions[configOptions["value"]];
     const fileName = fileNameElem.textContent;
-    this.selectedFile.emit(fileName);
+    this.applySettingsFromFile(fileName);
+  }
+  protected synthType($event: string) {
+    const sub = timer(100).subscribe(() => {
+      sub.unsubscribe();
+      if ($event === 'mono')
+        this.router.navigate(['synth', 'mono']).then();
+      else if ($event === 'poly')
+        this.router.navigate(['synth', 'poly']).then();
+    });
+  }
+
+  protected applySettingsFromFile(fileName: string) {
+    let settings: SynthSettings;
+    this.rest.getSettings(fileName).subscribe({
+      next: (v) => settings = v,
+      error: (e) => console.log(e),
+      complete: () => {
+        console.log("complete: settings loaded");
+        if(settings.numberOfOscillators === 1)
+          this.router.navigate(['synth', 'mono', fileName]).then();
+        else if (settings.numberOfOscillators > 1)
+          this.router.navigate(['synth', 'poly', fileName]).then();
+      }
+    });
+  }
+
+  ngOnInit() {
+    this.getConfigFileList();
   }
 
   ngAfterViewInit(): void {
@@ -69,7 +108,6 @@ export class OptionsComponent implements AfterViewInit, OnDestroy {
    configOptions.onchange = ev => this.configOptionChange(ev);
     const confirmSelectedConfigBtn = this.confirmSelectedConfigBtn.nativeElement;
     confirmSelectedConfigBtn.disabled = true;
-    this.getConfigFileList();
   }
 
   ngOnDestroy(): void {
