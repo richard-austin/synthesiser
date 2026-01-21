@@ -15,6 +15,8 @@ import {GeneralSettings} from '../settings/General';
 import {GainEnvelopeBase} from '../modules/gain-envelope-base';
 import {timer} from 'rxjs';
 import {FormsModule} from '@angular/forms';
+import {SynthComponent} from '../synth/synth-component';
+import {RestfulApiService} from '../services/restful-api.service';
 
 
 @Component({
@@ -35,12 +37,11 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   private cookies!: Cookies;
   protected showConfigEditor: boolean = false;
   protected addConfigMode: boolean = false;
-  protected deleteConfigMode: boolean = false;
   protected configFileName: string = "";
-  protected fileValueToDelete: string = "";
-  fileToDelete: string = "";
   protected _confirmAddConfig: boolean = false;
-  protected _confirmRemoveConfig: boolean = false;
+  protected errorMessage: string = "";
+  protected failed: boolean = false;
+  protected success: boolean = false;
 
   @Output() saveConfig: EventEmitter<string> = new EventEmitter();
 
@@ -52,8 +53,7 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   animationLeave = signal('leaving-animation');
 
 
-
-  constructor(private cdr: ChangeDetectorRef) {
+  constructor(private cdr: ChangeDetectorRef, private parent: SynthComponent, private rest: RestfulApiService) {
 
   }
 
@@ -77,7 +77,7 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   applySettings(settings: GeneralSettings | null) {
     const cookieName = 'masterVolume';
 
-    if(!settings) {
+    if (!settings) {
       settings = new GeneralSettings();
       const savedSettings = this.cookies.getSettings(cookieName, settings);
 
@@ -112,9 +112,9 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
     this.volume.connect(node);
   }
 
-  protected manageConfigurations($event: PointerEvent) {
-    this.showConfigEditor = !this.showConfigEditor;
-    if(this.showConfigEditor) {
+  protected manageConfigurations() {
+    this.addConfigMode = this.showConfigEditor = !this.showConfigEditor;
+    if (this.showConfigEditor) {
       const sub = timer(0).subscribe(() => {
         if (this.configEditor) {
           sub.unsubscribe();
@@ -122,41 +122,42 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
           configEditor.style.top = -configEditor.scrollHeight + 'px';
         }
       });
-    }
-    else {
-      this.addConfigMode = this.deleteConfigMode = false;
+    } else {
+      this.addConfigMode = false;
     }
   }
+
   protected confirmAddConfig() {
     this.addConfigMode = false;
     this._confirmAddConfig = true;
   }
 
-  protected confirmDeleteConfig() {
-    this.deleteConfigMode = false;
-    this._confirmRemoveConfig = true;
-  }
-
-  protected getSelectedFileName(ev: Event) {
-    const select: HTMLSelectElement = ev.target as HTMLSelectElement;
-
-    this.fileToDelete = select ? select[parseInt(select.value)].textContent : "";
-  }
-
   protected addConfiguration(configFileName: string) {
+    this.success = this.failed = false;
     this._confirmAddConfig = false;
-    this.saveConfig.emit(this.configFileName);
-  }
-
-  protected removeConfiguration(fileToDelete: string) {
-    this._confirmRemoveConfig = false;
+    this.rest.saveConfig(this.parent.getSettings(), configFileName).subscribe({
+      next: (v: any) => console.log("next: " + v.message),
+      error: (e) => {
+        this.addConfigMode = this.showConfigEditor = false;
+        console.log(e.error.message)
+        this.failed = true;
+        this.errorMessage = e.error.message;
+        this.cdr.detectChanges();
+        },
+      complete: () => {
+        this.addConfigMode = this.showConfigEditor = false;
+        console.log("complete");
+        this.success = true;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   private clickAwayHandler($event: MouseEvent) {
     const target = $event.target as HTMLElement;
     const general = this.general?.nativeElement;
     if (!general?.contains(target)) {
-      this.addConfigMode = this.deleteConfigMode = this.showConfigEditor = false;
+      this.addConfigMode = this.showConfigEditor = false;
       this.cdr.detectChanges();
     }
   }

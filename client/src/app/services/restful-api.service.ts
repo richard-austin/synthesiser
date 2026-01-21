@@ -12,7 +12,7 @@ export class RestfulApiService {
 
   readonly httpJsonOptions = {
     headers: new HttpHeaders({
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json; text/html; charset=UTF-8',
     })
   }
 

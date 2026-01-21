@@ -196,16 +196,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       this.analyser.getSettings());
   }
 
-  protected saveConfig(fileName: string) {
-    this.rest.saveConfig(this.getSettings(), fileName).subscribe({
-      next: (v) => console.log("next: " + v),
-      error: (e) => console.log(e),
-      complete: () => console.log("complete")
-    });
-  }
-
   downKeys: Set<number> = new Set();
-
   protected computerKeydown($event: KeyboardEvent) {
     let code = this.keyCode($event);
     if (code >= 0) {

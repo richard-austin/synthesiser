@@ -17,50 +17,26 @@
                  [animate.leave]="animationLeave()"
                  class="group-container group metallic-button edit-configs">
               <div class="module column">
-                <h2>Configurations</h2>
-                @if (!addConfigMode && !deleteConfigMode && !_confirmAddConfig && !_confirmRemoveConfig) {
-                  <button (click)="addConfigMode=true" class="button">Save configuration</button>
-                  <button (click)="deleteConfigMode=true; fileValueToDelete=''" class="button"> Delete configuration</button>
-                } @else if (addConfigMode) {
-                  <form class="save-config-form">
-                      <div>
-                        <label for="configFile">Enter Config File Name</label>
-                        <input id="configFile" type="text" autocomplete="off" placeholder="config file name" [ngModelOptions]="{standalone: true}" [(ngModel)]="configFileName"/>
-                      </div>
-                      <div>
-                        <button (click)="addConfigMode=false">Cancel</button>
-                        <button (click)="confirmAddConfig()" [disabled]="configFileName===''">Confirm</button>
-                      </div>
-                  </form>
-                } @else if(deleteConfigMode) {
+                <h2>Save Configuration</h2>
+                @if (addConfigMode) {
                   <form class="save-config-form">
                     <div>
-                      <select [ngModelOptions]="{standalone: true}" [(ngModel)]="fileValueToDelete" (change)="getSelectedFileName($event)">
-                        <option value="">--Choose a file to delete</option>
-                        <option value="1">File to delete</option>
-                        <option value="2">Another file to delete</option>
-                      </select>
-                     </div>
+                      <label for="configFile">Enter Config File Name</label>
+                      <input id="configFile" type="text" autocomplete="off" placeholder="config file name"
+                             [ngModelOptions]="{standalone: true}" [(ngModel)]="configFileName"/>
+                    </div>
                     <div>
-                      <button (click)="deleteConfigMode=false">Cancel</button>
-                      <button (click)="confirmDeleteConfig()" [disabled]="fileValueToDelete===''" >Confirm</button>
+                      <button (click)="addConfigMode=showConfigEditor=false">Cancel</button>
+                      <button (click)="confirmAddConfig()" [disabled]="configFileName===''">Confirm</button>
                     </div>
                   </form>
-                } @else if(_confirmAddConfig) {
+                } @else if (_confirmAddConfig) {
                   <h4>
-                    Save configuration as {{configFileName}}, Are you sure?
+                    Save configuration as {{ configFileName }}, Are you sure?
                   </h4>
                   <div>
                     <button (click)="_confirmAddConfig=false">Cancel</button>
                     <button (click)="addConfiguration(configFileName)">Confirm</button>
-                  </div>
-                } @else if (_confirmRemoveConfig) {
-                  <h4>
-                    Remove {{fileToDelete}} from configurations, Are you sure?
-                  </h4>
-                  <div>
-                    <button (click)="_confirmRemoveConfig=false">Cancel</button>
-                    <button (click)="removeConfiguration(fileToDelete)">Confirm</button>
                   </div>
                 }
               </div>
@@ -69,7 +45,13 @@
               </div>
             </div>
           }
-          <button id="manageConfig" (click)="manageConfigurations($event)">Manage configurations</button>
+          @if (success) {
+            <div (click)="failed=success=false" class="success">{{ configFileName }} saved successfully</div>
+          } @else if (failed) {
+            <div (click)="failed=success=false;" class="failed">Error: {{ errorMessage }}</div>
+          } @else {
+            <button id="manageConfig" (click)="manageConfigurations()">Save configuration</button>
+          }
         </div>
       </div>
     </div>

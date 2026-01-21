@@ -32,11 +32,16 @@ class SynthController {
             Files.createDirectories(path)
             path = Path.of(path.toString(), fileName)
             File file = path.toFile()
+
+            // Ensure the file name is not already used
+            if(file.exists() && !file.isDirectory())
+                throw new Exception("File name already in use")
+
             FileWriter fileWriter = new FileWriter(file)
             fileWriter.write(json)
             fileWriter.flush()
             fileWriter.close()
-            return ResponseEntity.ok().body(fileName + " successfully saved")
+            return ResponseEntity.ok().body([message: fileName + " successfully saved"])
         }
         catch (Exception ex) {
             return ResponseEntity
