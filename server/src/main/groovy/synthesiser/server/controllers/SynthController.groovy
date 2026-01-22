@@ -1,11 +1,11 @@
 package synthesiser.server.controllers
 
-import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import synthesiser.server.command.DeleteConfigCommand
 import synthesiser.server.command.GetSettingsCommand
 import synthesiser.server.command.SaveConfigCommand
 import tools.jackson.databind.ObjectMapper
@@ -74,6 +74,20 @@ class SynthController {
             ObjectMapper mapper = new ObjectMapper()
             Map<String, Object> map = mapper.readValue(configFile, Map.class)
             return ResponseEntity.ok().body(map)
+        }
+        catch(Exception ex) {
+            return ResponseEntity.internalServerError().body([exception: ex.getClass(), message: ex.getMessage()])
+        }
+    }
+
+    @PostMapping('deleteConfig')
+    def deleteConfig(@RequestBody DeleteConfigCommand cmd) {
+        try {
+            def configFile = new File(Path.of(configFileDir.toString(), cmd.fileName+".json").toString())
+            if(configFile.delete())
+                return ResponseEntity.ok().body("File "+cmd.fileName+" deleted")
+            else
+                return ResponseEntity.badRequest().body("Could not delete "+cmd.fileName)
         }
         catch(Exception ex) {
             return ResponseEntity.internalServerError().body([exception: ex.getClass(), message: ex.getMessage()])

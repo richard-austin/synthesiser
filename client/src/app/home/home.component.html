@@ -11,6 +11,13 @@
         <option [value]="idx+1">{{fileName}}</option>
       }
     </select>
-    <button #confirmSelectedConfigBtn (click)="confirmSelectedConfig()">Confirm Selection</button>
+    @if(!_confirmDelete) {
+      <button class="load-config" #loadSelectedConfigBtn (click)="loadSelectedConfig()">Load Selected Configuration</button>
+      <button class="delete-config" #deleteSelectedConfigBtn (click)="confirmDelete()">Delete Selected Configuration</button>
+    } @else {
+      Delete {{fileName()}}, are you sure?
+      <button class="delete-config" #confirmDeleteSelectedConfigBtn (click)="delete()">Delete Selected Configuration</button>
+      <button (click)="_confirmDelete=false">Cancel</button>
+    }
   </div>
 </div>

@@ -29,4 +29,9 @@ export class RestfulApiService {
     const params = {fileName: fileName};
     return this.http.post<SynthSettings>('/syn/getSettings', JSON.stringify(params), this.httpJsonOptions);
   }
+
+  deleteConfig(fileName: string) {
+    const params = {fileName: fileName};
+    return this.http.post<{}>('/syn/deleteConfig', JSON.stringify(params), this.httpJsonOptions);
+  }
 }

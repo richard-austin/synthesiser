@@ -25,30 +25,35 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() disappearOnMouseOut!: boolean;
 
   @ViewChild('html') html!: ElementRef<HTMLDivElement>;
-  @ViewChild('configOptions') configOptions!: ElementRef<HTMLFormElement>;
+  @ViewChild('configOptions') configOptions!: ElementRef<HTMLSelectElement>;
   @ViewChild('polyBtn') polyBtn!: ElementRef<HTMLButtonElement>;
   @ViewChild('monoBtn') monoBtn!: ElementRef<HTMLButtonElement>;
-  @ViewChild('confirmSelectedConfigBtn') confirmSelectedConfigBtn!: ElementRef<HTMLButtonElement>;
+  @ViewChild('loadSelectedConfigBtn') loadSelectedConfigBtn!: ElementRef<HTMLButtonElement>;
+  @ViewChild('deleteSelectedConfigBtn') deleteSelectedConfigBtn!: ElementRef<HTMLButtonElement>;
 
   protected selectedConfig: string = "";
   protected configFileList: string[] = [];
+  protected _confirmDelete: boolean = false;
 
   constructor(private cdr: ChangeDetectorRef, private rest: RestfulApiService, private router: Router) {
   }
 
-   synthTypeChange($event: Event) {
+  synthTypeChange($event: Event) {
     // @ts-ignore
     const value = $event.target.value;
     this.synthType(value);
   }
 
 
-  private getConfigFileList() {
+  private reset() {
     this.rest.getConfigFileList().subscribe({
-      next: (v) => this.configFileList = v,
+      next: (v) => {
+        this.configFileList = v
+        this.selectedConfig = '';
+        },
       error: (e) => console.log(e),
       complete: () => {
-        console.log("complete");
+        this._confirmDelete = false;
         this.cdr.detectChanges();
       }
     });
@@ -57,23 +62,52 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   private configOptionChange(ev: Event) {
     const polyBtn = this.polyBtn.nativeElement;
     const monoBtn = this.monoBtn.nativeElement;
-    const confirmSelectedConfigBtn = this.confirmSelectedConfigBtn.nativeElement;
+    const confirmSelectedConfigBtn = this.loadSelectedConfigBtn.nativeElement;
+    const deleteSelectedConfigBtn = this.deleteSelectedConfigBtn.nativeElement;
+
     // @ts-ignore
-    if(ev?.target.value !== "") {
+    if (ev?.target.value !== "") {
       polyBtn.disabled = monoBtn.disabled = true;
       confirmSelectedConfigBtn.disabled = false;
+      deleteSelectedConfigBtn.disabled = false;
     } else {
       polyBtn.disabled = monoBtn.disabled = false;
       confirmSelectedConfigBtn.disabled = true;
+      deleteSelectedConfigBtn.disabled = true;
     }
   }
 
-  protected confirmSelectedConfig() {
-    const configOptions = this.configOptions.nativeElement;
-    const fileNameElem = configOptions[configOptions["value"]];
-    const fileName = fileNameElem.textContent;
+  protected loadSelectedConfig() {
+    const fileName = this.fileName();
     this.applySettingsFromFile(fileName);
   }
+
+  protected confirmDelete() {
+    this._confirmDelete = true;
+  }
+
+  protected fileName() {
+    const configOptions = this.configOptions.nativeElement;
+    // @ts-ignore
+    const fileNameElem = configOptions[configOptions.value];
+    return fileNameElem.textContent;
+  }
+
+  protected delete() {
+    const fileName = this.fileName();
+    this.rest.deleteConfig(fileName).subscribe({
+      next: () => {
+      },
+      complete: () => {
+        this.reset();
+      },
+      error: (e) => {
+        console.error(e.message);
+        this.reset();
+      },
+    });
+  }
+
   protected synthType($event: string) {
     const sub = timer(100).subscribe(() => {
       sub.unsubscribe();
@@ -91,7 +125,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (e) => console.log(e),
       complete: () => {
         console.log("complete: settings loaded");
-        if(settings.numberOfOscillators === 1)
+        if (settings.numberOfOscillators === 1)
           this.router.navigate(['synth', 'mono', fileName]).then();
         else if (settings.numberOfOscillators > 1)
           this.router.navigate(['synth', 'poly', fileName]).then();
@@ -100,18 +134,20 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.getConfigFileList();
+    this.reset();
   }
 
   ngAfterViewInit(): void {
-   const configOptions = this.configOptions.nativeElement;
-   configOptions.onchange = ev => this.configOptionChange(ev);
-    const confirmSelectedConfigBtn = this.confirmSelectedConfigBtn.nativeElement;
-    confirmSelectedConfigBtn.disabled = true;
+    const configOptions = this.configOptions.nativeElement;
+    configOptions.onchange = ev => this.configOptionChange(ev);
+    const confirmSelectedConfigBtn = this.loadSelectedConfigBtn.nativeElement;
+    const deleteSelectedConfigBtn = this.deleteSelectedConfigBtn.nativeElement;
+    deleteSelectedConfigBtn.disabled = confirmSelectedConfigBtn.disabled = true;
   }
 
   ngOnDestroy(): void {
     const configOptions = this.configOptions.nativeElement;
     configOptions.onchange = null;
   }
+
 }
