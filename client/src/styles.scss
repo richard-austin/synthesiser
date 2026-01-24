@@ -352,5 +352,22 @@ button:disabled {
   -0.1em -0.2em 0 #ffffff7f inset;
 }
 
+@mixin status-message {
+  text-align: center;
+  padding: 3px;
+  margin: 10px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+div.success {
+  @include status-message;
+  background-color: lightgreen;
+}
+
+div.failed {
+  @include status-message;
+  background-color: #f87b7b;
+}
+
 
 

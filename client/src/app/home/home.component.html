@@ -22,10 +22,15 @@
     } @else if (!_confirmDelete){
       <div class="rename">
         <label for="newName">New name</label>
-        <input id="newName" [(ngModel)]="newName">
+        <input id="newName" [(ngModel)]="newName" autocomplete="off" placeholder="new config file name">
       </div>
       <button [disabled]="!configFileNameRegex.test(newName)" (click)="commitRename()">Confirm rename</button>
       <button (click)="cancel()">Cancel</button>
+    }
+    @if(successMessage !== "") {
+      <div class="success" (click)="successMessage=''">{{successMessage}}</div>
+    } @else if(errorMessage !== "") {
+      <div class="failed" (click)="errorMessage=''">{{errorMessage}}</div>
     }
   </div>
 </div>

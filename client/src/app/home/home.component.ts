@@ -39,6 +39,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   protected _confirmRename: boolean = false;
   protected newName: string = "";
   protected readonly configFileNameRegex =GeneralComponent._configFileNameRegex;
+  protected successMessage: string = "";
+  protected errorMessage: string = "";
 
   constructor(private cdr: ChangeDetectorRef, private rest: RestfulApiService, private router: Router) {
   }
@@ -56,9 +58,11 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         this.configFileList = v
         this.selectedConfig = '';
         },
-      error: (e) => console.log(e),
+      error: (e) => this.errorMessage = e,
       complete: () => {
         this._confirmDelete = false;
+        if(this.configOptions && this.configOptions.nativeElement)
+          this.configOptions.nativeElement.value = '';
         this.cdr.detectChanges();
       }
     });
@@ -67,21 +71,14 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   private configOptionChange(ev: Event) {
     const polyBtn = this.polyBtn.nativeElement;
     const monoBtn = this.monoBtn.nativeElement;
-    const confirmSelectedConfigBtn = this.loadSelectedConfigBtn.nativeElement;
-    const deleteSelectedConfigBtn = this.deleteSelectedConfigBtn.nativeElement;
-    const renameSelectedConfigBtn = this.renameSelectedConfigBtn.nativeElement;
 
     // @ts-ignore
     if (ev?.target.value !== "") {
       polyBtn.disabled = monoBtn.disabled = true;
-      confirmSelectedConfigBtn.disabled = false;
-      deleteSelectedConfigBtn.disabled = false;
-      renameSelectedConfigBtn.disabled = false;
+      this.disableButtons(false);
     } else {
       polyBtn.disabled = monoBtn.disabled = false;
-      confirmSelectedConfigBtn.disabled = true;
-      deleteSelectedConfigBtn.disabled = true;
-      renameSelectedConfigBtn.disabled = true;
+      this.disableButtons();
     }
   }
 
@@ -103,13 +100,17 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   protected commitRename() {
       this.rest.renameConfigFile(this.fileName(), this.newName).subscribe({
-        next: (v:any) => {},
+        next: (v:any) => {
+          this.successMessage = v.message;
+        },
         complete: () => {
           this.reset();
+          this.cancel();
         },
         error: (e:any) => {
-          console.log(e);
+          this.errorMessage = e.message;
           this.reset();
+          this.cancel();
         }
       })
   }
@@ -117,6 +118,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   protected cancel() {
     this._confirmRename = this._confirmDelete = false;
     const selector = this.configOptions.nativeElement;
+    selector.value = '';
+    this.disableButtons();
     selector.disabled = false;
   }
 
@@ -130,14 +133,16 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   protected delete() {
     const fileName = this.fileName();
     this.rest.deleteConfig(fileName).subscribe({
-      next: () => {
+      next: (v: any) => {
+        this.successMessage = v.message;
       },
       complete: () => {
         this.reset();
+        this.cancel();
       },
       error: (e) => {
-        console.error(e.message);
-        this.reset();
+        this.errorMessage = e.message;
+        this.reset();this.cancel();
       },
     });
   }
@@ -166,6 +171,16 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     });
   }
+  private disableButtons(disable: boolean=true) {
+    // Use the timer to ensure status is correctly set after buttons are redrawn on @if changed state
+    const sub = timer(10).subscribe(() => {
+      sub.unsubscribe();
+      const confirmSelectedConfigBtn = this.loadSelectedConfigBtn.nativeElement;
+      const deleteSelectedConfigBtn = this.deleteSelectedConfigBtn.nativeElement;
+      const renameSelectedConfigBtn = this.renameSelectedConfigBtn.nativeElement;
+      deleteSelectedConfigBtn.disabled =  renameSelectedConfigBtn.disabled = confirmSelectedConfigBtn.disabled = disable;
+    });
+  }
 
   ngOnInit() {
     this.reset();
@@ -174,10 +189,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     const configOptions = this.configOptions.nativeElement;
     configOptions.onchange = ev => this.configOptionChange(ev);
-    const confirmSelectedConfigBtn = this.loadSelectedConfigBtn.nativeElement;
-    const deleteSelectedConfigBtn = this.deleteSelectedConfigBtn.nativeElement;
-    const renameSelectedConfigBtn = this.renameSelectedConfigBtn.nativeElement;
-    deleteSelectedConfigBtn.disabled =  renameSelectedConfigBtn.disabled = confirmSelectedConfigBtn.disabled = true;
+    this.disableButtons();
   }
 
   ngOnDestroy(): void {
