@@ -100,6 +100,9 @@ class SynthController {
         try {
             def oldFile = new File(Path.of(configFileDir.toString(), cmd.oldName+".json").toString())
             def newFile = new File(Path.of(configFileDir.toString(), cmd.newName+".json").toString())
+            if(newFile.exists())
+                throw new Exception("File "+cmd.newName+" already exists")
+
             boolean moved = oldFile.renameTo(newFile)
             if(!moved)
                 throw new Exception("Could not rename file "+cmd.oldName+" to "+cmd.newName)

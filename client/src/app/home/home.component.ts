@@ -108,7 +108,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
           this.cancel();
         },
         error: (e:any) => {
-          this.errorMessage = e.message;
+          this.errorMessage = e.error.message;
           this.reset();
           this.cancel();
         }
@@ -141,7 +141,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
         this.cancel();
       },
       error: (e) => {
-        this.errorMessage = e.message;
+        this.errorMessage = e.error.message;
         this.reset();this.cancel();
       },
     });
