@@ -11,13 +11,21 @@
         <option [value]="idx+1">{{fileName}}</option>
       }
     </select>
-    @if(!_confirmDelete) {
+    @if(!_confirmDelete && !_confirmRename) {
       <button class="load-config" #loadSelectedConfigBtn (click)="loadSelectedConfig()">Load Selected Configuration</button>
       <button class="delete-config" #deleteSelectedConfigBtn (click)="confirmDelete()">Delete Selected Configuration</button>
-    } @else {
+      <button class="rename-config" #renameSelectedConfigBtn (click)="confirmRename()">Rename Selected Configration</button>
+    } @else if (!_confirmRename) {
       Delete {{fileName()}}, are you sure?
-      <button class="delete-config" #confirmDeleteSelectedConfigBtn (click)="delete()">Delete Selected Configuration</button>
-      <button (click)="_confirmDelete=false">Cancel</button>
+      <button class="delete-config" (click)="delete()">Delete</button>
+      <button (click)="cancel()">Cancel</button>
+    } @else if (!_confirmDelete){
+      <div class="rename">
+        <label for="newName">New name</label>
+        <input id="newName" [(ngModel)]="newName">
+      </div>
+      <button [disabled]="!configFileNameRegex.test(newName)" (click)="commitRename()">Confirm rename</button>
+      <button (click)="cancel()">Cancel</button>
     }
   </div>
 </div>

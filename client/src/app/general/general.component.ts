@@ -42,6 +42,8 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   protected errorMessage: string = "";
   protected failed: boolean = false;
   protected success: boolean = false;
+  public static readonly _configFileNameRegex = /^[a-zA-Z]\w{0,14}( ?\w){1,14}$/
+  protected readonly configFileNameRegex = GeneralComponent._configFileNameRegex;
 
   @Output() saveConfig: EventEmitter<string> = new EventEmitter();
 
@@ -160,6 +162,11 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
       this.addConfigMode = this.showConfigEditor = false;
       this.cdr.detectChanges();
     }
+  }
+  cancel() {
+    this.success = this.failed = false;
+    this._confirmAddConfig = this.addConfigMode = this.showConfigEditor = false;
+
   }
 
   ngAfterViewInit(): void {

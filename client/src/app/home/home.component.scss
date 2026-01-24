@@ -37,3 +37,22 @@ button.delete-config {
   background: #f35e5e;
   width: 200px;
 }
+
+button.rename-config {
+  background: #d39e4f;
+  width: 200px;
+}
+
+div.rename {
+  width: 300px;
+  margin: auto;
+  > label {
+    width: fit-content;
+    margin-right: 5px;
+  }
+  > input {
+    margin-left: 0;
+  }
+  display: flex;
+  justify-content: center;
+}

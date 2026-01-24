@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import synthesiser.server.command.DeleteConfigCommand
 import synthesiser.server.command.GetSettingsCommand
+import synthesiser.server.command.RenameConfigFileCommand
 import synthesiser.server.command.SaveConfigCommand
 import tools.jackson.databind.ObjectMapper
 import tools.jackson.databind.ObjectWriter
@@ -85,9 +86,25 @@ class SynthController {
         try {
             def configFile = new File(Path.of(configFileDir.toString(), cmd.fileName+".json").toString())
             if(configFile.delete())
-                return ResponseEntity.ok().body("File "+cmd.fileName+" deleted")
+                return ResponseEntity.ok().body([message: "File "+cmd.fileName+" deleted"])
             else
-                return ResponseEntity.badRequest().body("Could not delete "+cmd.fileName)
+                throw new Exception("Could not delete "+cmd.fileName)
+        }
+        catch(Exception ex) {
+            return ResponseEntity.internalServerError().body([exception: ex.getClass(), message: ex.getMessage()])
+        }
+    }
+
+    @PostMapping('renameConfigFile')
+    def renameConfigFile(@RequestBody RenameConfigFileCommand cmd) {
+        try {
+            def oldFile = new File(Path.of(configFileDir.toString(), cmd.oldName+".json").toString())
+            def newFile = new File(Path.of(configFileDir.toString(), cmd.newName+".json").toString())
+            boolean moved = oldFile.renameTo(newFile)
+            if(!moved)
+                throw new Exception("Could not rename file "+cmd.oldName+" to "+cmd.newName)
+
+            return ResponseEntity.ok().body([message: "Config file "+cmd.oldName+" renamed to "+cmd.newName])
         }
         catch(Exception ex) {
             return ResponseEntity.internalServerError().body([exception: ex.getClass(), message: ex.getMessage()])

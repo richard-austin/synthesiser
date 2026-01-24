@@ -26,8 +26,8 @@
                              [ngModelOptions]="{standalone: true}" [(ngModel)]="configFileName"/>
                     </div>
                     <div>
-                      <button (click)="addConfigMode=showConfigEditor=false">Cancel</button>
-                      <button (click)="confirmAddConfig()" [disabled]="configFileName===''">Confirm</button>
+                      <button (click)="cancel()">Cancel</button>
+                      <button (click)="confirmAddConfig()" [disabled]="!configFileNameRegex.test(configFileName)">Confirm</button>
                     </div>
                   </form>
                 } @else if (_confirmAddConfig) {
@@ -35,7 +35,7 @@
                     Save configuration as {{ configFileName }}, Are you sure?
                   </h4>
                   <div>
-                    <button (click)="_confirmAddConfig=false">Cancel</button>
+                    <button (click)="cancel()">Cancel</button>
                     <button (click)="addConfiguration(configFileName)">Confirm</button>
                   </div>
                 }

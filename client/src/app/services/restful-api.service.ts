@@ -34,4 +34,9 @@ export class RestfulApiService {
     const params = {fileName: fileName};
     return this.http.post<{}>('/syn/deleteConfig', JSON.stringify(params), this.httpJsonOptions);
   }
+
+  renameConfigFile(oldName: any, newName: string): Observable<{}> {
+    const params = {oldName: oldName, newName: newName};
+    return this.http.post<{}>('syn/renameConfigFile', JSON.stringify(params), this.httpJsonOptions);
+  }
 }

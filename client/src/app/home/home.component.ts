@@ -12,6 +12,7 @@ import {RestfulApiService} from '../services/restful-api.service';
 import {timer} from 'rxjs';
 import {SynthSettings} from '../settings/synth-settings';
 import {Router} from '@angular/router';
+import {GeneralComponent} from '../general/general.component';
 
 @Component({
   selector: 'app-options',
@@ -30,10 +31,14 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('monoBtn') monoBtn!: ElementRef<HTMLButtonElement>;
   @ViewChild('loadSelectedConfigBtn') loadSelectedConfigBtn!: ElementRef<HTMLButtonElement>;
   @ViewChild('deleteSelectedConfigBtn') deleteSelectedConfigBtn!: ElementRef<HTMLButtonElement>;
+  @ViewChild('renameSelectedConfigBtn') renameSelectedConfigBtn!: ElementRef<HTMLButtonElement>;
 
   protected selectedConfig: string = "";
   protected configFileList: string[] = [];
   protected _confirmDelete: boolean = false;
+  protected _confirmRename: boolean = false;
+  protected newName: string = "";
+  protected readonly configFileNameRegex =GeneralComponent._configFileNameRegex;
 
   constructor(private cdr: ChangeDetectorRef, private rest: RestfulApiService, private router: Router) {
   }
@@ -64,16 +69,19 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     const monoBtn = this.monoBtn.nativeElement;
     const confirmSelectedConfigBtn = this.loadSelectedConfigBtn.nativeElement;
     const deleteSelectedConfigBtn = this.deleteSelectedConfigBtn.nativeElement;
+    const renameSelectedConfigBtn = this.renameSelectedConfigBtn.nativeElement;
 
     // @ts-ignore
     if (ev?.target.value !== "") {
       polyBtn.disabled = monoBtn.disabled = true;
       confirmSelectedConfigBtn.disabled = false;
       deleteSelectedConfigBtn.disabled = false;
+      renameSelectedConfigBtn.disabled = false;
     } else {
       polyBtn.disabled = monoBtn.disabled = false;
       confirmSelectedConfigBtn.disabled = true;
       deleteSelectedConfigBtn.disabled = true;
+      renameSelectedConfigBtn.disabled = true;
     }
   }
 
@@ -84,6 +92,32 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   protected confirmDelete() {
     this._confirmDelete = true;
+  }
+
+
+  protected confirmRename() {
+    this._confirmRename = true;
+    const selector = this.configOptions.nativeElement;
+    selector.disabled = true;
+  }
+
+  protected commitRename() {
+      this.rest.renameConfigFile(this.fileName(), this.newName).subscribe({
+        next: (v:any) => {},
+        complete: () => {
+          this.reset();
+        },
+        error: (e:any) => {
+          console.log(e);
+          this.reset();
+        }
+      })
+  }
+
+  protected cancel() {
+    this._confirmRename = this._confirmDelete = false;
+    const selector = this.configOptions.nativeElement;
+    selector.disabled = false;
   }
 
   protected fileName() {
@@ -142,12 +176,12 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     configOptions.onchange = ev => this.configOptionChange(ev);
     const confirmSelectedConfigBtn = this.loadSelectedConfigBtn.nativeElement;
     const deleteSelectedConfigBtn = this.deleteSelectedConfigBtn.nativeElement;
-    deleteSelectedConfigBtn.disabled = confirmSelectedConfigBtn.disabled = true;
+    const renameSelectedConfigBtn = this.renameSelectedConfigBtn.nativeElement;
+    deleteSelectedConfigBtn.disabled =  renameSelectedConfigBtn.disabled = confirmSelectedConfigBtn.disabled = true;
   }
 
   ngOnDestroy(): void {
     const configOptions = this.configOptions.nativeElement;
     configOptions.onchange = null;
   }
-
 }
