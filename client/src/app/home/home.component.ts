@@ -10,7 +10,6 @@ import {
 import {FormsModule} from '@angular/forms';
 import {RestfulApiService} from '../services/restful-api.service';
 import {timer} from 'rxjs';
-import {SynthSettings} from '../settings/synth-settings';
 import {Router} from '@angular/router';
 import {GeneralComponent} from '../general/general.component';
 
