@@ -66,11 +66,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   }
 
   applySettings(settings: NoiseSettings | null) {
-    let cookieSuffix  = '';
-    if(this.numberOfOscillators === 1)
-      cookieSuffix = 'm';
-
-    const cookieName = 'noise'+cookieSuffix;
+     const cookieName = 'noise';
     if(!settings) {
       settings = new NoiseSettings();
       const savedSettings = this.cookies.getSettings(cookieName, settings);
@@ -214,9 +210,6 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   }
 
   keyDown(keyIndex: number, velocity: number) {
-    if(this.numberOfOscillators === 1)
-      keyIndex = 0;
-
     if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
       let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
       if(this.proxySettings.output === noiseOutputs.speaker)
@@ -228,9 +221,6 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   }
 
   keyUp(keyIndex: number) {
-    if(this.numberOfOscillators === 1)
-      keyIndex = 0;
-
     if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
       let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
       if(this.proxySettings.output === noiseOutputs.speaker)

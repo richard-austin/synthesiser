@@ -1,9 +1,8 @@
 <div #html
      class="options">
   <div class="metallic-button">
-    <h2>Select Synthesiser Type</h2>
-    <button #polyBtn value="poly" (click)="synthTypeChange($event)">Polyphonic</button>
-    <button #monoBtn value="mono" (click)="synthTypeChange($event)">Monophonic</button>
+    <h2>Select Synthesiser</h2>
+    <button #polyBtn (click)="synthTypeChange($event)">Last Config</button>
     <h2>Select saved configuration</h2>
     <select #configOptions [(ngModel)]="selectedConfig">
       <option value="">Select configuration or Polyphonic or Mono synth</option>

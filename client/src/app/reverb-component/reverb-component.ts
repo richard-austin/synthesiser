@@ -54,10 +54,7 @@ export class ReverbComponent implements AfterViewInit, OnDestroy {
   }
 
   applySettings(settings: ReverbSettings | null) {
-    let cookieSuffix  = '';
-    if(this.numberOfOscillators === 1)
-      cookieSuffix = 'm';
-    const cookieName = 'reverb'+cookieSuffix;
+    const cookieName = 'reverb';
 
     if(!settings) {
       settings = new ReverbSettings();

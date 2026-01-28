@@ -86,11 +86,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   applySettings(settings: OscillatorSettings | null) {
-    let cookieSuffix = '';
-    if (this.numberOfOscillators === 1)
-      cookieSuffix = 'm';
-
-    const cookieName = (this.secondary ? 'oscillator2' : 'oscillator') + cookieSuffix;
+    const cookieName = (this.secondary ? 'oscillator2' : 'oscillator');
     if (!settings) {  // If no settings supplied, create default and check if previously saved in cookie
       settings = new OscillatorSettings();
       const savedSettings = this.cookies.getSettings(cookieName, settings);
@@ -118,8 +114,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.deTune.setValue(this.proxySettings.deTune);
     this.gain.setValue(this.proxySettings.gain);
 
-    if (this.numberOfOscillators === 1)
-      this.portamento.setValue(this.proxySettings.portamento);
+    this.portamento.setValue(this.proxySettings.portamento);
 
     this.attack.setValue(this.proxySettings.adsr.attackTime);
     this.decay.setValue(this.proxySettings.adsr.decayTime);
@@ -187,7 +182,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
-    if (useFreqBendEnvelope && this.numberOfOscillators === 1)
+    if (useFreqBendEnvelope)
       this.portamento.setValue(0); // Cannot use portamento with frequency envelope
 
     this.proxySettings.useFrequencyEnvelope = useFreqBendEnvelope ? onOff.on : onOff.off;
@@ -289,40 +284,37 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  downKeys: Set<number> = new Set();
+  keysDown: number[] = [];
 
   keyDown(keyIndex: number, velocity: number) {
+    const lastKey = this.keysDown.length > 0 ? this.keysDown[this.keysDown.length - 1] : -1;
+    if(!this.keysDown.includes(keyIndex)) {
+      this.keysDown.push(keyIndex);
+    }
+
+    console.log("START keysDown.length = ", this.keysDown.length);
     if (!this.velocitySensitive)
       velocity = 0x7f;
 
-    // Monophonic mode
-    if (this.numberOfOscillators === 1) {
-      const freq = this.keyToFrequency(keyIndex);
-      this.oscillators[0].freq = freq;
-      if (!this.downKeys.has(keyIndex))
-        this.downKeys.add(keyIndex);
-      // this.oscillators[0].oscillators[0].frequency.cancelAndHoldAtTime(0);
-      this.oscillators[0].oscillator.frequency.setValueAtTime(this.oscillators[0].oscillator.frequency.value, 0);
-      this.oscillators[0].oscillator.frequency.exponentialRampToValueAtTime(freq, this.audioCtx.currentTime + this.proxySettings.portamento);
-      this.oscillators[0].keyDown(velocity);
+    if (this.proxySettings.portamento > 0 && lastKey > -1) {
+      this.oscillators[keyIndex].oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
+      this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(lastKey);
+      this.oscillators[keyIndex].oscillator.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
     }
-    // Polyphonic mode
-    else if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
-     // console.log("fx = " + this.oscillators[keyIndex].oscillator.frequency.value);
+    if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
+      // console.log("fx = " + this.oscillators[keyIndex].oscillator.frequency.value);
       this.oscillators[keyIndex].keyDown(velocity);
     }
   }
 
   keyUp(keyIndex: number) {
-    // Monophonic mode
-    if (this.numberOfOscillators === 1) {
-      if (this.downKeys.has(keyIndex))
-        this.downKeys.delete(keyIndex);
-      if (this.downKeys.size === 0)
-        this.oscillators[0].keyUp();
+    this.oscillators[keyIndex].releaseFinished = () => {
+      const idx = this.keysDown.indexOf(keyIndex);
+      if (idx > -1)
+        this.keysDown.splice(idx, 1);
+      console.log("keysDown.length = ", this.keysDown.length);
     }
-    // Polyphonic mode
-    else if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
+    if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
       this.oscillators[keyIndex].keyUp();
     }
   }

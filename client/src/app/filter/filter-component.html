@@ -32,16 +32,13 @@
                              [factor]="2400"
                              (setLevel)="setDetune($event)">
           </app-level-control>
-          @if (numberOfFilters === 1) {
-            <!-- Monophonic mode -->
-               <app-level-control #portamento
-                                 label="Glide" [style]="dialStyle.magenta"
-                                 [divisions]="10"
-                                 [calAngle]="300"
-                                 [radius]="50"
-                                 [factor]="1.5"
-                                 (setLevel)="setPortamento($event)"></app-level-control>
-          }
+          <app-level-control #portamento
+                             label="Glide" [style]="dialStyle.magenta"
+                             [divisions]="10"
+                             [calAngle]="300"
+                             [radius]="50"
+                             [factor]="1.5"
+                             (setLevel)="setPortamento($event)"></app-level-control>
         </div>
         <h2>Filter Type</h2>
         <div style="height: 3px;"></div>
@@ -89,7 +86,7 @@
           <label><input type="radio" name="waveform" value="triangle"><span>Triangle</span></label>
         </form>
         <form #modSettingsForm>
-         <label><input type="radio" name="lfo" value="frequency"><span>Frequency</span></label>
+          <label><input type="radio" name="lfo" value="frequency"><span>Frequency</span></label>
           <label><input type="radio" name="lfo" value="off" checked><span>&nbsp;Off&nbsp;</span></label>
         </form>
       </div>

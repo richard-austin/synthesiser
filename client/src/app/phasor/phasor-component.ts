@@ -70,10 +70,7 @@ export class PhasorComponent implements AfterViewInit, OnDestroy {
   }
 
   applySettings(settings:PhasorSettings | null) {
-    let cookieSuffix  = '';
-    if(this.numberOfOscillators === 1)
-      cookieSuffix = 'm';
-    const cookieName = 'phasor'+cookieSuffix;
+    const cookieName = 'phasor';
 
     if(!settings) {
       settings = new PhasorSettings();

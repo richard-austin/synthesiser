@@ -62,8 +62,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChild('general') masterVolume!: GeneralComponent;
 
   constructor(private route: ActivatedRoute, private router: Router, private rest: RestfulApiService) {
-    const type = this.route.snapshot.paramMap.get('type');
-    this.numberOfOscillators = type === 'poly' ? 0x7f : 1;
+    this.numberOfOscillators = 0x7f;
     const fileName = this.route.snapshot.params['fileName'];
     if (fileName) {
       this.configFileName = fileName;

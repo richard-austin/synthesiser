@@ -43,7 +43,7 @@ export abstract class GainEnvelopeBase {
   }
 
   public static exponentiateGain(gain: number) {
-    return (Math.pow(10, gain)-1)/(Math.pow(10, 1)-1);
+    return (Math.pow(10, gain) - 1) / (Math.pow(10, 1) - 1);
   }
 
   setAmplitudeEnvelope(env: ADSRValues) {
@@ -80,46 +80,60 @@ export abstract class GainEnvelopeBase {
   }
 
   private _minRampTime: number = 0.03125;
-  sub!:Subscription;
+  sub!: Subscription;
   velocity!: number;
 
-  attack(velocity: number, frequency: number=2000) {
+  attack(velocity: number, frequency: number = 2000) {
+    if (this.releaseFinishedSub)
+      this.releaseFinishedSub.unsubscribe();
+
     this.minRampTime(frequency);
     const ctx = this.audioCtx;
     if (this.useAmplitudeEnvelope) {
-      this.velocity = Math.pow(velocity/127, .75);
+      this.velocity = Math.pow(velocity / 127, .75);
       const setLevel = this.setLevel;
       this.gain.gain.cancelAndHoldAtTime(ctx.currentTime);
       this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * setLevel * this.velocity), ctx.currentTime + this.env.attackTime + this._minRampTime); // Ramp to attack level
       this.sub = timer((this.env.attackTime + this._minRampTime) * 1000).subscribe(() => {
-        this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(this.env.sustainLevel * setLevel * this.velocity), ctx.currentTime + this.env.decayTime+this._minRampTime);  // Ramp to sustain level
+        this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(this.env.sustainLevel * setLevel * this.velocity), ctx.currentTime + this.env.decayTime + this._minRampTime);  // Ramp to sustain level
       });
     }
   }
 
-  release(frequency: number=2000) {
+  private releaseFinishedSub: Subscription | null = null;
+  public releaseFinished: (() => void) | null = null;
+
+  release(frequency: number = 2000) {
     this.minRampTime(frequency);
     if (this.useAmplitudeEnvelope) {
       this.sub?.unsubscribe();
       this.gain.gain.cancelAndHoldAtTime(0);
       this.gain.gain.setValueAtTime(this.gain.gain.value, this.audioCtx.currentTime);  // Prevent clicks
-      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * this.setLevel), this.audioCtx.currentTime + this.env.releaseTime+this._minRampTime);  // Ramp to release level
+      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * this.setLevel), this.audioCtx.currentTime + this.env.releaseTime + this._minRampTime);  // Ramp to release level
+    }
+    if(this.releaseFinished) {
+      this.releaseFinishedSub = timer((this._minRampTime + (this.useAmplitudeEnvelope ? this.env.releaseTime : 0)) * 1000 + 0.1).subscribe(() => {
+        this.releaseFinishedSub?.unsubscribe();
+        this.releaseFinishedSub = null;
+        // @ts-ignore
+        this.releaseFinished();
+      });
     }
   }
 
   // Calculate the minimum envelope time (2 cycles of the relevant frequency) to prevent clicks with fast attack/decay/release
   private minRampTime(frequency: number) {
-    this._minRampTime = 2/frequency;
+    this._minRampTime = 2 / frequency;
   }
-  connect(arg: AudioNode| AudioParam)
-  {
-    if(arg instanceof AudioNode)
+
+  connect(arg: AudioNode | AudioParam) {
+    if (arg instanceof AudioNode)
       this.amplitudeMod.connect(arg);
     else if (arg instanceof AudioParam)
       this.amplitudeMod.connect(arg);
   }
 
   disconnect() {
-      this.amplitudeMod.disconnect();
+    this.amplitudeMod.disconnect();
   }
 }

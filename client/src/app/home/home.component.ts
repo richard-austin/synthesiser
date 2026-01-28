@@ -28,7 +28,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('html') html!: ElementRef<HTMLDivElement>;
   @ViewChild('configOptions') configOptions!: ElementRef<HTMLSelectElement>;
   @ViewChild('polyBtn') polyBtn!: ElementRef<HTMLButtonElement>;
-  @ViewChild('monoBtn') monoBtn!: ElementRef<HTMLButtonElement>;
   @ViewChild('loadSelectedConfigBtn') loadSelectedConfigBtn!: ElementRef<HTMLButtonElement>;
   @ViewChild('deleteSelectedConfigBtn') deleteSelectedConfigBtn!: ElementRef<HTMLButtonElement>;
   @ViewChild('renameSelectedConfigBtn') renameSelectedConfigBtn!: ElementRef<HTMLButtonElement>;
@@ -70,14 +69,13 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private configOptionChange(ev: Event) {
     const polyBtn = this.polyBtn.nativeElement;
-    const monoBtn = this.monoBtn.nativeElement;
 
     // @ts-ignore
     if (ev?.target.value !== "") {
-      polyBtn.disabled = monoBtn.disabled = true;
+      polyBtn.disabled = true;
       this.disableButtons(false);
     } else {
-      polyBtn.disabled = monoBtn.disabled = false;
+      polyBtn.disabled = false;
       this.disableButtons();
     }
   }
@@ -150,24 +148,17 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   protected synthType($event: string) {
     const sub = timer(100).subscribe(() => {
       sub.unsubscribe();
-      if ($event === 'mono')
-        this.router.navigate(['synth', 'mono']).then();
-      else if ($event === 'poly')
-        this.router.navigate(['synth', 'poly']).then();
+      this.router.navigate(['synth']).then();
     });
   }
 
   protected applySettingsFromFile(fileName: string) {
-    let settings: SynthSettings;
     this.rest.getSettings(fileName).subscribe({
-      next: (v) => settings = v,
+      next: (v) => {},
       error: (e) => console.log(e),
       complete: () => {
         console.log("complete: settings loaded");
-        if (settings.numberOfOscillators === 1)
-          this.router.navigate(['synth', 'mono', fileName]).then();
-        else if (settings.numberOfOscillators > 1)
-          this.router.navigate(['synth', 'poly', fileName]).then();
+        this.router.navigate(['synth', fileName]).then();
       }
     });
   }

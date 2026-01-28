@@ -78,11 +78,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   applySettings(settings: FilterSettings | null) {
-    let cookieSuffix  = '';
-    if(this.numberOfFilters === 1)
-      cookieSuffix = 'm';
-
-    const cookieName = 'filter'+cookieSuffix;
+    const cookieName = 'filter';
     if(!settings) {
       settings = new FilterSettings();
       const savedSettings = this.cookies.getSettings(cookieName, settings);
@@ -110,8 +106,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     this.deTune.setValue(this.proxySettings.deTune);
     this.gain.setValue(this.proxySettings.gain);
 
-    if(this.numberOfFilters === 1)
-      this.portamento.setValue(this.proxySettings.portamento);
+    this.portamento.setValue(this.proxySettings.portamento);
 
     this.qfactor.setValue(this.proxySettings.qFactor);
 
@@ -169,7 +164,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
-    if(useFreqBendEnvelope && this.numberOfFilters === 1)
+    if(useFreqBendEnvelope)
       this.portamento.setValue(0); // Cannot use portamento with frequency envelope
 
     this.proxySettings.useFrequencyEnvelope = useFreqBendEnvelope ? onOff.on : onOff.off;
@@ -241,40 +236,35 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  downKeys: Set<number> = new Set();
+  keysDown: number[] = [];
+
   keyDown(keyIndex: number, velocity: number) {
-    // if(!this.velocitySensitive)
-    //   velocity = 0x7f;
-    //
-    // Monophonic mode
-    if(this.numberOfFilters === 1) {
-      const freq = this.keyToFrequency(keyIndex);
-      this.filters[0].freq = freq;
-      if (!this.downKeys.has(keyIndex))
-        this.downKeys.add(keyIndex);
-      // this.oscillators[0].oscillators[0].frequency.cancelAndHoldAtTime(0);
-      this.filters[0].filter.frequency.setValueAtTime(this.filters[0].filter.frequency.value, 0);
-      this.filters[0].filter.frequency.exponentialRampToValueAtTime(freq, this.audioCtx.currentTime + this.proxySettings.portamento);
-      this.filters[0].filter2.frequency.setValueAtTime(this.filters[0].filter2.frequency.value, 0);
-      this.filters[0].filter2.frequency.exponentialRampToValueAtTime(freq, this.audioCtx.currentTime + this.proxySettings.portamento);
-      this.filters[0].keyDown(velocity);
+    const lastKey = this.keysDown.length > 0 ? this.keysDown[this.keysDown.length - 1] : -1;
+    if(!this.keysDown.includes(keyIndex)) {
+      this.keysDown.push(keyIndex);
     }
-    // Polyphonic mode
-    else if (keyIndex >= 0 && keyIndex < this.numberOfFilters) {
+    if (this.proxySettings.portamento > 0 && lastKey > -1) {
+      this.filters[keyIndex].filter.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
+      this.filters[keyIndex].filter.frequency.value = this.keyToFrequency(lastKey);
+      this.filters[keyIndex].filter.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
+      this.filters[keyIndex].filter2.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
+      this.filters[keyIndex].filter2.frequency.value = this.keyToFrequency(lastKey);
+      this.filters[keyIndex].filter2.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
+    }
+
+    if (keyIndex >= 0 && keyIndex < this.numberOfFilters) {
       this.filters[keyIndex].keyDown(velocity);
     }
   }
 
   keyUp(keyIndex: number) {
-    // Monophonic mode
-    if(this.numberOfFilters === 1) {
-      if (this.downKeys.has(keyIndex))
-        this.downKeys.delete(keyIndex);
-      if (this.downKeys.size === 0)
-        this.filters[0].keyUp();
+    this.filters[keyIndex].releaseFinished = () => {
+      const idx = this.keysDown.indexOf(keyIndex);
+      if (idx > -1)
+        this.keysDown.splice(idx, 1);
     }
-    // Polyphonic mode
-    else if (keyIndex >= 0 && keyIndex < this.numberOfFilters) {
+
+    if (keyIndex >= 0 && keyIndex < this.numberOfFilters) {
       this.filters[keyIndex].keyUp();
     }
   }
