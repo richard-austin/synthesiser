@@ -32,13 +32,25 @@
                              [factor]="2400"
                              (setLevel)="setDetune($event)">
           </app-level-control>
-          <app-level-control #portamento
-                             label="Glide" [style]="dialStyle.magenta"
-                             [divisions]="10"
-                             [calAngle]="300"
-                             [radius]="50"
-                             [factor]="1.5"
-                             (setLevel)="setPortamento($event)"></app-level-control>
+          <div class="column">
+            <app-level-control #portamento
+                               label="Glide" [style]="dialStyle.magenta"
+                               [divisions]="10"
+                               [calAngle]="300"
+                               [radius]="50"
+                               [factor]="1.5"
+                               (setLevel)="setPortamento($event)"></app-level-control>
+            <select #portamentoType>
+              <option value="last">Last</option>
+              <option value="first">First</option>
+              <option value="lowest">Lowest</option>
+              <option value="highest">Highest</option>
+              <option value="plus12">+12</option>
+              <option value="plus24">+24</option>
+              <option value="minus12">-12</option>
+              <option value="minus24">-24</option>
+            </select>
+          </div>
         </div>
         <h2>Filter Type</h2>
         <div style="height: 3px;"></div>

@@ -10,6 +10,7 @@ import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {FilterSettings} from '../settings/filter';
 import {Cookies} from '../settings/cookies/cookies';
 import {Oscillator} from '../modules/oscillator';
+import {PortamentoType} from '../oscillator/oscillator.component';
 
 @Component({
   selector: 'app-filters',
@@ -49,6 +50,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   @ViewChild('freqRelease') freqRelease!: LevelControlComponent;
   @ViewChild('freqReleaseLevel') freqReleaseLevel!: LevelControlComponent;
   @ViewChild('portamento') portamento!: LevelControlComponent;
+  @ViewChild('portamentoType') portamentoType!: ElementRef<HTMLSelectElement>;
 
   @ViewChild('filterOutputToForm') filterOutputTo!: ElementRef<HTMLFormElement>;
 
@@ -73,17 +75,17 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   // Called after all synth components have been started
-  setOutputConnection () {
+  setOutputConnection() {
     SetRadioButtons.set(this.filterOutputTo, this.proxySettings.output);
   }
 
   applySettings(settings: FilterSettings | null) {
     const cookieName = 'filter';
-    if(!settings) {
+    if (!settings) {
       settings = new FilterSettings();
       const savedSettings = this.cookies.getSettings(cookieName, settings);
 
-      if(Object.keys(savedSettings).length > 0) {
+      if (Object.keys(savedSettings).length > 0) {
         // Use values from cookie
         settings = savedSettings as FilterSettings;
       }
@@ -124,7 +126,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     this.modLevel.setValue(this.proxySettings.modLevel);  // Set dial
 
     // Set up the buttons
- //   SetRadioButtons.set(this.filterOutputTo, this.settings.output);
+    //   SetRadioButtons.set(this.filterOutputTo, this.settings.output);
     SetRadioButtons.set(this.filterType, this.proxySettings.filterType);
     SetRadioButtons.set(this.freqEnveOnOff, this.proxySettings.useFrequencyEnvelope);
     SetRadioButtons.set(this.modSettingsForm, this.proxySettings.modType);
@@ -164,7 +166,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
-    if(useFreqBendEnvelope)
+    if (useFreqBendEnvelope)
       this.portamento.setValue(0); // Cannot use portamento with frequency envelope
 
     this.proxySettings.useFrequencyEnvelope = useFreqBendEnvelope ? onOff.on : onOff.off;
@@ -178,6 +180,10 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     for (let i = 0; i < this.numberOfFilters; ++i) {
       this.filters[i].setType(value);
     }
+  }
+
+  private setPortamentoType(value: PortamentoType) {
+    this.proxySettings.portamentoType = value as PortamentoType;
   }
 
   keyToFrequency(key: number) {
@@ -194,10 +200,10 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  connectToRingMod() : boolean {
+  connectToRingMod(): boolean {
     const ringMod = this.ringMod;
     let ok = false;
-    if(ringMod) {
+    if (ringMod) {
       ok = true;
       for (let i = 0; i < this.filters.length; i++) {
         this.filters[i].connect(ringMod.signalInput());
@@ -206,10 +212,10 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     return ok;
   }
 
-  connectToPhasor() : boolean {
+  connectToPhasor(): boolean {
     const phasor = this.phasor;
     let ok = false;
-    if(phasor) {
+    if (phasor) {
       ok = true;
       for (let i = 0; i < this.filters.length; i++) {
         this.filters[i].connect(phasor.input);
@@ -221,7 +227,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   connectToReverb(): boolean {
     const reverb = this.reverb;
     let ok = false;
-    if(reverb) {
+    if (reverb) {
       ok = true;
       for (let i = 0; i < this.filters.length; i++) {
         this.filters[i].connect(reverb.input);
@@ -240,15 +246,68 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   keyDown(keyIndex: number, velocity: number) {
     const lastKey = this.keysDown.length > 0 ? this.keysDown[this.keysDown.length - 1] : -1;
-    if(!this.keysDown.includes(keyIndex)) {
+    if (!this.keysDown.includes(keyIndex)) {
       this.keysDown.push(keyIndex);
     }
-    if (this.proxySettings.portamento > 0 && lastKey > -1) {
+    if (this.proxySettings.portamento > 0) {
       this.filters[keyIndex].filter.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
-      this.filters[keyIndex].filter.frequency.value = this.keyToFrequency(lastKey);
+      const proxySettings = this.proxySettings;
+      switch (proxySettings.portamentoType) {
+        case 'last':
+          if (lastKey !== -1) {
+            const freq = this.keyToFrequency(lastKey);
+            this.filters[keyIndex].filter.frequency.value = freq;
+            this.filters[keyIndex].filter2.frequency.value = freq;
+          }
+          break;
+        case 'first': {
+          const firstKey = this.keysDown[0];
+          const freq = this.keyToFrequency(firstKey);
+          this.filters[keyIndex].filter.frequency.value = freq;
+          this.filters[keyIndex].filter2.frequency.value = freq;
+          break;
+        }
+        case 'lowest':
+          const lowestKey = Math.min(...this.keysDown);
+          if (lowestKey !== -1) {
+            const freq = this.keyToFrequency(lowestKey);
+            this.filters[keyIndex].filter.frequency.value = freq;
+            this.filters[keyIndex].filter2.frequency.value = freq;
+          }
+          break;
+        case 'highest': {
+          const highestKey = Math.max(...this.keysDown);
+          const freq = this.keyToFrequency(highestKey);
+          this.filters[keyIndex].filter.frequency.value = freq;
+          this.filters[keyIndex].filter2.frequency.value = freq;
+          break;
+        }
+        case 'plus12': {
+          const freq = this.keyToFrequency(keyIndex) * 2;
+          this.filters[keyIndex].filter.frequency.value = freq;
+          this.filters[keyIndex].filter2.frequency.value = freq;
+          break;
+        }
+        case 'plus24': {
+          const freq = this.keyToFrequency(keyIndex) * 4;
+          this.filters[keyIndex].filter.frequency.value = freq;
+          this.filters[keyIndex].filter2.frequency.value = freq
+          break;
+        }
+        case 'minus12': {
+          const freq = this.keyToFrequency(keyIndex) / 2;
+          this.filters[keyIndex].filter.frequency.value = freq;
+          this.filters[keyIndex].filter2.frequency.value = freq;
+          break;
+        }
+        case 'minus24': {
+          const freq = this.keyToFrequency(keyIndex) / 4;
+          this.filters[keyIndex].filter.frequency.value = freq;
+          this.filters[keyIndex].filter2.frequency.value = freq;
+          break;
+        }
+      }
       this.filters[keyIndex].filter.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
-      this.filters[keyIndex].filter2.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
-      this.filters[keyIndex].filter2.frequency.value = this.keyToFrequency(lastKey);
       this.filters[keyIndex].filter2.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
     }
 
@@ -271,7 +330,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   protected setPortamento($event: number) {
     this.proxySettings.portamento = $event;
-    if($event > 0) {
+    if ($event > 0) {
       // Can't use frequency bend envelope with portamento
       this.proxySettings.useFrequencyEnvelope = onOff.off;
       SetRadioButtons.set(this.freqEnveOnOff, this.proxySettings.useFrequencyEnvelope);
@@ -280,7 +339,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   midiPitchBend(value: number) {
     for (let i = 0; i < this.filters.length; i++) {
-      this.filters[i].setDetune((value-0x40)*5+this.proxySettings.deTune);
+      this.filters[i].setDetune((value - 0x40) * 5 + this.proxySettings.deTune);
     }
   }
 
@@ -359,6 +418,13 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
         this.setFilterType(value as BiquadFilterType);
       });
 
+      const portamentoType = this.portamentoType.nativeElement;
+      portamentoType.addEventListener('change', ($event) => {
+        // @ts-ignore
+        const value = $event.target.value as PortamentoType
+        this.setPortamentoType(value as PortamentoType);
+      });
+
       const modSettingsForm = this.modSettingsForm.nativeElement;
       for (let j = 0; j < modSettingsForm.elements.length; ++j) {
         modSettingsForm.elements[j].addEventListener('change', ($event) => {
@@ -379,8 +445,9 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
       }
     }
   }
+
   ngOnDestroy(): void {
-    for(let i = 0; i < this.filters.length; i++) {
+    for (let i = 0; i < this.filters.length; i++) {
       // @ts-ignore
       this.filters[i] = undefined;
     }

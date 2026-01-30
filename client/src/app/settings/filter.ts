@@ -6,6 +6,7 @@ import {
   modWaveforms,
   onOff,
 } from '../enums/enums';
+import {PortamentoType} from '../oscillator/oscillator.component';
 
 export class FilterSettings {
   freqBend: FreqBendValues;
@@ -21,6 +22,7 @@ export class FilterSettings {
   useFrequencyEnvelope: onOff;
   deTune: number;
   portamento: number
+  portamentoType: PortamentoType;
 
   constructor(freqBend: FreqBendValues = new FreqBendValues(0, 1, 2, 0.5, 0.1, 0.0),
               useFrequencyEnvelope: onOff = onOff.off,
@@ -34,7 +36,8 @@ export class FilterSettings {
               modLevel: number=.4,
               modWaveForm: modWaveforms = modWaveforms.sine,
               modType: filterModType = filterModType.off,
-              portamento: number = 0)
+              portamento: number = 0,
+              portamentoType: PortamentoType = 'last')
   {
     this.freqBend = freqBend;
     this.useFrequencyEnvelope = useFrequencyEnvelope;
@@ -49,5 +52,6 @@ export class FilterSettings {
     this.modWaveform = modWaveForm;
     this.modType = modType;
     this.portamento = portamento;
+    this.portamentoType = portamentoType;
   }
 }

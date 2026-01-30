@@ -12,6 +12,8 @@ import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {timer} from 'rxjs';
 import {Cookies} from '../settings/cookies/cookies';
 
+export type PortamentoType = 'last' | 'first' | 'lowest' | 'highest' | 'plus12' | 'plus24' | 'minus12' | 'minus24';
+
 @Component({
   selector: 'app-oscillators',
   imports: [
@@ -54,6 +56,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   @ViewChild('freqRelease') freqRelease!: LevelControlComponent;
   @ViewChild('freqReleaseLevel') freqReleaseLevel!: LevelControlComponent;
   @ViewChild('portamento') portamento!: LevelControlComponent;
+  @ViewChild('portamentoType') portamentoType!: ElementRef<HTMLSelectElement>;
 
   @ViewChild('oscOutputToForm') oscOutputToForm!: ElementRef<HTMLFormElement>;
 
@@ -134,9 +137,10 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.modLevel.setValue(this.proxySettings.modLevel);  // Set dial
     this.modulation(this.lfo, this.proxySettings.modType);
 
-    // Set up the buttons and selectlor
-    //  SetRadioButtons.set(this.oscOutputToForm, this.proxySettings.output);
+    // Set up the buttons and selectors
     this.oscWaveForm.nativeElement.value = this.proxySettings.waveForm;
+    this.portamentoType.nativeElement.value = this.proxySettings.portamentoType;
+
     SetRadioButtons.set(this.amplitudeEnvelopeOnOffForm, this.proxySettings.useAmplitudeEnvelope);
     SetRadioButtons.set(this.velocityOnOffForm, this.proxySettings.velocitySensitive);
     SetRadioButtons.set(this.freqEnveOnOffForm, this.proxySettings.useFrequencyEnvelope);
@@ -196,6 +200,10 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     for (let i = 0; i < this.numberOfOscillators; ++i) {
       this.oscillators[i].setType(value);
     }
+  }
+
+  private setPortamentoType(value: PortamentoType) {
+    this.proxySettings.portamentoType = value as PortamentoType;
   }
 
   keyToFrequency(key: number) {
@@ -288,7 +296,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   keyDown(keyIndex: number, velocity: number) {
     const lastKey = this.keysDown.length > 0 ? this.keysDown[this.keysDown.length - 1] : -1;
-    if(!this.keysDown.includes(keyIndex)) {
+    if (!this.keysDown.includes(keyIndex)) {
       this.keysDown.push(keyIndex);
     }
 
@@ -296,9 +304,41 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     if (!this.velocitySensitive)
       velocity = 0x7f;
 
-    if (this.proxySettings.portamento > 0 && lastKey > -1) {
+    if (this.proxySettings.portamento > 0) {
       this.oscillators[keyIndex].oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
-      this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(lastKey);
+      const proxySettings = this.proxySettings;
+      switch (proxySettings.portamentoType) {
+        case 'last':
+          if (lastKey !== -1)
+            this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(lastKey);
+          break;
+        case 'first':
+          const firstKey = this.keysDown[0];
+          this.oscillators[keyIndex].oscillator.frequency.value =this.keyToFrequency(firstKey);
+          break;
+        case 'lowest':
+          const lowestKey = Math.min(...this.keysDown);
+          if (lowestKey !== -1)
+            this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(lowestKey);
+          break;
+        case 'highest':
+          const highestKey = Math.max(...this.keysDown);
+          this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(highestKey);
+          break;
+        case 'plus12':
+          this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) * 2;
+          break;
+        case 'plus24':
+          this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) * 4;
+          break;
+        case 'minus12':
+          this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) / 2;
+          break;
+        case 'minus24':
+          this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) / 4;
+          break;
+      }
+
       this.oscillators[keyIndex].oscillator.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
     }
     if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
@@ -442,6 +482,13 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       // @ts-ignore
       const value = $event.target.value as OscillatorType;
       this.setWaveForm(value as OscillatorType);
+    });
+
+    const portamentoType = this.portamentoType.nativeElement;
+    portamentoType.addEventListener('change', ($event) => {
+      // @ts-ignore
+      const value = $event.target.value as PortamentoType
+      this.setPortamentoType(value as PortamentoType);
     });
 
     const modSettingsForm = this.modSettingsForm.nativeElement;

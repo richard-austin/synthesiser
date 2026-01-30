@@ -1,6 +1,7 @@
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {FreqBendValues} from '../util-classes/freq-bend-values';
 import {modWaveforms, onOff, oscModType, oscOutputs, oscWaveforms} from '../enums/enums';
+import {PortamentoType} from '../oscillator/oscillator.component';
 
 export class OscillatorSettings {
   adsr: ADSRValues;
@@ -18,6 +19,7 @@ export class OscillatorSettings {
   velocitySensitive: onOff;
   useFrequencyEnvelope: onOff;
   portamento: number
+  portamentoType: PortamentoType;
 
 
   constructor(adsr: ADSRValues= new ADSRValues(0.0, 3, .4, 3),
@@ -34,7 +36,8 @@ export class OscillatorSettings {
               modLevel: number=.4,
               modWaveForm: modWaveforms = modWaveforms.sine,
               modType: oscModType = oscModType.off,
-              portamento: number = 0)
+              portamento: number = 0,
+              portamentoType: PortamentoType = 'last')
   {
     this.adsr = adsr;
     this.freqBend = freqBend;
@@ -51,5 +54,6 @@ export class OscillatorSettings {
     this.modWaveform = modWaveForm;
     this.modType = modType;
     this.portamento = portamento;
+    this.portamentoType = portamentoType;
   }
 }

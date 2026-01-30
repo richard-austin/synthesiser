@@ -84,6 +84,16 @@
                            [radius]="50"
                            [factor]="1.5"
                            (setLevel)="setPortamento($event)"></app-level-control>
+        <select #portamentoType>
+          <option value="last">Last</option>
+          <option value="first">First</option>
+          <option value="lowest">Lowest</option>
+          <option value="highest">Highest</option>
+          <option value="plus12">+12</option>
+          <option value="plus24">+24</option>
+          <option value="minus12">-12</option>
+          <option value="minus24">-24</option>
+        </select>
       </div>
       <div class="module">
         <h2>Envelope</h2>
