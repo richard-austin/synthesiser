@@ -109,6 +109,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     this.gain.setValue(this.proxySettings.gain);
 
     this.portamento.setValue(this.proxySettings.portamento);
+    this.portamentoType.nativeElement.value = this.proxySettings.portamentoType;
 
     this.qfactor.setValue(this.proxySettings.qFactor);
 

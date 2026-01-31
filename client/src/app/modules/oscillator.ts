@@ -263,12 +263,12 @@ export class Oscillator extends OscFilterBase {
       if (this.timerSub)
         this.timerSub.unsubscribe();
     }
-
-    const ctx = this.audioCtx;
+    //console.log("Oscillator keyDown = " + performance.now());
     if (this._useFreqBendEnvelope) {
+      const ctx = this.audioCtx;
       const freq = this.freq;
       this.oscillator.frequency.cancelAndHoldAtTime(ctx.currentTime);
-      this.oscillator.frequency.setValueAtTime(freq * Math.pow(this.freqBendBase, this.freqBendEnv.releaseLevel), this.audioCtx.currentTime);
+      this.oscillator.frequency.setValueAtTime(freq * Math.pow(this.freqBendBase, this.freqBendEnv.releaseLevel), ctx.currentTime);
       this.oscillator.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * Math.pow(this.freqBendBase, this.freqBendEnv.attackLevel)), ctx.currentTime + this.freqBendEnv.attackTime);
       this.freqBendEnvTimerSub = timer(this.freqBendEnv.attackTime).subscribe(() => {
         this.oscillator.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * Math.pow(this.freqBendBase, this.freqBendEnv.sustainLevel)), ctx.currentTime + this.freqBendEnv.decayTime);
@@ -281,18 +281,19 @@ export class Oscillator extends OscFilterBase {
   // Key released for this oscillator
   keyUp() {
     super.release(this.oscillator.frequency.value);
+    const ctx = this.audioCtx;
     if (this._useFreqBendEnvelope) {
       this.freqBendEnvTimerSub?.unsubscribe();
-      this.oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
-      this.oscillator.frequency.setValueAtTime(this.oscillator.frequency.value, this.audioCtx.currentTime); // Prevent step changes in freq
-      this.oscillator.frequency.exponentialRampToValueAtTime(this.clampFrequency(this.freq * Math.pow(this.freqBendBase, this.freqBendEnv.releaseLevel)), this.audioCtx.currentTime + this.freqBendEnv.releaseTime);
+      this.oscillator.frequency.cancelAndHoldAtTime(ctx.currentTime);
+      this.oscillator.frequency.setValueAtTime(this.oscillator.frequency.value, ctx.currentTime); // Prevent step changes in freq
+      this.oscillator.frequency.exponentialRampToValueAtTime(this.clampFrequency(this.freq * Math.pow(this.freqBendBase, this.freqBendEnv.releaseLevel)), ctx.currentTime + this.freqBendEnv.releaseTime);
     }
     this.timerSub = timer((this.env.releaseTime+0.1) * 1000).subscribe(() => {
       if (this.started) {
         const oldOsc = this.oscillator;
         oldOsc.disconnect();
         oldOsc.stop();
-        this.oscillator = this.audioCtx.createOscillator();
+        this.oscillator = ctx.createOscillator();
         this.oscillator.connect(this.gain);
         this.oscillator.frequency.value = this.freq;
         this.setType(this.type);
