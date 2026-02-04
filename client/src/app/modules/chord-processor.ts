@@ -37,8 +37,7 @@ export class ChordProcessor {
       this.chordCollectionTimerSub = timer(20).subscribe(() => {
         this.chordReady = true; // Chord might be ready now
         this.chordCollectionTimerSub.unsubscribe();
-        if(this.chord2)
-          this.playOutAccumulatedNotes(this.chord2, this.chord1);
+        this.playOutAccumulatedNotes(this.chord2, this.chord1);
       });
     }
 
@@ -91,12 +90,13 @@ export class ChordProcessor {
   }
 
   playOutAccumulatedNotes(lastChord: Chord, thisChord:Chord) {
-    lastChord.notes.sort((a, b) => {return a-b});
+    if(lastChord)
+      lastChord.notes.sort((a, b) => {return a-b});
     thisChord.notes.sort((a, b) => {return a-b});
     for(let i = 0; i < thisChord.notes.length; ++i) {
-      if(lastChord.notes.length > i)
+      if(lastChord && lastChord.notes.length > i)
         this.chordProcessorKeyDownCallback(lastChord.notes[i], thisChord.notes[i]);
-      else if(lastChord.notes.length > 0)
+      else if(lastChord && lastChord.notes.length > 0)
         this.chordProcessorKeyDownCallback(lastChord.notes[lastChord.notes.length-1], thisChord.notes[i]);
       else
         this.chordProcessorKeyDownCallback(thisChord.notes[i], thisChord.notes[i]);
