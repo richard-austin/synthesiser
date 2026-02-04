@@ -261,7 +261,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
             this.chordProcessor.setKeyDownCallback(this.chordProcessorKeyDownCallback);
             return;
           }
-          this.chordProcessor.setStartNote(keyIndex, this.filters[keyIndex].filter, this.keyToFrequency);
+          this.chordProcessor.setStartNote(keyIndex, this.filters[keyIndex], this.keyToFrequency);
           break;
         case 'last':
           if (lastKey !== -1) {
@@ -329,6 +329,8 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   private chordProcessorKeyDownCallback: (prevKeyIndex: number, keyIndex: number) => void  = (prevKeyIndex: number, keyIndex: number) => {
     this.filters[keyIndex].filter.frequency.value = this.keyToFrequency(prevKeyIndex);
     this.filters[keyIndex].filter.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
+    this.filters[keyIndex].filter2.frequency.value = this.keyToFrequency(prevKeyIndex);
+    this.filters[keyIndex].filter2.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
     this.filters[keyIndex].keyDown(0x7f);  // TODO: Need to pass velocity through ChordProcessor
   }
 

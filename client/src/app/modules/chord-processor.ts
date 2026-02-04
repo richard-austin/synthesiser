@@ -1,5 +1,7 @@
 import {Chord} from './chord';
 import {Subscription, timer} from 'rxjs';
+import {Oscillator} from './oscillator';
+import {Filter} from './filter';
 
 export class ChordProcessor {
   private loggingChord1: boolean = false;
@@ -25,8 +27,8 @@ export class ChordProcessor {
     this.chord2.log("Chord 2");
   }
 
-  addNote(keyIndex: number) : boolean {
-    if(this.releaseTimerSub) {
+  addNote(keyIndex: number): boolean {
+    if (this.releaseTimerSub) {
       this.releaseTimerSub.unsubscribe();
     }
 
@@ -69,7 +71,7 @@ export class ChordProcessor {
     } else if (this.loggingChord2) {
       this.chord2Complete();
     }
-    if(this.releaseTimerSub)
+    if (this.releaseTimerSub)
       this.releaseTimerSub.unsubscribe();
     this.releaseTimerSub = timer(releaseTime * 1000 + 0.2).subscribe(() => {
       this.releaseTimerSub.unsubscribe();
@@ -77,27 +79,37 @@ export class ChordProcessor {
     });
   }
 
-  setStartNote(keyIndex: number, device: OscillatorNode | BiquadFilterNode, keyToFrequency: (keyIndex:number) => number) {
-    if(!this.continuity)
-      device.frequency.value = keyToFrequency(keyIndex);
-    else {
+  setStartNote(keyIndex: number, device: Oscillator | Filter, keyToFrequency: (keyIndex: number) => number) {
+    if (!this.continuity) {
+      if (device instanceof Oscillator)
+        device.oscillator.frequency.value = keyToFrequency(keyIndex);
+      else
+        device.filter.frequency.value = device.filter2.frequency.value = keyToFrequency(keyIndex);
+    } else {
       const startChord = this.loggingChord1 ? this.chord2 : this.chord1;
       const startIndex = startChord.notes.length > 0 ? startChord.notes.pop() : keyIndex;
-      if(startChord.notes.length === 0)
+      if (startChord.notes.length === 0)
         startChord.notes.push(startIndex as number);
-      device.frequency.value = keyToFrequency(startIndex as number);
+      if (device instanceof Oscillator)
+        device.oscillator.frequency.value = keyToFrequency(startIndex as number);
+      else
+        device.filter.frequency.value = device.filter2.frequency.value = keyToFrequency(startIndex as number);
     }
   }
 
-  playOutAccumulatedNotes(lastChord: Chord, thisChord:Chord) {
-    if(lastChord)
-      lastChord.notes.sort((a, b) => {return a-b});
-    thisChord.notes.sort((a, b) => {return a-b});
-    for(let i = 0; i < thisChord.notes.length; ++i) {
-      if(lastChord && lastChord.notes.length > i)
+  playOutAccumulatedNotes(lastChord: Chord, thisChord: Chord) {
+    if (lastChord)
+      lastChord.notes.sort((a, b) => {
+        return a - b
+      });
+    thisChord.notes.sort((a, b) => {
+      return a - b
+    });
+    for (let i = 0; i < thisChord.notes.length; ++i) {
+      if (lastChord && lastChord.notes.length > i)
         this.chordProcessorKeyDownCallback(lastChord.notes[i], thisChord.notes[i]);
-      else if(lastChord && lastChord.notes.length > 0)
-        this.chordProcessorKeyDownCallback(lastChord.notes[lastChord.notes.length-1], thisChord.notes[i]);
+      else if (lastChord && lastChord.notes.length > 0)
+        this.chordProcessorKeyDownCallback(lastChord.notes[lastChord.notes.length - 1], thisChord.notes[i]);
       else
         this.chordProcessorKeyDownCallback(thisChord.notes[i], thisChord.notes[i]);
     }

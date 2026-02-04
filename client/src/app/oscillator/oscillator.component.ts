@@ -315,7 +315,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
             this.chordProcessor.setKeyDownCallback(this.chordProcessorKeyDownCallback);
             return;
           }
-          this.chordProcessor.setStartNote(keyIndex, this.oscillators[keyIndex].oscillator, this.keyToFrequency);
+          this.chordProcessor.setStartNote(keyIndex, this.oscillators[keyIndex], this.keyToFrequency);
           break;
         case 'last':
           if (lastKey !== -1)
