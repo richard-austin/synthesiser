@@ -11,6 +11,7 @@ import {FilterSettings} from '../settings/filter';
 import {Cookies} from '../settings/cookies/cookies';
 import {Oscillator} from '../modules/oscillator';
 import {PortamentoType} from '../oscillator/oscillator.component';
+import {ChordProcessor} from '../modules/chord-processor';
 
 @Component({
   selector: 'app-filters',
@@ -187,7 +188,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     this.proxySettings.portamentoType = value as PortamentoType;
   }
 
-  keyToFrequency(key: number) {
+  keyToFrequency = (key: number) => {
     return Oscillator.frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
   }
 
@@ -244,6 +245,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   keysDown: number[] = [];
+  chordProcessor: ChordProcessor = new ChordProcessor();
 
   keyDown(keyIndex: number, velocity: number) {
     const lastKey = this.keysDown.length > 0 ? this.keysDown[this.keysDown.length - 1] : -1;
@@ -254,6 +256,13 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
       this.filters[keyIndex].filter.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
       const proxySettings = this.proxySettings;
       switch (proxySettings.portamentoType) {
+        case 'chord':
+          if(!this.chordProcessor.addNote(keyIndex)) {
+            this.chordProcessor.setKeyDownCallback(this.chordProcessorKeyDownCallback);
+            return;
+          }
+          this.chordProcessor.setStartNote(keyIndex, this.filters[keyIndex].filter, this.keyToFrequency);
+          break;
         case 'last':
           if (lastKey !== -1) {
             const freq = this.keyToFrequency(lastKey);
@@ -317,12 +326,21 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  private chordProcessorKeyDownCallback: (prevKeyIndex: number, keyIndex: number) => void  = (prevKeyIndex: number, keyIndex: number) => {
+    this.filters[keyIndex].filter.frequency.value = this.keyToFrequency(prevKeyIndex);
+    this.filters[keyIndex].filter.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
+    this.filters[keyIndex].keyDown(0x7f);  // TODO: Need to pass velocity through ChordProcessor
+  }
+
+
   keyUp(keyIndex: number) {
     this.filters[keyIndex].releaseFinished = () => {
       const idx = this.keysDown.indexOf(keyIndex);
       if (idx > -1)
         this.keysDown.splice(idx, 1);
     }
+    if(this.proxySettings.portamentoType === 'chord')
+      this.chordProcessor.release(1);  // No adsr on filter, so use a fixed 1 second release time
 
     if (keyIndex >= 0 && keyIndex < this.numberOfFilters) {
       this.filters[keyIndex].keyUp();

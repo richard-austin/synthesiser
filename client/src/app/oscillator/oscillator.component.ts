@@ -11,8 +11,9 @@ import {modWaveforms, onOff, oscModType, oscWaveforms} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {timer} from 'rxjs';
 import {Cookies} from '../settings/cookies/cookies';
+import {ChordProcessor} from '../modules/chord-processor';
 
-export type PortamentoType = 'last' | 'first' | 'lowest' | 'highest' | 'plus12' | 'plus24' | 'minus12' | 'minus24';
+export type PortamentoType = 'chord' | 'last' | 'first' | 'lowest' | 'highest' | 'plus12' | 'plus24' | 'minus12' | 'minus24';
 
 @Component({
   selector: 'app-oscillators',
@@ -206,7 +207,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.proxySettings.portamentoType = value as PortamentoType;
   }
 
-  keyToFrequency(key: number) {
+  keyToFrequency = (key: number)=> {
     return Oscillator.frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
   }
 
@@ -293,6 +294,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   keysDown: number[] = [];
+  chordProcessor: ChordProcessor = new ChordProcessor();
 
   keyDown(keyIndex: number, velocity: number) {
     const lastKey = this.keysDown.length > 0 ? this.keysDown[this.keysDown.length - 1] : -1;
@@ -300,7 +302,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       this.keysDown.push(keyIndex);
     }
 
-    console.log("START keysDown.length = ", this.keysDown.length);
+   // console.log("START keysDown.length = ", this.keysDown.length);
     if (!this.velocitySensitive)
       velocity = 0x7f;
 
@@ -308,6 +310,13 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       this.oscillators[keyIndex].oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
       const proxySettings = this.proxySettings;
       switch (proxySettings.portamentoType) {
+        case 'chord':
+          if(!this.chordProcessor.addNote(keyIndex)) {
+            this.chordProcessor.setKeyDownCallback(this.chordProcessorKeyDownCallback);
+            return;
+          }
+          this.chordProcessor.setStartNote(keyIndex, this.oscillators[keyIndex].oscillator, this.keyToFrequency);
+          break;
         case 'last':
           if (lastKey !== -1)
             this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(lastKey);
@@ -347,13 +356,22 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  private chordProcessorKeyDownCallback: (prevKeyIndex: number, keyIndex: number) => void  = (prevKeyIndex: number, keyIndex: number) => {
+    this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(prevKeyIndex);
+    this.oscillators[keyIndex].oscillator.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
+    this.oscillators[keyIndex].keyDown(0x7f);  // TODO: Need to pass velocity through ChordProcessor
+  }
+
   keyUp(keyIndex: number) {
     this.oscillators[keyIndex].releaseFinished = () => {
       const idx = this.keysDown.indexOf(keyIndex);
       if (idx > -1)
         this.keysDown.splice(idx, 1);
-      console.log("keysDown.length = ", this.keysDown.length);
+     // console.log("keysDown.length = ", this.keysDown.length);
     }
+    if(this.proxySettings.portamentoType === 'chord')
+      this.chordProcessor.release(this.proxySettings.adsr.releaseTime);
+
     if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
       this.oscillators[keyIndex].keyUp();
     }
