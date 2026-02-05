@@ -98,18 +98,23 @@ export class ChordProcessor {
   }
 
   playOutAccumulatedNotes(lastChord: Chord, thisChord: Chord) {
-    if (lastChord)
+    if (lastChord) {
+      console.log("lastChord " + lastChord.notes.length + " notes found");
       lastChord.notes.sort((a, b) => {
         return a - b
       });
+    }
+
+    console.log("thisChord " + thisChord.notes.length + " notes found");
     thisChord.notes.sort((a, b) => {
       return a - b
     });
+
     for (let i = 0; i < thisChord.notes.length; ++i) {
-      if (lastChord && lastChord.notes.length > i)
-        this.chordProcessorKeyDownCallback(lastChord.notes[i], thisChord.notes[i]);
-      else if (lastChord && lastChord.notes.length > 0)
-        this.chordProcessorKeyDownCallback(lastChord.notes[lastChord.notes.length - 1], thisChord.notes[i]);
+      if (lastChord && lastChord.notes.length > 1)
+        this.chordProcessorKeyDownCallback(lastChord.notes.shift() as number, thisChord.notes[i]);
+      else if (lastChord && lastChord.notes.length === 1)
+        this.chordProcessorKeyDownCallback(lastChord.notes[0], thisChord.notes[i]);
       else
         this.chordProcessorKeyDownCallback(thisChord.notes[i], thisChord.notes[i]);
     }

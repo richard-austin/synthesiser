@@ -1,6 +1,9 @@
 export class Chord {
-  notes: number[] = [];
+  notes: number[];
 
+  constructor() {
+    this.notes = [];
+  }
   addNote(keyIndex: number) {
     this.notes.push(keyIndex);
   }
