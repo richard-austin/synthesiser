@@ -26,27 +26,21 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChild('html') html!: ElementRef<HTMLDivElement>;
   @ViewChild('configOptions') configOptions!: ElementRef<HTMLSelectElement>;
-  @ViewChild('polyBtn') polyBtn!: ElementRef<HTMLButtonElement>;
-  @ViewChild('loadSelectedConfigBtn') loadSelectedConfigBtn!: ElementRef<HTMLButtonElement>;
-  @ViewChild('deleteSelectedConfigBtn') deleteSelectedConfigBtn!: ElementRef<HTMLButtonElement>;
-  @ViewChild('renameSelectedConfigBtn') renameSelectedConfigBtn!: ElementRef<HTMLButtonElement>;
 
   protected selectedConfig: string = "";
   protected configFileList: string[] = [];
   protected _confirmDelete: boolean = false;
   protected _confirmRename: boolean = false;
   protected newName: string = "";
-  protected readonly configFileNameRegex =GeneralComponent._configFileNameRegex;
+  protected readonly configFileNameRegex = GeneralComponent._configFileNameRegex;
   protected successMessage: string = "";
   protected errorMessage: string = "";
 
   constructor(private cdr: ChangeDetectorRef, private rest: RestfulApiService, private router: Router) {
   }
 
-  synthTypeChange($event: Event) {
-    // @ts-ignore
-    const value = $event.target.value;
-    this.synthType(value);
+  selectLastConfig() {
+    this.router.navigate(['synth']).then();
   }
 
 
@@ -55,28 +49,15 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (v) => {
         this.configFileList = v
         this.selectedConfig = '';
-        },
+      },
       error: (e) => this.errorMessage = e,
       complete: () => {
         this._confirmDelete = false;
-        if(this.configOptions && this.configOptions.nativeElement)
+        if (this.configOptions && this.configOptions.nativeElement)
           this.configOptions.nativeElement.value = '';
         this.cdr.detectChanges();
       }
     });
-  }
-
-  private configOptionChange(ev: Event) {
-    const polyBtn = this.polyBtn.nativeElement;
-
-    // @ts-ignore
-    if (ev?.target.value !== "") {
-      polyBtn.disabled = true;
-      this.disableButtons(false);
-    } else {
-      polyBtn.disabled = false;
-      this.disableButtons();
-    }
   }
 
   protected loadSelectedConfig() {
@@ -96,27 +77,26 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   protected commitRename() {
-      this.rest.renameConfigFile(this.fileName(), this.newName).subscribe({
-        next: (v:any) => {
-          this.successMessage = v.message;
-        },
-        complete: () => {
-          this.reset();
-          this.cancel();
-        },
-        error: (e:any) => {
-          this.errorMessage = e.error.message;
-          this.reset();
-          this.cancel();
-        }
-      })
+    this.rest.renameConfigFile(this.fileName(), this.newName).subscribe({
+      next: (v: any) => {
+        this.successMessage = v.message;
+      },
+      complete: () => {
+        this.reset();
+        this.cancel();
+      },
+      error: (e: any) => {
+        this.errorMessage = e.error.message;
+        this.reset();
+        this.cancel();
+      }
+    })
   }
 
   protected cancel() {
     this._confirmRename = this._confirmDelete = false;
     const selector = this.configOptions.nativeElement;
     selector.value = '';
-    this.disableButtons();
     selector.disabled = false;
   }
 
@@ -139,36 +119,21 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: (e) => {
         this.errorMessage = e.error.message;
-        this.reset();this.cancel();
+        this.reset();
+        this.cancel();
       },
-    });
-  }
-
-  protected synthType($event: string) {
-    const sub = timer(100).subscribe(() => {
-      sub.unsubscribe();
-      this.router.navigate(['synth']).then();
     });
   }
 
   protected applySettingsFromFile(fileName: string) {
     this.rest.getSettings(fileName).subscribe({
-      next: (v) => {},
+      next: (v) => {
+      },
       error: (e) => console.log(e),
       complete: () => {
         console.log("complete: settings loaded");
         this.router.navigate(['synth', fileName]).then();
       }
-    });
-  }
-  private disableButtons(disable: boolean=true) {
-    // Use the timer to ensure status is correctly set after buttons are redrawn on @if changed state
-    const sub = timer(10).subscribe(() => {
-      sub.unsubscribe();
-      const confirmSelectedConfigBtn = this.loadSelectedConfigBtn.nativeElement;
-      const deleteSelectedConfigBtn = this.deleteSelectedConfigBtn.nativeElement;
-      const renameSelectedConfigBtn = this.renameSelectedConfigBtn.nativeElement;
-      deleteSelectedConfigBtn.disabled =  renameSelectedConfigBtn.disabled = confirmSelectedConfigBtn.disabled = disable;
     });
   }
 
@@ -177,9 +142,6 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    const configOptions = this.configOptions.nativeElement;
-    configOptions.onchange = ev => this.configOptionChange(ev);
-    this.disableButtons();
   }
 
   ngOnDestroy(): void {

@@ -2,18 +2,18 @@
      class="options">
   <div class="metallic-button">
     <h2>Select Synthesiser</h2>
-    <button #polyBtn (click)="synthTypeChange($event)">Last Config</button>
+    <button [disabled]="selectedConfig!==''" (click)="selectLastConfig()">Last Config</button>
     <h2>Select saved configuration</h2>
     <select #configOptions [(ngModel)]="selectedConfig">
-      <option value="">Select configuration or Polyphonic or Mono synth</option>
+      <option value="">Select configuration or click Last Config</option>
       @for(fileName of configFileList; track fileName; let idx = $index) {
         <option [value]="idx+1">{{fileName}}</option>
       }
     </select>
     @if(!_confirmDelete && !_confirmRename) {
-      <button class="load-config" #loadSelectedConfigBtn (click)="loadSelectedConfig()">Load Selected Configuration</button>
-      <button class="delete-config" #deleteSelectedConfigBtn (click)="confirmDelete()">Delete Selected Configuration</button>
-      <button class="rename-config" #renameSelectedConfigBtn (click)="confirmRename()">Rename Selected Configration</button>
+      <button class="load-config" [disabled]="selectedConfig===''" (click)="loadSelectedConfig()">Load Selected Configuration</button>
+      <button class="delete-config" [disabled]="selectedConfig===''"  (click)="confirmDelete()">Delete Selected Configuration</button>
+      <button class="rename-config" [disabled]="selectedConfig===''"  (click)="confirmRename()">Rename Selected Configration</button>
     } @else if (!_confirmRename) {
       Delete {{fileName()}}, are you sure?
       <button class="delete-config" (click)="delete()">Delete</button>
