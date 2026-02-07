@@ -9,14 +9,15 @@ import {
 } from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {RestfulApiService} from '../services/restful-api.service';
-import {timer} from 'rxjs';
 import {Router} from '@angular/router';
 import {GeneralComponent} from '../general/general.component';
+import {SortPipePipe} from '../sort-pipe-pipe';
 
 @Component({
   selector: 'app-options',
   imports: [
-    FormsModule
+    FormsModule,
+    SortPipePipe
   ],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',

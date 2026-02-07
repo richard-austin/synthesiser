@@ -10,6 +10,7 @@
       </div>
       <div class="button-container module">
         <h2>Configuration</h2>
+        <h4>{{proxySettings?.configFileName}}</h4>
         <div class="general-width">
           @if (showConfigEditor) {
             <div #configEditor
@@ -37,6 +38,14 @@
                   <div>
                     <button (click)="cancel()">Cancel</button>
                     <button (click)="addConfiguration(configFileName)">Confirm</button>
+                  </div>
+                } @else if(_confirmOverwrite) {
+                  <h4>
+                    Update {{ configFileName }} configuration, Are you sure?
+                  </h4>
+                  <div>
+                    <button (click)="cancel()">Cancel</button>
+                    <button (click)="addConfiguration(configFileName, true)">Confirm</button>
                   </div>
                 }
               </div>

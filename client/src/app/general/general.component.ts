@@ -33,12 +33,13 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   protected readonly dialStyle = dialStyle;
   private compressor!: DynamicsCompressorNode;
   private volume!: GainNode;
-  private proxySettings!: GeneralSettings;
+  protected proxySettings!: GeneralSettings;
   private cookies!: Cookies;
   protected showConfigEditor: boolean = false;
   protected addConfigMode: boolean = false;
   protected configFileName: string = "";
   protected _confirmAddConfig: boolean = false;
+  protected _confirmOverwrite: boolean = false;
   protected errorMessage: string = "";
   protected failed: boolean = false;
   protected success: boolean = false;
@@ -56,7 +57,6 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
 
 
   constructor(private cdr: ChangeDetectorRef, private parent: SynthComponent, private rest: RestfulApiService) {
-
   }
 
   start(audioCtx: AudioContext, settings: GeneralSettings | null): boolean {
@@ -90,6 +90,7 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
       // else use default settings
     }
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
+    this.configFileName = this.proxySettings.configFileName;
     this.masterVolume.setValue(this.proxySettings.level);
   }
 
@@ -134,18 +135,26 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
     this._confirmAddConfig = true;
   }
 
-  protected addConfiguration(configFileName: string) {
+  protected addConfiguration(configFileName: string, overwrite: boolean = false) {
     this.success = this.failed = false;
     this._confirmAddConfig = false;
-    this.rest.saveConfig(this.parent.getSettings(), configFileName).subscribe({
+    this.proxySettings.configFileName = configFileName;
+
+    this.rest.saveConfig(this.parent.getSettings(), configFileName, overwrite).subscribe({
       next: (v: any) => console.log("next: " + v.message),
       error: (e) => {
-        this.addConfigMode = this.showConfigEditor = false;
-        console.log(e.error.message)
-        this.failed = true;
-        this.errorMessage = e.error.message;
-        this.cdr.detectChanges();
-        },
+        if (e.status === 400) {  // Status 400 means file already exists so confirm overwrite
+          this._confirmAddConfig = false;
+          this._confirmOverwrite = true;
+          this.cdr.detectChanges();
+        } else {
+          this.addConfigMode = this.showConfigEditor = false;
+          console.log(e.error.message)
+          this.failed = true;
+          this.errorMessage = e.error.message;
+          this.cdr.detectChanges();
+        }
+      },
       complete: () => {
         this.addConfigMode = this.showConfigEditor = false;
         console.log("complete");
@@ -163,6 +172,7 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
       this.cdr.detectChanges();
     }
   }
+
   cancel() {
     this.success = this.failed = false;
     this._confirmAddConfig = this.addConfigMode = this.showConfigEditor = false;

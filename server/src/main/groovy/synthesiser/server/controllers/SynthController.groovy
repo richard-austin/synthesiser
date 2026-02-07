@@ -12,6 +12,7 @@ import synthesiser.server.command.SaveConfigCommand
 import tools.jackson.databind.ObjectMapper
 import tools.jackson.databind.ObjectWriter
 
+import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -34,15 +35,18 @@ class SynthController {
             path = Path.of(path.toString(), fileName)
             File file = path.toFile()
 
-            // Ensure the file name is not already used
-            if(file.exists() && !file.isDirectory())
-                throw new Exception("File name already in use")
+            // Ensure the file name is not already used if overwrite is false
+            if(!cmd.overwrite && file.exists() && !file.isDirectory())
+                throw new FileAlreadyExistsException("File name already in use")
 
             FileWriter fileWriter = new FileWriter(file)
             fileWriter.write(json)
             fileWriter.flush()
             fileWriter.close()
-            return ResponseEntity.ok().body([message: fileName + " successfully saved"])
+            return ResponseEntity.ok().body([message: fileName + " successfully " + (cmd.overwrite ? "updated": "saved")])
+        }
+        catch(FileAlreadyExistsException ex) {
+            return ResponseEntity.badRequest().body([exception: ex.getClass(), message: ex.getMessage()])
         }
         catch (Exception ex) {
             return ResponseEntity

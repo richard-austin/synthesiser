@@ -16,8 +16,8 @@ export class RestfulApiService {
     })
   }
 
-  saveConfig(synthSettings: SynthSettings, fileName: string) {
-      const params: {} = {fileName: fileName, synthSettings: synthSettings};
+  saveConfig(synthSettings: SynthSettings, fileName: string, overwrite: boolean) {
+      const params: {} = {fileName: fileName, synthSettings: synthSettings, overwrite: overwrite};
       return this.http.post<{}>('/syn/saveConfig', JSON.stringify(params), this.httpJsonOptions)
   }
 

@@ -6,7 +6,7 @@
     <h2>Select saved configuration</h2>
     <select #configOptions [(ngModel)]="selectedConfig">
       <option value="">Select configuration or click Last Config</option>
-      @for(fileName of configFileList; track fileName; let idx = $index) {
+      @for(fileName of configFileList | sortPipe; track fileName; let idx = $index) {
         <option [value]="idx+1">{{fileName}}</option>
       }
     </select>
