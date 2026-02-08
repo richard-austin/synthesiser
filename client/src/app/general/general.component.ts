@@ -38,7 +38,6 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   protected showConfigEditor: boolean = false;
   protected addConfigMode: boolean = false;
   protected configFileName: string = "";
-  protected _confirmAddConfig: boolean = false;
   protected _confirmOverwrite: boolean = false;
   protected errorMessage: string = "";
   protected failed: boolean = false;
@@ -130,21 +129,14 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  protected confirmAddConfig() {
-    this.addConfigMode = false;
-    this._confirmAddConfig = true;
-  }
-
   protected addConfiguration(configFileName: string, overwrite: boolean = false) {
     this.success = this.failed = false;
-    this._confirmAddConfig = false;
     this.proxySettings.configFileName = configFileName;
-
+    this.addConfigMode = false;
     this.rest.saveConfig(this.parent.getSettings(), configFileName, overwrite).subscribe({
       next: (v: any) => console.log("next: " + v.message),
       error: (e) => {
         if (e.status === 400) {  // Status 400 means file already exists so confirm overwrite
-          this._confirmAddConfig = false;
           this._confirmOverwrite = true;
           this.cdr.detectChanges();
         } else {
@@ -156,7 +148,7 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
         }
       },
       complete: () => {
-        this.addConfigMode = this.showConfigEditor = false;
+        this.showConfigEditor = false;
         console.log("complete");
         this.success = true;
         this.cdr.detectChanges();
@@ -175,8 +167,7 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
 
   cancel() {
     this.success = this.failed = false;
-    this._confirmAddConfig = this.addConfigMode = this.showConfigEditor = false;
-
+    this.addConfigMode = this.showConfigEditor = false;
   }
 
   ngAfterViewInit(): void {
