@@ -204,11 +204,21 @@ export class Oscillator extends OscFilterBase {
     this.setOscModulation();
   }
 
+  private readonly freqModGainBase = 1.02;
+  private readonly freqModeGainMaxInput = 300;
+  private readonly maxFreqModGain = 3000;
+  private readonly gainFactor = this.maxFreqModGain/(Math.pow(this.freqModGainBase, this.freqModeGainMaxInput)-1);
+
+  private readonly ampModGainBase = 1.01;
+  private readonly ampModeGainMaxInput = 300;
+  private readonly maxAmpModGain = 6;
+  private readonly ampModFactor = this.maxAmpModGain/(Math.pow(this.ampModGainBase, this.ampModeGainMaxInput)-1);
+
   setOscModulation() {
     if (this.modType === oscModType.frequency) {
       this.modulator.connect(this.frequencyMod);
       this.frequencyMod.connect(this.oscillator.detune);
-      this.frequencyMod.gain.value = this.modLevel;
+      this.frequencyMod.gain.value = this.gainFactor*(Math.pow(this.freqModGainBase, this.modLevel)-1);
     } else if (this.modType === oscModType.amplitude) {
       this.modulator.connect(this.amplitudeModDepth);
       this.amplitudeModDepth.gain.value = this.modLevel / 200;
@@ -220,9 +230,9 @@ export class Oscillator extends OscFilterBase {
   setModLevel(level: number) {
     this.modLevel = level;
     if (this.modType === oscModType.frequency)
-      this.frequencyMod.gain.value = this.modLevel;
+      this.frequencyMod.gain.value = this.gainFactor*(Math.pow(this.freqModGainBase, this.modLevel)-1);
     else
-      this.amplitudeModDepth.gain.value = level / 200;
+      this.amplitudeModDepth.gain.value = this.ampModFactor*(Math.pow(this.ampModGainBase, this.modLevel)-1);
   }
 
   override setFreqBendEnvelope(envelope: FreqBendValues) {

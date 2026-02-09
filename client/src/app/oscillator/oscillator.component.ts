@@ -438,9 +438,14 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.proxySettings.freqBend.releaseLevel = $event;
   }
 
+  private readonly modFreqBase = 30;
+  private readonly modFreqMaxInput = 2;
+  private readonly modFreqMax = 4000;
+  private readonly modFreqFactor = this.modFreqMax/(Math.pow(this.modFreqBase, this.modFreqMaxInput)-1);
+
   protected setModFrequency(freq: number) {
     this.proxySettings.modFreq = freq;
-    this.lfo.frequency.value = freq * 20;
+    this.lfo.frequency.value = this.modFreqFactor*(Math.pow(this.modFreqBase, freq)-1);
   }
 
   protected setModLevel($event: number) {
