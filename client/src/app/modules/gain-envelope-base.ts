@@ -9,6 +9,7 @@ export abstract class GainEnvelopeBase {
   frequencyMod2: GainNode;
   amplitudeMod: GainNode;
   amplitudeModDepth: GainNode;
+  amplitudeMod2Depth: GainNode;
   protected modType: oscModType | filterModType;
   protected modType2: oscModType | filterModType;
   protected modLevel: number = 0;
@@ -34,9 +35,12 @@ export abstract class GainEnvelopeBase {
     this.amplitudeMod = audioCtx.createGain();
     this.amplitudeMod.gain.setValueAtTime(1, audioCtx.currentTime);
     this.amplitudeModDepth = audioCtx.createGain();
-    this.amplitudeModDepth.gain.setValueAtTime(0, audioCtx.currentTime);
+    this.amplitudeMod2Depth = audioCtx.createGain();
+    this.amplitudeModDepth.gain.value = 0;
+    this.amplitudeMod2Depth.gain.value = 0;
     this.gain.connect(this.amplitudeMod);
     this.amplitudeModDepth.connect(this.amplitudeMod.gain);
+    this.amplitudeMod2Depth.connect(this.amplitudeMod.gain);
     this.modType = oscModType.amplitude;
     this.modType2 = oscModType.amplitude;
   }
@@ -61,12 +65,15 @@ export abstract class GainEnvelopeBase {
   modulationOff() {
     this.frequencyMod.disconnect();
     this.frequencyMod.gain.value = 1;
+    this.amplitudeModDepth.gain.value = 0;
   }
 
   modulation2Off() {
     this.frequencyMod2.disconnect();
     this.frequencyMod2.gain.value = 1;
+    this.amplitudeMod2Depth.gain.value = 0;
   }
+
   abstract modulation(modulator: AudioNode, type: oscModType | filterModType): void;
 
   public set useAmplitudeEnvelope(useAmplitudeEnvelope: boolean) {

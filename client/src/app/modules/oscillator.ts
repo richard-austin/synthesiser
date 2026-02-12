@@ -208,7 +208,7 @@ export class Oscillator extends OscFilterBase {
     this.modType2 = type;
     this.modulator2 = gain;
     this.frequencyMod2.disconnect();
-    this.amplitudeModDepth.gain.value = 0;
+    this.amplitudeMod2Depth.gain.value = 0;
     this.setOscModulation2();
   }
 
@@ -240,8 +240,8 @@ export class Oscillator extends OscFilterBase {
       this.frequencyMod2.connect(this.oscillator.detune);
       this.frequencyMod2.gain.value = 10000; // Gain adjustment made from the modulating oscillators gain control
     } else if (this.modType2 === oscModType.amplitude) {
-      this.modulator2?.connect(this.amplitudeModDepth);
-      this.amplitudeModDepth.gain.value = this.modLevel / 200;
+      this.modulator2?.connect(this.amplitudeMod2Depth);
+      this.amplitudeMod2Depth.gain.value = this.modLevel ;
     } else if (this.modType2 === oscModType.off) {
       this.modulation2Off();
     }
