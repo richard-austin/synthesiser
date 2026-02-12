@@ -46,19 +46,21 @@
       </div>
       <div class="module osc-width">
         <h2>Modulation</h2>
-        <app-level-control #modFreq
-                           label="Mod Freq"
-                           [style]="dialStyle.green"
-                           [divisions]="10"
-                           [factor]="2"
-                           [calAngle]="300"
-                           [radius]="50"
-                           (setLevel)="setModFrequency($event)"></app-level-control>
-        <app-level-control #modDepth label="Mod Depth" [style]="dialStyle.green" [divisions]="10" [calAngle]="300"
-                           [radius]="50"
-                           [factor]="300"
-                           (setLevel)="setModLevel($event)"></app-level-control>
-        <h2>Waveform</h2>
+        <div class="row">
+          <app-level-control #modFreq
+                             label="Mod Freq"
+                             [style]="dialStyle.green"
+                             [divisions]="10"
+                             [factor]="2"
+                             [calAngle]="300"
+                             [radius]="50"
+                             (setLevel)="setModFrequency($event)"></app-level-control>
+          <app-level-control #modDepth label="Mod Depth" [style]="dialStyle.green" [divisions]="10" [calAngle]="300"
+                             [radius]="50"
+                             [factor]="300"
+                             (setLevel)="setModLevel($event)"></app-level-control>
+        </div>
+        <h4>Waveform</h4>
         <div style="height: 3px;"></div>
         <form #lfoWaveForm>
           <label><input type="radio" name="waveform" value="sine" checked><span>Sine</span></label>
@@ -66,8 +68,16 @@
           <label><input type="radio" name="waveform" value="sawtooth"><span>Sawtooth</span></label>
           <label><input type="radio" name="waveform" value="triangle"><span>Triangle</span></label>
         </form>
-        <h2>Modulation</h2>
+        <h4>Modulation</h4>
         <form #modSettingsForm>
+          <label><input type="radio" name="lfo" value="amplitude"><span>Amplitude</span></label>
+          <label><input type="radio" name="lfo" value="frequency"><span>Frequency</span></label>
+          <label><input type="radio" name="lfo" value="off" checked><span>&nbsp;Off&nbsp;</span></label>
+        </form>
+      </div>
+      <div class="module osc-width">
+        <h2>Modulation By Osc {{secondary ? "1" : "2"}}</h2>
+        <form #oscModSettingsForm>
           <label><input type="radio" name="lfo" value="amplitude"><span>Amplitude</span></label>
           <label><input type="radio" name="lfo" value="frequency"><span>Frequency</span></label>
           <label><input type="radio" name="lfo" value="off" checked><span>&nbsp;Off&nbsp;</span></label>

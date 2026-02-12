@@ -6,13 +6,17 @@ import {Subscription, timer} from 'rxjs';
 export abstract class GainEnvelopeBase {
   public readonly gain: GainNode;
   frequencyMod: GainNode;
+  frequencyMod2: GainNode;
   amplitudeMod: GainNode;
   amplitudeModDepth: GainNode;
-  modType: oscModType | filterModType;
+  protected modType: oscModType | filterModType;
+  protected modType2: oscModType | filterModType;
   protected modLevel: number = 0;
   private _useAmplitudeEnvelope = false;
   env: ADSRValues;
   modulator!: AudioNode;
+  modulator2!: GainNode;
+
   protected setLevel: number;
   public static readonly maxLevel: number = 1;
   public static readonly minLevel: number = 0.000001;
@@ -25,6 +29,8 @@ export abstract class GainEnvelopeBase {
     this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
     this.frequencyMod = audioCtx.createGain();
     this.frequencyMod.gain.setValueAtTime(0, audioCtx.currentTime);
+    this.frequencyMod2 = this.audioCtx.createGain();
+    this.frequencyMod.gain.setValueAtTime(0, audioCtx.currentTime);
     this.amplitudeMod = audioCtx.createGain();
     this.amplitudeMod.gain.setValueAtTime(1, audioCtx.currentTime);
     this.amplitudeModDepth = audioCtx.createGain();
@@ -32,6 +38,7 @@ export abstract class GainEnvelopeBase {
     this.gain.connect(this.amplitudeMod);
     this.amplitudeModDepth.connect(this.amplitudeMod.gain);
     this.modType = oscModType.amplitude;
+    this.modType2 = oscModType.amplitude;
   }
 
   setGain(gain: number) {
@@ -52,12 +59,14 @@ export abstract class GainEnvelopeBase {
   }
 
   modulationOff() {
-    if (this.modulator)
-      this.modulator.disconnect()
     this.frequencyMod.disconnect();
     this.frequencyMod.gain.value = 1;
   }
 
+  modulation2Off() {
+    this.frequencyMod2.disconnect();
+    this.frequencyMod2.gain.value = 1;
+  }
   abstract modulation(modulator: AudioNode, type: oscModType | filterModType): void;
 
   public set useAmplitudeEnvelope(useAmplitudeEnvelope: boolean) {

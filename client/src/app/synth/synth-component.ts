@@ -77,6 +77,11 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     // Start the module components
     this.oscillatorsGrp.start(this.audioCtx, settings ? settings.oscillator1Settings : settings);
     this.oscillators2Grp.start(this.audioCtx, settings ? settings.oscillator2Settings : settings);
+
+    // Finish setting up the oscillators, as they cross-reference each other, we need to call start on them first
+    this.oscillatorsGrp.setModulators(this.oscillators2Grp);
+    this.oscillators2Grp.setModulators(this.oscillatorsGrp);
+
     this.filtersGrp.start(this.audioCtx, settings ? settings.filterSettings : settings);
 
     await this.noise.start(this.audioCtx, settings ? settings.noiseSettings : settings);

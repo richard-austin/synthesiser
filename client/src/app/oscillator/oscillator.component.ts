@@ -31,6 +31,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   private proxySettings!: OscillatorSettings;
   private cookies!: Cookies;
   private velocitySensitive: boolean = true;
+  private modulators!: OscillatorComponent;
 
   @Input() filters!: FilterComponent;
   @Input() ringMod!: RingModulatorComponent;
@@ -40,6 +41,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   @Input() numberOfOscillators!: number;
   @Input() name!: string;
+
 
   @Output() output = new EventEmitter<string>();
   @ViewChild('frequency') frequency!: LevelControlComponent;
@@ -67,6 +69,8 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   @ViewChild('oscWaveform') oscWaveForm!: ElementRef<HTMLSelectElement>;
 
   @ViewChild('modSettingsForm') modSettingsForm!: ElementRef<HTMLFormElement>;
+  @ViewChild('oscModSettingsForm') oscModSettingsForm!: ElementRef<HTMLFormElement>;
+
   @ViewChild('modFreq') modFreq!: LevelControlComponent;
   @ViewChild('modDepth') modLevel!: LevelControlComponent;
   @ViewChild('lfoWaveForm') lfoWaveForm!: ElementRef<HTMLFormElement>;
@@ -75,6 +79,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     this.audioCtx = audioCtx;
     this.cookies = new Cookies();
+
     if (this.numberOfOscillators) {
       this.lfo = this.audioCtx.createOscillator();
       this.lfo.start();
@@ -136,8 +141,8 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     // Set up LFO default values
     this.modFreq.setValue(this.proxySettings.modFreq);  // Set dial
     this.modLevel.setValue(this.proxySettings.modLevel);  // Set dial
-    this.modulation(this.lfo, this.proxySettings.modType);
 
+      this.modulation(this.lfo, this.proxySettings.modType);
     // Set up the buttons and selectors
     this.oscWaveForm.nativeElement.value = this.proxySettings.waveForm;
     this.portamentoType.nativeElement.value = this.proxySettings.portamentoType;
@@ -147,6 +152,14 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     SetRadioButtons.set(this.freqEnveOnOffForm, this.proxySettings.useFrequencyEnvelope);
     SetRadioButtons.set(this.modSettingsForm, this.proxySettings.modType);
     SetRadioButtons.set(this.lfoWaveForm, this.proxySettings.modWaveform);
+  }
+
+  public setModulators(modulators: OscillatorComponent) {
+    this.modulators = modulators;
+
+    this.modulation2(this.modulators.oscillators, this.proxySettings.modType2);
+    if(this.proxySettings.modType2)  // In case config or cookie predates addition of this field
+      SetRadioButtons.set(this.oscModSettingsForm, this.proxySettings.modType2);
   }
 
   public getSettings(): OscillatorSettings {
@@ -218,10 +231,26 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  modulationOff() {
+  modulation2(modulators: Oscillator[], type: oscModType) {
+    this.proxySettings.modType2 = type;
     for (let i = 0; i < this.numberOfOscillators; ++i) {
-      this.oscillators[i].modulationOff();
+      this.oscillators[i].modulation2(modulators[i].gain, type);
     }
+  }
+
+  protected setModType(type: oscModType) {
+    this.proxySettings.modType = type;
+    for (let i = 0; i < this.numberOfOscillators; ++i) {
+      this.oscillators[i].modulation(this.lfo, type);
+    }
+  }
+
+  protected setMod2Type(type: oscModType) {
+    this.proxySettings.modType2 = type;
+    if(this.modulators)
+      for (let i = 0; i < this.numberOfOscillators; ++i) {
+        this.oscillators[i].modulation2(this.modulators.oscillators[i].gain, type);
+      }
   }
 
   /**
@@ -455,13 +484,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  protected setModType(type: oscModType) {
-    this.proxySettings.modType = type;
-    for (let i = 0; i < this.numberOfOscillators; ++i) {
-      this.oscillators[i].modulation(this.lfo, type);
-    }
-  }
-
   ngAfterViewInit(): void {
     const oscOutForm = this.oscOutputToForm.nativeElement;
     for (let i = 0; i < oscOutForm.elements.length; ++i) {
@@ -520,6 +542,15 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
         // @ts-ignore
         const value = $event.target.value as modulationType;
         this.setModType(value);
+      });
+    }
+
+    const oscModSettingsForm = this.oscModSettingsForm.nativeElement;
+    for (let j = 0; j < oscModSettingsForm.elements.length; ++j) {
+      oscModSettingsForm.elements[j].addEventListener('change', ($event) => {
+        // @ts-ignore
+        const value = $event.target.value as modulationType;
+        this.setMod2Type(value);
       });
     }
 

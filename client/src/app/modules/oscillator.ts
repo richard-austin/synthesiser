@@ -204,6 +204,14 @@ export class Oscillator extends OscFilterBase {
     this.setOscModulation();
   }
 
+  modulation2(gain: GainNode, type: oscModType) {
+    this.modType2 = type;
+    this.modulator2 = gain;
+    this.frequencyMod2.disconnect();
+    this.amplitudeModDepth.gain.value = 0;
+    this.setOscModulation2();
+  }
+
   private readonly freqModGainBase = 1.02;
   private readonly freqModeGainMaxInput = 300;
   private readonly maxFreqModGain = 3000;
@@ -218,12 +226,24 @@ export class Oscillator extends OscFilterBase {
     if (this.modType === oscModType.frequency) {
       this.modulator.connect(this.frequencyMod);
       this.frequencyMod.connect(this.oscillator.detune);
-      this.frequencyMod.gain.value = this.gainFactor*(Math.pow(this.freqModGainBase, this.modLevel)-1);
+      this.frequencyMod.gain.value = this.gainFactor * (Math.pow(this.freqModGainBase, this.modLevel) - 1);
     } else if (this.modType === oscModType.amplitude) {
       this.modulator.connect(this.amplitudeModDepth);
       this.amplitudeModDepth.gain.value = this.modLevel / 200;
     } else if (this.modType === oscModType.off) {
       this.modulationOff();
+    }
+  }
+  setOscModulation2() {
+    if (this.modType2 === oscModType.frequency) {
+      this.modulator2?.connect(this.frequencyMod2);
+      this.frequencyMod2.connect(this.oscillator.detune);
+      this.frequencyMod2.gain.value = 10000; // Gain adjustment made from the modulating oscillators gain control
+    } else if (this.modType2 === oscModType.amplitude) {
+      this.modulator2?.connect(this.amplitudeModDepth);
+      this.amplitudeModDepth.gain.value = this.modLevel / 200;
+    } else if (this.modType2 === oscModType.off) {
+      this.modulation2Off();
     }
   }
 
@@ -309,6 +329,7 @@ export class Oscillator extends OscFilterBase {
         this.setType(this.type);
         this.setDetune(oldOsc.detune.value);
         this.setOscModulation();
+        this.setOscModulation2();
         this.started = false;
       }
     });
