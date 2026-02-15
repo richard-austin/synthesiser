@@ -62,7 +62,7 @@
         </div>
         <h4>Waveform</h4>
         <div style="height: 3px;"></div>
-        <form #lfoWaveForm>
+        <form #modWaveForm>
           <label><input type="radio" name="waveform" value="sine" checked><span>Sine</span></label>
           <label><input type="radio" name="waveform" value="square"><span>Square</span></label>
           <label><input type="radio" name="waveform" value="sawtooth"><span>Sawtooth</span></label>
@@ -77,6 +77,10 @@
       </div>
       <div class="module osc-width">
         <h2>Modulation By Osc {{secondary ? "1" : "2"}}</h2>
+        <app-level-control #mod2Depth label="Mod Depth" [style]="dialStyle.magenta" [divisions]="10" [calAngle]="300"
+                           [radius]="50"
+                           [factor]="300"
+                           (setLevel)="setMod2Level($event)"></app-level-control>
         <form #oscModSettingsForm>
           <label><input type="radio" name="lfo" value="amplitude"><span>Amplitude</span></label>
           <label><input type="radio" name="lfo" value="frequency"><span>Frequency</span></label>

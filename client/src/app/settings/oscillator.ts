@@ -15,14 +15,13 @@ export class OscillatorSettings {
   modLevel: number;
   modType: oscModType;
   modType2: oscModType;
+  mod2Level: number;
   modWaveform: modWaveforms;
   useAmplitudeEnvelope: onOff;
   velocitySensitive: onOff;
   useFrequencyEnvelope: onOff;
   portamento: number
   portamentoType: PortamentoType;
-
-
 
   constructor(adsr: ADSRValues= new ADSRValues(0.0, 3, .4, 3),
               freqBend: FreqBendValues = new FreqBendValues(0, 0.2, .2, 0, .2, 0.0),
@@ -40,7 +39,8 @@ export class OscillatorSettings {
               modType: oscModType = oscModType.off,
               portamento: number = 0,
               portamentoType: PortamentoType = 'last',
-              modType2: oscModType = oscModType.off)
+              modType2: oscModType = oscModType.off,
+              mod2Level: number = 0.0)
   {
     this.adsr = adsr;
     this.freqBend = freqBend;
@@ -59,5 +59,6 @@ export class OscillatorSettings {
     this.modType2 = modType2;
     this.portamento = portamento;
     this.portamentoType = portamentoType;
+    this.mod2Level = mod2Level;
   }
 }

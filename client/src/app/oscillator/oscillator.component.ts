@@ -73,7 +73,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   @ViewChild('modFreq') modFreq!: LevelControlComponent;
   @ViewChild('modDepth') modLevel!: LevelControlComponent;
-  @ViewChild('lfoWaveForm') lfoWaveForm!: ElementRef<HTMLFormElement>;
+  @ViewChild('modWaveForm') lfoWaveForm!: ElementRef<HTMLFormElement>;
+  @ViewChild('mod2Depth') mod2Level!: LevelControlComponent;
+
 
   start(audioCtx: AudioContext, settings: OscillatorSettings | null): boolean {
     let ok = false;
@@ -141,8 +143,11 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     // Set up LFO default values
     this.modFreq.setValue(this.proxySettings.modFreq);  // Set dial
     this.modLevel.setValue(this.proxySettings.modLevel);  // Set dial
+    if(!this.proxySettings.mod2Level)
+      this.proxySettings.mod2Level = 0;
+    this.mod2Level.setValue(this.proxySettings.mod2Level);  // Set dial
 
-      this.modulation(this.lfo, this.proxySettings.modType);
+    this.modulation(this.lfo, this.proxySettings.modType);
     // Set up the buttons and selectors
     this.oscWaveForm.nativeElement.value = this.proxySettings.waveForm;
     this.portamentoType.nativeElement.value = this.proxySettings.portamentoType;
@@ -234,7 +239,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   modulation2(modulators: Oscillator[], type: oscModType) {
     this.proxySettings.modType2 = type;
     for (let i = 0; i < this.numberOfOscillators; ++i) {
-      this.oscillators[i].modulation2(modulators[i].gain, type);
+      this.oscillators[i].modulation2(type, modulators[i]);
     }
   }
 
@@ -247,10 +252,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   protected setMod2Type(type: oscModType) {
     this.proxySettings.modType2 = type;
-    if(this.modulators)
-      for (let i = 0; i < this.numberOfOscillators; ++i) {
-        this.oscillators[i].modulation2(this.modulators.oscillators[i].gain, type);
-      }
+    for (let i = 0; i < this.numberOfOscillators; ++i) {
+      this.oscillators[i].modulation2(type);
+    }
   }
 
   /**
@@ -484,6 +488,12 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  protected setMod2Level($event: number) {
+    this.proxySettings.mod2Level = $event;
+    for (let i = 0; i < this.numberOfOscillators; ++i) {
+      this.oscillators[i].setMod2Level($event);
+    }
+  }
   ngAfterViewInit(): void {
     const oscOutForm = this.oscOutputToForm.nativeElement;
     for (let i = 0; i < oscOutForm.elements.length; ++i) {

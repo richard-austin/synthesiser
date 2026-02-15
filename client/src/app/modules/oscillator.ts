@@ -183,6 +183,7 @@ export class Oscillator extends OscFilterBase {
     // Default ADSR values
     this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
     this.oscillator.connect(this.gain);
+    this.oscillator.connect(this.modOutput);
   }
 
   setFrequency(freq: number) {
@@ -198,17 +199,21 @@ export class Oscillator extends OscFilterBase {
 
   modulation(modulator: AudioNode, type: oscModType | filterModType = oscModType.frequency) {
     this.modType = type;
-    this.modulator = modulator;
-    this.frequencyMod.disconnect();
-    this.amplitudeModDepth.gain.value = 0;
+    if(modulator) {
+      modulator.connect(this.frequencyMod);
+      modulator.connect(this.amplitudeModDepth);
+      this.frequencyMod.connect(this.oscillator.detune);
+    }
     this.setOscModulation();
   }
 
-  modulation2(gain: GainNode, type: oscModType) {
+  modulation2(type: oscModType, modulator: Oscillator | null = null ) {
     this.modType2 = type;
-    this.modulator2 = gain;
-    this.frequencyMod2.disconnect();
-    this.amplitudeMod2Depth.gain.value = 0;
+    if(modulator) {
+      modulator.modOutput.connect(this.frequencyMod2);
+      modulator.modOutput.connect(this.amplitudeMod2Depth);
+      this.frequencyMod2.connect(this.oscillator.detune);
+    }
     this.setOscModulation2();
   }
 
@@ -224,24 +229,22 @@ export class Oscillator extends OscFilterBase {
 
   setOscModulation() {
     if (this.modType === oscModType.frequency) {
-      this.modulator.connect(this.frequencyMod);
-      this.frequencyMod.connect(this.oscillator.detune);
       this.frequencyMod.gain.value = this.gainFactor * (Math.pow(this.freqModGainBase, this.modLevel) - 1);
+      this.amplitudeModDepth.gain.value = 0;
     } else if (this.modType === oscModType.amplitude) {
-      this.modulator.connect(this.amplitudeModDepth);
       this.amplitudeModDepth.gain.value = this.modLevel / 200;
+      this.frequencyMod.gain.value = 0;
     } else if (this.modType === oscModType.off) {
       this.modulationOff();
     }
   }
   setOscModulation2() {
     if (this.modType2 === oscModType.frequency) {
-      this.modulator2?.connect(this.frequencyMod2);
-      this.frequencyMod2.connect(this.oscillator.detune);
-      this.frequencyMod2.gain.value = 10000; // Gain adjustment made from the modulating oscillators gain control
+      this.amplitudeMod2Depth.gain.value = 0;
+      this.frequencyMod2.gain.value = this.gainFactor * (Math.pow(this.freqModGainBase, this.mod2Level) - 1);
     } else if (this.modType2 === oscModType.amplitude) {
-      this.modulator2?.connect(this.amplitudeMod2Depth);
-      this.amplitudeMod2Depth.gain.value = this.modLevel ;
+      this.frequencyMod2.gain.value = 0;
+      this.amplitudeMod2Depth.gain.value = this.ampModFactor*(Math.pow(this.ampModGainBase, this.mod2Level)-1);
     } else if (this.modType2 === oscModType.off) {
       this.modulation2Off();
     }
@@ -251,8 +254,18 @@ export class Oscillator extends OscFilterBase {
     this.modLevel = level;
     if (this.modType === oscModType.frequency)
       this.frequencyMod.gain.value = this.gainFactor*(Math.pow(this.freqModGainBase, this.modLevel)-1);
-    else
+    else if(this.modType === oscModType.amplitude)
       this.amplitudeModDepth.gain.value = this.ampModFactor*(Math.pow(this.ampModGainBase, this.modLevel)-1);
+  }
+
+
+  setMod2Level(level: number) {
+    this.mod2Level = level;
+
+    if(this.modType2 === oscModType.frequency)
+      this.frequencyMod2.gain.value = this.gainFactor*(Math.pow(this.freqModGainBase, this.mod2Level)-1);
+    else if (this.modType2 === oscModType.amplitude)
+      this.amplitudeMod2Depth.gain.value = this.ampModFactor*(Math.pow(this.ampModGainBase, this.mod2Level)-1);
   }
 
   override setFreqBendEnvelope(envelope: FreqBendValues) {
@@ -325,7 +338,12 @@ export class Oscillator extends OscFilterBase {
         oldOsc.stop();
         this.oscillator = ctx.createOscillator();
         this.oscillator.connect(this.gain);
+        this.oscillator.connect(this.modOutput);
         this.oscillator.frequency.value = this.freq;
+        this.frequencyMod2.disconnect();
+        this.frequencyMod2.connect(this.oscillator.detune);
+        this.frequencyMod.disconnect();
+        this.frequencyMod.connect(this.oscillator.detune);
         this.setType(this.type);
         this.setDetune(oldOsc.detune.value);
         this.setOscModulation();

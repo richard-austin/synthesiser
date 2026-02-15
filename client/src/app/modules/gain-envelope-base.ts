@@ -5,6 +5,7 @@ import {Subscription, timer} from 'rxjs';
 
 export abstract class GainEnvelopeBase {
   public readonly gain: GainNode;
+  protected readonly modOutput: GainNode;
   frequencyMod: GainNode;
   frequencyMod2: GainNode;
   amplitudeMod: GainNode;
@@ -13,10 +14,10 @@ export abstract class GainEnvelopeBase {
   protected modType: oscModType | filterModType;
   protected modType2: oscModType | filterModType;
   protected modLevel: number = 0;
+  protected mod2Level: number = 0;
   private _useAmplitudeEnvelope = false;
   env: ADSRValues;
   modulator!: AudioNode;
-  modulator2!: GainNode;
 
   protected setLevel: number;
   public static readonly maxLevel: number = 1;
@@ -25,15 +26,18 @@ export abstract class GainEnvelopeBase {
   protected constructor(protected audioCtx: AudioContext) {
     this.gain = audioCtx.createGain();
     this.setLevel = 0;
-    this.gain.gain.setValueAtTime(this.setLevel, audioCtx.currentTime);
+    this.gain.gain.value = this.setLevel;
+
+    this.modOutput = new GainNode(this.audioCtx);
+    this.modOutput.gain.value = 1;  // Fixed gain on this as the modulated oscillator sets the gain
     // Default ADSR values
     this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
     this.frequencyMod = audioCtx.createGain();
-    this.frequencyMod.gain.setValueAtTime(0, audioCtx.currentTime);
     this.frequencyMod2 = this.audioCtx.createGain();
-    this.frequencyMod.gain.setValueAtTime(0, audioCtx.currentTime);
+    this.frequencyMod.gain.value = 0;
+    this.frequencyMod2.gain.value = 0;
     this.amplitudeMod = audioCtx.createGain();
-    this.amplitudeMod.gain.setValueAtTime(1, audioCtx.currentTime);
+    this.amplitudeMod.gain.value = 1;
     this.amplitudeModDepth = audioCtx.createGain();
     this.amplitudeMod2Depth = audioCtx.createGain();
     this.amplitudeModDepth.gain.value = 0;
@@ -63,14 +67,12 @@ export abstract class GainEnvelopeBase {
   }
 
   modulationOff() {
-    this.frequencyMod.disconnect();
-    this.frequencyMod.gain.value = 1;
+    this.frequencyMod.gain.value = 0;
     this.amplitudeModDepth.gain.value = 0;
   }
 
   modulation2Off() {
-    this.frequencyMod2.disconnect();
-    this.frequencyMod2.gain.value = 1;
+    this.frequencyMod2.gain.value = 0;
     this.amplitudeMod2Depth.gain.value = 0;
   }
 
