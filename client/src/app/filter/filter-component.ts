@@ -103,6 +103,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
       this.filters[i].setFreqBendEnvelope(this.proxySettings.freqBend);
       this.filters[i].useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.off);
       this.filters[i].setType(this.proxySettings.filterType);
+      this.filters[i].modulation(this.lfo, filterModType.off);
     }
 
     this.frequency.setValue(this.proxySettings.frequency);  // Set frequency dial initial value.

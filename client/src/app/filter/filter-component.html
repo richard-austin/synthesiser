@@ -1,4 +1,4 @@
-<div class="group-container filter-height metallic-button">
+<div class="group-container filter-height metallic-button filter-height">
   <h1>Filters</h1>
   <div class="group">
     <div class="column">
@@ -74,22 +74,24 @@
       </div>
       <div class="module filter-width">
         <h2>Modulation</h2>
-        <app-level-control #modFreq
-                           label="LFO Frequency"
-                           [style]="dialStyle.green"
-                           [divisions]="10"
-                           [factor]="2"
-                           [calAngle]="300"
-                           [radius]="50"
-                           (setLevel)="setModFrequency($event)"></app-level-control>
-        <app-level-control #modDepth
-                           label="Mod Depth"
-                           [style]="dialStyle.green"
-                           [divisions]="10"
-                           [calAngle]="300"
-                           [radius]="50"
-                           [factor]="300"
-                           (setLevel)="setModLevel($event)"></app-level-control>
+        <div class="row">
+          <app-level-control #modFreq
+                             label="LFO Frequency"
+                             [style]="dialStyle.green"
+                             [divisions]="10"
+                             [factor]="2"
+                             [calAngle]="300"
+                             [radius]="50"
+                             (setLevel)="setModFrequency($event)"></app-level-control>
+          <app-level-control #modDepth
+                             label="Mod Depth"
+                             [style]="dialStyle.green"
+                             [divisions]="10"
+                             [calAngle]="300"
+                             [radius]="50"
+                             [factor]="300"
+                             (setLevel)="setModLevel($event)"></app-level-control>
+        </div>
         <h2>Waveform</h2>
         <div style="height: 3px;"></div>
         <form #lfoWaveForm>

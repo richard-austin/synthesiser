@@ -23,6 +23,7 @@ export class Filter extends OscFilterBase {
     this.gain.gain.value = 1;
     this.filter.connect(this.filter2);
     this.filter2.connect(this.gain);
+    this.frequencyMod.connect(this.filter.detune);
   }
 
   setFrequency(freq: number) {
@@ -49,7 +50,6 @@ export class Filter extends OscFilterBase {
   }
 
   modulation(modulator: AudioNode, type: filterModType | oscModType = filterModType.frequency) {
-    this.modulator = modulator;
     if(type === 'frequency') {
       modulator.connect(this.frequencyMod);
       this.frequencyMod.connect(this.filter.detune);
@@ -67,8 +67,8 @@ export class Filter extends OscFilterBase {
 
   override modulationOff() {
     super.modulationOff();
-    this.filter.frequency.value = this.freq;
-    this.filter2.frequency.value = this.freq;
+    // this.filter.frequency.value = this.freq; ???????????????????????????????????????
+    // this.filter2.frequency.value = this.freq;
   }
 
   override connect(param: AudioParam) : void;
@@ -116,7 +116,6 @@ export class Filter extends OscFilterBase {
         this.filter.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * Math.pow(this.freqBendBase, this.freqBendEnv.sustainLevel)), ctx.currentTime + this.freqBendEnv.decayTime);
         this.filter2.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * Math.pow(this.freqBendBase, this.freqBendEnv.sustainLevel)), ctx.currentTime + this.freqBendEnv.decayTime);
       });
-
     }
   }
 
