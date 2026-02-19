@@ -141,7 +141,7 @@ export abstract class GainEnvelopeBase {
 
   // Calculate the minimum envelope time (2 cycles of the relevant frequency) to prevent clicks with fast attack/decay/release
   private minRampTime(frequency: number) {
-    this._minRampTime = 2 / frequency;
+    this._minRampTime = 1 / frequency;
   }
 
   connect(arg: AudioNode | AudioParam) {

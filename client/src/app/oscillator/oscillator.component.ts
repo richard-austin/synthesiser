@@ -1,4 +1,13 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild} from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter, inject,
+  Input,
+  OnDestroy,
+  Output,
+  ViewChild
+} from '@angular/core';
 import {Oscillator} from '../modules/oscillator';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
@@ -12,6 +21,8 @@ import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {timer} from 'rxjs';
 import {Cookies} from '../settings/cookies/cookies';
 import {ChordProcessor} from '../modules/chord-processor';
+import DevicePoolManager from '../util-classes/device-pool-manager';
+import {DeviceKeys, DevicePoolManagerService} from '../services/device-pool-manager-service';
 
 export type PortamentoType = 'chord' | 'last' | 'first' | 'lowest' | 'highest' | 'plus12' | 'plus24' | 'minus12' | 'minus24';
 
@@ -32,6 +43,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   private cookies!: Cookies;
   private velocitySensitive: boolean = true;
   private modulators!: OscillatorComponent;
+  private oscillatorPoolMgr!: DevicePoolManager;
 
   @Input() filters!: FilterComponent;
   @Input() ringMod!: RingModulatorComponent;
@@ -41,7 +53,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   @Input() numberOfOscillators!: number;
   @Input() name!: string;
-
 
   @Output() output = new EventEmitter<string>();
   @ViewChild('frequency') frequency!: LevelControlComponent;
@@ -76,6 +87,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   @ViewChild('modWaveForm') lfoWaveForm!: ElementRef<HTMLFormElement>;
   @ViewChild('mod2Depth') mod2Level!: LevelControlComponent;
 
+  private devicePoolManagerService = inject(DevicePoolManagerService);
 
   start(audioCtx: AudioContext, settings: OscillatorSettings | null): boolean {
     let ok = false;
@@ -111,7 +123,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
-    for (let i = 0; i < this.numberOfOscillators; ++i) {
+    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
       this.oscillators.push(new Oscillator(this.audioCtx));
       this.oscillators[i].setFrequency(this.keyToFrequency(i));
       this.oscillators[i].setAmplitudeEnvelope(this.proxySettings.adsr)
@@ -120,7 +132,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       this.oscillators[i].useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.on);
       this.oscillators[i].setType(this.proxySettings.waveForm);
     }
-
+    this.oscillatorPoolMgr = new DevicePoolManager(this.oscillators, this.proxySettings);
     this.frequency.setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
     this.deTune.setValue(this.proxySettings.deTune);
     this.gain.setValue(this.proxySettings.gain);
@@ -173,9 +185,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   protected setFrequency(freq: number) {
     this.proxySettings.frequency = freq;
-    for (let i = 0; i < this.oscillators.length; i++) {
-      this.oscillators[i].setFrequency(this.keyToFrequency(i));
-    }
+    this.oscillatorPoolMgr.setFrequency(freq);
   }
 
   protected setGain(gain: number) {
@@ -216,7 +226,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   private setWaveForm(value: OscillatorType) {
     this.proxySettings.waveForm = value as oscWaveforms;
-    for (let i = 0; i < this.numberOfOscillators; ++i) {
+    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
       this.oscillators[i].setType(value);
     }
   }
@@ -231,28 +241,28 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   modulation(source: AudioNode, type: oscModType) {
     this.proxySettings.modType = type;
-    for (let i = 0; i < this.numberOfOscillators; ++i) {
+    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
       this.oscillators[i].modulation(source, type);
     }
   }
 
   modulation2(modulators: Oscillator[], type: oscModType) {
     this.proxySettings.modType2 = type;
-    for (let i = 0; i < this.numberOfOscillators; ++i) {
+    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
       this.oscillators[i].modulation2(type, modulators[i]);
     }
   }
 
   protected setModType(type: oscModType) {
     this.proxySettings.modType = type;
-    for (let i = 0; i < this.numberOfOscillators; ++i) {
+    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
       this.oscillators[i].modulation(this.lfo, type);
     }
   }
 
   protected setMod2Type(type: oscModType) {
     this.proxySettings.modType2 = type;
-    for (let i = 0; i < this.numberOfOscillators; ++i) {
+    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
       this.oscillators[i].modulation2(type);
     }
   }
@@ -263,10 +273,11 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   connectToFilters(): boolean {
     const filters = this.filters.filters;
     let ok = false;
-    if (filters && filters.length === this.oscillators.length) {
+    if (filters) {
+      const offset = this.secondary ? DevicePoolManager.numberOfDevices * 2 : DevicePoolManager.numberOfDevices;
       ok = true;
       for (let i = 0; i < this.oscillators.length; i++) {
-        this.oscillators[i].connect(filters[i].filter);
+        this.oscillators[i].connect(filters[i+offset].filter);
       }
     } else
       console.log("Filter array is a different size to the oscillator array")
@@ -339,53 +350,63 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     if (!this.velocitySensitive)
       velocity = 0x7f;
 
-    if (this.proxySettings.portamento > 0) {
-      this.oscillators[keyIndex].oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
-      const proxySettings = this.proxySettings;
-      switch (proxySettings.portamentoType) {
-        case 'chord':
-          if(!this.chordProcessor.addNote(keyIndex)) {
-            this.chordProcessor.setKeyDownCallback(this.chordProcessorKeyDownCallback);
-            return;
-          }
-          this.chordProcessor.setStartNote(keyIndex, this.oscillators[keyIndex], this.keyToFrequency);
-          break;
-        case 'last':
-          if (lastKey !== -1)
-            this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(lastKey);
-          break;
-        case 'first':
-          const firstKey = this.keysDown[0];
-          this.oscillators[keyIndex].oscillator.frequency.value =this.keyToFrequency(firstKey);
-          break;
-        case 'lowest':
-          const lowestKey = Math.min(...this.keysDown);
-          if (lowestKey !== -1)
-            this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(lowestKey);
-          break;
-        case 'highest':
-          const highestKey = Math.max(...this.keysDown);
-          this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(highestKey);
-          break;
-        case 'plus12':
-          this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) * 2;
-          break;
-        case 'plus24':
-          this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) * 4;
-          break;
-        case 'minus12':
-          this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) / 2;
-          break;
-        case 'minus24':
-          this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) / 4;
-          break;
-      }
+    // if (this.proxySettings.portamento > 0) {
+    //   this.oscillators[keyIndex].oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
+    //   const proxySettings = this.proxySettings;
+    //   switch (proxySettings.portamentoType) {
+    //     case 'chord':
+    //       if(!this.chordProcessor.addNote(keyIndex)) {
+    //         this.chordProcessor.setKeyDownCallback(this.chordProcessorKeyDownCallback);
+    //         return;
+    //       }
+    //       this.chordProcessor.setStartNote(keyIndex, this.oscillators[keyIndex], this.keyToFrequency);
+    //       break;
+    //     case 'last':
+    //       if (lastKey !== -1)
+    //         this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(lastKey);
+    //       break;
+    //     case 'first':
+    //       const firstKey = this.keysDown[0];
+    //       this.oscillators[keyIndex].oscillator.frequency.value =this.keyToFrequency(firstKey);
+    //       break;
+    //     case 'lowest':
+    //       const lowestKey = Math.min(...this.keysDown);
+    //       if (lowestKey !== -1)
+    //         this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(lowestKey);
+    //       break;
+    //     case 'highest':
+    //       const highestKey = Math.max(...this.keysDown);
+    //       this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(highestKey);
+    //       break;
+    //     case 'plus12':
+    //       this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) * 2;
+    //       break;
+    //     case 'plus24':
+    //       this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) * 4;
+    //       break;
+    //     case 'minus12':
+    //       this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) / 2;
+    //       break;
+    //     case 'minus24':
+    //       this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) / 4;
+    //       break;
+    //   }
+    //
+    //   this.oscillators[keyIndex].oscillator.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
+    // }
 
-      this.oscillators[keyIndex].oscillator.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
-    }
-    if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
-      // console.log("fx = " + this.oscillators[keyIndex].oscillator.frequency.value);
-      this.oscillators[keyIndex].keyDown(velocity);
+
+    // if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
+    //   // console.log("fx = " + this.oscillators[keyIndex].oscillator.frequency.value);
+    //   this.oscillators[keyIndex].keyDown(velocity);
+    // }
+
+    const keys: DeviceKeys | undefined =  this.oscillatorPoolMgr.keyDown(keyIndex, velocity);
+    if(keys) {
+      if (!this.secondary)
+        this.devicePoolManagerService.keyDown1(keys);  // Trigger appropriate filter bank
+      else
+        this.devicePoolManagerService.keyDown2(keys);  // Trigger appropriate filter bank
     }
   }
 
@@ -396,19 +417,23 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   keyUp(keyIndex: number) {
-    this.oscillators[keyIndex].releaseFinished = () => {
-      const idx = this.keysDown.indexOf(keyIndex);
-      if (idx > -1)
-        this.keysDown.splice(idx, 1);
-     // console.log("keysDown.length = ", this.keysDown.length);
-    }
-    if(this.proxySettings.portamentoType === 'chord')
-      this.chordProcessor.release(this.proxySettings.adsr.releaseTime);
+    // this.oscillators[keyIndex].releaseFinished = () => {
+    //   const idx = this.keysDown.indexOf(keyIndex);
+    //   if (idx > -1)
+    //     this.keysDown.splice(idx, 1);
+    //  // console.log("keysDown.length = ", this.keysDown.length);
+    // }
+    // if(this.proxySettings.portamentoType === 'chord')
+    //   this.chordProcessor.release(this.proxySettings.adsr.releaseTime);
 
-    if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
-      this.oscillators[keyIndex].keyUp();
+    const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyUp(keyIndex);
+    if(keys) {
+      if (!this.secondary)
+        this.devicePoolManagerService.keyUp1(keys);  // Trigger appropriate filter bank
+      else
+        this.devicePoolManagerService.keyUp2(keys);  // Trigger appropriate filter bank
     }
-  }
+   }
 
   protected setPortamento($event: number) {
     this.proxySettings.portamento = $event;
@@ -483,14 +508,14 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   protected setModLevel($event: number) {
     this.proxySettings.modLevel = $event;
-    for (let i = 0; i < this.numberOfOscillators; ++i) {
+    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
       this.oscillators[i].setModLevel($event);
     }
   }
 
   protected setMod2Level($event: number) {
     this.proxySettings.mod2Level = $event;
-    for (let i = 0; i < this.numberOfOscillators; ++i) {
+    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
       this.oscillators[i].setMod2Level($event);
     }
   }

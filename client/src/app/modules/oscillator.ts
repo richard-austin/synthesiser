@@ -7,7 +7,6 @@ import {WaveTableDetails} from './WaveTableDetails';
 
 export class Oscillator extends OscFilterBase {
   oscillator: OscillatorNode;
-  started = false;
   type: string;
 
   public static readonly wavetables: WaveTableDetails[] = [
@@ -184,6 +183,7 @@ export class Oscillator extends OscFilterBase {
     this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
     this.oscillator.connect(this.gain);
     this.oscillator.connect(this.modOutput);
+    this.oscillator.start();
   }
 
   setFrequency(freq: number) {
@@ -299,13 +299,6 @@ export class Oscillator extends OscFilterBase {
   // Key down for this oscillator
   override keyDown(velocity: number) {
     super.attack(velocity, this.oscillator.frequency.value);
-    if (!this.started) {
-      this.started = true;
-      this.oscillator.start();
-    } else {
-      if (this.timerSub)
-        this.timerSub.unsubscribe();
-    }
     //console.log("Oscillator keyDown = " + performance.now());
     if (this._useFreqBendEnvelope) {
       const ctx = this.audioCtx;
@@ -319,8 +312,6 @@ export class Oscillator extends OscFilterBase {
     }
   }
 
-  timerSub!: Subscription
-
   // Key released for this oscillator
   keyUp() {
     super.release(this.oscillator.frequency.value);
@@ -331,26 +322,6 @@ export class Oscillator extends OscFilterBase {
       this.oscillator.frequency.setValueAtTime(this.oscillator.frequency.value, ctx.currentTime); // Prevent step changes in freq
       this.oscillator.frequency.exponentialRampToValueAtTime(this.clampFrequency(this.freq * Math.pow(this.freqBendBase, this.freqBendEnv.releaseLevel)), ctx.currentTime + this.freqBendEnv.releaseTime);
     }
-    this.timerSub = timer((this.env.releaseTime+0.1) * 1000).subscribe(() => {
-      if (this.started) {
-        const oldOsc = this.oscillator;
-        oldOsc.disconnect();
-        oldOsc.stop();
-        this.oscillator = ctx.createOscillator();
-        this.oscillator.connect(this.gain);
-        this.oscillator.connect(this.modOutput);
-        this.oscillator.frequency.value = this.freq;
-        this.frequencyMod2.disconnect();
-        this.frequencyMod2.connect(this.oscillator.detune);
-        this.frequencyMod.disconnect();
-        this.frequencyMod.connect(this.oscillator.detune);
-        this.setType(this.type);
-        this.setDetune(oldOsc.detune.value);
-        this.setOscModulation();
-        this.setOscModulation2();
-        this.started = false;
-      }
-    });
   }
 
   override disconnect() {

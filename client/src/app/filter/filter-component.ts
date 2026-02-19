@@ -1,4 +1,14 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild} from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  inject,
+  Input,
+  OnDestroy,
+  Output,
+  ViewChild
+} from '@angular/core';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {Filter} from '../modules/filter';
@@ -12,6 +22,8 @@ import {Cookies} from '../settings/cookies/cookies';
 import {Oscillator} from '../modules/oscillator';
 import {PortamentoType} from '../oscillator/oscillator.component';
 import {ChordProcessor} from '../modules/chord-processor';
+import DevicePoolManager from '../util-classes/device-pool-manager';
+import {DeviceKeys, DevicePoolManagerService} from '../services/device-pool-manager-service';
 
 @Component({
   selector: 'app-filters',
@@ -63,7 +75,30 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   @ViewChild('modDepth') modLevel!: LevelControlComponent;
   @ViewChild('lfoWaveForm') lfoWaveForm!: ElementRef<HTMLFormElement>;
 
+  private devicePoolManagerService: DevicePoolManagerService = inject(DevicePoolManagerService);
+
   start(audioCtx: AudioContext, settings: FilterSettings | null): boolean {
+
+    this.devicePoolManagerService.notifyKeyDown1 = (keys: DeviceKeys) => {
+      keys.deviceIndex += DevicePoolManager.numberOfDevices;  // Oscillator 1 triggered
+      this.oscillatorKeyDown(keys);
+    }
+
+    this.devicePoolManagerService.notifyKeyDown2 = (keys: DeviceKeys) => {
+      keys.deviceIndex+= 2*DevicePoolManager.numberOfDevices; // Oscillator 2 triggered
+      this.oscillatorKeyDown(keys);
+    }
+
+    this.devicePoolManagerService.notifyKeyUp1 = (keys: DeviceKeys) => {
+      keys.deviceIndex += DevicePoolManager.numberOfDevices;
+      this.oscillatorKeyUp(keys);
+    }
+
+    this.devicePoolManagerService.notifyKeyUp2 = (keys: DeviceKeys) => {
+      keys.deviceIndex += 2*DevicePoolManager.numberOfDevices;
+      this.oscillatorKeyUp(keys);
+    }
+
     this.audioCtx = audioCtx;
     let ok = false;
     if (this.numberOfFilters) {
@@ -96,7 +131,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
 
-    for (let i = 0; i < this.numberOfFilters; ++i) {
+    for (let i = 0; i < DevicePoolManager.numberOfDevices * 3; ++i) {
       this.filters.push(new Filter(this.audioCtx));
       this.filters[i].setFrequency(this.keyToFrequency(i));
       this.filters[i].setDetune(this.proxySettings.deTune);
@@ -248,79 +283,92 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   keysDown: number[] = [];
   chordProcessor: ChordProcessor = new ChordProcessor();
 
+  oscillatorKeyDown = (keys: DeviceKeys)=> {
+    const filter = this.filters[keys.deviceIndex];
+    const freq = this.keyToFrequency(keys.keyIndex);
+    filter.filter.frequency.value = filter.filter2.frequency.value = filter.freq = freq;
+    filter.keyDown(127);
+  }
+
+  oscillatorKeyUp = (keys: DeviceKeys)=> {
+    this.filters[keys.deviceIndex].keyUp();
+  }
+
+
   keyDown(keyIndex: number, velocity: number) {
+    return;
     const lastKey = this.keysDown.length > 0 ? this.keysDown[this.keysDown.length - 1] : -1;
     if (!this.keysDown.includes(keyIndex)) {
       this.keysDown.push(keyIndex);
     }
-    if (this.proxySettings.portamento > 0) {
-      this.filters[keyIndex].filter.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
-      const proxySettings = this.proxySettings;
-      switch (proxySettings.portamentoType) {
-        case 'chord':
-          if(!this.chordProcessor.addNote(keyIndex)) {
-            this.chordProcessor.setKeyDownCallback(this.chordProcessorKeyDownCallback);
-            return;
-          }
-          this.chordProcessor.setStartNote(keyIndex, this.filters[keyIndex], this.keyToFrequency);
-          break;
-        case 'last':
-          if (lastKey !== -1) {
-            const freq = this.keyToFrequency(lastKey);
-            this.filters[keyIndex].filter.frequency.value = freq;
-            this.filters[keyIndex].filter2.frequency.value = freq;
-          }
-          break;
-        case 'first': {
-          const firstKey = this.keysDown[0];
-          const freq = this.keyToFrequency(firstKey);
-          this.filters[keyIndex].filter.frequency.value = freq;
-          this.filters[keyIndex].filter2.frequency.value = freq;
-          break;
-        }
-        case 'lowest':
-          const lowestKey = Math.min(...this.keysDown);
-          if (lowestKey !== -1) {
-            const freq = this.keyToFrequency(lowestKey);
-            this.filters[keyIndex].filter.frequency.value = freq;
-            this.filters[keyIndex].filter2.frequency.value = freq;
-          }
-          break;
-        case 'highest': {
-          const highestKey = Math.max(...this.keysDown);
-          const freq = this.keyToFrequency(highestKey);
-          this.filters[keyIndex].filter.frequency.value = freq;
-          this.filters[keyIndex].filter2.frequency.value = freq;
-          break;
-        }
-        case 'plus12': {
-          const freq = this.keyToFrequency(keyIndex) * 2;
-          this.filters[keyIndex].filter.frequency.value = freq;
-          this.filters[keyIndex].filter2.frequency.value = freq;
-          break;
-        }
-        case 'plus24': {
-          const freq = this.keyToFrequency(keyIndex) * 4;
-          this.filters[keyIndex].filter.frequency.value = freq;
-          this.filters[keyIndex].filter2.frequency.value = freq
-          break;
-        }
-        case 'minus12': {
-          const freq = this.keyToFrequency(keyIndex) / 2;
-          this.filters[keyIndex].filter.frequency.value = freq;
-          this.filters[keyIndex].filter2.frequency.value = freq;
-          break;
-        }
-        case 'minus24': {
-          const freq = this.keyToFrequency(keyIndex) / 4;
-          this.filters[keyIndex].filter.frequency.value = freq;
-          this.filters[keyIndex].filter2.frequency.value = freq;
-          break;
-        }
-      }
-      this.filters[keyIndex].filter.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
-      this.filters[keyIndex].filter2.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
-    }
+    // if (this.proxySettings.portamento > 0) {
+    //   this.filters[keyIndex].filter.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
+    //   const proxySettings = this.proxySettings;
+    //   switch (proxySettings.portamentoType) {
+    //     case 'chord':
+    //       if(!this.chordProcessor.addNote(keyIndex)) {
+    //         this.chordProcessor.setKeyDownCallback(this.chordProcessorKeyDownCallback);
+    //         return;
+    //       }
+    //       this.chordProcessor.setStartNote(keyIndex, this.filters[keyIndex], this.keyToFrequency);
+    //       break;
+    //     case 'last':
+    //       if (lastKey !== -1) {
+    //         const freq = this.keyToFrequency(lastKey);
+    //         this.filters[keyIndex].filter.frequency.value = freq;
+    //         this.filters[keyIndex].filter2.frequency.value = freq;
+    //       }
+    //       break;
+    //     case 'first': {
+    //       const firstKey = this.keysDown[0];
+    //       const freq = this.keyToFrequency(firstKey);
+    //       this.filters[keyIndex].filter.frequency.value = freq;
+    //       this.filters[keyIndex].filter2.frequency.value = freq;
+    //       break;
+    //     }
+    //     case 'lowest':
+    //       const lowestKey = Math.min(...this.keysDown);
+    //       if (lowestKey !== -1) {
+    //         const freq = this.keyToFrequency(lowestKey);
+    //         this.filters[keyIndex].filter.frequency.value = freq;
+    //         this.filters[keyIndex].filter2.frequency.value = freq;
+    //       }
+    //       break;
+    //     case 'highest': {
+    //       const highestKey = Math.max(...this.keysDown);
+    //       const freq = this.keyToFrequency(highestKey);
+    //       this.filters[keyIndex].filter.frequency.value = freq;
+    //       this.filters[keyIndex].filter2.frequency.value = freq;
+    //       break;
+    //     }
+    //     case 'plus12': {
+    //       const freq = this.keyToFrequency(keyIndex) * 2;
+    //       this.filters[keyIndex].filter.frequency.value = freq;
+    //       this.filters[keyIndex].filter2.frequency.value = freq;
+    //       break;
+    //     }
+    //     case 'plus24': {
+    //       const freq = this.keyToFrequency(keyIndex) * 4;
+    //       this.filters[keyIndex].filter.frequency.value = freq;
+    //       this.filters[keyIndex].filter2.frequency.value = freq
+    //       break;
+    //     }
+    //     case 'minus12': {
+    //       const freq = this.keyToFrequency(keyIndex) / 2;
+    //       this.filters[keyIndex].filter.frequency.value = freq;
+    //       this.filters[keyIndex].filter2.frequency.value = freq;
+    //       break;
+    //     }
+    //     case 'minus24': {
+    //       const freq = this.keyToFrequency(keyIndex) / 4;
+    //       this.filters[keyIndex].filter.frequency.value = freq;
+    //       this.filters[keyIndex].filter2.frequency.value = freq;
+    //       break;
+    //     }
+    //   }
+    //   this.filters[keyIndex].filter.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
+    //   this.filters[keyIndex].filter2.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
+    // }
 
     if (keyIndex >= 0 && keyIndex < this.numberOfFilters) {
       this.filters[keyIndex].keyDown(velocity);
@@ -337,6 +385,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
 
   keyUp(keyIndex: number) {
+    return;
     this.filters[keyIndex].releaseFinished = () => {
       const idx = this.keysDown.indexOf(keyIndex);
       if (idx > -1)
