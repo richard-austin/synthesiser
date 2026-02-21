@@ -8,6 +8,7 @@ export class Filter extends OscFilterBase {
   filter: BiquadFilterNode;
   filter2: BiquadFilterNode;
   readonly freqBendBase = 16;
+  keyIndex: number = -1;
 
   constructor(protected override audioCtx: AudioContext) {
     super(audioCtx);

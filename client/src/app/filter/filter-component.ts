@@ -45,7 +45,9 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     return this._filters;
   }
 
-  @Input() numberOfFilters!: number;
+  // One set for oscillator1, one set for oscillator2 and one for the noise source
+  private readonly numberOfFilters: number = DevicePoolManager.numberOfDevices * 3;
+
   @Input() reverb!: ReverbComponent;
   @Input() ringMod!: RingModulatorComponent;
   @Input() phasor!: PhasorComponent;
@@ -131,7 +133,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
 
-    for (let i = 0; i < DevicePoolManager.numberOfDevices * 3; ++i) {
+    for (let i = 0; i < this.numberOfFilters; ++i) {
       this.filters.push(new Filter(this.audioCtx));
       this.filters[i].setFrequency(this.keyToFrequency(i));
       this.filters[i].setDetune(this.proxySettings.deTune);
@@ -177,9 +179,16 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   protected setFrequency(freq: number) {
     this.proxySettings.frequency = freq;
-    for (let i = 0; i < this.filters.length; i++) {
-      this.filters[i].setFrequency(this.keyToFrequency(i));
+    // Set frequency on the oscillators bank 1 and 2 related filters
+    for(let i = DevicePoolManager.numberOfDevices; i < 3 * DevicePoolManager.numberOfDevices; ++i) {
+      const filter = this.filters[i];
+      if(filter.keyIndex > -1)
+        filter.setFrequency(this.keyToFrequency(filter.keyIndex))
     }
+
+    // for (let i = 0; i < this.filters.length; i++) {
+    //   this.filters[i].setFrequency(this.keyToFrequency(i));
+    // }
   }
 
   protected setGain(gain: number) {
@@ -285,13 +294,16 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   oscillatorKeyDown = (keys: DeviceKeys)=> {
     const filter = this.filters[keys.deviceIndex];
+    filter.keyIndex = keys.keyIndex;
     const freq = this.keyToFrequency(keys.keyIndex);
     filter.filter.frequency.value = filter.filter2.frequency.value = filter.freq = freq;
     filter.keyDown(127);
   }
 
   oscillatorKeyUp = (keys: DeviceKeys)=> {
-    this.filters[keys.deviceIndex].keyUp();
+    const filter = this.filters[keys.deviceIndex];
+    filter.keyIndex = -1;
+    filter.keyUp();
   }
 
 

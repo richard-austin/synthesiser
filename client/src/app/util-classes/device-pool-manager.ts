@@ -16,7 +16,7 @@ class DeviceStatus {
     this.deviceKeys = deviceKeys;
   }
 
-  keyUp(settings: OscillatorSettings | FilterSettings) {
+  keyUp() {
     const device = this.device;
     if (device instanceof Oscillator) {
       this.inUse = false;
@@ -52,6 +52,7 @@ class DevicePoolManager {
 
     if (deviceIndex === -1) {
       firstAvailable = this.devices[0];
+      firstAvailable.deviceKeys.deviceIndex = 0;
     } else {
       firstAvailable = this.devices[deviceIndex];
       firstAvailable.deviceKeys = new DeviceKeys(keyIndex, deviceIndex);
@@ -64,15 +65,13 @@ class DevicePoolManager {
       return device.keyIndex === keyIndex;
     });
 
-    let dev: DeviceStatus;
+    let dev: DeviceStatus | undefined = undefined;
 
     if (deviceIndex > -1) {
       dev = this.devices[deviceIndex];
       dev.deviceKeys = new DeviceKeys(keyIndex, deviceIndex);
     }
-    return this.devices.find(device => {
-      return device.keyIndex === keyIndex;
-    });
+    return dev;
   }
 
   private keyToFrequency = (key: number) => {
@@ -119,7 +118,7 @@ class DevicePoolManager {
   keyUp(keyIndex: number): DeviceKeys | undefined {
     const device = this.findDeviceFromKeyIndex(keyIndex);
     if (device) {
-      device.keyUp(this.settings)
+      device.keyUp()
     }
     return device?.deviceKeys;
   }
