@@ -121,8 +121,8 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       // else use default settings
     }
 
-
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
+
     for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
       this.oscillators.push(new Oscillator(this.audioCtx));
       this.oscillators[i].setFrequency(this.keyToFrequency(i));
@@ -404,9 +404,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     const keys: DeviceKeys | undefined =  this.oscillatorPoolMgr.keyDown(keyIndex, velocity);
     if(keys) {
       if (!this.secondary)
-        this.devicePoolManagerService.keyDown1(keys);  // Trigger appropriate filter bank
+        this.devicePoolManagerService.keyDownOscillator1(keys);  // Trigger appropriate filter bank
       else
-        this.devicePoolManagerService.keyDown2(keys);  // Trigger appropriate filter bank
+        this.devicePoolManagerService.keyDownOscillator2(keys);  // Trigger appropriate filter bank
     }
   }
 
@@ -429,9 +429,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyUp(keyIndex);
     if(keys) {
       if (!this.secondary)
-        this.devicePoolManagerService.keyUp1(keys);  // Trigger appropriate filter bank
+        this.devicePoolManagerService.keyUpOscillator1(keys);  // Trigger appropriate filter bank
       else
-        this.devicePoolManagerService.keyUp2(keys);  // Trigger appropriate filter bank
+        this.devicePoolManagerService.keyUpOscillator2(keys);  // Trigger appropriate filter bank
     }
    }
 

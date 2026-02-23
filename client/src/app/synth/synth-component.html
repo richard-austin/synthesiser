@@ -28,14 +28,12 @@
                  (output)="setFilterOutputTarget($event)"></app-filters>
     <div class="analyser">
       <app-noise [filters]="filters"
-                 [numberOfOscillators]="numberOfOscillators"
                  (output)="setNoiseOutputTarget($event)">
       </app-noise>
 
       <app-analyser></app-analyser>
     </div>
     <app-ring-modulator #ringMod
-                        [numberOfOscillators]="numberOfOscillators"
                         [filters]="filters"
                         [reverb]="reverb"
                         (output)="setRingModOutPutTarget($event)">

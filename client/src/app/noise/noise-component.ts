@@ -1,4 +1,14 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild} from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  inject,
+  Input,
+  OnDestroy,
+  Output,
+  ViewChild
+} from '@angular/core';
 import {WhiteNoise} from '../modules/noise/white-noise';
 import {PinkNoise} from '../modules/noise/pink-noise';
 import {BrownNoise} from '../modules/noise/brown-noise';
@@ -9,6 +19,8 @@ import {NoiseSettings} from '../settings/noise';
 import {noiseOutputs, onOff} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {Cookies} from '../settings/cookies/cookies';
+import DevicePoolManager from '../util-classes/device-pool-manager';
+import {DeviceKeys, DevicePoolManagerService} from '../services/device-pool-manager-service';
 
 @Component({
   selector: 'app-noise',
@@ -25,8 +37,8 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   private proxySettings!: NoiseSettings;
   private cookies!: Cookies;
   private velocitySensitive: boolean = true;
+  private noisePoolMgr!: DevicePoolManager;
 
-  @Input() numberOfOscillators!: number;
   @Input() filters!: FilterComponent;
   @Output() output = new EventEmitter<string>();
 
@@ -41,44 +53,43 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   @ViewChild('amplitudeEnvelopeOnOffForm') amplitudeEnvelopeOnOffForm!: ElementRef<HTMLFormElement>;
   @ViewChild('velocity') velocityOnOffForm!: ElementRef<HTMLFormElement>;
 
+  private devicePoolManagerService = inject(DevicePoolManagerService);
 
   constructor() {
   }
 
   async start(audioCtx: AudioContext, settings: NoiseSettings | null) {
-    if (this.numberOfOscillators) {
-      for (let i = 0; i < this.numberOfOscillators; ++i) {
-        this.whiteNoise.push(new WhiteNoise(audioCtx));
-        this.pinkNoise.push(new PinkNoise(audioCtx));
-         this.brownNoise.push(new BrownNoise(audioCtx));
-        await this.whiteNoise[i].start();
-        await this.pinkNoise[i].start();
-        await this.brownNoise[i].start();
-      }
+    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
+      this.whiteNoise.push(new WhiteNoise(audioCtx));
+      this.pinkNoise.push(new PinkNoise(audioCtx));
+      this.brownNoise.push(new BrownNoise(audioCtx));
+      await this.whiteNoise[i].start();
+      await this.pinkNoise[i].start();
+      await this.brownNoise[i].start();
     }
     this.cookies = new Cookies();
     this.applySettings(settings);
   }
 
   // Called after all synth components have been started
-  setOutputConnection () {
+  setOutputConnection() {
     SetRadioButtons.set(this.noiseOutputToForm, this.proxySettings.output);
   }
 
   applySettings(settings: NoiseSettings | null) {
-     const cookieName = 'noise';
-    if(!settings) {
+    const cookieName = 'noise';
+    if (!settings) {
       settings = new NoiseSettings();
       const savedSettings = this.cookies.getSettings(cookieName, settings);
 
-      if(Object.keys(savedSettings).length > 0) {
+      if (Object.keys(savedSettings).length > 0) {
         // Use values from cookie
         settings = savedSettings as NoiseSettings;
       }
       // else use default settings
     }
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
-    for (let i = 0; i < this.numberOfOscillators; ++i) {
+    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
       this.whiteNoise[i].setGain(settings.gain);
       this.whiteNoise[i].setAmplitudeEnvelope(settings.adsr);
       this.whiteNoise[i].useAmplitudeEnvelope = settings.useAmplitudeEnvelope === onOff.on;
@@ -89,13 +100,16 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
       this.brownNoise[i].setAmplitudeEnvelope(settings.adsr);
       this.brownNoise[i].useAmplitudeEnvelope = settings.useAmplitudeEnvelope === onOff.on;
     }
+    let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
+    this.noisePoolMgr = new DevicePoolManager(source, this.proxySettings);
+
     this.attack.setValue(this.proxySettings.adsr.attackTime);
     this.decay.setValue(this.proxySettings.adsr.decayTime);
     this.sustain.setValue(this.proxySettings.adsr.sustainLevel);
     this.release.setValue(this.proxySettings.adsr.releaseTime);
     this.gainControl.setValue(settings.gain);
 
-  //  SetRadioButtons.set(this.noiseOutputToForm, this.settings.output);
+    //  SetRadioButtons.set(this.noiseOutputToForm, this.settings.output);
     SetRadioButtons.set(this.noiseTypeForm, this.proxySettings.type);
     SetRadioButtons.set(this.amplitudeEnvelopeOnOffForm, this.proxySettings.useAmplitudeEnvelope);
     SetRadioButtons.set(this.velocityOnOffForm, this.proxySettings.velocitySensitive);
@@ -109,7 +123,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     this.proxySettings.gain = gain;
     const noiseType = this.proxySettings.type;
 
-    for (let i = 0; i < this.numberOfOscillators; i++) {
+    for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
       switch (noiseType) {
         case 'white':
           this.whiteNoise[i].setGain(gain);
@@ -128,25 +142,21 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     this.proxySettings.type = noiseType;
     const gain = this.proxySettings.gain;
 
-    for (let i = 0; i < this.numberOfOscillators; ++i) {
+    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
       this.whiteNoise[i].setGain(0);
       this.pinkNoise[i].setGain(0);
       this.brownNoise[i].setGain(0);
     }
     const source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
-    for (let i = 0; i < this.numberOfOscillators; ++i) {
+    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
       source[i].setGain(gain);
       source[i].useAmplitudeEnvelope = this.proxySettings.useAmplitudeEnvelope == onOff.on;
     }
+    this.noisePoolMgr.updateDevices(this.noiseSource())
   }
 
   connect(node: AudioNode) {
     this.proxySettings.output = noiseOutputs.speaker;
-    // for (let i = 0; i < this.numberOfChannels; ++i) {
-    //   this.whiteNoise[i].disconnect();
-    //   this.pinkNoise[i].disconnect();
-    //   this.brownNoise[i].disconnect();
-    // }
     this.whiteNoise[0].connect(node);
     this.pinkNoise[0].connect(node);
     this.brownNoise[0].connect(node);
@@ -155,25 +165,19 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   /**
    * connectToFilters: Connect to a group of filters
    */
-  connectToFilters(): boolean {
+  connectToFilters(): void {
     this.proxySettings.output = noiseOutputs.filter;
     const filters = this.filters?.filters;
-    let ok = false;
-    if (filters && filters.length === this.numberOfOscillators) {
-      ok = true;
-      for (let i = 0; i < this.numberOfOscillators; i++) {
-        this.whiteNoise[i].connect(filters[i].filter);
-        this.pinkNoise[i].connect(filters[i].filter);
-        this.brownNoise[i].connect(filters[i].filter);
-      }
-    } else
-      console.log("Filter array is a different size to numberOfChannels")
-    return ok;
+    for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
+      this.whiteNoise[i].connect(filters[i].filter);
+      this.pinkNoise[i].connect(filters[i].filter);
+      this.brownNoise[i].connect(filters[i].filter);
+    }
   }
 
   disconnect() {
     this.proxySettings.output = noiseOutputs.off;
-    for (let i = 0; i < this.numberOfOscillators; i++) {
+    for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
       this.whiteNoise[i].disconnect();
       this.pinkNoise[i].disconnect();
       this.brownNoise[i].disconnect();
@@ -198,8 +202,8 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
 
   useAmplitudeEnvelope(useAmplitudeEnvelope: boolean) {
     this.proxySettings.useAmplitudeEnvelope = useAmplitudeEnvelope ? onOff.on : onOff.off;
-    let source : WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
-    for (let i = 0; i < this.numberOfOscillators; i++) {
+    let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
+    for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
       source[i].useAmplitudeEnvelope = useAmplitudeEnvelope;
     }
   }
@@ -210,22 +214,27 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   }
 
   keyDown(keyIndex: number, velocity: number) {
-    if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
-      let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
-      if(this.proxySettings.output === noiseOutputs.speaker)
+    if (keyIndex >= 0) {
+      if (this.proxySettings.output === noiseOutputs.speaker)
         keyIndex = 0;  // Wired straight to the output, so we only use a single channel to avoid overload
-      if(!this.velocitySensitive)
+      if (!this.velocitySensitive)
         velocity = 0x7f;
-      source[keyIndex].keyDown(velocity);
+      const keys: DeviceKeys | undefined = this.noisePoolMgr.keyDown(keyIndex, velocity);
+      if (keys) {
+        this.devicePoolManagerService.keyDownNoise(keys);  // Trigger appropriate filter bank
+      }
     }
   }
 
   keyUp(keyIndex: number) {
-    if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
-      let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
-      if(this.proxySettings.output === noiseOutputs.speaker)
+    if (keyIndex >= 0) {
+      if (this.proxySettings.output === noiseOutputs.speaker)
         keyIndex = 0; // Wired straight to the output, so we only use a single channel to avoid overload
-      source[keyIndex].keyUp();
+      //source[keyIndex].keyUp();
+
+      const keys: DeviceKeys | undefined = this.noisePoolMgr.keyUp(keyIndex);
+      if (keys)
+        this.devicePoolManagerService.keyUpNoise(keys);  // Trigger appropriate filter bank
     }
   }
 
@@ -290,15 +299,15 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     WhiteNoise.theNode = PinkNoise.theNode = BrownNoise.theNode = undefined;
-    for(let i = 0; i < this.whiteNoise.length; i++) {
+    for (let i = 0; i < this.whiteNoise.length; i++) {
       // @ts-ignore
       this.whiteNoise[i] = null;
     }
-    for(let i = 0; i < this.pinkNoise.length; i++) {
+    for (let i = 0; i < this.pinkNoise.length; i++) {
       // @ts-ignore
       this.pinkNoise[i] = null;
     }
-    for(let i = 0; i < this.brownNoise.length; i++) {
+    for (let i = 0; i < this.brownNoise.length; i++) {
       // @ts-ignore
       this.brownNoise[i] = null;
     }

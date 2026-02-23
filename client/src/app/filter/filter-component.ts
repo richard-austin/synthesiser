@@ -83,22 +83,30 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
     this.devicePoolManagerService.notifyKeyDown1 = (keys: DeviceKeys) => {
       keys.deviceIndex += DevicePoolManager.numberOfDevices;  // Oscillator 1 triggered
-      this.oscillatorKeyDown(keys);
+      this.deviceKeyDown(keys);
     }
 
     this.devicePoolManagerService.notifyKeyDown2 = (keys: DeviceKeys) => {
       keys.deviceIndex+= 2*DevicePoolManager.numberOfDevices; // Oscillator 2 triggered
-      this.oscillatorKeyDown(keys);
+      this.deviceKeyDown(keys);
     }
 
     this.devicePoolManagerService.notifyKeyUp1 = (keys: DeviceKeys) => {
       keys.deviceIndex += DevicePoolManager.numberOfDevices;
-      this.oscillatorKeyUp(keys);
+      this.deviceKeyUp(keys);
     }
 
     this.devicePoolManagerService.notifyKeyUp2 = (keys: DeviceKeys) => {
       keys.deviceIndex += 2*DevicePoolManager.numberOfDevices;
-      this.oscillatorKeyUp(keys);
+      this.deviceKeyUp(keys);
+    }
+
+    this.devicePoolManagerService.notifyKeyDownNoise = (keys: DeviceKeys) => {
+      this.deviceKeyDown(keys);
+    }
+
+    this.devicePoolManagerService.notifyKeyUpNoise = (keys: DeviceKeys) => {
+      this.deviceKeyUp(keys);
     }
 
     this.audioCtx = audioCtx;
@@ -292,7 +300,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   keysDown: number[] = [];
   chordProcessor: ChordProcessor = new ChordProcessor();
 
-  oscillatorKeyDown = (keys: DeviceKeys)=> {
+  deviceKeyDown = (keys: DeviceKeys)=> {
     const filter = this.filters[keys.deviceIndex];
     filter.keyIndex = keys.keyIndex;
     const freq = this.keyToFrequency(keys.keyIndex);
@@ -300,7 +308,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     filter.keyDown(127);
   }
 
-  oscillatorKeyUp = (keys: DeviceKeys)=> {
+  deviceKeyUp = (keys: DeviceKeys)=> {
     const filter = this.filters[keys.deviceIndex];
     filter.keyIndex = -1;
     filter.keyUp();
