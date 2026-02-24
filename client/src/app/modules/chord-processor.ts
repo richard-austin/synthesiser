@@ -2,6 +2,7 @@ import {Chord} from './chord';
 import {Subscription, timer} from 'rxjs';
 import {Oscillator} from './oscillator';
 import {Filter} from './filter';
+import {DeviceKeys} from '../services/device-pool-manager-service';
 
 export class ChordProcessor {
   private loggingChord1: boolean = false;
@@ -13,7 +14,7 @@ export class ChordProcessor {
   private chordCollectionTimerSub!: Subscription;
   private chordReady: boolean = false;
   private continuity: boolean = false;
-  private chordProcessorKeyDownCallback!: (prevKeyIndex: number, keyIndex: number) => void;
+  private chordProcessorKeyDownCallback!: ((prevKeyIndex: DeviceKeys, theseKeys: DeviceKeys) => void);
 
   private chord1Complete() {
     this.chord2 = new Chord();
@@ -27,7 +28,7 @@ export class ChordProcessor {
     this.chord2.log("Chord 2");
   }
 
-  addNote(keyIndex: number): boolean {
+  addNote(keys: DeviceKeys): boolean {
     if (this.releaseTimerSub) {
       this.releaseTimerSub.unsubscribe();
     }
@@ -57,9 +58,9 @@ export class ChordProcessor {
     }
 
     if (this.loggingChord1) {
-      this.chord1.addNote(keyIndex);
+      this.chord1.addNote(keys);
     } else if (this.loggingChord2) {
-      this.chord2.addNote(keyIndex);
+      this.chord2.addNote(keys);
     }
     return this.chordReady;
   }
@@ -79,21 +80,21 @@ export class ChordProcessor {
     });
   }
 
-  setStartNote(keyIndex: number, device: Oscillator | Filter, keyToFrequency: (keyIndex: number) => number) {
+  setStartNote(keys: DeviceKeys, device: Oscillator | Filter, keyToFrequency: (keyIndex: number) => number) {
     if (!this.continuity) {
       if (device instanceof Oscillator)
-        device.oscillator.frequency.value = keyToFrequency(keyIndex);
+        device.oscillator.frequency.value = keyToFrequency(keys.keyIndex);
       else
-        device.filter.frequency.value = device.filter2.frequency.value = keyToFrequency(keyIndex);
+        device.filter.frequency.value = device.filter2.frequency.value = keyToFrequency(keys.keyIndex);
     } else {
       const startChord = this.loggingChord1 ? this.chord2 : this.chord1;
-      const startIndex = startChord.notes.length > 0 ? startChord.notes.pop() : keyIndex;
+      const startKeys = startChord.notes.length > 0 ? startChord.notes.pop() : keys;
       if (startChord.notes.length === 0)
-        startChord.notes.push(startIndex as number);
+        startChord.notes.push(startKeys as DeviceKeys);
       if (device instanceof Oscillator)
-        device.oscillator.frequency.value = keyToFrequency(startIndex as number);
+        device.oscillator.frequency.value = keyToFrequency(startKeys?.keyIndex as number);
       else
-        device.filter.frequency.value = device.filter2.frequency.value = keyToFrequency(startIndex as number);
+        device.filter.frequency.value = device.filter2.frequency.value = keyToFrequency(startKeys?.keyIndex as number);
     }
   }
 
@@ -101,18 +102,18 @@ export class ChordProcessor {
     if (lastChord) {
       console.log("lastChord " + lastChord.notes.length + " notes found");
       lastChord.notes.sort((a, b) => {
-        return a - b
+        return a.keyIndex - b.keyIndex
       });
     }
 
     console.log("thisChord " + thisChord.notes.length + " notes found");
     thisChord.notes.sort((a, b) => {
-      return a - b
+      return a.keyIndex - b.keyIndex
     });
 
     for (let i = 0; i < thisChord.notes.length; ++i) {
       if (lastChord && lastChord.notes.length > 1)
-        this.chordProcessorKeyDownCallback(lastChord.notes.shift() as number, thisChord.notes[i]);
+        this.chordProcessorKeyDownCallback(lastChord.notes.shift() as DeviceKeys, thisChord.notes[i]);
       else if (lastChord && lastChord.notes.length === 1)
         this.chordProcessorKeyDownCallback(lastChord.notes[0], thisChord.notes[i]);
       else
@@ -120,7 +121,7 @@ export class ChordProcessor {
     }
   }
 
-  setKeyDownCallback(chordProcessorKeyDownCallback: (prevKeyIndex: number, keyIndex: number) => void) {
+  setKeyDownCallback(chordProcessorKeyDownCallback: (prevKeyIndex: DeviceKeys, theseKeys: DeviceKeys) => void) {
     this.chordProcessorKeyDownCallback = chordProcessorKeyDownCallback;
   }
 

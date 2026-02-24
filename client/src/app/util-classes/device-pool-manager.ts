@@ -21,10 +21,7 @@ class DeviceStatus {
 
   keyUp() {
     const device = this.device;
-    if (!(device instanceof Filter)) {
-      this.inUse = false;
-      device.keyUp();
-    } else if (device) {
+    if (device) {
       this.inUse = false;
       device.keyUp();
     }
@@ -33,7 +30,7 @@ class DeviceStatus {
 
 class DevicePoolManager {
   public static readonly numberOfDevices: number = 12; // Number of oscillators and filters in a pool
-  private devices: DeviceStatus[];
+  private readonly devices: DeviceStatus[];
   private readonly settings: OscillatorSettings | FilterSettings | NoiseSettings;
 
   constructor(devices: Oscillator[] | Filter[] | WhiteNoise[] | PinkNoise[] | BrownNoise[], settings: OscillatorSettings | FilterSettings | NoiseSettings) {
@@ -46,10 +43,11 @@ class DevicePoolManager {
 
   updateDevices(devices: WhiteNoise[] | PinkNoise[] | BrownNoise[]) {
     console.assert(devices.length === this.devices.length);
-    for(let i = 0; i < devices.length; ++i) {
+    for (let i = 0; i < devices.length; ++i) {
       this.devices[i].device = devices[i];
     }
   }
+
   private findFirstAvailable(keyIndex: number): DeviceStatus {
     let deviceIndex = this.devices.findIndex(device => {
       return !device.inUse;
@@ -80,11 +78,11 @@ class DevicePoolManager {
   }
 
   private keyToFrequency = (key: number) => {
-      return Oscillator.frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * (this.settings as OscillatorSettings).frequency * 6 /*this.tuningDivisions*/ / 10);
+    return Oscillator.frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * (this.settings as OscillatorSettings).frequency * 6 /*this.tuningDivisions*/ / 10);
   }
 
   setFrequency(frequency: number) {
-    if(this.settings.hasOwnProperty("frequency")) {
+    if (this.settings.hasOwnProperty("frequency")) {
       // @ts-ignore
       this.settings.frequency = frequency;
 

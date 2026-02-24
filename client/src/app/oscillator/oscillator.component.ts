@@ -24,7 +24,16 @@ import {ChordProcessor} from '../modules/chord-processor';
 import DevicePoolManager from '../util-classes/device-pool-manager';
 import {DeviceKeys, DevicePoolManagerService} from '../services/device-pool-manager-service';
 
-export type PortamentoType = 'chord' | 'last' | 'first' | 'lowest' | 'highest' | 'plus12' | 'plus24' | 'minus12' | 'minus24';
+export type PortamentoType =
+  'chord'
+  | 'last'
+  | 'first'
+  | 'lowest'
+  | 'highest'
+  | 'plus12'
+  | 'plus24'
+  | 'minus12'
+  | 'minus24';
 
 @Component({
   selector: 'app-oscillators',
@@ -155,7 +164,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     // Set up LFO default values
     this.modFreq.setValue(this.proxySettings.modFreq);  // Set dial
     this.modLevel.setValue(this.proxySettings.modLevel);  // Set dial
-    if(!this.proxySettings.mod2Level)
+    if (!this.proxySettings.mod2Level)
       this.proxySettings.mod2Level = 0;
     this.mod2Level.setValue(this.proxySettings.mod2Level);  // Set dial
 
@@ -175,7 +184,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.modulators = modulators;
 
     this.modulation2(this.modulators.oscillators, this.proxySettings.modType2);
-    if(this.proxySettings.modType2)  // In case config or cookie predates addition of this field
+    if (this.proxySettings.modType2)  // In case config or cookie predates addition of this field
       SetRadioButtons.set(this.oscModSettingsForm, this.proxySettings.modType2);
   }
 
@@ -235,7 +244,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.proxySettings.portamentoType = value as PortamentoType;
   }
 
-  keyToFrequency = (key: number)=> {
+  keyToFrequency = (key: number) => {
     return Oscillator.frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
   }
 
@@ -277,7 +286,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       const offset = this.secondary ? DevicePoolManager.numberOfDevices * 2 : DevicePoolManager.numberOfDevices;
       ok = true;
       for (let i = 0; i < this.oscillators.length; i++) {
-        this.oscillators[i].connect(filters[i+offset].filter);
+        this.oscillators[i].connect(filters[i + offset].filter);
       }
     } else
       console.log("Filter array is a different size to the oscillator array")
@@ -337,103 +346,116 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  keysDown: number[] = [];
+  keysDown: DeviceKeys[] = [];
   chordProcessor: ChordProcessor = new ChordProcessor();
 
   keyDown(keyIndex: number, velocity: number) {
-    const lastKey = this.keysDown.length > 0 ? this.keysDown[this.keysDown.length - 1] : -1;
-    if (!this.keysDown.includes(keyIndex)) {
-      this.keysDown.push(keyIndex);
-    }
-
-   // console.log("START keysDown.length = ", this.keysDown.length);
-    if (!this.velocitySensitive)
-      velocity = 0x7f;
-
-    // if (this.proxySettings.portamento > 0) {
-    //   this.oscillators[keyIndex].oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
-    //   const proxySettings = this.proxySettings;
-    //   switch (proxySettings.portamentoType) {
-    //     case 'chord':
-    //       if(!this.chordProcessor.addNote(keyIndex)) {
-    //         this.chordProcessor.setKeyDownCallback(this.chordProcessorKeyDownCallback);
-    //         return;
-    //       }
-    //       this.chordProcessor.setStartNote(keyIndex, this.oscillators[keyIndex], this.keyToFrequency);
-    //       break;
-    //     case 'last':
-    //       if (lastKey !== -1)
-    //         this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(lastKey);
-    //       break;
-    //     case 'first':
-    //       const firstKey = this.keysDown[0];
-    //       this.oscillators[keyIndex].oscillator.frequency.value =this.keyToFrequency(firstKey);
-    //       break;
-    //     case 'lowest':
-    //       const lowestKey = Math.min(...this.keysDown);
-    //       if (lowestKey !== -1)
-    //         this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(lowestKey);
-    //       break;
-    //     case 'highest':
-    //       const highestKey = Math.max(...this.keysDown);
-    //       this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(highestKey);
-    //       break;
-    //     case 'plus12':
-    //       this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) * 2;
-    //       break;
-    //     case 'plus24':
-    //       this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) * 4;
-    //       break;
-    //     case 'minus12':
-    //       this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) / 2;
-    //       break;
-    //     case 'minus24':
-    //       this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) / 4;
-    //       break;
-    //   }
-    //
-    //   this.oscillators[keyIndex].oscillator.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
-    // }
-
-
-    // if (keyIndex >= 0 && keyIndex < this.numberOfOscillators) {
-    //   // console.log("fx = " + this.oscillators[keyIndex].oscillator.frequency.value);
-    //   this.oscillators[keyIndex].keyDown(velocity);
-    // }
-
-    const keys: DeviceKeys | undefined =  this.oscillatorPoolMgr.keyDown(keyIndex, velocity);
-    if(keys) {
+    const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyDown(keyIndex, velocity);
+    if (keys) {
       if (!this.secondary)
         this.devicePoolManagerService.keyDownOscillator1(keys);  // Trigger appropriate filter bank
       else
         this.devicePoolManagerService.keyDownOscillator2(keys);  // Trigger appropriate filter bank
     }
+
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    const lastKey = this.keysDown.length > 0 ? this.keysDown[this.keysDown.length - 1] : null;
+    if (-1 === this.keysDown.findIndex(key => key.keyIndex === keyIndex)) {
+      this.keysDown.push(keys as DeviceKeys);
+    }
+
+    // console.log("START keysDown.length = ", this.keysDown.length);
+    if (!this.velocitySensitive)
+      velocity = 0x7f;
+
+    if (keys !== undefined && this.proxySettings.portamento > 0) {
+      this.oscillators[keys.deviceIndex].oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
+      const proxySettings = this.proxySettings;
+      switch (proxySettings.portamentoType) {
+        case 'chord':
+          const clonedKeys = structuredClone(keys);
+          if (!this.chordProcessor.addNote(structuredClone(clonedKeys))) {
+            this.chordProcessor.setKeyDownCallback(this.chordProcessorKeyDownCallback);
+            return;
+          }
+          this.chordProcessor.setStartNote(clonedKeys, this.oscillators[keys.deviceIndex], this.keyToFrequency);
+          break;
+        case 'last':
+          if (lastKey)
+            this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(lastKey.keyIndex);
+          break;
+        case 'first':
+          const firstKeys = this.keysDown[0];
+          this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(firstKeys.keyIndex);
+          break;
+        case 'lowest':
+          const lowestKey = Math.min(...this.keysDown.map(keys => keys.keyIndex));
+          if (lowestKey !== undefined)
+            this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(lowestKey);
+          break;
+        case 'highest':
+          const highestKey = Math.max(...this.keysDown.map(keys => keys.keyIndex));
+          this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(highestKey);
+          break;
+        case 'plus12':
+          this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) * 2;
+          break;
+        case 'plus24':
+          this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) * 4;
+          break;
+        case 'minus12':
+          this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) / 2;
+          break;
+        case 'minus24':
+          this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) / 4;
+          break;
+      }
+
+      this.oscillators[keys.deviceIndex].oscillator.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
+    }
+
+
+    if (keys && keys.deviceIndex < this.numberOfOscillators) {
+      // console.log("fx = " + this.oscillators[keyIndex].oscillator.frequency.value);
+      this.oscillators[keys.deviceIndex].keyDown(velocity);
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   }
 
-  private chordProcessorKeyDownCallback: (prevKeyIndex: number, keyIndex: number) => void  = (prevKeyIndex: number, keyIndex: number) => {
-    this.oscillators[keyIndex].oscillator.frequency.value = this.keyToFrequency(prevKeyIndex);
-    this.oscillators[keyIndex].oscillator.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
-    this.oscillators[keyIndex].keyDown(0x7f);  // TODO: Need to pass velocity through ChordProcessor
+  private chordProcessorKeyDownCallback: (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => void = (prevKeyIndex: DeviceKeys, keyIndex: DeviceKeys) => {
+    this.oscillators[keyIndex.deviceIndex].oscillator.frequency.value = this.keyToFrequency(prevKeyIndex.keyIndex);
+    this.oscillators[keyIndex.deviceIndex].oscillator.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
+    this.oscillators[keyIndex.deviceIndex].keyDown(0x7f);  // TODO: Need to pass velocity through ChordProcessor
   }
 
   keyUp(keyIndex: number) {
-    // this.oscillators[keyIndex].releaseFinished = () => {
-    //   const idx = this.keysDown.indexOf(keyIndex);
-    //   if (idx > -1)
-    //     this.keysDown.splice(idx, 1);
-    //  // console.log("keysDown.length = ", this.keysDown.length);
-    // }
-    // if(this.proxySettings.portamentoType === 'chord')
-    //   this.chordProcessor.release(this.proxySettings.adsr.releaseTime);
-
     const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyUp(keyIndex);
-    if(keys) {
+    if (keys) {
+      // this.oscillators[keys.deviceIndex].releaseFinished = () => {
+      //   const idx = this.keysDown.findIndex(key => key.keyIndex === keyIndex);
+      //   if (this.secondary)
+      //     console.log("keysDown.length = ", this.keysDown.length, " idx = ", idx);
+      //   if (idx > -1)
+      //     this.keysDown.splice(idx, 1);
+      // }
+      const idx = this.keysDown.findIndex(key => key.keyIndex === keyIndex);
+      if (this.secondary)
+        console.log("keysDown.length = ", this.keysDown.length, " idx = ", idx);
+      if (idx > -1)
+        this.keysDown.splice(idx, 1);
+
       if (!this.secondary)
         this.devicePoolManagerService.keyUpOscillator1(keys);  // Trigger appropriate filter bank
       else
         this.devicePoolManagerService.keyUpOscillator2(keys);  // Trigger appropriate filter bank
+
+      if (this.proxySettings.portamentoType === 'chord')
+        this.chordProcessor.release(this.proxySettings.adsr.releaseTime);
     }
-   }
+  }
 
   protected setPortamento($event: number) {
     this.proxySettings.portamento = $event;
@@ -499,11 +521,11 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   private readonly modFreqBase = 30;
   private readonly modFreqMaxInput = 2;
   private readonly modFreqMax = 4000;
-  private readonly modFreqFactor = this.modFreqMax/(Math.pow(this.modFreqBase, this.modFreqMaxInput)-1);
+  private readonly modFreqFactor = this.modFreqMax / (Math.pow(this.modFreqBase, this.modFreqMaxInput) - 1);
 
   protected setModFrequency(freq: number) {
     this.proxySettings.modFreq = freq;
-    this.lfo.frequency.value = this.modFreqFactor*(Math.pow(this.modFreqBase, freq)-1);
+    this.lfo.frequency.value = this.modFreqFactor * (Math.pow(this.modFreqBase, freq) - 1);
   }
 
   protected setModLevel($event: number) {
@@ -519,6 +541,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       this.oscillators[i].setMod2Level($event);
     }
   }
+
   ngAfterViewInit(): void {
     const oscOutForm = this.oscOutputToForm.nativeElement;
     for (let i = 0; i < oscOutForm.elements.length; ++i) {
