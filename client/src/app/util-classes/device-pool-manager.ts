@@ -105,7 +105,7 @@ class DevicePoolManager {
     }
   }
 
-  keyDown(keyIndex: number, velocity: number): DeviceKeys | undefined {
+  keyDown(keyIndex: number, velocity: number, playNote: boolean = true): DeviceKeys | undefined {
     let device = this.findDeviceFromKeyIndex(keyIndex);
     if (!device) {
       device = this.findFirstAvailable(keyIndex);
@@ -113,7 +113,7 @@ class DevicePoolManager {
     if (device) {
       const dev = device.device;
 
-      if (dev instanceof Oscillator || dev instanceof Filter) {
+      if (playNote && dev instanceof Oscillator || dev instanceof Filter) {
         const freq = this.keyToFrequency(keyIndex);
         dev.freq = freq;
         if (dev instanceof Oscillator)
@@ -121,9 +121,11 @@ class DevicePoolManager {
         else
           dev.filter.frequency.value = freq;
 
+        //   dev.keyDown(velocity);
+      } else if (playNote) {
         dev.keyDown(velocity);
       }
-      dev.keyDown(velocity);
+
       device.inUse = true;
       device.deviceKeys.keyIndex = keyIndex;
     }

@@ -2,7 +2,8 @@ import {
   AfterViewInit,
   Component,
   ElementRef,
-  EventEmitter, inject,
+  EventEmitter,
+  inject,
   Input,
   OnDestroy,
   Output,
@@ -53,6 +54,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   private velocitySensitive: boolean = true;
   private modulators!: OscillatorComponent;
   private oscillatorPoolMgr!: DevicePoolManager;
+  private chordProcessor!: ChordProcessor;
 
   @Input() filters!: FilterComponent;
   @Input() ringMod!: RingModulatorComponent;
@@ -102,7 +104,8 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     this.audioCtx = audioCtx;
     this.cookies = new Cookies();
-
+    this.chordProcessor = new ChordProcessor();
+    this.chordProcessor.setKeyDownCallback(this.chordProcessorKeyDownCallback);
     if (this.numberOfOscillators) {
       this.lfo = this.audioCtx.createOscillator();
       this.lfo.start();
@@ -347,10 +350,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   keysDown: DeviceKeys[] = [];
-  chordProcessor: ChordProcessor = new ChordProcessor();
 
   keyDown(keyIndex: number, velocity: number) {
-    const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyDown(keyIndex, velocity);
+    const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyDown(keyIndex, velocity, this.proxySettings.portamento === 0);
     if (keys) {
       if (!this.secondary)
         this.devicePoolManagerService.keyDownOscillator1(keys);  // Trigger appropriate filter bank
@@ -358,15 +360,11 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
         this.devicePoolManagerService.keyDownOscillator2(keys);  // Trigger appropriate filter bank
     }
 
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     const lastKey = this.keysDown.length > 0 ? this.keysDown[this.keysDown.length - 1] : null;
     if (-1 === this.keysDown.findIndex(key => key.keyIndex === keyIndex)) {
       this.keysDown.push(keys as DeviceKeys);
     }
 
-    // console.log("START keysDown.length = ", this.keysDown.length);
     if (!this.velocitySensitive)
       velocity = 0x7f;
 
@@ -376,10 +374,8 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       switch (proxySettings.portamentoType) {
         case 'chord':
           const clonedKeys = structuredClone(keys);
-          if (!this.chordProcessor.addNote(structuredClone(clonedKeys))) {
-            this.chordProcessor.setKeyDownCallback(this.chordProcessorKeyDownCallback);
-            return;
-          }
+          if (!this.chordProcessor.addNote(structuredClone(clonedKeys)))
+            return;  // Less than the minimum time flor a chord
           this.chordProcessor.setStartNote(clonedKeys, this.oscillators[keys.deviceIndex], this.keyToFrequency);
           break;
         case 'last':
@@ -416,13 +412,10 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       this.oscillators[keys.deviceIndex].oscillator.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
     }
 
-
     if (keys && keys.deviceIndex < this.numberOfOscillators) {
       // console.log("fx = " + this.oscillators[keyIndex].oscillator.frequency.value);
       this.oscillators[keys.deviceIndex].keyDown(velocity);
     }
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   }
 
   private chordProcessorKeyDownCallback: (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => void = (prevKeyIndex: DeviceKeys, keyIndex: DeviceKeys) => {
@@ -434,18 +427,13 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   keyUp(keyIndex: number) {
     const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyUp(keyIndex);
     if (keys) {
-      // this.oscillators[keys.deviceIndex].releaseFinished = () => {
-      //   const idx = this.keysDown.findIndex(key => key.keyIndex === keyIndex);
-      //   if (this.secondary)
-      //     console.log("keysDown.length = ", this.keysDown.length, " idx = ", idx);
-      //   if (idx > -1)
-      //     this.keysDown.splice(idx, 1);
-      // }
-      const idx = this.keysDown.findIndex(key => key.keyIndex === keyIndex);
-      if (this.secondary)
+      const sub = timer(this.proxySettings.adsr.releaseTime * 1000).subscribe(() => {
+        sub.unsubscribe();
+        const idx = this.keysDown.findIndex(key => key.keyIndex === keyIndex);
+        if (idx > -1)
+          this.keysDown.splice(idx, 1);
         console.log("keysDown.length = ", this.keysDown.length, " idx = ", idx);
-      if (idx > -1)
-        this.keysDown.splice(idx, 1);
+      });
 
       if (!this.secondary)
         this.devicePoolManagerService.keyUpOscillator1(keys);  // Trigger appropriate filter bank
@@ -453,7 +441,10 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
         this.devicePoolManagerService.keyUpOscillator2(keys);  // Trigger appropriate filter bank
 
       if (this.proxySettings.portamentoType === 'chord')
-        this.chordProcessor.release(this.proxySettings.adsr.releaseTime);
+        if (this.proxySettings.useAmplitudeEnvelope === onOff.on)
+          this.chordProcessor.release(this.proxySettings.adsr.releaseTime);
+        else
+          this.chordProcessor.release(this.proxySettings.adsr.decayTime+this.proxySettings.adsr.releaseTime);
     }
   }
 
