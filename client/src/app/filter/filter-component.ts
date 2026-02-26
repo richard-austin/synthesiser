@@ -308,7 +308,8 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     const freq = this.keyToFrequency(keys.keyIndex);
     const dev = this.filters[keys.deviceIndex]
     dev.freq = freq;
-    dev.filter.frequency.value = dev.filter2.frequency.value = freq;
+    if(this.proxySettings.portamento === 0)
+      dev.filter.frequency.value = dev.filter2.frequency.value = freq;
 
     const lastKey = this.keysDown.length > 0 ? this.keysDown[this.keysDown.length - 1] : null;
     if (-1 === this.keysDown.findIndex(key => key.keyIndex === keys.keyIndex)) {
