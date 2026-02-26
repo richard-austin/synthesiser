@@ -215,7 +215,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   protected keydown(code: number, velocity: number) {
     this.oscillatorsGrp.keyDown(code, velocity);
     this.oscillators2Grp.keyDown(code, velocity);
-    this.filtersGrp.keyDown(code, velocity);
+   // this.filtersGrp.keyDown(code, velocity);
     this.noise.keyDown(code, velocity);
   }
 
@@ -232,7 +232,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   protected keyup(code: number) {
     this.oscillatorsGrp.keyUp(code)
     this.oscillators2Grp.keyUp(code)
-    this.filtersGrp.keyUp(code);
+    //this.filtersGrp.keyUp(code);
     this.noise.keyUp(code);
   }
 

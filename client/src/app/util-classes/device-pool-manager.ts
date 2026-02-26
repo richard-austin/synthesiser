@@ -1,12 +1,12 @@
 import {Oscillator} from '../modules/oscillator';
 import {Filter} from '../modules/filter';
 import {OscillatorSettings} from '../settings/oscillator';
-import {FilterSettings} from '../settings/filter';
 import {DeviceKeys} from '../services/device-pool-manager-service';
 import {WhiteNoise} from '../modules/noise/white-noise';
 import {BrownNoise} from '../modules/noise/brown-noise';
 import {PinkNoise} from '../modules/noise/pink-noise';
 import {NoiseSettings} from '../settings/noise';
+import {onOff} from '../enums/enums';
 
 
 class DeviceStatus {
@@ -14,7 +14,7 @@ class DeviceStatus {
   public device: Oscillator | Filter | WhiteNoise | PinkNoise | BrownNoise;
   public deviceKeys: DeviceKeys;
 
-  constructor(device: Oscillator | Filter | WhiteNoise | PinkNoise | BrownNoise, deviceKeys: DeviceKeys) {
+  constructor(device: Oscillator | WhiteNoise | PinkNoise | BrownNoise, deviceKeys: DeviceKeys) {
     this.device = device;
     this.deviceKeys = deviceKeys;
   }
@@ -31,12 +31,12 @@ class DeviceStatus {
 class DevicePoolManager {
   public static readonly numberOfDevices: number = 12; // Number of oscillators and filters in a pool
   private readonly devices: DeviceStatus[];
-  private readonly settings: OscillatorSettings | FilterSettings | NoiseSettings;
+  private readonly settings: OscillatorSettings | NoiseSettings;
 
-  constructor(devices: Oscillator[] | Filter[] | WhiteNoise[] | PinkNoise[] | BrownNoise[], settings: OscillatorSettings | FilterSettings | NoiseSettings) {
+  constructor(devices: Oscillator[] | WhiteNoise[] | PinkNoise[] | BrownNoise[], settings: OscillatorSettings | NoiseSettings) {
     this.devices = [];
     devices.forEach(device => {
-      this.devices.push(new DeviceStatus(device, new DeviceKeys(-1, -1))); // The devices should already be set up snd started
+      this.devices.push(new DeviceStatus(device, new DeviceKeys(-1, -1, 0))); // The devices should already be set up snd started
     });
     this.settings = settings;
   }
@@ -60,7 +60,8 @@ class DevicePoolManager {
       firstAvailable.deviceKeys.deviceIndex = 0;
     } else {
       firstAvailable = this.devices[deviceIndex];
-      firstAvailable.deviceKeys = new DeviceKeys(keyIndex, deviceIndex);
+      const filterTimeout = this.settings.useAmplitudeEnvelope === onOff.on ? this.settings.adsr.releaseTime : this.settings.adsr.decayTime+this.settings.adsr.releaseTime;
+      firstAvailable.deviceKeys = new DeviceKeys(keyIndex, deviceIndex,filterTimeout);
     }
     return firstAvailable;
   }
@@ -72,7 +73,8 @@ class DevicePoolManager {
     let dev: DeviceStatus | undefined = undefined;
     if (deviceIndex > -1) {
       dev = this.devices[deviceIndex];
-      dev.deviceKeys = new DeviceKeys(keyIndex, deviceIndex);
+      const filterTimeout = this.settings.useAmplitudeEnvelope === onOff.on ? this.settings.adsr.releaseTime : this.settings.adsr.decayTime+this.settings.adsr.releaseTime;
+      dev.deviceKeys = new DeviceKeys(keyIndex, deviceIndex, filterTimeout);
     }
     return dev;
   }

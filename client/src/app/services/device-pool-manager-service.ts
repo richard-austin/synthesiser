@@ -1,12 +1,14 @@
 import {effect, EffectRef, Injectable, OnDestroy, signal} from '@angular/core';
 
 export class DeviceKeys {
-  public keyIndex: number;  // Index of Midi key pressed
-  public deviceIndex: number; // index to the device in the pool
+  public  keyIndex: number;  // Index of Midi key pressed
+  public  deviceIndex: number; // index to the device in the pool
+  public readonly filterTimeout: number;
 
-  constructor(keyIndex: number, deviceIndex: number) {
+  constructor(keyIndex: number, deviceIndex: number, filterTimeout: number) {
     this.keyIndex = keyIndex;
     this.deviceIndex = deviceIndex;
+    this.filterTimeout = filterTimeout;
   }
 }
 
@@ -15,12 +17,12 @@ export class DeviceKeys {
 })
 export class DevicePoolManagerService implements OnDestroy {
   // Signal to set the corresponding filter and its frequency when activating an oscillator
-  private signalKeydown1 = signal<DeviceKeys>(new DeviceKeys(-1, -1));  // For oscillator 1 and its filters
-  private signalKeydown2 = signal<DeviceKeys>(new DeviceKeys(-1, -1)); // For oscillator 2 and its filters
-  private signalKeyup1 = signal<DeviceKeys>(new DeviceKeys(-1, -1));  // For oscillator 1 and its filters
-  private signalKeyup2 = signal<DeviceKeys>(new DeviceKeys(-1, -1)); // For oscillator 2 and its filters
-  private signalKeydownNoise = signal<DeviceKeys>(new DeviceKeys(-1, -1)); // For oscillator 2 and its filters
-  private signalKeyupNoise = signal<DeviceKeys>(new DeviceKeys(-1, -1)); // For oscillator 2 and its filters
+  private signalKeydown1 = signal<DeviceKeys>(new DeviceKeys(-1, -1, 0));  // For oscillator 1 and its filters
+  private signalKeydown2 = signal<DeviceKeys>(new DeviceKeys(-1, -1, 0)); // For oscillator 2 and its filters
+  private signalKeyup1 = signal<DeviceKeys>(new DeviceKeys(-1, -1, 0));  // For oscillator 1 and its filters
+  private signalKeyup2 = signal<DeviceKeys>(new DeviceKeys(-1, -1, 0)); // For oscillator 2 and its filters
+  private signalKeydownNoise = signal<DeviceKeys>(new DeviceKeys(-1, -1, 0)); // For oscillator 2 and its filters
+  private signalKeyupNoise = signal<DeviceKeys>(new DeviceKeys(-1, -1, 0)); // For oscillator 2 and its filters
 
   private effectRef1: EffectRef = effect(() => {
     this.signalKeydown1();

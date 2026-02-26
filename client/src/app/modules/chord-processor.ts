@@ -74,7 +74,7 @@ export class ChordProcessor {
     }
     if (this.releaseTimerSub)
       this.releaseTimerSub.unsubscribe();
-    this.releaseTimerSub = timer(releaseTime * 1000 + 0.2).subscribe(() => {
+    this.releaseTimerSub = timer(releaseTime * 1000).subscribe(() => {
       this.releaseTimerSub.unsubscribe();
       this.reset();
     });
