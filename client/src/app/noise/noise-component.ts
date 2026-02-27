@@ -220,7 +220,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
       if (!this.velocitySensitive)
         velocity = 0x7f;
       const keys: DeviceKeys | undefined = this.noisePoolMgr.keyDown(keyIndex, velocity);
-      if (keys) {
+      if (keys && this.proxySettings.output === noiseOutputs.filter) {
         this.devicePoolManagerService.keyDownNoise(keys);  // Trigger appropriate filter bank
       }
     }

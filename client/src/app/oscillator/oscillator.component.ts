@@ -17,7 +17,7 @@ import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component
 import {ReverbComponent} from '../reverb-component/reverb-component';
 import {PhasorComponent} from '../phasor/phasor-component';
 import {OscillatorSettings} from '../settings/oscillator';
-import {modWaveforms, onOff, oscModType, oscWaveforms} from '../enums/enums';
+import {modWaveforms, onOff, oscModType, oscOutputs, oscWaveforms} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {timer} from 'rxjs';
 import {Cookies} from '../settings/cookies/cookies';
@@ -353,7 +353,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   keyDown(keyIndex: number, velocity: number) {
     const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyDown(keyIndex, velocity, this.proxySettings.portamento === 0);
-    if (keys) {
+    if (keys && this.proxySettings.output === oscOutputs.filter) {
       if (!this.secondary)
         this.devicePoolManagerService.keyDownOscillator1(keys);  // Trigger appropriate filter bank
       else
@@ -432,7 +432,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
         const idx = this.keysDown.findIndex(key => key.keyIndex === keyIndex);
         if (idx > -1)
           this.keysDown.splice(idx, 1);
-        console.log("keysDown.length = ", this.keysDown.length, " idx = ", idx);
+     //   console.log("keysDown.length = ", this.keysDown.length, " idx = ", idx);
       });
 
       if (!this.secondary)

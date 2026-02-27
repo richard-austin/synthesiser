@@ -41,7 +41,9 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   private audioCtx!: AudioContext;
   proxySettings!: FilterSettings
   private cookies!: Cookies;
-  chordProcessor!: ChordProcessor;
+  chordProcessorNoise!: ChordProcessor;
+  chordProcessorOscillator1!: ChordProcessor;
+  chordProcessorOscillator2!: ChordProcessor;
 
   public get filters(): Filter[] {
     return this._filters;
@@ -110,8 +112,12 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     this.devicePoolManagerService.notifyKeyUpNoise = (keys: DeviceKeys) => {
       this.deviceKeyUp(keys);
     }
-    this.chordProcessor = new ChordProcessor();
-    this.chordProcessor.setKeyDownCallback(this.chordProcessorKeyDownCallback);
+    this.chordProcessorNoise = new ChordProcessor();
+    this.chordProcessorNoise.setKeyDownCallback(this.chordProcessorKeyDownCallback);
+    this.chordProcessorOscillator1 = new ChordProcessor();
+    this.chordProcessorOscillator1.setKeyDownCallback(this.chordProcessorKeyDownCallback);
+    this.chordProcessorOscillator2 = new ChordProcessor();
+    this.chordProcessorOscillator2.setKeyDownCallback(this.chordProcessorKeyDownCallback);
 
     this.audioCtx = audioCtx;
     let ok = false;
@@ -308,7 +314,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     const freq = this.keyToFrequency(keys.keyIndex);
     const dev = this.filters[keys.deviceIndex]
     dev.freq = freq;
-    if(this.proxySettings.portamento === 0)
+    if (this.proxySettings.portamento === 0)
       dev.filter.frequency.value = dev.filter2.frequency.value = freq;
 
     const lastKey = this.keysDown.length > 0 ? this.keysDown[this.keysDown.length - 1] : null;
@@ -317,14 +323,28 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     }
 
     if (keys !== undefined && this.proxySettings.portamento > 0) {
-      this.filters[keys.deviceIndex].filter.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
+      // dev.filter.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
+      // dev.filter2.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
       const proxySettings = this.proxySettings;
       switch (proxySettings.portamentoType) {
         case 'chord':
           const clonedKeys = structuredClone(keys);
-          if (!this.chordProcessor.addNote(structuredClone(clonedKeys)))
-            return;  // Less than the minimum time flor a chord
-          this.chordProcessor.setStartNote(clonedKeys, this.filters[keys.deviceIndex], this.keyToFrequency);
+          if (clonedKeys.deviceIndex < DevicePoolManager.numberOfDevices) {
+            // Triggered by noise gen
+            if (!this.chordProcessorNoise.addNote(structuredClone(clonedKeys)))
+              return;  // Less than the minimum time for a chord
+            this.chordProcessorNoise.setStartNote(clonedKeys, this.filters[keys.deviceIndex], this.keyToFrequency);
+          } else if (clonedKeys.deviceIndex < 2 * DevicePoolManager.numberOfDevices) {
+            // Triggered by oscillator 1
+            if (!this.chordProcessorOscillator1.addNote(structuredClone(clonedKeys)))
+              return;  // Less than the minimum time for a chord
+            this.chordProcessorOscillator1.setStartNote(clonedKeys, this.filters[keys.deviceIndex], this.keyToFrequency);
+          } else {
+            // Triggered by oscillator 1
+            if (!this.chordProcessorOscillator2.addNote(structuredClone(clonedKeys)))
+              return;  // Less than the minimum time for a chord
+            this.chordProcessorOscillator2.setStartNote(clonedKeys, this.filters[keys.deviceIndex], this.keyToFrequency);
+          }
           break;
         case 'last':
           if (lastKey)
@@ -372,10 +392,15 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
         const idx = this.keysDown.findIndex(key => key.keyIndex === keys.keyIndex);
         if (idx > -1)
           this.keysDown.splice(idx, 1);
-        console.log("keysDown.length = ", this.keysDown.length, " idx = ", idx);
+        //    console.log("keysDown.length = ", this.keysDown.length, " idx = ", idx);
       });
 
-      this.chordProcessor.release(keys.filterTimeout);
+      if (keys.deviceIndex < DevicePoolManager.numberOfDevices)
+        this.chordProcessorNoise.release(keys.filterTimeout);
+      else if (keys.deviceIndex < 2 * DevicePoolManager.numberOfDevices)
+        this.chordProcessorOscillator1.release(keys.filterTimeout);
+      else
+        this.chordProcessorOscillator2.release(keys.filterTimeout);
     }
   }
 
