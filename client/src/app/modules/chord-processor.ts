@@ -14,6 +14,9 @@ export class ChordProcessor {
   private chordCollectionTimerSub!: Subscription;
   private chordReady: boolean = false;
   private continuity: boolean = false;
+  private inChord1Timer: boolean = false;
+  private inChord2Timer: boolean = false;
+
   private chordProcessorKeyDownCallback!: ((prevKeyIndex: DeviceKeys, theseKeys: DeviceKeys) => void);
 
   private chord1Complete() {
@@ -37,7 +40,9 @@ export class ChordProcessor {
       this.loggingChord1 = true;
       this.chordReady = this.chord2 === null;
       this.chord1 = new Chord();
+      this.inChord1Timer = true;
       this.chordCollectionTimerSub = timer(20).subscribe(() => {
+        this.inChord1Timer = false;
         this.chordReady = true; // Chord might be ready now
         this.chordCollectionTimerSub.unsubscribe();
         this.playOutAccumulatedNotes(this.chord2, this.chord1);
@@ -46,7 +51,10 @@ export class ChordProcessor {
 
     if (this.startChord2) {
       this.chordReady = false;
+      this.inChord2Timer = true;
       this.chordCollectionTimerSub = timer(20).subscribe(() => {
+        this.inChord2Timer = false;
+        this.chordReady = true;
         this.chordReady = true; // Chord might be ready now
         this.chordCollectionTimerSub.unsubscribe();
         this.playOutAccumulatedNotes(this.chord1, this.chord2);
@@ -66,18 +74,24 @@ export class ChordProcessor {
   }
 
   release(releaseTime: number) {
-    if (this.loggingChord1) {
-      this.chord1Complete();
-      this.startChord2 = true;
-    } else if (this.loggingChord2) {
-      this.chord2Complete();
+    if (this.inChord1Timer) {
+      this.chord1.notes = [];  // If keyup occurred before chord 1 timer had completed
+    } else if (this.inChord2Timer) {
+      this.chord2.notes = []; // If keyup occurred before chord 2 timer had completed
+    } else {  // Chord gathering timeout completed
+      if (this.loggingChord1) {
+        this.chord1Complete();
+        this.startChord2 = true;
+      } else if (this.loggingChord2) {
+        this.chord2Complete();
+      }
+      if (this.releaseTimerSub)
+        this.releaseTimerSub.unsubscribe();
+      this.releaseTimerSub = timer(releaseTime * 1000).subscribe(() => {
+        this.releaseTimerSub.unsubscribe();
+        this.reset();
+      });
     }
-    if (this.releaseTimerSub)
-      this.releaseTimerSub.unsubscribe();
-    this.releaseTimerSub = timer(releaseTime * 1000).subscribe(() => {
-      this.releaseTimerSub.unsubscribe();
-      this.reset();
-    });
   }
 
   setStartNote(keys: DeviceKeys, device: Oscillator | Filter, keyToFrequency: (keyIndex: number) => number) {
@@ -100,23 +114,30 @@ export class ChordProcessor {
 
   playOutAccumulatedNotes(lastChord: Chord, thisChord: Chord) {
     if (lastChord) {
-      console.log("lastChord " + lastChord.notes.length + " notes found");
+      //console.log("lastChord " + lastChord.notes.length + " notes found");
       lastChord.notes.sort((a, b) => {
         return a.keyIndex - b.keyIndex
       });
     }
 
-    console.log("thisChord " + thisChord.notes.length + " notes found");
+    // console.log("thisChord " + thisChord.notes.length + " notes found");
     thisChord.notes.sort((a, b) => {
       return a.keyIndex - b.keyIndex
     });
 
     for (let i = 0; i < thisChord.notes.length; ++i) {
-      if (lastChord && lastChord.notes.length > 1)
+      if (lastChord && lastChord.notes.length > 1) {
+        // // Use same device in notes change to glide between notes without leaving the original in place
+        // for (let j = 0; j < thisChord.notes.length && j < lastChord.notes.length; j++)
+        //   thisChord.notes[j].deviceIndex = lastChord.notes[j].deviceIndex;
+
         this.chordProcessorKeyDownCallback(lastChord.notes.shift() as DeviceKeys, thisChord.notes[i]);
-      else if (lastChord && lastChord.notes.length === 1)
+      } else if (lastChord && lastChord.notes.length === 1) {
+        // // Use same device in note change to glide between notes without leaving the original in place
+        // thisChord.notes[0].deviceIndex = lastChord.notes[0].deviceIndex;
+
         this.chordProcessorKeyDownCallback(lastChord.notes[0], thisChord.notes[i]);
-      else
+      } else
         this.chordProcessorKeyDownCallback(thisChord.notes[i], thisChord.notes[i]);
     }
   }

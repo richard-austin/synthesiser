@@ -13,7 +13,6 @@ import {SetRadioButtons} from '../settings/set-radio-buttons';
 export class AnalyserComponent implements AfterViewInit {
   private audioCtx!: AudioContext;
   private analyser!: AnalyserNode;
-  private data!: Uint8Array<ArrayBuffer>;
   private canvasCtx!: CanvasRenderingContext2D | null;
   private canvasEL!: HTMLCanvasElement;
   private cookies: Cookies;
@@ -31,7 +30,6 @@ export class AnalyserComponent implements AfterViewInit {
     this.analyser = this.audioCtx.createAnalyser();
     this.analyser.fftSize = 2048;
 
-    this.data = new Uint8Array(this.analyser.frequencyBinCount);
     this.applySettings(settings);
   }
 
