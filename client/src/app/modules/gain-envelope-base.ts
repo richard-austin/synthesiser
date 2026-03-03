@@ -104,20 +104,23 @@ export abstract class GainEnvelopeBase {
       this.releaseFinishedSub.unsubscribe();
 
     this.minRampTime(frequency);
-    const ctx = this.audioCtx;
+    const currentTime = this.audioCtx.currentTime;
     if (this.useAmplitudeEnvelope) {
+      this.sub?.unsubscribe();
       this.velocity = Math.pow(velocity / 127, .75);
       const setLevel = this.setLevel;
-      this.gain.gain.cancelAndHoldAtTime(ctx.currentTime);
-      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * setLevel * this.velocity), ctx.currentTime + this.env.attackTime + this._minRampTime); // Ramp to attack level
+      this.gain.gain.cancelAndHoldAtTime(currentTime);
+      this.gain.gain.setValueAtTime(this.gain.gain.value, currentTime);  // Prevent clicks
+      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * setLevel * this.velocity), currentTime + this.env.attackTime + this._minRampTime); // Ramp to attack level
       this.sub = timer((this.env.attackTime + this._minRampTime) * 1000).subscribe(() => {
-        this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(this.env.sustainLevel * setLevel * this.velocity), ctx.currentTime + this.env.decayTime + this._minRampTime);  // Ramp to sustain level
+        this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(this.env.sustainLevel * setLevel * this.velocity), this.audioCtx.currentTime + this.env.decayTime + this._minRampTime);  // Ramp to sustain level
       });
     } else { // Legato mode
       this.sub?.unsubscribe();
       const setLevel = this.setLevel;
-      this.gain.gain.cancelAndHoldAtTime(ctx.currentTime);
-      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * setLevel), ctx.currentTime + this.env.attackTime + this._minRampTime); // Ramp to attack level
+      this.gain.gain.cancelAndHoldAtTime(currentTime);
+      this.gain.gain.setValueAtTime(this.gain.gain.value, currentTime);  // Prevent clicks
+      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * setLevel), currentTime + this.env.attackTime + this._minRampTime); // Ramp to attack level
     }
   }
 
@@ -125,12 +128,13 @@ export abstract class GainEnvelopeBase {
   public releaseFinished: (() => void) | null = null;
 
   release(frequency: number = 2000) {
+    const currentTime = this.audioCtx.currentTime;
     this.minRampTime(frequency);
     if (this.useAmplitudeEnvelope) {
       this.sub?.unsubscribe();
       this.gain.gain.cancelAndHoldAtTime(0);
-      this.gain.gain.setValueAtTime(this.gain.gain.value, this.audioCtx.currentTime);  // Prevent clicks
-      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * this.setLevel), this.audioCtx.currentTime + this.env.releaseTime + this._minRampTime);  // Ramp to release level
+      this.gain.gain.setValueAtTime(this.gain.gain.value, currentTime);  // Prevent clicks
+      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * this.setLevel), currentTime + this.env.releaseTime + this._minRampTime);  // Ramp to release level
     } else { // Legato mode
       this.sub = timer((this.env.decayTime + this._minRampTime) * 1000).subscribe(() => {
         this.sub.unsubscribe();
@@ -151,7 +155,7 @@ export abstract class GainEnvelopeBase {
 
   // Calculate the minimum envelope time (2 cycles of the relevant frequency) to prevent clicks with fast attack/decay/release
   private minRampTime(frequency: number) {
-    this._minRampTime = 1 / frequency;
+    this._minRampTime = 5 / frequency;
   }
 
   connect(arg: AudioNode | AudioParam) {
