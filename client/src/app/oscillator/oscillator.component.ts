@@ -416,7 +416,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   private chordProcessorKeyDownCallback: (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => void = (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => {
-   // this.oscillators[theseKeys.deviceIndex].oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
+    this.oscillators[theseKeys.deviceIndex].oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
     this.oscillators[theseKeys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(prevKeys.keyIndex);
     this.oscillators[theseKeys.deviceIndex].oscillator.frequency.exponentialRampToValueAtTime(this.keyToFrequency(theseKeys.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
     this.oscillators[theseKeys.deviceIndex].keyDown(0x7f);  // TODO: Need to pass velocity through ChordProcessor
