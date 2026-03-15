@@ -24,7 +24,6 @@ export class PhasorComponent implements AfterViewInit, OnDestroy {
 
   protected readonly dialStyle = dialStyle;
   private lfo!: OscillatorNode;
-  private negModGain!: GainNode;
   private modGain!: GainNode;
 
   @Input() numberOfOscillators!: number;
@@ -48,9 +47,6 @@ export class PhasorComponent implements AfterViewInit, OnDestroy {
     this.input.gain.value = 1;
     this.modGain = audioCtx.createGain();
     this.modGain.gain.value = 1;
-    this.negModGain = audioCtx.createGain();
-    this.negModGain.gain.value = -1;
-    this.modGain.connect(this.negModGain);
     this.lfo.connect(this.modGain);
 
     this.gain = audioCtx.createGain();
@@ -58,9 +54,9 @@ export class PhasorComponent implements AfterViewInit, OnDestroy {
     this.phasor = new Phasor(audioCtx, this.input, this.gain);
     this.cookies = new Cookies();
 
-    // Set up LFO default values
-    this.modGain.connect(this.phasor.delay1.delayTime);
-    this.negModGain.connect(this.phasor.delay2.delayTime);
+   // Set up LFO default values
+   this.modGain.connect(this.phasor.modInput);
+                    //    this.negModGain.connect(this.phasor.delay2.delayTime);
     this.applySettings(settings);
   }
 
@@ -100,12 +96,20 @@ export class PhasorComponent implements AfterViewInit, OnDestroy {
 
   protected setPhase($event: number) {
     this.proxySettings.phase = $event;
-    this.phasor.setPhase($event/80);
+    this.phasor.setPhase($event);
   }
 
   protected setLevel($event: number) {
     this.proxySettings.gain = $event;
     this.phasor.setLevel($event);
+  }
+
+  protected setFeedback(feedback: number) {
+    this.phasor.setFeedback(feedback);
+  }
+
+  protected setSpread(spread: number) {
+    this.phasor.setSpread(spread)
   }
 
   protected setModFrequency(freq: number) {
@@ -119,7 +123,6 @@ export class PhasorComponent implements AfterViewInit, OnDestroy {
     const level = $event /60;
     this.lastLevel = level;
     this.modGain.gain.value =  level;
-    this.negModGain.gain.value =-1;
   }
 
   connect(node: AudioNode) {
@@ -166,7 +169,6 @@ export class PhasorComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.lfo.disconnect();
     this.modGain.disconnect();
-    this.negModGain.disconnect();
     this.disconnect();
   }
 }
