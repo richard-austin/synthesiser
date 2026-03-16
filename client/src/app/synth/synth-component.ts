@@ -87,7 +87,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     await this.noise.start(this.audioCtx, settings ? settings.noiseSettings : settings);
     this.ringModulator.start(this.audioCtx, settings ? settings.ringModSettings : settings);
     this.reverb.start(this.audioCtx, settings ? settings.reverbSettings : settings);
-    this.phasor.setUp(this.audioCtx, settings ? settings.phasorSettings : settings);
+    await this.phasor.setUp(this.audioCtx, settings ? settings.phasorSettings : settings);
     await this.analyser.start(this.audioCtx, settings ? settings.analyserSettings : settings);
     this.masterVolume.start(this.audioCtx, settings ? settings.generalSettings : settings);
     this.masterVolume.connect(this.analyser.node())

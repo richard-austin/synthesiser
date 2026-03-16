@@ -3,7 +3,7 @@
   <div class="group">
     <div class="column">
       <div class="module" style="min-height: 214px;">
-        <app-level-control #phase label="Phase" [plusMinus]="false" [style]="dialStyle.red" [divisions]="10"
+        <app-level-control #phase label="Phase" [plusMinus]="true" [style]="dialStyle.red" [divisions]="10"
                            [factor]="0.5"
                            [calAngle]="300"
                            [radius]="50" (setLevel)="setPhase($event)"></app-level-control>

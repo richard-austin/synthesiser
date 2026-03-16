@@ -38,7 +38,7 @@ export class PhasorComponent implements AfterViewInit, OnDestroy {
   @ViewChild('lfoWaveForm') lfoWaveForm!: ElementRef<HTMLFormElement>;
   @ViewChild('modOnOffForm') modOnOff!: ElementRef<HTMLFormElement>;
 
-  setUp(audioCtx:AudioContext, settings:PhasorSettings | null):void {
+  async setUp(audioCtx:AudioContext, settings:PhasorSettings | null) {
     this.lfo = new OscillatorNode(audioCtx);
     this.lfo.type = 'sine';
   //  this.lfo.useAmplitudeEnvelope = false;
@@ -52,6 +52,7 @@ export class PhasorComponent implements AfterViewInit, OnDestroy {
     this.gain = audioCtx.createGain();
     this.gain.gain.value = 1;
     this.phasor = new Phasor(audioCtx, this.input, this.gain);
+    await this.phasor.start().then();
     this.cookies = new Cookies();
 
    // Set up LFO default values
@@ -120,7 +121,7 @@ export class PhasorComponent implements AfterViewInit, OnDestroy {
   lastLevel: number = 0;
   protected setModLevel($event: number) {
     this.proxySettings.modDepth = $event;
-    const level = $event /60;
+    const level = $event;
     this.lastLevel = level;
     this.modGain.gain.value =  level;
   }
