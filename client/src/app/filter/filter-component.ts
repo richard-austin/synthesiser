@@ -14,7 +14,7 @@ import {LevelControlComponent} from '../level-control/level-control.component';
 import {Filter} from '../modules/filter';
 import {ReverbComponent} from '../reverb-component/reverb-component';
 import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component';
-import {PhasorComponent} from '../phasor/phasor-component';
+import {PhaserComponent} from '../phaser/phaser.component';
 import {filterModType, filterTypes, modWaveforms, onOff} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {FilterSettings} from '../settings/filter';
@@ -54,7 +54,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   @Input() reverb!: ReverbComponent;
   @Input() ringMod!: RingModulatorComponent;
-  @Input() phasor!: PhasorComponent;
+  @Input() phaser!: PhaserComponent;
 
   @Output() output = new EventEmitter<string>();
   @ViewChild('frequency') frequency!: LevelControlComponent;
@@ -279,12 +279,12 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   connectToPhasor(): boolean {
-    const phasor = this.phasor;
+    const phaser = this.phaser;
     let ok = false;
-    if (phasor) {
+    if (phaser) {
       ok = true;
       for (let i = 0; i < this.filters.length; i++) {
-        this.filters[i].connect(phasor.input);
+        this.filters[i].connect(phaser.input);
       }
     }
     return ok;

@@ -15,7 +15,7 @@ import {dialStyle} from '../level-control/levelControlParameters';
 import {FilterComponent} from '../filter/filter-component';
 import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component';
 import {ReverbComponent} from '../reverb-component/reverb-component';
-import {PhasorComponent} from '../phasor/phasor-component';
+import {PhaserComponent} from '../phaser/phaser.component';
 import {OscillatorSettings} from '../settings/oscillator';
 import {modWaveforms, onOff, oscModType, oscOutputs, oscWaveforms} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
@@ -59,7 +59,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   @Input() filters!: FilterComponent;
   @Input() ringMod!: RingModulatorComponent;
   @Input() reverb!: ReverbComponent;
-  @Input() phasor!: PhasorComponent;
+  @Input() phaser!: PhaserComponent;
   @Input() secondary!: boolean;  // Flag to determine whether to connect to ring mod signal or mod input
 
   @Input() numberOfOscillators!: number;
@@ -321,13 +321,13 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     return ok;
   }
 
-  connectToPhasor(): boolean {
-    const phasor = this.phasor;
+  connectToPhaser(): boolean {
+    const phaser = this.phaser;
     let ok = false;
-    if (phasor) {
+    if (phaser) {
       ok = true;
       for (let i = 0; i < this.oscillators.length; i++) {
-        this.oscillators[i].connect(phasor.input);
+        this.oscillators[i].connect(phaser.input);
       }
     }
     return ok;

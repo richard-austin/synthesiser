@@ -1,34 +1,29 @@
 import {GainEnvelopeBase} from './gain-envelope-base';
 import {AllPassFilter} from './all-pass-filter';
 
-export class Phasor {
+export class Phaser {
   filters: AllPassFilter[];
   public readonly modInput: GainNode;
   private readonly numberOfNodes: number;
   gain: GainNode;
-  private phase: number;
   feedBack: GainNode;
-  private spread: number;
   private readonly audioCtx: AudioContext;
   private input: AudioNode;
-  private readonly output: AudioNode;
 
-  constructor(audioCtx: AudioContext, input: AudioNode, output: AudioNode) {
+  constructor(audioCtx: AudioContext, input: AudioNode, output: AudioNode, numberOfNodes: number) {
     this.audioCtx = audioCtx;
     this.input = input;
-    this.output = output;
-    this.numberOfNodes = 21;
+    this.numberOfNodes = numberOfNodes;
+    console.log(this.numberOfNodes);
     this.filters = [];
     this.gain = audioCtx.createGain();
     this.input.connect(this.gain);
     this.gain.connect(output);
     this.feedBack = audioCtx.createGain();
     this.feedBack.gain.value = 0.0;
-    this.spread = 0.5;
-    this.phase = 0;
 
     this.modInput = audioCtx.createGain();
-    this.modInput.gain.value = 2;
+    this.modInput.gain.value = 1;
   }
 
   async start() {
@@ -47,11 +42,9 @@ export class Phasor {
 
   // phase is between 0.5 and -0.5
   setPhase(phase: number) {
-    this.phase = phase;
-    this.filters.forEach((filter, i) => {
-      const k1 = phase * 4 * ((1 - this.spread) + (i + 1) * this.spread / this.numberOfNodes);
+    this.filters.forEach((filter) => {
+      const k1 = phase * 4;// * (i + 1) * this.spread / 3;
       filter.setK1(k1);
-      console.log(k1);
     })
   }
 
@@ -63,8 +56,14 @@ export class Phasor {
     this.feedBack.gain.value = feedback;
   }
 
-  setSpread(spread: number) {
-    this.spread = spread;
-    this.setPhase(this.phase);
+  destroy() {
+    this.gain.disconnect();
+    this.input.disconnect();
+    this.feedBack.disconnect(this.filters[0].node());
+    this.filters[this.numberOfNodes - 1].disconnect();
+    this.filters.forEach((filter, i) => {
+      this.modInput.disconnect(this.filters[i].mod());
+      filter.destroy();
+    })
   }
 }

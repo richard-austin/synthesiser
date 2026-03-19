@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { PhasorComponent } from './phasor-component';
+import { PhaserComponent } from './phaser.component';
 
 describe('PhasorComponent', () => {
-  let component: PhasorComponent;
-  let fixture: ComponentFixture<PhasorComponent>;
+  let component: PhaserComponent;
+  let fixture: ComponentFixture<PhaserComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PhasorComponent]
+      imports: [PhaserComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(PhasorComponent);
+    fixture = TestBed.createComponent(PhaserComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

@@ -19,7 +19,7 @@ export enum filterTypes {
   notch = 'notch'
 }
 
-export enum filterOutputs {speaker = 'speaker', ringMod = 'ringMod', phasor = 'phasor', reverb = 'reverb', off = 'off'}
+export enum filterOutputs {speaker = 'speaker', ringMod = 'ringMod', phasor = 'phaser', reverb = 'reverb', off = 'off'}
 
 export enum oscModType {amplitude = 'amplitude', frequency = 'frequency', off = 'off'}
 

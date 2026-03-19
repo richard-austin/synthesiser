@@ -7,7 +7,7 @@
                      [filters]="filters"
                      [ringMod]="ringMod"
                      [reverb]="reverb"
-                     [phasor]="phasor"
+                     [phaser]="phaser"
                      [numberOfOscillators]="numberOfOscillators"
                      (output)="setOscOutputTarget($event)">
     </app-oscillators>
@@ -17,14 +17,14 @@
                      [filters]="filters"
                      [ringMod]="ringMod"
                      [reverb]="reverb"
-                     [phasor]="phasor"
+                     [phaser]="phaser"
                      [numberOfOscillators]="numberOfOscillators"
                      (output)="setOsc2OutputTarget($event)">
     </app-oscillators>
     <app-filters #filters
                  [ringMod]="ringMod"
                  [reverb]="reverb"
-                 [phasor]="phasor"
+                 [phaser]="phaser"
                  (output)="setFilterOutputTarget($event)"></app-filters>
     <div class="analyser">
       <app-noise [filters]="filters"
@@ -44,10 +44,10 @@
                           [numberOfOscillators]="numberOfOscillators"
                           (output)="setReverbOutputTarget($event)">
     </app-reverb-component>
-    <app-phasor #phasor
+    <app-phaser #phaser
                 [numberOfOscillators]="numberOfOscillators"
                 (output)="setPhasorOutputTarget($event)">
-    </app-phasor>
+    </app-phaser>
     <app-general #general></app-general>
   </div>
 </div>

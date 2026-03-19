@@ -11,18 +11,27 @@ export class AllPassFilter {
       // @ts-ignore
       registerProcessor('all-pass', class Processor extends AudioWorkletProcessor {
         static get parameterDescriptors() {
-          return [{name: 'k1', defaultValue: 0, minValue: -0.98, maxValue:1}];
+          return [{name: 'k1', defaultValue: 0, minValue: -.999, maxValue:1}];
         }
 
         k1 = 0;
         zMiOne = 0;
+        running = true;
+
+        constructor() {
+          super();
+          // @ts-ignore
+          this.port.onmessage = (event) => {
+            if (event.data.type === 'shutdown') {
+              this.running = false;
+            }
+          };
+        }
 
         process(inputs: any, outputs: any, parameters: any) {
           this.k1 = parameters["k1"][0];
-
           const output = outputs[0];
           const input = inputs[0];
-
           for (let channel = 0; channel < input.length; ++channel) {
             const outputChannel = output[channel];
             const inputChannel = input[channel];
@@ -31,7 +40,7 @@ export class AllPassFilter {
               this.zMiOne = inputChannel[i] - this.k1 * this.zMiOne;
             }
           }
-          return true;
+          return this.running;
         }
       });
     }
@@ -63,8 +72,11 @@ export class AllPassFilter {
   }
 
   public disconnect() {
-    const gain: GainNode = this.audioCtx.createGain();
-    gain.connect(this._node as AudioWorkletNode);
     this._node?.disconnect();
+  }
+
+  public destroy() {
+    this._node?.port.postMessage({type: 'shutdown'});
+    this.disconnect();
   }
 }
