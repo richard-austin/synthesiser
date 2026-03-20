@@ -616,6 +616,8 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     for (let i = 0; i < this.oscillators.length; i++) {
+
+      this.oscillators[i].destroy();
       // @ts-ignore
       this.oscillators[i] = undefined;
     }

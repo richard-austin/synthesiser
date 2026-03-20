@@ -135,4 +135,10 @@ export class Filter extends OscFilterBase {
       this.filter2.frequency.exponentialRampToValueAtTime(this.clampFrequency(this.freq*Math.pow(this.freqBendBase, this.freqBendEnv.releaseLevel)), ctx.currentTime + this.freqBendEnv.releaseTime);
     }
   }
+
+  destroy() {
+    this.filter.disconnect();
+    this.filter2.disconnect();
+    this.disconnect();
+  }
 }

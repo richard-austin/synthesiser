@@ -531,6 +531,8 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     for (let i = 0; i < this.filters.length; i++) {
+
+      this.filters[i].destroy();
       // @ts-ignore
       this.filters[i] = undefined;
     }
