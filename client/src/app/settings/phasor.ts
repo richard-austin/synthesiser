@@ -8,6 +8,8 @@ export class PhasorSettings {
   modDepth: number;
   modulation: onOff;
   output: phasorOutputs;
+  feedback: number;
+  stages: number;
 
   constructor(phase: number = 0,
               gain: number = 0,
@@ -15,7 +17,9 @@ export class PhasorSettings {
               modDepth: number = .3,
               modWaveform: modWaveforms = modWaveforms.sine,
               modulation: onOff = onOff.off,
-              output: phasorOutputs = phasorOutputs.off ) {
+              output: phasorOutputs = phasorOutputs.off,
+              feedback: number = 0,
+              stages: number = 11) {
     this.phase = phase;
     this.gain = gain;
     this.lfoFrequency = lfoFrequency;
@@ -23,5 +27,7 @@ export class PhasorSettings {
     this.modWaveform = modWaveform;
     this.modulation = modulation;
     this.output = output;
+    this.feedback = feedback;
+    this.stages = stages;
   }
 }

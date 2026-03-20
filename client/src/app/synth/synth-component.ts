@@ -484,8 +484,8 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  protected showHomeForm() {
-    this.router.navigate(['/home']).then();
+  protected async showHomeForm() {
+    await this.router.navigate(['/home']);
   }
 
 // The wake lock sentinel.
@@ -566,7 +566,8 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.ringModulator.disconnect();
     this.reverb.disconnect();
     this.phaser.disconnect();
-    this.audioCtx.close();
+   // this.noise.disconnect();
+    await this.audioCtx.close();
     this.midiInputs.forEach(input => {
       input.close();
     });

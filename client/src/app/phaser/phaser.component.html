@@ -14,12 +14,11 @@
           <app-level-control #feedback label="Feedback" [style]="dialStyle.yellow" [radius]="50" [plusMinus]="true"
                              [divisions]="10" [factor]="2.0" [calAngle]="300" (setLevel)="setFeedback($event)">
           </app-level-control>
-          <select (change)="setStages($event)">
-            @for (stages of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]; track stages) {
-              <option [value]="stages">{{stages}}</option>
-            }
-          </select>
 
+          <div class="stages-input">
+            <label for="stages-input">Stages</label>
+            <input id="stages-input"  name="stages-input" type="number" [max]="maxStages" [min]="minStages" (change)="setStages($event)" [(ngModel)]="stages">
+          </div>
         </div>
         <form #phasorOnOffForm>
           <label><input type="radio" name="phasor" value="speaker"><span>Speaker</span></label>

@@ -6,11 +6,13 @@ import {PhasorSettings} from '../settings/phasor';
 import {modWaveforms, onOff, phasorOutputs} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {Cookies} from '../settings/cookies/cookies';
+import {FormsModule} from '@angular/forms';
 
 @Component({
   selector: 'app-phaser',
   imports: [
-    LevelControlComponent
+    LevelControlComponent,
+    FormsModule
   ],
   templateUrl: './phaser.component.html',
   styleUrl: './phaser.component.scss',
@@ -22,11 +24,13 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
   proxySettings!: PhasorSettings;
   cookies!: Cookies;
   private audioCtx!: AudioContext;
+  protected stages!: number;
 
   protected readonly dialStyle = dialStyle;
   private lfo!: OscillatorNode;
   private modGain!: GainNode;
-
+  protected readonly minStages: number = 1;
+  protected readonly maxStages: number = 61;
   @Input() numberOfOscillators!: number;
 
   @Output() output: EventEmitter<string> = new EventEmitter();
@@ -38,6 +42,7 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
   @ViewChild('level') level!: LevelControlComponent;
   @ViewChild('lfoWaveForm') lfoWaveForm!: ElementRef<HTMLFormElement>;
   @ViewChild('modOnOffForm') modOnOff!: ElementRef<HTMLFormElement>;
+  @ViewChild('feedback') feedback!: LevelControlComponent;
 
   async setUp(audioCtx: AudioContext, settings: PhasorSettings | null, numberOfNodes: number = 11) {
     this.audioCtx = audioCtx;
@@ -76,8 +81,7 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
 
       if (Object.keys(savedSettings).length > 0)
         settings = savedSettings as PhasorSettings;  // Use values from cookie
-      else
-        settings;  // Use default values
+      // Else use default values
     }
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
@@ -87,6 +91,8 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
     this.modLevel.setValue(settings.modDepth);
     this.phase.setValue(settings.phase);
     this.level.setValue(settings.gain);
+    this.feedback.setValue(settings.feedback);
+    this.stages = this.proxySettings.stages;
 
     SetRadioButtons.set(this.lfoWaveForm, this.proxySettings.modWaveform);
     SetRadioButtons.set(this.modOnOff, this.proxySettings.modulation);
@@ -107,21 +113,27 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
   }
 
   protected setFeedback(feedback: number) {
+    this.proxySettings.feedback = feedback;
     this.phaser.setFeedback(feedback);
   }
 
   protected async setStages(ev: Event) {
     const feedback = this.phaser.feedBack.gain.value;
 
-    this.phaser.destroy();
     // @ts-ignore
     const numberOfNodes = parseInt(ev.target.value);
+    if(numberOfNodes > this.maxStages || numberOfNodes < this.minStages) {
+      this.stages = this.proxySettings.stages;
+    } else {
+      this.phaser.destroy();
+      this.proxySettings.stages = this.stages = numberOfNodes;
 
-    this.phaser = new Phaser(this.audioCtx, this.input, this.gain, numberOfNodes);
-    await this.phaser.start();
-    this.modGain.connect(this.phaser.modInput);
-    this.phaser.setFeedback(feedback);
-    this.setOutputConnection();
+      this.phaser = new Phaser(this.audioCtx, this.input, this.gain, numberOfNodes);
+      await this.phaser.start();
+      this.modGain.connect(this.phaser.modInput);
+      this.phaser.setFeedback(feedback);
+      this.setOutputConnection();
+    }
   }
 
   protected setModFrequency(freq: number) {
