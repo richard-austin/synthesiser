@@ -298,18 +298,13 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    WhiteNoise.theNode = PinkNoise.theNode = BrownNoise.theNode = undefined;
+    this.whiteNoise[0].destroy();
+    this.pinkNoise[0].destroy();
+    this.brownNoise[0].destroy();
     for (let i = 0; i < this.whiteNoise.length; i++) {
       // @ts-ignore
-      this.whiteNoise[i] = null;
+      this.pinkNoise[i] = this.pinkNoise[i] = this.brownNoise[i] = null;
     }
-    for (let i = 0; i < this.pinkNoise.length; i++) {
-      // @ts-ignore
-      this.pinkNoise[i] = null;
-    }
-    for (let i = 0; i < this.brownNoise.length; i++) {
-      // @ts-ignore
-      this.brownNoise[i] = null;
-    }
+    WhiteNoise.theNode = PinkNoise.theNode = BrownNoise.theNode = undefined;
   }
 }

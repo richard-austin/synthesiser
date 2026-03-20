@@ -10,9 +10,21 @@ export class WhiteNoise extends GainEnvelopeBase {
     function worklet() {
       // @ts-ignore
       registerProcessor('white-noise', class Processor extends AudioWorkletProcessor {
+        running = true;
+        constructor() {
+          super();
+          // @ts-ignore
+          this.port.onmessage = (event) => {
+            if (event.data.type === 'shutdown') {
+              this.running = false;
+            }
+          };
+        }
+
         static get parameterDescriptors() {
           return [{name: 'amplitude', defaultValue: 0.25, minValue: 0, maxValue: 1}];
         }
+
         process(inputs: any, outputs: any, parameters: any) {
           const output = outputs[0];
 
@@ -24,7 +36,7 @@ export class WhiteNoise extends GainEnvelopeBase {
               outputChannel[i] *= 0.5; // (roughly) compensate for gain
             }
           }
-          return true;
+          return this.running;
         }
       });
     }
@@ -46,5 +58,10 @@ export class WhiteNoise extends GainEnvelopeBase {
 
   keyUp() {
     super.release();
+  }
+
+  public destroy() {
+    WhiteNoise.theNode?.port.postMessage({type: 'shutdown'});
+    this.disconnect();
   }
 }

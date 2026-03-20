@@ -10,6 +10,17 @@ export class BrownNoise extends GainEnvelopeBase{
      function worklet() {
        // @ts-ignore
        registerProcessor('brown-noise', class Processor extends AudioWorkletProcessor {
+         running = true;
+         constructor() {
+           super();
+           // @ts-ignore
+           this.port.onmessage = (event) => {
+             if (event.data.type === 'shutdown') {
+               this.running = false;
+             }
+           };
+         }
+
          static get parameterDescriptors() {
            return [{name: 'amplitude', defaultValue: 0.25, minValue: 0, maxValue: 1}];
          }
@@ -28,7 +39,7 @@ export class BrownNoise extends GainEnvelopeBase{
                outputChannel[i] *= 3.5; // (roughly) compensate for gain
              }
            }
-           return true;
+           return this.running;
          }
        });
      }
@@ -51,4 +62,10 @@ export class BrownNoise extends GainEnvelopeBase{
   keyUp() {
     super.release();
   }
+
+  public destroy() {
+    BrownNoise.theNode?.port.postMessage({type: 'shutdown'});
+    this.disconnect();
+  }
+
  }
