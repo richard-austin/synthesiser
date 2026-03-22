@@ -369,5 +369,17 @@ div.failed {
   background-color: #f87b7b;
 }
 
+div.row {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+div.column {
+  display: flex;
+  flex-direction: column;
+  width: fit-content;
+  height: fit-content;
+}
 
 

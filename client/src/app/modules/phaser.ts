@@ -6,7 +6,8 @@ export class Phaser {
   public readonly modInput: GainNode;
   private readonly numberOfNodes: number;
   gain: GainNode;
-  bypass: GainNode;
+  wetGain: GainNode;
+  dryGain: GainNode;
   feedBack: GainNode;
   private readonly audioCtx: AudioContext;
   private input: AudioNode;
@@ -17,15 +18,18 @@ export class Phaser {
     this.numberOfNodes = numberOfNodes;
     this.filters = [];
     this.gain = audioCtx.createGain();
-    //this.input.connect(this.gain);
     this.gain.connect(output);
-    this.bypass = audioCtx.createGain();
-    this.bypass.connect(this.gain);
-    this.input.connect(this.bypass);
-    this.bypass.gain.value = -1;
     this.feedBack = audioCtx.createGain();
     this.feedBack.gain.value = 0.0;
 
+    this.wetGain = audioCtx.createGain();
+    this.wetGain.connect(this.gain);
+    this.wetGain.gain.value = 0.0;
+    this.dryGain = audioCtx.createGain();
+    this.dryGain.connect(this.gain);
+    this.dryGain.gain.value = 0.0;
+
+    this.input.connect(this.dryGain);
     this.modInput = audioCtx.createGain();
     this.modInput.gain.value = 1;
   }
@@ -41,8 +45,7 @@ export class Phaser {
     this.input.connect(this.filters[0].node());
     this.feedBack.connect(this.filters[0].node());
     this.filters[this.numberOfNodes - 1].connect(this.feedBack);
-    this.bypass.connect(this.feedBack);
-    this.filters[this.numberOfNodes - 1].connect(this.gain);
+    this.filters[this.numberOfNodes - 1].connect(this.wetGain);
   }
 
   // phase is between 0.5 and -0.5
@@ -57,6 +60,11 @@ export class Phaser {
     this.gain.gain.value = GainEnvelopeBase.exponentiateGain(level);
   }
 
+  setWetDry(wetDry: number) {
+    this.wetGain.gain.value = 0.5-wetDry;
+    this.dryGain.gain.value = -0.5-wetDry;
+  }
+
   setFeedback(feedback: number) {
     this.feedBack.gain.value = feedback;
   }
@@ -64,6 +72,8 @@ export class Phaser {
   destroy() {
     this.gain.disconnect();
     this.input.disconnect();
+    this.wetGain.disconnect();
+    this.dryGain.disconnect();
     this.feedBack.disconnect(this.filters[0].node());
     this.filters[this.numberOfNodes - 1].disconnect();
     this.filters.forEach((filter, i) => {

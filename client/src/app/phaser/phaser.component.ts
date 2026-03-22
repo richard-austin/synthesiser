@@ -40,6 +40,7 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
   @ViewChild('modDepth') modLevel!: LevelControlComponent;
   @ViewChild('phase') phase!: LevelControlComponent;
   @ViewChild('level') level!: LevelControlComponent;
+  @ViewChild('wetDry') wetDryDial!: LevelControlComponent;
   @ViewChild('lfoWaveForm') lfoWaveForm!: ElementRef<HTMLFormElement>;
   @ViewChild('modOnOffForm') modOnOff!: ElementRef<HTMLFormElement>;
   @ViewChild('feedback') feedback!: LevelControlComponent;
@@ -91,8 +92,9 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
     this.modLevel.setValue(settings.modDepth);
     this.phase.setValue(settings.phase);
     this.level.setValue(settings.gain);
+    this.wetDryDial.setValue(settings.wetDry === undefined ? 0 : settings.wetDry);
     this.feedback.setValue(settings.feedback);
-    this.stages = this.proxySettings.stages;
+    this.stages = settings.stages;
 
     SetRadioButtons.set(this.lfoWaveForm, this.proxySettings.modWaveform);
     SetRadioButtons.set(this.modOnOff, this.proxySettings.modulation);
@@ -110,6 +112,10 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
   protected setLevel($event: number) {
     this.proxySettings.gain = $event;
     this.phaser.setLevel($event);
+  }
+  protected setWetDry(wetDry: number) {
+    this.proxySettings.wetDry = wetDry;
+    this.phaser.setWetDry(wetDry);
   }
 
   protected setFeedback(feedback: number) {
@@ -133,6 +139,7 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
       this.modGain.connect(this.phaser.modInput);
       this.phaser.setFeedback(feedback);
       this.setOutputConnection();
+      this.setWetDry(this.proxySettings.wetDry);
     }
   }
 

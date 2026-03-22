@@ -10,6 +10,7 @@ export class PhasorSettings {
   output: phasorOutputs;
   feedback: number;
   stages: number;
+  wetDry: number
 
   constructor(phase: number = 0,
               gain: number = 0,
@@ -19,7 +20,8 @@ export class PhasorSettings {
               modulation: onOff = onOff.off,
               output: phasorOutputs = phasorOutputs.off,
               feedback: number = 0,
-              stages: number = 11) {
+              stages: number = 11,
+              wetDry: number = 0) {
     this.phase = phase;
     this.gain = gain;
     this.lfoFrequency = lfoFrequency;
@@ -29,5 +31,6 @@ export class PhasorSettings {
     this.output = output;
     this.feedback = feedback;
     this.stages = stages;
+    this.wetDry = wetDry;
   }
 }
