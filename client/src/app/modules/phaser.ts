@@ -6,6 +6,7 @@ export class Phaser {
   public readonly modInput: GainNode;
   private readonly numberOfNodes: number;
   gain: GainNode;
+  bypass: GainNode;
   feedBack: GainNode;
   private readonly audioCtx: AudioContext;
   private input: AudioNode;
@@ -14,11 +15,14 @@ export class Phaser {
     this.audioCtx = audioCtx;
     this.input = input;
     this.numberOfNodes = numberOfNodes;
-    console.log(this.numberOfNodes);
     this.filters = [];
     this.gain = audioCtx.createGain();
-    this.input.connect(this.gain);
+    //this.input.connect(this.gain);
     this.gain.connect(output);
+    this.bypass = audioCtx.createGain();
+    this.bypass.connect(this.gain);
+    this.input.connect(this.bypass);
+    this.bypass.gain.value = -1;
     this.feedBack = audioCtx.createGain();
     this.feedBack.gain.value = 0.0;
 
@@ -37,6 +41,7 @@ export class Phaser {
     this.input.connect(this.filters[0].node());
     this.feedBack.connect(this.filters[0].node());
     this.filters[this.numberOfNodes - 1].connect(this.feedBack);
+    this.bypass.connect(this.feedBack);
     this.filters[this.numberOfNodes - 1].connect(this.gain);
   }
 

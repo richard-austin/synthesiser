@@ -147,7 +147,8 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
     this.proxySettings.modDepth = $event;
     const level = $event;
     this.lastLevel = level;
-    this.modGain.gain.value = level;
+    if(this.proxySettings.modulation === onOff.on)
+      this.modGain.gain.value = level;
   }
 
   connect(node: AudioNode) {
