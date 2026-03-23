@@ -4,7 +4,7 @@ import {filterModType, oscModType} from '../enums/enums';
 import {Subscription, timer} from 'rxjs';
 
 export abstract class GainEnvelopeBase {
-  public readonly gain: GainNode;
+  protected readonly envelope: GainNode;
   protected readonly modOutput: GainNode;
   frequencyMod: GainNode;
   frequencyMod2: GainNode;
@@ -19,14 +19,12 @@ export abstract class GainEnvelopeBase {
   env: ADSRValues;
   modulator!: AudioNode;
 
-  protected setLevel: number;
   public static readonly maxLevel: number = 1;
   public static readonly minLevel: number = 0.000001;
 
   protected constructor(protected audioCtx: AudioContext) {
-    this.gain = audioCtx.createGain();
-    this.setLevel = 0;
-    this.gain.gain.value = this.setLevel;
+    this.envelope = audioCtx.createGain();
+    this.envelope.gain.value = 1;
 
     this.modOutput = new GainNode(this.audioCtx);
     this.modOutput.gain.value = 1;  // Fixed gain on this as the modulated oscillator sets the gain
@@ -42,19 +40,11 @@ export abstract class GainEnvelopeBase {
     this.amplitudeMod2Depth = audioCtx.createGain();
     this.amplitudeModDepth.gain.value = 0;
     this.amplitudeMod2Depth.gain.value = 0;
-    this.gain.connect(this.amplitudeMod);
+    this.envelope.connect(this.amplitudeMod);
     this.amplitudeModDepth.connect(this.amplitudeMod.gain);
     this.amplitudeMod2Depth.connect(this.amplitudeMod.gain);
     this.modType = oscModType.amplitude;
     this.modType2 = oscModType.amplitude;
-  }
-
-  setGain(gain: number) {
-    this.setLevel = this.clampLevel(GainEnvelopeBase.exponentiateGain(gain));
-    let gainToUse = gain;
-    if (this._useAmplitudeEnvelope)
-      gainToUse = this.clampLevel(gain * OscFilterBase.minLevel);
-    this.gain.gain.value = this.clampLevel(GainEnvelopeBase.exponentiateGain(gainToUse));
   }
 
   public static exponentiateGain(gain: number) {
@@ -63,7 +53,7 @@ export abstract class GainEnvelopeBase {
 
   setAmplitudeEnvelope(env: ADSRValues) {
     this.env = env;
-    this.gain.gain.setValueAtTime(this.clampLevel(this.setLevel * OscFilterBase.minLevel), this.audioCtx.currentTime);
+    this.envelope.gain.setValueAtTime(this.clampLevel(OscFilterBase.minLevel), this.audioCtx.currentTime);
   }
 
   modulationOff() {
@@ -80,9 +70,9 @@ export abstract class GainEnvelopeBase {
 
   public set useAmplitudeEnvelope(useAmplitudeEnvelope: boolean) {
     this._useAmplitudeEnvelope = useAmplitudeEnvelope;
-    let gainToUse = this.clampLevel(this.setLevel * OscFilterBase.minLevel);
-    this.gain.gain.cancelAndHoldAtTime(this.audioCtx.currentTime);
-    this.gain.gain.setValueAtTime(this.clampLevel(gainToUse), this.audioCtx.currentTime);
+    let gainToUse = this.clampLevel(OscFilterBase.minLevel);
+    this.envelope.gain.cancelAndHoldAtTime(this.audioCtx.currentTime);
+    this.envelope.gain.setValueAtTime(this.clampLevel(gainToUse), this.audioCtx.currentTime);
   }
 
   public get useAmplitudeEnvelope() {
@@ -108,19 +98,17 @@ export abstract class GainEnvelopeBase {
     if (this.useAmplitudeEnvelope) {
       this.sub?.unsubscribe();
       this.velocity = Math.pow(velocity / 127, .75);
-      const setLevel = this.setLevel;
-      this.gain.gain.cancelAndHoldAtTime(currentTime);
-      this.gain.gain.setValueAtTime(this.gain.gain.value, currentTime);  // Prevent clicks
-      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * setLevel * this.velocity), currentTime + this.env.attackTime + this._minRampTime); // Ramp to attack level
+      this.envelope.gain.cancelAndHoldAtTime(currentTime);
+      this.envelope.gain.setValueAtTime(this.envelope.gain.value, currentTime);  // Prevent clicks
+      this.envelope.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * this.velocity), currentTime + this.env.attackTime + this._minRampTime); // Ramp to attack level
       this.sub = timer((this.env.attackTime + this._minRampTime) * 1000).subscribe(() => {
-        this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(this.env.sustainLevel * setLevel * this.velocity), this.audioCtx.currentTime + this.env.decayTime + this._minRampTime);  // Ramp to sustain level
+        this.envelope.gain.exponentialRampToValueAtTime(this.clampLevel(this.env.sustainLevel * this.velocity), this.audioCtx.currentTime + this.env.decayTime + this._minRampTime);  // Ramp to sustain level
       });
     } else { // Legato mode
       this.sub?.unsubscribe();
-      const setLevel = this.setLevel;
-      this.gain.gain.cancelAndHoldAtTime(currentTime);
-      this.gain.gain.setValueAtTime(this.gain.gain.value, currentTime);  // Prevent clicks
-      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * setLevel), currentTime + this.env.attackTime + this._minRampTime); // Ramp to attack level
+      this.envelope.gain.cancelAndHoldAtTime(currentTime);
+      this.envelope.gain.setValueAtTime(this.envelope.gain.value, currentTime);  // Prevent clicks
+      this.envelope.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel), currentTime + this.env.attackTime + this._minRampTime); // Ramp to attack level
     }
   }
 
@@ -132,15 +120,15 @@ export abstract class GainEnvelopeBase {
     this.minRampTime(frequency);
     if (this.useAmplitudeEnvelope) {
       this.sub?.unsubscribe();
-      this.gain.gain.cancelAndHoldAtTime(0);
-      this.gain.gain.setValueAtTime(this.gain.gain.value, currentTime);  // Prevent clicks
-      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * this.setLevel), currentTime + this.env.releaseTime + this._minRampTime);  // Ramp to release level
+      this.envelope.gain.cancelAndHoldAtTime(0);
+      this.envelope.gain.setValueAtTime(this.envelope.gain.value, currentTime);  // Prevent clicks
+      this.envelope.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel), currentTime + this.env.releaseTime + this._minRampTime);  // Ramp to release level
     } else { // Legato mode
       this.sub = timer((this.env.decayTime + this._minRampTime) * 1000).subscribe(() => {
         this.sub.unsubscribe();
-        this.gain.gain.cancelAndHoldAtTime(0);
-        this.gain.gain.setValueAtTime(this.gain.gain.value, this.audioCtx.currentTime);  // Prevent clicks
-        this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * this.setLevel), this.audioCtx.currentTime + this.env.releaseTime + this._minRampTime);  // Ramp to release level
+        this.envelope.gain.cancelAndHoldAtTime(0);
+        this.envelope.gain.setValueAtTime(this.envelope.gain.value, this.audioCtx.currentTime);  // Prevent clicks
+        this.envelope.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel), this.audioCtx.currentTime + this.env.releaseTime + this._minRampTime);  // Ramp to release level
       })
     }
     if(this.releaseFinished) {

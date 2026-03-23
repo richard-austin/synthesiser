@@ -12,13 +12,6 @@
                              [calAngle]="300"
                              [radius]="50"
                              (setLevel)="setFrequency($event)"></app-level-control>
-          <app-level-control #gain
-                             label="Gain"
-                             [radius]="50"
-                             [divisions]="10"
-                             [factor]="0.4"
-                             (setLevel)="setGain($event)"></app-level-control>
-        </div>
         <app-level-control #deTune
                            label="Detune"
                            [plusMinus]="true"
@@ -26,6 +19,24 @@
                            [factor]="2400"
                            (setLevel)="setDetune($event)">
         </app-level-control>
+      </div>
+        <div class="row">
+          <app-level-control #gain
+                             label="Gain"
+                             [radius]="50"
+                             [divisions]="10"
+                             [factor]="0.4"
+                             (setLevel)="setGain($event)"></app-level-control>
+
+          <app-level-control #balance
+                             label="Balance"
+                             [radius]="50"
+                             [divisions]="20"
+                             [factor]="2"
+                             [plusMinus]="true"
+                             (setLevel)="setGain($event)"></app-level-control>
+
+        </div>
         <h2>Waveform</h2>
         <div style="height: 3px;"></div>
         <select #oscWaveform>

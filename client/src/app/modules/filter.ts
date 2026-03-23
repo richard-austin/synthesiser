@@ -5,6 +5,7 @@ import {filterModType, oscModType} from '../enums/enums';
 import {Subscription, timer} from 'rxjs';
 
 export class Filter extends OscFilterBase {
+  gain: GainNode;
   filter: BiquadFilterNode;
   filter2: BiquadFilterNode;
   readonly freqBendBase = 16;
@@ -12,6 +13,7 @@ export class Filter extends OscFilterBase {
 
   constructor(protected override audioCtx: AudioContext) {
     super(audioCtx);
+    this.gain = audioCtx.createGain();
     this.filter = audioCtx.createBiquadFilter();
     this.filter.type = "bandpass";
     this.filter2 = audioCtx.createBiquadFilter();
@@ -21,10 +23,15 @@ export class Filter extends OscFilterBase {
     this.useAmplitudeEnvelope = false;
 
     this.filter.gain.value = this.filter2.gain.value = 0;
-    this.gain.gain.value = 1;
+    this.envelope.gain.value = 1;
     this.filter.connect(this.filter2);
     this.filter2.connect(this.gain);
+    this.gain.connect(this.envelope);
     this.frequencyMod.connect(this.filter.detune);
+  }
+
+  setGain(gain: number) {
+    this.gain.gain.value = gain;
   }
 
   setFrequency(freq: number) {
