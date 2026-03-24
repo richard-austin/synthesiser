@@ -9,6 +9,7 @@ export class OscillatorSettings {
   frequency: number;
   deTune: number;
   gain: number;
+  balance: number;
   waveForm: oscWaveforms;
   output: oscOutputs;
   modFreq: number;
@@ -31,6 +32,7 @@ export class OscillatorSettings {
               frequency: number = 0,
               deTune: number = 0,
               gain: number = .2,
+              balance: number = 0,
               waveForm: oscWaveforms = oscWaveforms.sine,
               output: oscOutputs = oscOutputs.speaker,
               modFreq: number = 0,
@@ -50,6 +52,7 @@ export class OscillatorSettings {
     this.frequency = frequency;
     this.deTune = deTune;
     this.gain = gain;
+    this.balance = balance;
     this.waveForm = waveForm;
     this.output = output;
     this.modFreq = modFreq;

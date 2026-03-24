@@ -28,7 +28,6 @@ export class Phaser {
     this.dryGain = audioCtx.createGain();
     this.dryGain.connect(this.gain);
     this.dryGain.gain.value = 0.0;
-
     this.input.connect(this.dryGain);
     this.modInput = audioCtx.createGain();
     this.modInput.gain.value = 1;

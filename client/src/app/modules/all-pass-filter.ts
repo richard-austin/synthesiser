@@ -15,7 +15,7 @@ export class AllPassFilter {
         }
 
         k1 = 0;
-        zMiOne = 0;
+        zMiOne = [0, 0];
         running = true;
 
         constructor() {
@@ -32,14 +32,16 @@ export class AllPassFilter {
           this.k1 = parameters["k1"][0];
           const output = outputs[0];
           const input = inputs[0];
+
           for (let channel = 0; channel < input.length; ++channel) {
             const outputChannel = output[channel];
             const inputChannel = input[channel];
+            //console.log("Input channel length = "+inputChannel.length+": Output channel length = "+outputChannel.length);
             for (let i = 0; i < outputChannel.length; ++i) {
-              outputChannel[i] = this.zMiOne + (inputChannel[i] -this.zMiOne * this.k1) * this.k1;
-              this.zMiOne = inputChannel[i] - this.k1 * this.zMiOne;
+              outputChannel[i] = this.zMiOne[channel] + (inputChannel[i] -this.zMiOne[channel] * this.k1) * this.k1;
+              this.zMiOne[channel] = inputChannel[i] - this.k1 * this.zMiOne[channel];
+              }
             }
-          }
           return this.running;
         }
       });

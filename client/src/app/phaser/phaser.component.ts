@@ -161,10 +161,13 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
       this.phaser2.destroy();
       this.proxySettings.stages = this.stages = numberOfNodes;
 
-      this.phaser = new Phaser(this.audioCtx, this.input, this.gain, numberOfNodes);
-      this.phaser2 = new Phaser(this.audioCtx, this.input, this.gain, numberOfNodes);
+      this.phaser = new Phaser(this.audioCtx, this.input, this.panner, numberOfNodes);
+      this.phaser2 = new Phaser(this.audioCtx, this.input, this.panner2, numberOfNodes);
       await this.phaser.start();
       await this.phaser2.start();
+      const gain = this.proxySettings.gain;
+      this.phaser.setLevel(gain);
+      this.phaser2.setLevel(gain);
       this.modGain.connect(this.phaser.modInput);
       this.modGain2.connect(this.phaser2.modInput);
       this.phaser.setFeedback(feedback);
