@@ -8,6 +8,10 @@ export class RingModulator {
     this._ringMod.gain.setValueAtTime(0, this.audioCtx.currentTime);
     this.modulator = audioCtx.createOscillator();
     this._gainNode = audioCtx.createGain();
+    this._ringMod.channelCountMode = "explicit";
+    this._ringMod.channelCount = 1;
+    this._gainNode.channelCountMode = "explicit";
+    this._gainNode.channelCount = 1;
     this.modulator.type = "sine";
     this.modulator.connect(this._gainNode);
     this.modulator.frequency.value = 0;
@@ -54,5 +58,11 @@ export class RingModulator {
 
   disconnect() {
     this._ringMod.disconnect();
+  }
+
+  destroy() {
+    this._ringMod.disconnect();
+    this._gainNode.disconnect();
+    this.modulator.disconnect();
   }
 }

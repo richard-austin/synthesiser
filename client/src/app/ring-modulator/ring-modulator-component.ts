@@ -159,6 +159,6 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.ringMod.disconnect();
+    this.ringMod.destroy();
   }
 }
