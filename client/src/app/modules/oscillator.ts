@@ -6,9 +6,10 @@ import {Subscription, timer} from 'rxjs';
 import {WaveTableDetails} from './WaveTableDetails';
 
 export class Oscillator extends OscFilterBase {
-  oscillator: OscillatorNode;
+  public readonly oscillator: OscillatorNode;
   type: string;
-  private gain: GainNode;
+  private readonly panner: StereoPannerNode;
+  private readonly gain: GainNode;
 
   public static readonly wavetables: WaveTableDetails[] = [
     new WaveTableDetails(
@@ -183,6 +184,7 @@ export class Oscillator extends OscFilterBase {
 
   constructor(protected override audioCtx: AudioContext) {
     super(audioCtx);
+    this.panner = audioCtx.createStereoPanner();
     this.gain = audioCtx.createGain();
 
     this.useAmplitudeEnvelope = true;
@@ -190,7 +192,8 @@ export class Oscillator extends OscFilterBase {
     this.type = this.oscillator.type = "sine";
     // Default ADSR values
     this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
-    this.oscillator.connect(this.gain);
+    this.oscillator.connect(this.panner);
+    this.panner.connect(this.gain);
     this.oscillator.connect(this.modOutput);
     this.gain.connect(this.envelope);
     this.oscillator.start();
@@ -209,6 +212,10 @@ export class Oscillator extends OscFilterBase {
 
   setGain(gain: number) {
     this.gain.gain.value = gain;
+  }
+
+  pan(pan: number) {
+    this.panner.pan.value = pan;
   }
 
   modulation(modulator: AudioNode, type: oscModType | filterModType = oscModType.frequency) {
