@@ -5,7 +5,7 @@ export enum oscWaveforms {sine = 'sine', square = 'square', sawtooth = 'sawtooth
 export enum oscOutputs {
   speaker = 'speaker',
   filter = 'filter',
-  ringMod = 'ringMod',
+  ringMod = 'ringmod',
   phasor = 'phasor',
   reverb = 'reverb',
   off = 'off'
@@ -19,7 +19,7 @@ export enum filterTypes {
   notch = 'notch'
 }
 
-export enum filterOutputs {speaker = 'speaker', ringMod = 'ringMod', phasor = 'phaser', reverb = 'reverb', off = 'off'}
+export enum filterOutputs {speaker = 'speaker', ringMod = 'ringmod', phasor = 'phaser', reverb = 'reverb', off = 'off'}
 
 export enum oscModType {amplitude = 'amplitude', frequency = 'frequency', off = 'off'}
 

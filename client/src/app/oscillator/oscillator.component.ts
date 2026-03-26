@@ -359,7 +359,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   keyDown(keyIndex: number, velocity: number) {
     const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyDown(keyIndex, velocity, this.proxySettings.portamento === 0);
-    if (keys && this.proxySettings.output === oscOutputs.filter) {
+    if (keys && ((this.proxySettings.output === oscOutputs.filter) || (!this.secondary && this.proxySettings.output === oscOutputs.ringMod))) {
       if (!this.secondary)
         this.devicePoolManagerService.keyDownOscillator1(keys);  // Trigger appropriate filter bank
       else

@@ -106,7 +106,7 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
     if (filters && filters.length >= this.numberOfDevices) {
       ok = true;
       for (let i = 0; i < this.numberOfDevices; i++) {
-        this.ringMod.connect(filters[i].filter);
+        this.ringMod.connect(filters[i+12].filter);
       }
     } else
       console.log("Filter array is a different size to numberOfChannels")
