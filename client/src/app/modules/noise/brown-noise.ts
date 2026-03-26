@@ -21,6 +21,8 @@ export class BrownNoise extends GainEnvelopeBase{
            this.port.onmessage = (event) => {
              if (event.data.type === 'shutdown') {
                this.running = false;
+               // @ts-ignore
+               this.port.close();
              }
            };
          }
@@ -73,6 +75,8 @@ export class BrownNoise extends GainEnvelopeBase{
 
   public destroy() {
     BrownNoise.theNode?.port.postMessage({type: 'shutdown'});
+    BrownNoise.theNode?.disconnect();
+    BrownNoise.theNode = undefined;
     this.disconnect();
   }
 

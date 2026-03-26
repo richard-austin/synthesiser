@@ -21,6 +21,8 @@ export class PinkNoise extends GainEnvelopeBase {
           this.port.onmessage = (event) => {
             if (event.data.type === 'shutdown') {
               this.running = false;
+              // @ts-ignore
+              this.port.close();
             }
           };
         }
@@ -86,6 +88,8 @@ export class PinkNoise extends GainEnvelopeBase {
 
   public destroy() {
     PinkNoise.theNode?.port.postMessage({type: 'shutdown'});
+    PinkNoise.theNode?.disconnect();
+    PinkNoise.theNode = undefined;
     this.disconnect();
   }
 }

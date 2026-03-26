@@ -24,6 +24,9 @@ export class AllPassFilter {
           this.port.onmessage = (event) => {
             if (event.data.type === 'shutdown') {
               this.running = false;
+              // @ts-ignore
+              this.port.close();
+              console.log("Closed");
             }
           };
         }
@@ -79,6 +82,7 @@ export class AllPassFilter {
 
   public destroy() {
     this._node?.port.postMessage({type: 'shutdown'});
+    this._node = undefined;
     this.disconnect();
   }
 }

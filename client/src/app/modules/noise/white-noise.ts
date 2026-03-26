@@ -21,6 +21,8 @@ export class WhiteNoise extends GainEnvelopeBase {
           this.port.onmessage = (event) => {
             if (event.data.type === 'shutdown') {
               this.running = false;
+              // @ts-ignore
+              this.port.close();
             }
           };
         }
@@ -70,6 +72,8 @@ export class WhiteNoise extends GainEnvelopeBase {
 
   public destroy() {
     WhiteNoise.theNode?.port.postMessage({type: 'shutdown'});
+    WhiteNoise.theNode?.disconnect();
+    WhiteNoise.theNode = undefined;
     this.disconnect();
   }
 }
