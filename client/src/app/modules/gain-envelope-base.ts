@@ -67,8 +67,8 @@ export abstract class GainEnvelopeBase {
 
   abstract modulation(modulator: AudioNode, type: oscModType | filterModType): void;
 
-  public set legatoMode(useAmplitudeEnvelope: boolean) {
-    this._legatoMode = useAmplitudeEnvelope;
+  public set legatoMode(legatoMode: boolean) {
+    this._legatoMode = legatoMode;
     let gainToUse = this.clampLevel(OscFilterBase.minLevel);
     this.envelope.gain.cancelAndHoldAtTime(this.audioCtx.currentTime);
     this.envelope.gain.setValueAtTime(this.clampLevel(gainToUse), this.audioCtx.currentTime);
@@ -90,7 +90,7 @@ export abstract class GainEnvelopeBase {
   attack(velocity: number, frequency: number = 2000) {
     this.minRampTime(frequency);
     const currentTime = this.audioCtx.currentTime;
-    if (this.legatoMode) {
+    if (!this.legatoMode) {
       this.velocity = Math.pow(velocity / 127, .75);
       this.envelope.gain.cancelAndHoldAtTime(currentTime);
       this.envelope.gain.setTargetAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * this.velocity), currentTime, (this.env.attackTime + this._minRampTime)/10); // Ramp to attack level
@@ -105,7 +105,7 @@ export abstract class GainEnvelopeBase {
   release(frequency: number = 2000) {
     const currentTime = this.audioCtx.currentTime;
     this.minRampTime(frequency);
-    if (this.legatoMode) {
+    if (!this.legatoMode) {
       this.envelope.gain.cancelAndHoldAtTime(0);
       this.envelope.gain.setTargetAtTime(this.clampLevel(GainEnvelopeBase.minLevel), currentTime, (this.env.releaseTime + this._minRampTime) / 10);  // Ramp to release level
     } else { // Legato mode

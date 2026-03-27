@@ -140,7 +140,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       this.oscillators.push(new Oscillator(this.audioCtx));
       this.oscillators[i].setFrequency(this.keyToFrequency(i));
       this.oscillators[i].setAmplitudeEnvelope(this.proxySettings.adsr)
-      this.oscillators[i].legatoMode = this.proxySettings.useAmplitudeEnvelope !== onOff.on;
+      this.oscillators[i].legatoMode = this.proxySettings.legatoMode === onOff.on;
       this.oscillators[i].setFreqBendEnvelope(this.proxySettings.freqBend);
       this.oscillators[i].useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.on);
       this.oscillators[i].setType(this.proxySettings.waveForm);
@@ -178,7 +178,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.oscWaveForm.nativeElement.value = this.proxySettings.waveForm;
     this.portamentoType.nativeElement.value = this.proxySettings.portamentoType;
 
-    SetRadioButtons.set(this.legatoOnOffForm, this.proxySettings.useAmplitudeEnvelope === onOff.on ? onOff.off : onOff.on);
+    SetRadioButtons.set(this.legatoOnOffForm, this.proxySettings.legatoMode);
     SetRadioButtons.set(this.velocityOnOffForm, this.proxySettings.velocitySensitive);
     SetRadioButtons.set(this.freqEnveOnOffForm, this.proxySettings.useFrequencyEnvelope);
     SetRadioButtons.set(this.modSettingsForm, this.proxySettings.modType);
@@ -223,10 +223,10 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  legatoMode(useAmplitudeEnvelope: boolean) {
-    this.proxySettings.useAmplitudeEnvelope = useAmplitudeEnvelope ? onOff.on : onOff.off;
+  legatoMode(legatoMode: boolean) {
+    this.proxySettings.legatoMode = legatoMode ? onOff.on : onOff.off;
     this.oscillators.forEach(osc => {
-      osc.legatoMode = !useAmplitudeEnvelope;
+      osc.legatoMode = legatoMode;
     });
   }
 
@@ -445,7 +445,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
         this.devicePoolManagerService.keyUpOscillator2(keys);  // Trigger appropriate filter bank
 
       if (this.proxySettings.portamentoType === 'chord')
-        if (this.proxySettings.useAmplitudeEnvelope !== onOff.on)
+        if (this.proxySettings.legatoMode === onOff.on)
           this.chordProcessor.release(this.proxySettings.adsr.releaseTime);
         else
           this.chordProcessor.release(this.proxySettings.adsr.decayTime+this.proxySettings.adsr.releaseTime);

@@ -92,13 +92,13 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
       this.whiteNoise[i].setGain(settings.gain);
       this.whiteNoise[i].setAmplitudeEnvelope(settings.adsr);
-      this.whiteNoise[i].legatoMode = settings.useAmplitudeEnvelope !== onOff.on;
+      this.whiteNoise[i].legatoMode = settings.legatoMode === onOff.on;
       this.pinkNoise[i].setGain(settings.gain);
       this.pinkNoise[i].setAmplitudeEnvelope(settings.adsr);
-      this.pinkNoise[i].legatoMode = settings.useAmplitudeEnvelope !== onOff.on;
+      this.pinkNoise[i].legatoMode = settings.legatoMode === onOff.on;
       this.brownNoise[i].setGain(settings.gain);
       this.brownNoise[i].setAmplitudeEnvelope(settings.adsr);
-      this.brownNoise[i].legatoMode = settings.useAmplitudeEnvelope !== onOff.on;
+      this.brownNoise[i].legatoMode = settings.legatoMode === onOff.on;
     }
     let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
     this.noisePoolMgr = new DevicePoolManager(source, this.proxySettings);
@@ -111,7 +111,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
 
     //  SetRadioButtons.set(this.noiseOutputToForm, this.settings.output);
     SetRadioButtons.set(this.noiseTypeForm, this.proxySettings.type);
-    SetRadioButtons.set(this.legatoOnOffForm, this.proxySettings.useAmplitudeEnvelope=== onOff.on ? onOff.off : onOff.on);
+    SetRadioButtons.set(this.legatoOnOffForm, this.proxySettings.legatoMode);
     SetRadioButtons.set(this.velocityOnOffForm, this.proxySettings.velocitySensitive);
   }
 
@@ -150,7 +150,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     const source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
     for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
       source[i].setGain(gain);
-      source[i].legatoMode = this.proxySettings.useAmplitudeEnvelope !== onOff.on;
+      source[i].legatoMode = this.proxySettings.legatoMode === onOff.on;
     }
     this.noisePoolMgr.updateDevices(this.noiseSource())
   }
@@ -200,11 +200,11 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     return source;
   }
 
-  legatoMode(useAmplitudeEnvelope: boolean) {
-    this.proxySettings.useAmplitudeEnvelope = useAmplitudeEnvelope ? onOff.on : onOff.off;
+  legatoMode(legatoMode: boolean) {
+    this.proxySettings.legatoMode = legatoMode ? onOff.on : onOff.off;
     let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
     for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
-      source[i].legatoMode = !useAmplitudeEnvelope;
+      source[i].legatoMode = legatoMode;
     }
   }
 
@@ -283,7 +283,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
         // @ts-ignore
         const value = $event.target.value;
         this.legatoMode(value === 'on');
-        this.proxySettings.useAmplitudeEnvelope = value;
+        this.proxySettings.legatoMode = value;
       });
     }
 

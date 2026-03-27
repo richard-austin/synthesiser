@@ -60,7 +60,7 @@ class DevicePoolManager {
       firstAvailable.deviceKeys.deviceIndex = 0;
     } else {
       firstAvailable = this.devices[deviceIndex];
-      const filterTimeout = this.settings.useAmplitudeEnvelope === onOff.on ? this.settings.adsr.releaseTime : this.settings.adsr.decayTime+this.settings.adsr.releaseTime;
+      const filterTimeout = this.settings.legatoMode === onOff.on ? this.settings.adsr.releaseTime : this.settings.adsr.decayTime+this.settings.adsr.releaseTime;
       firstAvailable.deviceKeys = new DeviceKeys(keyIndex, deviceIndex,filterTimeout);
     }
     return firstAvailable;
@@ -73,7 +73,7 @@ class DevicePoolManager {
     let dev: DeviceStatus | undefined = undefined;
     if (deviceIndex > -1) {
       dev = this.devices[deviceIndex];
-      const filterTimeout = this.settings.useAmplitudeEnvelope === onOff.on ? this.settings.adsr.releaseTime : this.settings.adsr.decayTime+this.settings.adsr.releaseTime;
+      const filterTimeout = this.settings.legatoMode === onOff.on ? this.settings.adsr.releaseTime : this.settings.adsr.decayTime+this.settings.adsr.releaseTime;
       dev.deviceKeys = new DeviceKeys(keyIndex, deviceIndex, filterTimeout);
     }
     return dev;

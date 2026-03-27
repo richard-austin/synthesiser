@@ -3,20 +3,20 @@ import {noiseOutputs, noiseTypes, onOff} from '../enums/enums';
 
 export class NoiseSettings {
   adsr: ADSRValues
-  useAmplitudeEnvelope: onOff;
+  legatoMode: onOff;
   velocitySensitive: onOff;
   gain: number;
   type: noiseTypes;
   output: noiseOutputs;
 
   constructor(adsr: ADSRValues = new ADSRValues(0.0, 0.5, .1, .4),
-              useAmplitudeEnvelope: onOff = onOff.on,
+              legatoMode: onOff = onOff.on,
               velocitySensitive: onOff = onOff.on,
               gain: number = .11,
               type:noiseTypes = noiseTypes.white,
               output: noiseOutputs = noiseOutputs.off) {
     this.adsr = adsr;
-    this.useAmplitudeEnvelope = useAmplitudeEnvelope;
+    this.legatoMode = legatoMode;
     this.velocitySensitive = velocitySensitive;
     this.gain = gain;
     this.type = type;
