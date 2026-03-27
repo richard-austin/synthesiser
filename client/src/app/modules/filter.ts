@@ -10,6 +10,8 @@ export class Filter extends OscFilterBase {
   filter2: BiquadFilterNode;
   readonly freqBendBase = 16;
   keyIndex: number = -1;
+  gainFactor: number = 1;
+  gainValue: number = 0.5;
 
   constructor(protected override audioCtx: AudioContext) {
     super(audioCtx);
@@ -30,8 +32,10 @@ export class Filter extends OscFilterBase {
     this.frequencyMod.connect(this.filter.detune);
   }
 
+
   setGain(gain: number) {
-    this.gain.gain.value = gain;
+    this.gainValue = gain;
+    this.gain.gain.value = gain * this.gainFactor;
   }
 
   setFrequency(freq: number) {
@@ -53,8 +57,9 @@ export class Filter extends OscFilterBase {
   }
 
   setType(type: BiquadFilterType) {
-    this.filter.type = type;
-    this.filter2.type = type;
+    this.filter.type = this.filter2.type = type;
+    this.gainFactor = type === "bandpass" ? 50 : 1;
+    this.setGain(this.gainValue);
   }
 
   modulation(modulator: AudioNode, type: filterModType | oscModType = filterModType.frequency) {
