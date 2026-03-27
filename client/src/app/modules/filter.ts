@@ -22,7 +22,7 @@ export class Filter extends OscFilterBase {
     this.filter2.type = "bandpass";
     // Default ADSR values
     this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
-    this.useAmplitudeEnvelope = false;
+    this.legatoMode = false;
 
     this.filter.gain.value = this.filter2.gain.value = 0;
     this.envelope.gain.value = 1;

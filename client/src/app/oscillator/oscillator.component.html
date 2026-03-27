@@ -150,10 +150,10 @@
                            [divisions]="10"
                            [factor]="6"
                            (setLevel)="setReleaseTime($event)"></app-level-control>
-        <h4>Envelope</h4>
-        <form #amplitudeEnvelopeOnOffForm>
-          <label><input type="radio" name="envelope" value="on" checked><span>On</span></label>
-          <label><input type="radio" name="envelope" value="off"><span>Off</span></label>
+        <h4>Legato</h4>
+        <form #legatoOnOffForm>
+          <label><input type="radio" name="envelope" value="on"><span>On</span></label>
+          <label><input type="radio" name="envelope" value="off" checked><span>Off</span></label>
         </form>
         <h4>Velocity Sens</h4>
         <form #velocity>

@@ -50,7 +50,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   @ViewChild('noiseTypeForm') noiseTypeForm!: ElementRef<HTMLFormElement>;
   @ViewChild('noiseOutputToForm') noiseOutputToForm!: ElementRef<HTMLFormElement>;
   @ViewChild('gainControl') gainControl!: LevelControlComponent;
-  @ViewChild('amplitudeEnvelopeOnOffForm') amplitudeEnvelopeOnOffForm!: ElementRef<HTMLFormElement>;
+  @ViewChild('legatoOnOffForm') legatoOnOffForm!: ElementRef<HTMLFormElement>;
   @ViewChild('velocity') velocityOnOffForm!: ElementRef<HTMLFormElement>;
 
   private devicePoolManagerService = inject(DevicePoolManagerService);
@@ -92,13 +92,13 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
       this.whiteNoise[i].setGain(settings.gain);
       this.whiteNoise[i].setAmplitudeEnvelope(settings.adsr);
-      this.whiteNoise[i].useAmplitudeEnvelope = settings.useAmplitudeEnvelope === onOff.on;
+      this.whiteNoise[i].legatoMode = settings.useAmplitudeEnvelope !== onOff.on;
       this.pinkNoise[i].setGain(settings.gain);
       this.pinkNoise[i].setAmplitudeEnvelope(settings.adsr);
-      this.pinkNoise[i].useAmplitudeEnvelope = settings.useAmplitudeEnvelope === onOff.on;
+      this.pinkNoise[i].legatoMode = settings.useAmplitudeEnvelope !== onOff.on;
       this.brownNoise[i].setGain(settings.gain);
       this.brownNoise[i].setAmplitudeEnvelope(settings.adsr);
-      this.brownNoise[i].useAmplitudeEnvelope = settings.useAmplitudeEnvelope === onOff.on;
+      this.brownNoise[i].legatoMode = settings.useAmplitudeEnvelope !== onOff.on;
     }
     let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
     this.noisePoolMgr = new DevicePoolManager(source, this.proxySettings);
@@ -111,7 +111,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
 
     //  SetRadioButtons.set(this.noiseOutputToForm, this.settings.output);
     SetRadioButtons.set(this.noiseTypeForm, this.proxySettings.type);
-    SetRadioButtons.set(this.amplitudeEnvelopeOnOffForm, this.proxySettings.useAmplitudeEnvelope);
+    SetRadioButtons.set(this.legatoOnOffForm, this.proxySettings.useAmplitudeEnvelope=== onOff.on ? onOff.off : onOff.on);
     SetRadioButtons.set(this.velocityOnOffForm, this.proxySettings.velocitySensitive);
   }
 
@@ -150,7 +150,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     const source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
     for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
       source[i].setGain(gain);
-      source[i].useAmplitudeEnvelope = this.proxySettings.useAmplitudeEnvelope == onOff.on;
+      source[i].legatoMode = this.proxySettings.useAmplitudeEnvelope !== onOff.on;
     }
     this.noisePoolMgr.updateDevices(this.noiseSource())
   }
@@ -200,11 +200,11 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     return source;
   }
 
-  useAmplitudeEnvelope(useAmplitudeEnvelope: boolean) {
+  legatoMode(useAmplitudeEnvelope: boolean) {
     this.proxySettings.useAmplitudeEnvelope = useAmplitudeEnvelope ? onOff.on : onOff.off;
     let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
     for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
-      source[i].useAmplitudeEnvelope = useAmplitudeEnvelope;
+      source[i].legatoMode = !useAmplitudeEnvelope;
     }
   }
 
@@ -277,12 +277,12 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
       });
     }
 
-    const amplitudeEnvelopeOnOffForm = this.amplitudeEnvelopeOnOffForm.nativeElement;
-    for (let i = 0; i < amplitudeEnvelopeOnOffForm.elements.length; ++i) {
-      amplitudeEnvelopeOnOffForm.elements[i].addEventListener('change', ($event) => {
+    const legatoOnOffForm = this.legatoOnOffForm.nativeElement;
+    for (let i = 0; i < legatoOnOffForm.elements.length; ++i) {
+      legatoOnOffForm.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value;
-        this.useAmplitudeEnvelope(value === 'on');
+        this.legatoMode(value === 'on');
         this.proxySettings.useAmplitudeEnvelope = value;
       });
     }

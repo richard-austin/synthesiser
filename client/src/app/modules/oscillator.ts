@@ -187,7 +187,7 @@ export class Oscillator extends OscFilterBase {
     this.panner = audioCtx.createStereoPanner();
     this.gain = audioCtx.createGain();
 
-    this.useAmplitudeEnvelope = true;
+    this.legatoMode = true;
     this.oscillator = audioCtx.createOscillator();
     this.type = this.oscillator.type = "sine";
     // Default ADSR values

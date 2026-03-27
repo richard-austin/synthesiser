@@ -87,7 +87,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   @ViewChild('oscOutputToForm') oscOutputToForm!: ElementRef<HTMLFormElement>;
 
   @ViewChild('freqEnveOnOffForm') freqEnveOnOffForm!: ElementRef<HTMLFormElement>;
-  @ViewChild('amplitudeEnvelopeOnOffForm') amplitudeEnvelopeOnOffForm!: ElementRef<HTMLFormElement>;
+  @ViewChild('legatoOnOffForm') legatoOnOffForm!: ElementRef<HTMLFormElement>;
   @ViewChild('velocity') velocityOnOffForm!: ElementRef<HTMLFormElement>;
   @ViewChild('oscWaveform') oscWaveForm!: ElementRef<HTMLSelectElement>;
 
@@ -140,7 +140,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       this.oscillators.push(new Oscillator(this.audioCtx));
       this.oscillators[i].setFrequency(this.keyToFrequency(i));
       this.oscillators[i].setAmplitudeEnvelope(this.proxySettings.adsr)
-      this.oscillators[i].useAmplitudeEnvelope = this.proxySettings.useAmplitudeEnvelope === onOff.on;
+      this.oscillators[i].legatoMode = this.proxySettings.useAmplitudeEnvelope !== onOff.on;
       this.oscillators[i].setFreqBendEnvelope(this.proxySettings.freqBend);
       this.oscillators[i].useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.on);
       this.oscillators[i].setType(this.proxySettings.waveForm);
@@ -178,7 +178,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.oscWaveForm.nativeElement.value = this.proxySettings.waveForm;
     this.portamentoType.nativeElement.value = this.proxySettings.portamentoType;
 
-    SetRadioButtons.set(this.amplitudeEnvelopeOnOffForm, this.proxySettings.useAmplitudeEnvelope);
+    SetRadioButtons.set(this.legatoOnOffForm, this.proxySettings.useAmplitudeEnvelope === onOff.on ? onOff.off : onOff.on);
     SetRadioButtons.set(this.velocityOnOffForm, this.proxySettings.velocitySensitive);
     SetRadioButtons.set(this.freqEnveOnOffForm, this.proxySettings.useFrequencyEnvelope);
     SetRadioButtons.set(this.modSettingsForm, this.proxySettings.modType);
@@ -223,10 +223,10 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  useAmplitudeEnvelope(useAmplitudeEnvelope: boolean) {
+  legatoMode(useAmplitudeEnvelope: boolean) {
     this.proxySettings.useAmplitudeEnvelope = useAmplitudeEnvelope ? onOff.on : onOff.off;
     this.oscillators.forEach(osc => {
-      osc.useAmplitudeEnvelope = useAmplitudeEnvelope;
+      osc.legatoMode = !useAmplitudeEnvelope;
     });
   }
 
@@ -445,7 +445,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
         this.devicePoolManagerService.keyUpOscillator2(keys);  // Trigger appropriate filter bank
 
       if (this.proxySettings.portamentoType === 'chord')
-        if (this.proxySettings.useAmplitudeEnvelope === onOff.on)
+        if (this.proxySettings.useAmplitudeEnvelope !== onOff.on)
           this.chordProcessor.release(this.proxySettings.adsr.releaseTime);
         else
           this.chordProcessor.release(this.proxySettings.adsr.decayTime+this.proxySettings.adsr.releaseTime);
@@ -561,12 +561,12 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
         this.useFreqBendEnvelope(value === 'on')
       })
     }
-    const amplitudeEnvelopeOnOffForm = this.amplitudeEnvelopeOnOffForm.nativeElement;
-    for (let i = 0; i < amplitudeEnvelopeOnOffForm.elements.length; ++i) {
-      amplitudeEnvelopeOnOffForm.elements[i].addEventListener('change', ($event) => {
+    const legatoOnOffForm = this.legatoOnOffForm.nativeElement;
+    for (let i = 0; i < legatoOnOffForm.elements.length; ++i) {
+      legatoOnOffForm.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value;
-        this.useAmplitudeEnvelope(value === 'on');
+        this.legatoMode(value === 'on');
       });
     }
     const velocityOnOffForm = this.velocityOnOffForm.nativeElement;
