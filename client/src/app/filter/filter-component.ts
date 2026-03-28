@@ -387,6 +387,8 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   deviceKeyUp = (keys: DeviceKeys) => {
     if (keys) {
+      const dev = this.filters[keys.deviceIndex]
+
       const sub = timer((keys.filterTimeout) * 1000).subscribe(() => {
         sub.unsubscribe();
         const idx = this.keysDown.findIndex(key => key.keyIndex === keys.keyIndex);
@@ -401,6 +403,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
         this.chordProcessorOscillator1.release(keys.filterTimeout);
       else
         this.chordProcessorOscillator2.release(keys.filterTimeout);
+      dev.keyUp();
     }
   }
 
