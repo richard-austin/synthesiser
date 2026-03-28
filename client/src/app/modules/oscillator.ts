@@ -320,7 +320,7 @@ export class Oscillator extends OscFilterBase {
 
   // Key down for this oscillator
   override keyDown(velocity: number) {
-    super.attack(velocity, this.oscillator.frequency.value);
+    super.attack(velocity);
     //console.log("Oscillator keyDown = " + performance.now());
     if (this._useFreqBendEnvelope) {
       const ctx = this.audioCtx;
@@ -336,7 +336,7 @@ export class Oscillator extends OscFilterBase {
 
   // Key released for this oscillator
   keyUp() {
-    super.release(this.oscillator.frequency.value);
+    super.release();
     const ctx = this.audioCtx;
     if (this._useFreqBendEnvelope) {
       this.freqBendEnvTimerSub?.unsubscribe();

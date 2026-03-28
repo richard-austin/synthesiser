@@ -86,14 +86,16 @@ export abstract class GainEnvelopeBase {
 
   private _minRampTime: number = 0.03125;
   velocity!: number;
+  private readonly justAudible = GainEnvelopeBase.maxLevel / 50;
 
-  attack(velocity: number, frequency: number = 2000) {
-    this.minRampTime(frequency);
+  attack(velocity: number) {
+    this.minRampTime();
     const currentTime = this.audioCtx.currentTime;
     if (!this.legatoMode) {
       this.velocity = Math.pow(velocity / 127, .75);
-      this.envelope.gain.cancelAndHoldAtTime(currentTime);
-      this.envelope.gain.setTargetAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * this.velocity), currentTime, (this.env.attackTime + this._minRampTime)/10); // Ramp to attack level
+      this.envelope.gain.cancelAndHoldAtTime(currentTime * this.velocity);
+      this.envelope.gain.setValueAtTime(this.justAudible, currentTime);  // Bring to just audible level as exponential ramp is too slow during initial phase
+      this.envelope.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * this.velocity), currentTime+this.env.attackTime + this._minRampTime); // Ramp to attack level
       this.envelope.gain.setTargetAtTime(this.clampLevel(this.env.sustainLevel * this.velocity), currentTime + this.env.attackTime + this._minRampTime, (this.env.decayTime + this._minRampTime) / 10);  // Ramp to sustain level
     } else { // Legato mode
       this.envelope.gain.cancelAndHoldAtTime(currentTime);
@@ -102,9 +104,9 @@ export abstract class GainEnvelopeBase {
     }
   }
 
-  release(frequency: number = 2000) {
+  release() {
     const currentTime = this.audioCtx.currentTime;
-    this.minRampTime(frequency);
+    this.minRampTime();
     if (!this.legatoMode) {
       this.envelope.gain.cancelAndHoldAtTime(0);
       this.envelope.gain.setTargetAtTime(this.clampLevel(GainEnvelopeBase.minLevel), currentTime, (this.env.releaseTime + this._minRampTime) / 10);  // Ramp to release level
@@ -115,7 +117,7 @@ export abstract class GainEnvelopeBase {
   }
 
   // Calculate the minimum envelope time (2 cycles of the relevant frequency) to prevent clicks with fast attack/decay/release
-  private minRampTime(frequency: number) {
+  private minRampTime() {
     this._minRampTime = .05; //5 / frequency;
   }
 
