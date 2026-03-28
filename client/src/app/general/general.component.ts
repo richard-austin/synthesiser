@@ -103,7 +103,7 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   }
 
   setVolume(value: number) {
-    this.masterVolume.setValue(value);
+    this.masterVolume.setValue(value * 3);
   }
 
   node(): DynamicsCompressorNode {
