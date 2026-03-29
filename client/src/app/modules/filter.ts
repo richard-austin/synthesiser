@@ -24,6 +24,8 @@ export class Filter extends OscFilterBase {
     this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
     this.legatoMode = false;
 
+    this.filter.frequency.value = this.filter2.frequency.value = 5000; // Initial setting
+
     this.filter.gain.value = this.filter2.gain.value = 0;
     this.envelope.gain.value = 1;
     this.filter.connect(this.filter2);

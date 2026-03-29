@@ -100,8 +100,10 @@ export abstract class GainEnvelopeBase {
       this.sub?.unsubscribe();
       this.velocity = Math.pow(velocity / 127, .75);
       this.envelope.gain.cancelAndHoldAtTime(currentTime);
-      this.envelope.gain.value = this.justAudible;
-      this.envelope.gain.setValueAtTime(this.envelope.gain.value, currentTime);  // Prevent clicks
+      if(this.envelope.gain.value < this.justAudible)
+        this.envelope.gain.value = this.justAudible;
+      else
+        this.envelope.gain.setValueAtTime(this.envelope.gain.value, currentTime);  // Prevent clicks
       this.envelope.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * this.velocity), currentTime + this.env.attackTime + this._minRampTime); // Ramp to attack level
       this.sub = timer((this.env.attackTime + this._minRampTime) * 1000).subscribe(() => {
         this.envelope.gain.exponentialRampToValueAtTime(this.clampLevel(this.env.sustainLevel * this.velocity), this.audioCtx.currentTime + this.env.decayTime + this._minRampTime);  // Ramp to sustain level
@@ -145,7 +147,7 @@ export abstract class GainEnvelopeBase {
 
   // Calculate the minimum envelope time (2 cycles of the relevant frequency) to prevent clicks with fast attack/decay/release
   private minRampTime(frequency: number) {
-    this._minRampTime = 29 / frequency;
+    this._minRampTime = 5 / frequency;
   }
 
   connect(arg: AudioNode | AudioParam) {
