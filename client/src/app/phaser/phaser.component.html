@@ -4,10 +4,10 @@
     <div class="module">
       <div class="column">
         <div class="row">
-          <app-level-control #phase label="Phase" [plusMinus]="true" [style]="dialStyle.red" [divisions]="10"
+          <app-level-control #frequency label="Frequency" [plusMinus]="true" [style]="dialStyle.red" [divisions]="10"
                              [factor]="0.5"
                              [calAngle]="300"
-                             [radius]="50" (setLevel)="setPhase($event)"></app-level-control>
+                             [radius]="50" (setLevel)="setFrequency($event)"></app-level-control>
 
           <app-level-control #level label="Gain" [style]="dialStyle.blue" [radius]="50" [divisions]="10"
                              (setLevel)="setLevel($event)"></app-level-control>
@@ -16,6 +16,9 @@
           </app-level-control>
         </div>
         <div class="row">
+          <app-level-control #bandwidth label="Bandwidth" [style]="dialStyle.yellow" [radius]="50" [plusMinus]="true"
+                             [divisions]="10" [factor]="2.0" [calAngle]="300" (setLevel)="setBandwidth($event)">
+          </app-level-control>
           <app-level-control #feedback label="Feedback" [style]="dialStyle.yellow" [radius]="50" [plusMinus]="true"
                              [divisions]="10" [factor]="2.0" [calAngle]="300" (setLevel)="setFeedback($event)">
           </app-level-control>

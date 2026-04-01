@@ -1,8 +1,8 @@
 import {GainEnvelopeBase} from './gain-envelope-base';
-import {AllPassFilter} from './all-pass-filter';
+import {AllPassFilter2ndOrd} from './all-pass-filter-2nd-ord';
 
 export class Phaser {
-  filters: AllPassFilter[];
+  filters: AllPassFilter2ndOrd[];
   public readonly modInput: GainNode;
   private readonly numberOfNodes: number;
   gain: GainNode;
@@ -35,7 +35,7 @@ export class Phaser {
 
   async start() {
     for (let i = 0; i < this.numberOfNodes; ++i) {
-      this.filters.push(new AllPassFilter(this.audioCtx));
+      this.filters.push(new AllPassFilter2ndOrd(this.audioCtx));
       await this.filters[i].start();
       if (i > 0)
         this.filters[i - 1].connect(this.filters[i].node());
@@ -47,14 +47,17 @@ export class Phaser {
     this.filters[this.numberOfNodes - 1].connect(this.wetGain);
   }
 
-  // phase is between 0.5 and -0.5
-  setPhase(phase: number) {
+  setFrequency(frequency: number) {
     this.filters.forEach((filter) => {
-      const k1 = phase * 4;// * (i + 1) * this.spread / 3;
-      filter.setK1(k1);
+      const fx = frequency * 4;
+      filter.setD(fx);
     })
   }
-
+  setBandWidth(bandwidth: number) {
+    this.filters.forEach((filter) => {
+      filter.setC(bandwidth);
+    });
+  }
   setLevel(level: number) {
     this.gain.gain.value = GainEnvelopeBase.exponentiateGain(level);
   }

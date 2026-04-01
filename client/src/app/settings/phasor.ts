@@ -2,6 +2,7 @@ import {modWaveforms, onOff, phasorOutputs} from '../enums/enums';
 
 export class PhasorSettings {
   phase: number;
+  bandwidth: number;
   gain: number;
   lfoFrequency: number;
   modWaveform: modWaveforms;
@@ -21,8 +22,10 @@ export class PhasorSettings {
               output: phasorOutputs = phasorOutputs.off,
               feedback: number = 0,
               stages: number = 11,
-              wetDry: number = 0) {
+              wetDry: number = 0,
+              bandwidth: number = 0) {
     this.phase = phase;
+    this.bandwidth = bandwidth;
     this.gain = gain;
     this.lfoFrequency = lfoFrequency;
     this.modDepth = modDepth;
