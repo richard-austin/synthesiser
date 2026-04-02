@@ -49,13 +49,12 @@ export class Phaser {
 
   setFrequency(frequency: number) {
     this.filters.forEach((filter) => {
-      const fx = frequency * 4;
-      filter.setD(fx);
+      filter.frequency(frequency * 4);
     })
   }
   setBandWidth(bandwidth: number) {
     this.filters.forEach((filter) => {
-      filter.setC(bandwidth);
+      filter.bandwidth(bandwidth);
     });
   }
   setLevel(level: number) {

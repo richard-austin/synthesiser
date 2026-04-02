@@ -12,18 +12,16 @@ export class AllPassFilter2ndOrd {
       // @ts-ignore
       registerProcessor('all-pass2', class Processor extends AudioWorkletProcessor {
         static get parameterDescriptors() {
-          return [{name: 'c', defaultValue: 0, minValue: -0.999, maxValue:0.999, automationRate: "k-rate"}, {name: 'd', defaultValue: 0, minValue: -0.999, maxValue:0.999, automationRate: "k-rate"}];
+          return [{name: 'bandwidth', defaultValue: 0, minValue: -0.999, maxValue:0.999, automationRate: "k-rate"}, {name: 'frequency', defaultValue: 0, minValue: -1, maxValue:0.999, automationRate: "k-rate"}];
         }
 
-        c = 0;
-        d = 0;
-        zMiOne = [0,0];
-        zMiTwo = [0,0];
+        bandwidth: number = 0;
+        frequency: number = 0;
+        lastFrequency: number = -2;
+        zMiOne: number[] = [0,0];
+        zMiTwo: number[] = [0,0];
 
-        running = true;
-
-        lastC = 0;
-        lastD = 0;
+        running: boolean = true;
 
         constructor() {
           super();
@@ -38,30 +36,34 @@ export class AllPassFilter2ndOrd {
           };
         }
 
-        process(inputs: any, outputs: any, parameters: any) {
-          this.c = parameters["c"][0];
-          this.d = parameters["d"][0];
+        process(inputs: number[][][], outputs: number[][][], parameters: any) {
+          this.bandwidth = parameters["bandwidth"][0];
+          const fx = parameters["frequency"][0];
+          if(fx !== this.lastFrequency) {
+            this.lastFrequency = fx;
+            this.frequency =0.850918128 * Math.exp(fx) -1.313035285;
+          }
 
-          const output = outputs[0];
-          const input = inputs[0];
+          const output: number[][] = outputs[0];
+          const input: number[][] = inputs[0];
 
-          let sum1;
-          let sum2;
-          let sum3;
-          let sum4;
+          let sum1: number;
+          let sum2: number;
+          let sum3: number;
+          let sum4: number;
 
           for (let channel = 0; channel < input.length; ++channel) {
-            const outputChannel = output[channel];
-            const inputChannel = input[channel];
+            const outputChannel: number[] = output[channel];
+            const inputChannel: number[] = input[channel];
             for (let i = 0; i < outputChannel.length; ++i) {
-              sum2 = this.zMiOne[channel] * -this.d*(1 - this.c);
-              sum2 += this.zMiTwo[channel] * this.c;
+              sum2 = this.zMiOne[channel] * -this.frequency*(1 - this.bandwidth);
+              sum2 += this.zMiTwo[channel] * this.bandwidth;
               sum1 = inputChannel[i];
               sum1 += sum2;
 
               sum4 = this.zMiTwo[channel];
-              sum4 += this.zMiOne[channel] * this.d*(1 - this.c);
-              sum3 = sum1 * -this.c;
+              sum4 += this.zMiOne[channel] * this.frequency*(1 - this.bandwidth);
+              sum3 = sum1 * -this.bandwidth;
               sum3 += sum4;
 
               outputChannel[i] = sum3;
@@ -89,16 +91,16 @@ export class AllPassFilter2ndOrd {
   }
 
   // Bandwidth
-  public setC(c: number) {
-     this._node?.parameters.get("c")?.setValueAtTime(c, 0);
+  public bandwidth(c: number) {
+     this._node?.parameters.get("bandwidth")?.setValueAtTime(c, 0);
   }
 
   // Phase / frequency
-  public setD(d: number) {
-    this._node?.parameters.get("d")?.setValueAtTime(d, 0);
+  public frequency(d: number) {
+    this._node?.parameters.get("frequency")?.setValueAtTime(d, 0);
   }
   public mod(): AudioParam {
-    return this._node?.parameters.get("d") as AudioParam;
+    return this._node?.parameters.get("frequency") as AudioParam;
   }
 
   public disconnect() {

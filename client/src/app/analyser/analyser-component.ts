@@ -88,7 +88,7 @@ export class AnalyserComponent implements AfterViewInit {
     ctx.beginPath();
 
     for (let x = 0; x < width; x++)
-      ctx.lineTo(x, height - freqData[x] * scaling);
+      ctx.lineTo(x *1.5, height - freqData[x] * scaling);
 
     ctx.stroke();
   }
