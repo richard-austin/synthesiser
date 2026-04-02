@@ -4,7 +4,7 @@ import {filterModType, oscModType} from '../enums/enums';
 import {Subscription, timer} from 'rxjs';
 
 export abstract class GainEnvelopeBase {
-  public readonly gain: GainNode;
+  protected readonly envelope: GainNode;
   protected readonly modOutput: GainNode;
   frequencyMod: GainNode;
   frequencyMod2: GainNode;
@@ -15,18 +15,16 @@ export abstract class GainEnvelopeBase {
   protected modType2: oscModType | filterModType;
   protected modLevel: number = 0;
   protected mod2Level: number = 0;
-  private _useAmplitudeEnvelope = false;
+  private _legatoMode = false;
   env: ADSRValues;
   modulator!: AudioNode;
 
-  protected setLevel: number;
   public static readonly maxLevel: number = 1;
   public static readonly minLevel: number = 0.000001;
 
   protected constructor(protected audioCtx: AudioContext) {
-    this.gain = audioCtx.createGain();
-    this.setLevel = 0;
-    this.gain.gain.value = this.setLevel;
+    this.envelope = audioCtx.createGain();
+    this.envelope.gain.value = 1;
 
     this.modOutput = new GainNode(this.audioCtx);
     this.modOutput.gain.value = 1;  // Fixed gain on this as the modulated oscillator sets the gain
@@ -42,19 +40,11 @@ export abstract class GainEnvelopeBase {
     this.amplitudeMod2Depth = audioCtx.createGain();
     this.amplitudeModDepth.gain.value = 0;
     this.amplitudeMod2Depth.gain.value = 0;
-    this.gain.connect(this.amplitudeMod);
+    this.envelope.connect(this.amplitudeMod);
     this.amplitudeModDepth.connect(this.amplitudeMod.gain);
     this.amplitudeMod2Depth.connect(this.amplitudeMod.gain);
     this.modType = oscModType.amplitude;
     this.modType2 = oscModType.amplitude;
-  }
-
-  setGain(gain: number) {
-    this.setLevel = this.clampLevel(GainEnvelopeBase.exponentiateGain(gain));
-    let gainToUse = gain;
-    if (this._useAmplitudeEnvelope)
-      gainToUse = this.clampLevel(gain * OscFilterBase.minLevel);
-    this.gain.gain.value = this.clampLevel(GainEnvelopeBase.exponentiateGain(gainToUse));
   }
 
   public static exponentiateGain(gain: number) {
@@ -63,7 +53,7 @@ export abstract class GainEnvelopeBase {
 
   setAmplitudeEnvelope(env: ADSRValues) {
     this.env = env;
-    this.gain.gain.setValueAtTime(this.clampLevel(this.setLevel * OscFilterBase.minLevel), this.audioCtx.currentTime);
+    this.envelope.gain.setValueAtTime(this.clampLevel(OscFilterBase.minLevel), this.audioCtx.currentTime);
   }
 
   modulationOff() {
@@ -78,17 +68,15 @@ export abstract class GainEnvelopeBase {
 
   abstract modulation(modulator: AudioNode, type: oscModType | filterModType): void;
 
-  public set useAmplitudeEnvelope(useAmplitudeEnvelope: boolean) {
-    this._useAmplitudeEnvelope = useAmplitudeEnvelope;
-    let gainToUse = this.setLevel;
-    if (this._useAmplitudeEnvelope)
-      gainToUse = this.clampLevel(gainToUse * OscFilterBase.minLevel);
-    this.gain.gain.cancelAndHoldAtTime(this.audioCtx.currentTime);
-    this.gain.gain.setValueAtTime(this.clampLevel(gainToUse), this.audioCtx.currentTime);
+  public set legatoMode(legatoMode: boolean) {
+    this._legatoMode = legatoMode;
+    let gainToUse = this.clampLevel(OscFilterBase.minLevel);
+    this.envelope.gain.cancelAndHoldAtTime(this.audioCtx.currentTime);
+    this.envelope.gain.setValueAtTime(this.clampLevel(gainToUse), this.audioCtx.currentTime);
   }
 
-  public get useAmplitudeEnvelope() {
-    return this._useAmplitudeEnvelope;
+  public get legatoMode() {
+    return this._legatoMode;
   }
 
   clampLevel(level: number) {
@@ -100,21 +88,31 @@ export abstract class GainEnvelopeBase {
   private _minRampTime: number = 0.03125;
   sub!: Subscription;
   velocity!: number;
+  private readonly justAudible = GainEnvelopeBase.maxLevel / 50;
 
   attack(velocity: number, frequency: number = 2000) {
     if (this.releaseFinishedSub)
       this.releaseFinishedSub.unsubscribe();
 
     this.minRampTime(frequency);
-    const ctx = this.audioCtx;
-    if (this.useAmplitudeEnvelope) {
+    const currentTime = this.audioCtx.currentTime;
+    if (!this.legatoMode) {
+      this.sub?.unsubscribe();
       this.velocity = Math.pow(velocity / 127, .75);
-      const setLevel = this.setLevel;
-      this.gain.gain.cancelAndHoldAtTime(ctx.currentTime);
-      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * setLevel * this.velocity), ctx.currentTime + this.env.attackTime + this._minRampTime); // Ramp to attack level
+      this.envelope.gain.cancelAndHoldAtTime(currentTime);
+      if(this.envelope.gain.value < this.justAudible)
+        this.envelope.gain.value = this.justAudible;
+      else
+        this.envelope.gain.setValueAtTime(this.envelope.gain.value, currentTime);  // Prevent clicks
+      this.envelope.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * this.velocity), currentTime + this.env.attackTime + this._minRampTime); // Ramp to attack level
       this.sub = timer((this.env.attackTime + this._minRampTime) * 1000).subscribe(() => {
-        this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(this.env.sustainLevel * setLevel * this.velocity), ctx.currentTime + this.env.decayTime + this._minRampTime);  // Ramp to sustain level
+        this.envelope.gain.exponentialRampToValueAtTime(this.clampLevel(this.env.sustainLevel * this.velocity), this.audioCtx.currentTime + this.env.decayTime + this._minRampTime);  // Ramp to sustain level
       });
+    } else { // Legato mode
+      this.sub?.unsubscribe();
+      this.envelope.gain.cancelAndHoldAtTime(currentTime);
+      this.envelope.gain.setValueAtTime(this.envelope.gain.value, currentTime);  // Prevent clicks
+      this.envelope.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel), currentTime + this.env.attackTime + this._minRampTime); // Ramp to attack level
     }
   }
 
@@ -122,15 +120,23 @@ export abstract class GainEnvelopeBase {
   public releaseFinished: (() => void) | null = null;
 
   release(frequency: number = 2000) {
+    const currentTime = this.audioCtx.currentTime;
     this.minRampTime(frequency);
-    if (this.useAmplitudeEnvelope) {
+    if (!this.legatoMode) {
       this.sub?.unsubscribe();
-      this.gain.gain.cancelAndHoldAtTime(0);
-      this.gain.gain.setValueAtTime(this.gain.gain.value, this.audioCtx.currentTime);  // Prevent clicks
-      this.gain.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel * this.setLevel), this.audioCtx.currentTime + this.env.releaseTime + this._minRampTime);  // Ramp to release level
+      this.envelope.gain.cancelAndHoldAtTime(0);
+      this.envelope.gain.setValueAtTime(this.envelope.gain.value, currentTime);  // Prevent clicks
+      this.envelope.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel), currentTime + this.env.releaseTime + this._minRampTime);  // Ramp to release level
+    } else { // Legato mode
+      this.sub = timer((this.env.decayTime + this._minRampTime) * 1000).subscribe(() => {
+        this.sub.unsubscribe();
+        this.envelope.gain.cancelAndHoldAtTime(0);
+        this.envelope.gain.setValueAtTime(this.envelope.gain.value, this.audioCtx.currentTime);  // Prevent clicks
+        this.envelope.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel), this.audioCtx.currentTime + this.env.releaseTime + this._minRampTime);  // Ramp to release level
+      })
     }
     if(this.releaseFinished) {
-      this.releaseFinishedSub = timer((this._minRampTime + (this.useAmplitudeEnvelope ? this.env.releaseTime : 0)) * 1000 + 0.1).subscribe(() => {
+      this.releaseFinishedSub = timer((this._minRampTime + (!this.legatoMode ? this.env.releaseTime : 0)) * 1000 + 0.1).subscribe(() => {
         this.releaseFinishedSub?.unsubscribe();
         this.releaseFinishedSub = null;
         // @ts-ignore
@@ -141,7 +147,7 @@ export abstract class GainEnvelopeBase {
 
   // Calculate the minimum envelope time (2 cycles of the relevant frequency) to prevent clicks with fast attack/decay/release
   private minRampTime(frequency: number) {
-    this._minRampTime = 2 / frequency;
+    this._minRampTime = 5 / frequency;
   }
 
   connect(arg: AudioNode | AudioParam) {

@@ -62,8 +62,10 @@ class SynthController {
             def fileNames = new ArrayList()
             for(f in files) {
                 def fileName = Path.of(f.toURI()).toFile().getName()
-                def fileNameNoExt = fileName.substring(0, fileName.lastIndexOf('.'))
-                fileNames.add(fileNameNoExt)
+                if(fileName.endsWith(".json")) {
+                    def fileNameNoExt = fileName.substring(0, fileName.lastIndexOf('.'))
+                    fileNames.add(fileNameNoExt)
+                }
             }
             return ResponseEntity.ok().body(fileNames)
         }

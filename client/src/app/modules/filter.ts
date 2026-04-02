@@ -5,25 +5,39 @@ import {filterModType, oscModType} from '../enums/enums';
 import {Subscription, timer} from 'rxjs';
 
 export class Filter extends OscFilterBase {
+  gain: GainNode;
   filter: BiquadFilterNode;
   filter2: BiquadFilterNode;
   readonly freqBendBase = 16;
+  keyIndex: number = -1;
+  gainFactor: number = 1;
+  gainValue: number = 0.5;
 
   constructor(protected override audioCtx: AudioContext) {
     super(audioCtx);
+    this.gain = audioCtx.createGain();
     this.filter = audioCtx.createBiquadFilter();
     this.filter.type = "bandpass";
     this.filter2 = audioCtx.createBiquadFilter();
     this.filter2.type = "bandpass";
     // Default ADSR values
     this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
-    this.useAmplitudeEnvelope = false;
+    this.legatoMode = false;
+
+    this.filter.frequency.value = this.filter2.frequency.value = 5000; // Initial setting
 
     this.filter.gain.value = this.filter2.gain.value = 0;
-    this.gain.gain.value = 1;
+    this.envelope.gain.value = 1;
     this.filter.connect(this.filter2);
     this.filter2.connect(this.gain);
+    this.gain.connect(this.envelope);
     this.frequencyMod.connect(this.filter.detune);
+  }
+
+
+  setGain(gain: number) {
+    this.gainValue = gain;
+    this.gain.gain.value = gain * this.gainFactor;
   }
 
   setFrequency(freq: number) {
@@ -45,8 +59,9 @@ export class Filter extends OscFilterBase {
   }
 
   setType(type: BiquadFilterType) {
-    this.filter.type = type;
-    this.filter2.type = type;
+    this.filter.type = this.filter2.type = type;
+    this.gainFactor = type === "bandpass" ? 50 : 1;
+    this.setGain(this.gainValue);
   }
 
   modulation(modulator: AudioNode, type: filterModType | oscModType = filterModType.frequency) {
@@ -101,7 +116,7 @@ export class Filter extends OscFilterBase {
   freqBendEnvTimerSub!: Subscription;
   // Key down for this filter
   override keyDown(velocity: number) {
-    super.attack(velocity, this.filter2.frequency.value);
+    //super.attack(velocity, this.filter2.frequency.value);
 
     if (this._useFreqBendEnvelope) {
       const ctx = this.audioCtx;
@@ -121,7 +136,7 @@ export class Filter extends OscFilterBase {
 
   // Key released for this filter
   keyUp() {
-    super.release(this.filter2.frequency.value);
+    //super.release(this.filter2.frequency.value);
 
     if (this._useFreqBendEnvelope) {
       const ctx = this.audioCtx;
@@ -133,5 +148,11 @@ export class Filter extends OscFilterBase {
       this.filter.frequency.exponentialRampToValueAtTime(this.clampFrequency(this.freq*Math.pow(this.freqBendBase, this.freqBendEnv.releaseLevel)), ctx.currentTime + this.freqBendEnv.releaseTime);
       this.filter2.frequency.exponentialRampToValueAtTime(this.clampFrequency(this.freq*Math.pow(this.freqBendBase, this.freqBendEnv.releaseLevel)), ctx.currentTime + this.freqBendEnv.releaseTime);
     }
+  }
+
+  destroy() {
+    this.filter.disconnect();
+    this.filter2.disconnect();
+    this.disconnect();
   }
 }

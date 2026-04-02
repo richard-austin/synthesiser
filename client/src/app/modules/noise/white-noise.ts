@@ -1,18 +1,36 @@
 import {GainEnvelopeBase} from '../gain-envelope-base';
 
 export class WhiteNoise extends GainEnvelopeBase {
+  private gain: GainNode;
+
   public static theNode: AudioWorkletNode | undefined = undefined;
   constructor(audioCtx: AudioContext) {
     super(audioCtx);
+    this.gain = audioCtx.createGain();
+    this.gain.connect(this.envelope);
   }
 
   async start() {
     function worklet() {
       // @ts-ignore
       registerProcessor('white-noise', class Processor extends AudioWorkletProcessor {
+        running = true;
+        constructor() {
+          super();
+          // @ts-ignore
+          this.port.onmessage = (event) => {
+            if (event.data.type === 'shutdown') {
+              this.running = false;
+              // @ts-ignore
+              this.port.close();
+            }
+          };
+        }
+
         static get parameterDescriptors() {
           return [{name: 'amplitude', defaultValue: 0.25, minValue: 0, maxValue: 1}];
         }
+
         process(inputs: any, outputs: any, parameters: any) {
           const output = outputs[0];
 
@@ -24,7 +42,7 @@ export class WhiteNoise extends GainEnvelopeBase {
               outputChannel[i] *= 0.5; // (roughly) compensate for gain
             }
           }
-          return true;
+          return this.running;
         }
       });
     }
@@ -34,6 +52,10 @@ export class WhiteNoise extends GainEnvelopeBase {
       WhiteNoise.theNode = new AudioWorkletNode(this.audioCtx, "white-noise");
     }
     WhiteNoise.theNode.connect(this.gain);
+  }
+
+  setGain(gain: number) {
+    this.gain.gain.value = gain;
   }
 
   modulation(modulator: OscillatorNode) {
@@ -46,5 +68,12 @@ export class WhiteNoise extends GainEnvelopeBase {
 
   keyUp() {
     super.release();
+  }
+
+  public destroy() {
+    WhiteNoise.theNode?.port.postMessage({type: 'shutdown'});
+    WhiteNoise.theNode?.disconnect();
+    WhiteNoise.theNode = undefined;
+    this.disconnect();
   }
 }

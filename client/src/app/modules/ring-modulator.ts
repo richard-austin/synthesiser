@@ -55,4 +55,10 @@ export class RingModulator {
   disconnect() {
     this._ringMod.disconnect();
   }
+
+  destroy() {
+    this._ringMod.disconnect();
+    this._gainNode.disconnect();
+    this.modulator.disconnect();
+  }
 }

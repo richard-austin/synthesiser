@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild} from '@angular/core';
 import {dialStyle, LevelControlParameters} from './levelControlParameters';
 
 @Component({
@@ -7,7 +7,7 @@ import {dialStyle, LevelControlParameters} from './levelControlParameters';
   templateUrl: './level-control.component.html',
   styleUrl: './level-control.component.scss',
 })
-export class LevelControlComponent implements AfterViewInit {
+export class LevelControlComponent implements AfterViewInit, OnDestroy {
   drawOperationsWorker!: Worker;
   params!: LevelControlParameters;
   readonly extraForCursor = 26;
@@ -25,7 +25,7 @@ export class LevelControlComponent implements AfterViewInit {
     this.drawOperationsWorker = new Worker(new URL('./draw-operations.worker', import.meta.url));
     this.drawOperationsWorker.onmessage = async ({data}) => {
       if (data === "terminate") {
-        //this.drawOperationsWorker.terminate();
+        this.drawOperationsWorker.terminate();
       }
     };
     const offScreenCanvas = this.canvas.nativeElement.transferControlToOffscreen();
@@ -140,4 +140,9 @@ export class LevelControlComponent implements AfterViewInit {
       e.preventDefault();
     });
   }
+
+  ngOnDestroy(): void {
+    this.drawOperationsWorker.terminate();
+  }
+
 }

@@ -1,10 +1,12 @@
+import {DeviceKeys} from '../services/device-pool-manager-service';
+
 export class Chord {
-  notes: number[];
+  notes: DeviceKeys[];
 
   constructor() {
     this.notes = [];
   }
-  addNote(keyIndex: number) {
+  addNote(keyIndex: DeviceKeys) {
     this.notes.push(keyIndex);
   }
 

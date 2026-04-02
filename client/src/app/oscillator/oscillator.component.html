@@ -12,13 +12,6 @@
                              [calAngle]="300"
                              [radius]="50"
                              (setLevel)="setFrequency($event)"></app-level-control>
-          <app-level-control #gain
-                             label="Gain"
-                             [radius]="50"
-                             [divisions]="10"
-                             [factor]="0.4"
-                             (setLevel)="setGain($event)"></app-level-control>
-        </div>
         <app-level-control #deTune
                            label="Detune"
                            [plusMinus]="true"
@@ -26,6 +19,24 @@
                            [factor]="2400"
                            (setLevel)="setDetune($event)">
         </app-level-control>
+      </div>
+        <div class="row">
+          <app-level-control #gain
+                             label="Gain"
+                             [radius]="50"
+                             [divisions]="10"
+                             [factor]="0.4"
+                             (setLevel)="setGain($event)"></app-level-control>
+
+          <app-level-control #balance
+                             label="Balance"
+                             [radius]="50"
+                             [divisions]="20"
+                             [factor]="2"
+                             [plusMinus]="true"
+                             (setLevel)="pan($event)"></app-level-control>
+
+        </div>
         <h2>Waveform</h2>
         <div style="height: 3px;"></div>
         <select #oscWaveform>
@@ -40,7 +51,7 @@
           <label><input type="radio" name="output" value="filter"><span>Filter</span></label>
           <label><input type="radio" name="output" value="ringmod"><span>Ring Mod</span></label>
           <label><input type="radio" name="output" value="reverb"><span>Reverb</span></label>
-          <label><input type="radio" name="output" value="phasor"><span>Phasor</span></label>
+          <label><input type="radio" name="output" value="phasor"><span>Phaser</span></label>
           <label><input type="radio" name="output" value="off"><span>Off</span></label>
         </form>
       </div>
@@ -139,10 +150,10 @@
                            [divisions]="10"
                            [factor]="6"
                            (setLevel)="setReleaseTime($event)"></app-level-control>
-        <h4>Envelope</h4>
-        <form #amplitudeEnvelopeOnOffForm>
-          <label><input type="radio" name="envelope" value="on" checked><span>On</span></label>
-          <label><input type="radio" name="envelope" value="off"><span>Off</span></label>
+        <h4>Legato</h4>
+        <form #legatoOnOffForm>
+          <label><input type="radio" name="envelope" value="on"><span>On</span></label>
+          <label><input type="radio" name="envelope" value="off" checked><span>Off</span></label>
         </form>
         <h4>Velocity Sens</h4>
         <form #velocity>

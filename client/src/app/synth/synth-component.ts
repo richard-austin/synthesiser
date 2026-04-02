@@ -4,7 +4,7 @@ import {OscillatorComponent} from "../oscillator/oscillator.component";
 import {NoiseComponent} from '../noise/noise-component';
 import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component';
 import {ReverbComponent} from '../reverb-component/reverb-component';
-import {PhasorComponent} from '../phasor/phasor-component';
+import {PhaserComponent} from '../phaser/phaser.component';
 import {AnalyserComponent} from '../analyser/analyser-component';
 import {GeneralComponent} from '../general/general.component';
 import {ActivatedRoute, Router} from '@angular/router';
@@ -19,7 +19,7 @@ import {RestfulApiService} from '../services/restful-api.service';
     NoiseComponent,
     RingModulatorComponent,
     ReverbComponent,
-    PhasorComponent,
+    PhaserComponent,
     AnalyserComponent,
     GeneralComponent
   ],
@@ -56,7 +56,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChild(NoiseComponent) noise!: NoiseComponent;
   @ViewChild(RingModulatorComponent) ringModulator!: RingModulatorComponent;
   @ViewChild(ReverbComponent) reverb!: ReverbComponent;
-  @ViewChild(PhasorComponent) phasor!: PhasorComponent;
+  @ViewChild(PhaserComponent) phaser!: PhaserComponent;
   @ViewChild(AnalyserComponent) analyser!: AnalyserComponent;
   @ViewChild('synth') synth!: ElementRef<HTMLDivElement>;
   @ViewChild('general') masterVolume!: GeneralComponent;
@@ -87,7 +87,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     await this.noise.start(this.audioCtx, settings ? settings.noiseSettings : settings);
     this.ringModulator.start(this.audioCtx, settings ? settings.ringModSettings : settings);
     this.reverb.start(this.audioCtx, settings ? settings.reverbSettings : settings);
-    this.phasor.setUp(this.audioCtx, settings ? settings.phasorSettings : settings);
+    await this.phaser.setUp(this.audioCtx, settings ? settings.phasorSettings : settings);
     await this.analyser.start(this.audioCtx, settings ? settings.analyserSettings : settings);
     this.masterVolume.start(this.audioCtx, settings ? settings.generalSettings : settings);
     this.masterVolume.connect(this.analyser.node())
@@ -99,7 +99,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.noise.setOutputConnection();
     this.filtersGrp.setOutputConnection();
     this.reverb.setOutputConnection();
-    this.phasor.setOutputConnection();
+    this.phaser.setOutputConnection();
 
     window.addEventListener("keydown", this.keydownHandler);
     window.addEventListener("keyup", this.keyupHandler);
@@ -195,7 +195,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       this.noise.getSettings(),
       this.ringModulator.getSettings(),
       this.reverb.getSettings(),
-      this.phasor.getSettings(),
+      this.phaser.getSettings(),
       this.masterVolume.getSettings(),
       this.analyser.getSettings());
   }
@@ -215,7 +215,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   protected keydown(code: number, velocity: number) {
     this.oscillatorsGrp.keyDown(code, velocity);
     this.oscillators2Grp.keyDown(code, velocity);
-    this.filtersGrp.keyDown(code, velocity);
+   // this.filtersGrp.keyDown(code, velocity);
     this.noise.keyDown(code, velocity);
   }
 
@@ -232,7 +232,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   protected keyup(code: number) {
     this.oscillatorsGrp.keyUp(code)
     this.oscillators2Grp.keyUp(code)
-    this.filtersGrp.keyUp(code);
+    //this.filtersGrp.keyUp(code);
     this.noise.keyUp(code);
   }
 
@@ -366,7 +366,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
         this.oscillatorsGrp.connectToReverb();
         break;
       case 'phasor':
-        this.oscillatorsGrp.connectToPhasor();
+        this.oscillatorsGrp.connectToPhaser();
         break
       case 'off':
         break;
@@ -391,7 +391,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
         this.oscillators2Grp.connectToReverb();
         break;
       case 'phasor':
-        this.oscillators2Grp.connectToPhasor();
+        this.oscillators2Grp.connectToPhaser();
         break
       case 'off':
         break;
@@ -471,21 +471,21 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   protected setPhasorOutputTarget($event: string) {
-    this.phasor.disconnect();
+    this.phaser.disconnect();
     switch ($event) {
       case 'speaker':
-        this.phasor.connect(this.masterVolume.node());
+        this.phaser.connect(this.masterVolume.node());
         break;
       case 'reverb':
-        this.phasor.connect(this.reverb.input);
+        this.phaser.connect(this.reverb.input);
         break;
       case 'off':
         break;
     }
   }
 
-  protected showHomeForm() {
-    this.router.navigate(['/home']).then();
+  protected async showHomeForm() {
+    await this.router.navigate(['/home']);
   }
 
 // The wake lock sentinel.
@@ -565,8 +565,9 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     await this.releaseWakeLock();
     this.ringModulator.disconnect();
     this.reverb.disconnect();
-    this.phasor.disconnect();
-
+    this.phaser.disconnect();
+   // this.noise.disconnect();
+    await this.audioCtx.close();
     this.midiInputs.forEach(input => {
       input.close();
     });

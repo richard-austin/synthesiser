@@ -8,6 +8,7 @@ import {modWaveforms, onOff, ringModOutput} from '../enums/enums';
 import {FilterComponent} from '../filter/filter-component';
 import {ReverbComponent} from '../reverb-component/reverb-component';
 import {Cookies} from '../settings/cookies/cookies';
+import DevicePoolManager from '../util-classes/device-pool-manager';
 
 @Component({
   selector: 'app-ring-modulator',
@@ -24,7 +25,7 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
 
   @Input() filters!: FilterComponent;
   @Input() reverb!: ReverbComponent;
-  @Input() numberOfOscillators!: number;
+  numberOfDevices: number = DevicePoolManager.numberOfDevices;
   @Output() output: EventEmitter<string> = new EventEmitter();
 
   @ViewChild('modFreq') modFreq!: LevelControlComponent;
@@ -102,10 +103,10 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
   connectToFilters() {
     const filters = this.filters.filters;
     let ok = false;
-    if (filters && filters.length === this.numberOfOscillators) {
+    if (filters && filters.length >= this.numberOfDevices) {
       ok = true;
-      for (let i = 0; i < this.numberOfOscillators; i++) {
-        this.ringMod.connect(filters[i].filter);
+      for (let i = 0; i < this.numberOfDevices; i++) {
+        this.ringMod.connect(filters[i+12].filter);
       }
     } else
       console.log("Filter array is a different size to numberOfChannels")
@@ -158,6 +159,6 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.ringMod.disconnect();
+    this.ringMod.destroy();
   }
 }

@@ -2,14 +2,31 @@ import {GainEnvelopeBase} from '../gain-envelope-base';
 
 export class BrownNoise extends GainEnvelopeBase{
   public static theNode: AudioWorkletNode | undefined = undefined;
+  private gain:GainNode;
+
   constructor(audioCtx: AudioContext) {
     super(audioCtx);
+    this.gain = audioCtx.createGain();
+    this.gain.connect(this.envelope);
   }
 
    async start() {
      function worklet() {
        // @ts-ignore
        registerProcessor('brown-noise', class Processor extends AudioWorkletProcessor {
+         running = true;
+         constructor() {
+           super();
+           // @ts-ignore
+           this.port.onmessage = (event) => {
+             if (event.data.type === 'shutdown') {
+               this.running = false;
+               // @ts-ignore
+               this.port.close();
+             }
+           };
+         }
+
          static get parameterDescriptors() {
            return [{name: 'amplitude', defaultValue: 0.25, minValue: 0, maxValue: 1}];
          }
@@ -28,7 +45,7 @@ export class BrownNoise extends GainEnvelopeBase{
                outputChannel[i] *= 3.5; // (roughly) compensate for gain
              }
            }
-           return true;
+           return this.running;
          }
        });
      }
@@ -38,6 +55,10 @@ export class BrownNoise extends GainEnvelopeBase{
        BrownNoise.theNode = new AudioWorkletNode(this.audioCtx, "brown-noise");
      }
      BrownNoise.theNode.connect(this.gain);   }
+
+  setGain(gain: number) {
+    this.gain.gain.value = gain;
+  }
 
   modulation(modulator: OscillatorNode) {
     this.modulator = modulator;
@@ -51,4 +72,12 @@ export class BrownNoise extends GainEnvelopeBase{
   keyUp() {
     super.release();
   }
+
+  public destroy() {
+    BrownNoise.theNode?.port.postMessage({type: 'shutdown'});
+    BrownNoise.theNode?.disconnect();
+    BrownNoise.theNode = undefined;
+    this.disconnect();
+  }
+
  }

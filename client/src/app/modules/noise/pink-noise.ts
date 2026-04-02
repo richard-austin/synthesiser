@@ -2,15 +2,31 @@ import {GainEnvelopeBase} from '../gain-envelope-base';
 
 export class PinkNoise extends GainEnvelopeBase {
   public static theNode: AudioWorkletNode | undefined = undefined;
-
+  private gain: GainNode;
   constructor(audioCtx: AudioContext) {
     super(audioCtx);
+    this.gain = audioCtx.createGain();
+    this.gain.connect(this.envelope);
   }
 
   async start() {
     function worklet() {
       // @ts-ignore
       registerProcessor('pink-noise', class Processor extends AudioWorkletProcessor {
+        running = true;
+
+        constructor() {
+          super();
+          // @ts-ignore
+          this.port.onmessage = (event) => {
+            if (event.data.type === 'shutdown') {
+              this.running = false;
+              // @ts-ignore
+              this.port.close();
+            }
+          };
+        }
+
         static get parameterDescriptors() {
           return [{name: 'amplitude', defaultValue: 0.25, minValue: 0, maxValue: 1}];
         }
@@ -41,7 +57,7 @@ export class PinkNoise extends GainEnvelopeBase {
               this.b6 = white * 0.115926;
             }
           }
-          return true;
+          return this.running;
         }
       });
     }
@@ -51,6 +67,10 @@ export class PinkNoise extends GainEnvelopeBase {
       PinkNoise.theNode = new AudioWorkletNode(this.audioCtx, "pink-noise");
     }
     PinkNoise.theNode.connect(this.gain);
+  }
+
+  setGain(gain: number) {
+    this.gain.gain.value = gain;
   }
 
   modulation(modulator: OscillatorNode) {
@@ -64,5 +84,12 @@ export class PinkNoise extends GainEnvelopeBase {
 
   keyUp() {
     super.release();
+  }
+
+  public destroy() {
+    PinkNoise.theNode?.port.postMessage({type: 'shutdown'});
+    PinkNoise.theNode?.disconnect();
+    PinkNoise.theNode = undefined;
+    this.disconnect();
   }
 }

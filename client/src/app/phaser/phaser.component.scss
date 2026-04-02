@@ -1,0 +1,25 @@
+.module {
+  flex-direction: row;
+  justify-content: space-evenly;
+}
+
+div.phaser-size {
+  width: 910px;
+  height: 380px;
+}
+div.stages-input {
+  display: flex;
+  flex-direction: row;
+  margin-top: 50px;
+  font-weight: bold;
+  > input {
+    height: 20px;
+    border-color: black;
+    border-width: 2px;
+    border-radius: 3px;
+    border-style: solid inset;
+    margin-left: 3px;
+    margin-top: -2px;
+    padding: 2px;
+  }
+}
