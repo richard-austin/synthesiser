@@ -63,8 +63,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   @Input() secondary!: boolean;  // Flag to determine whether to connect to ring mod signal or mod input
   @Input() params!: OscillatorParams;
 
-  @Input() name!: string;
-
   @Output() output = new EventEmitter<string>();
   @ViewChild('frequency') frequency!: LevelControlComponent;
   @ViewChild('deTune') deTune!: LevelControlComponent;

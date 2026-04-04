@@ -1,9 +1,9 @@
 <div class="group-container metallic-button">
-  <h1>{{ name ? name : 'Oscillators' }}</h1>
+  <h1>Oscillators {{params.settingsId}}</h1>
   <div class="group">
     <div class="column">
       <div class="module osc-width">
-        <h2>Oscillators</h2>
+        <h2>Oscillators {{params.settingsId}}</h2>
         <div class="row">
           <app-level-control #frequency
                              label="Tuning"
