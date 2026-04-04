@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, EventEmitter, OnDestroy, Output, ViewChild} from '@angular/core';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {Reverb} from '../modules/reverb';
@@ -22,8 +22,6 @@ export class ReverbComponent implements AfterViewInit, OnDestroy {
   input!: GainNode;
   proxySettings!: ReverbSettings;
   private cookies!: Cookies;
-
-  @Input() numberOfOscillators!: number;
 
   @Output() output = new EventEmitter();
 

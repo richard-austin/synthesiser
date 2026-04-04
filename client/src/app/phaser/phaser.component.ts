@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, EventEmitter, OnDestroy, Output, ViewChild} from '@angular/core';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {Phaser} from '../modules/phaser';
 import {dialStyle} from '../level-control/levelControlParameters';
@@ -37,8 +37,6 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
   private modGain2!: GainNode;
   protected readonly minStages: number = 1;
   protected readonly maxStages: number = 61;
-  @Input() numberOfOscillators!: number;
-
   @Output() output: EventEmitter<string> = new EventEmitter();
 
   @ViewChild('phasorOnOffForm') phasorOnOffForm!: ElementRef<HTMLFormElement>;

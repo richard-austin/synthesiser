@@ -9,8 +9,7 @@ import {AnalyserSettings} from './analyser-settings';
 
 export class SynthSettings {
   numberOfOscillators: number;
-  oscillator1Settings: OscillatorSettings
-  oscillator2Settings: OscillatorSettings
+  oscillatorSettings: OscillatorSettings[];
   filterSettings: FilterSettings;
   noiseSettings: NoiseSettings;
   ringModSettings: RingModSettings;
@@ -20,8 +19,7 @@ export class SynthSettings {
   analyserSettings: AnalyserSettings;
 
   constructor(numberOfOscillators: number,
-              oscillator1Settings: OscillatorSettings,
-              oscillator2Settings: OscillatorSettings,
+              oscillatorSettings: OscillatorSettings[],
               filterSettings: FilterSettings,
               noiseSettings: NoiseSettings,
               ringModSettings: RingModSettings,
@@ -31,8 +29,7 @@ export class SynthSettings {
               analyserSettings: AnalyserSettings)
    {
      this.numberOfOscillators = numberOfOscillators;
-     this.oscillator1Settings = oscillator1Settings;
-     this.oscillator2Settings = oscillator2Settings;
+     this.oscillatorSettings = oscillatorSettings;
      this.filterSettings = filterSettings;
      this.noiseSettings = noiseSettings;
      this.ringModSettings = ringModSettings;

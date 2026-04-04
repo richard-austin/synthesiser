@@ -19,7 +19,7 @@ import java.nio.file.Path
 @RestController
 @RequestMapping("/syn")
 class SynthController {
-    private final configFileDir = Path.of(System.getProperty("user.home"), "configs")
+    private final configFileDir = Path.of(System.getProperty("user.home"), "configs2")
 
     @PostMapping('/saveConfig')
     def saveConfig(@RequestBody SaveConfigCommand cmd) {

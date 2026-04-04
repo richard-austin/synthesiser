@@ -9,7 +9,7 @@ import {
   Output,
   ViewChild
 } from '@angular/core';
-import {Oscillator} from '../modules/oscillator';
+import {Oscillator, OscillatorParams} from '../modules/oscillator';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {FilterComponent} from '../filter/filter-component';
@@ -61,8 +61,8 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   @Input() reverb!: ReverbComponent;
   @Input() phaser!: PhaserComponent;
   @Input() secondary!: boolean;  // Flag to determine whether to connect to ring mod signal or mod input
+  @Input() params!: OscillatorParams;
 
-  @Input() numberOfOscillators!: number;
   @Input() name!: string;
 
   @Output() output = new EventEmitter<string>();
@@ -107,12 +107,10 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.cookies = new Cookies();
     this.chordProcessor = new ChordProcessor();
     this.chordProcessor.setKeyDownCallback(this.chordProcessorKeyDownCallback);
-    if (this.numberOfOscillators) {
-      this.lfo = this.audioCtx.createOscillator();
-      this.lfo.start();
-      this.applySettings(settings);
-      ok = true;
-    }
+    this.lfo = this.audioCtx.createOscillator();
+    this.lfo.start();
+    this.applySettings(settings);
+    ok = true;
     return ok;
   }
 
@@ -122,7 +120,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   applySettings(settings: OscillatorSettings | null) {
-    const cookieName = (this.secondary ? 'oscillator2' : 'oscillator');
+    const cookieName = "oscillator"+this.params.settingsId;
     if (!settings) {  // If no settings supplied, create default and check if previously saved in cookie
       settings = new OscillatorSettings();
       const savedSettings = this.cookies.getSettings(cookieName, settings);

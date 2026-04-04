@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, OnDestroy, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, OnDestroy, QueryList, ViewChild, ViewChildren} from '@angular/core';
 import {FilterComponent} from "../filter/filter-component";
 import {OscillatorComponent} from "../oscillator/oscillator.component";
 import {NoiseComponent} from '../noise/noise-component';
@@ -10,6 +10,8 @@ import {GeneralComponent} from '../general/general.component';
 import {ActivatedRoute, Router} from '@angular/router';
 import {SynthSettings} from '../settings/synth-settings';
 import {RestfulApiService} from '../services/restful-api.service';
+import {OscillatorParams} from '../modules/oscillator';
+import {OscillatorSettings} from '../settings/oscillator';
 
 @Component({
   selector: 'app-synth-component',
@@ -28,7 +30,8 @@ import {RestfulApiService} from '../services/restful-api.service';
 })
 export class SynthComponent implements AfterViewInit, OnDestroy {
   audioCtx!: AudioContext;
-  protected numberOfOscillators: 1 | 0x7f = 1;
+  protected readonly oscillatorParams:OscillatorParams[] =[new OscillatorParams("signal", 1), new OscillatorParams("mod", 2)];
+  protected readonly numberOfOscillators: number = this.oscillatorParams.length;
   midiInputs: MIDIInput[] = [];
   settings: SynthSettings | null = null;
   configFileName: string | null = null;
@@ -50,8 +53,9 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  @ViewChild('oscillators') oscillatorsGrp!: OscillatorComponent
-  @ViewChild('oscillators2') oscillators2Grp!: OscillatorComponent
+  @ViewChildren(OscillatorComponent) oscillatorsGrp!: QueryList<OscillatorComponent>;
+  @ViewChild('oscillatorSelectForm') oscillatorSelectForm!: ElementRef<HTMLFormElement>;
+  @ViewChild('oscillatorWindow') oscillatorWindow!: ElementRef<HTMLDivElement>;
   @ViewChild(FilterComponent) filtersGrp!: FilterComponent;
   @ViewChild(NoiseComponent) noise!: NoiseComponent;
   @ViewChild(RingModulatorComponent) ringModulator!: RingModulatorComponent;
@@ -62,7 +66,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChild('general') masterVolume!: GeneralComponent;
 
   constructor(private route: ActivatedRoute, private router: Router, private rest: RestfulApiService) {
-    this.numberOfOscillators = 0x7f;
     const fileName = this.route.snapshot.params['fileName'];
     if (fileName) {
       this.configFileName = fileName;
@@ -75,13 +78,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.audioCtx = new AudioContext();
 
     // Start the module components
-    this.oscillatorsGrp.start(this.audioCtx, settings ? settings.oscillator1Settings : settings);
-    this.oscillators2Grp.start(this.audioCtx, settings ? settings.oscillator2Settings : settings);
-
-    // Finish setting up the oscillators, as they cross-reference each other, we need to call start on them first
-    this.oscillatorsGrp.setModulators(this.oscillators2Grp);
-    this.oscillators2Grp.setModulators(this.oscillatorsGrp);
-
     this.filtersGrp.start(this.audioCtx, settings ? settings.filterSettings : settings);
 
     await this.noise.start(this.audioCtx, settings ? settings.noiseSettings : settings);
@@ -93,8 +89,15 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.masterVolume.connect(this.analyser.node())
 
     // Connect the module component outputs
-    this.oscillatorsGrp.setOutputConnection();
-    this.oscillators2Grp.setOutputConnection();
+    this.oscillatorsGrp.forEach((oscillator, i) => {
+      oscillator.start(this.audioCtx, settings ? settings.oscillatorSettings[i] : settings);
+
+      // Finish setting up the oscillators, as they cross-reference each other, we need to call start on them first
+     // this.oscillator.setModulators(this.oscillators2Grp);
+     // this.oscillators2Grp.setModulators(this.oscillatorsGrp);
+      oscillator.setOutputConnection();
+    });
+
     this.ringModulator.setOutputConnection();
     this.noise.setOutputConnection();
     this.filtersGrp.setOutputConnection();
@@ -150,7 +153,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       }
     }
 
-
     const startLoggingMIDIInput = (midiAccess: any) => {
       this.midiInputs = midiAccess.inputs;
 
@@ -158,7 +160,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
         entry.onmidimessage = onMIDIMessage;
       });
     }
-
 
     function listInputsAndOutput(midiAccess: any) {
       for (const entry of midiAccess.inputs) {
@@ -179,7 +180,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       }
     }
 
-
     function onMIDIFailure(fail: any) {
       console.log('Could not access your MIDI devices.');
       console.log(fail);
@@ -187,10 +187,13 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   getSettings(): SynthSettings {
+    const settings: OscillatorSettings[] = [];
+    this.oscillatorsGrp.forEach(oscillator => {
+      settings.push(oscillator.getSettings());
+    });
     return new SynthSettings(
       this.numberOfOscillators,
-      this.oscillatorsGrp.getSettings(),
-      this.oscillators2Grp.getSettings(),
+      settings,
       this.filtersGrp.getSettings(),
       this.noise.getSettings(),
       this.ringModulator.getSettings(),
@@ -213,8 +216,8 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   protected keydown(code: number, velocity: number) {
-    this.oscillatorsGrp.keyDown(code, velocity);
-    this.oscillators2Grp.keyDown(code, velocity);
+    this.oscillatorsGrp.forEach(osc => osc.keyDown(code, velocity));
+
    // this.filtersGrp.keyDown(code, velocity);
     this.noise.keyDown(code, velocity);
   }
@@ -230,8 +233,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   protected keyup(code: number) {
-    this.oscillatorsGrp.keyUp(code)
-    this.oscillators2Grp.keyUp(code)
+    this.oscillatorsGrp.forEach(osc => osc.keyUp(code));
     //this.filtersGrp.keyUp(code);
     this.noise.keyUp(code);
   }
@@ -332,15 +334,13 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   private pitchBend(value: number) {
-    this.oscillatorsGrp.midiPitchBend(value);
-    this.oscillators2Grp.midiPitchBend(value);
+    this.oscillatorsGrp.forEach(osc => osc.midiPitchBend(value));
     this.filtersGrp.midiPitchBend(value);
   }
 
   private modLevel(value: number) {
     value *= 300 / 127;
-    this.oscillatorsGrp.midiModLevel(value);
-    this.oscillators2Grp.midiModLevel(value);
+    this.oscillatorsGrp.forEach(osc => osc.midiModLevel(value));
     this.filtersGrp.midiModLevel(value);
   }
 
@@ -349,49 +349,26 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.masterVolume.setVolume(value);
   }
 
-  protected setOscOutputTarget($event: string) {
-    this.oscillatorsGrp.disconnect();
+  protected setOscOutputTarget($event: string, oscNumber: number) {
+    const osc = this.oscillatorsGrp.get(oscNumber) as OscillatorComponent;
+
+    osc.disconnect();
     switch ($event) {
       case 'speaker':
-        this.oscillatorsGrp.connect(this.masterVolume.node());
+        osc.connect(this.masterVolume.node());
         break;
       case 'ringmod':
         false
-        this.oscillatorsGrp.connectToRingMod();
+        osc.connectToRingMod();
         break;
       case 'filter':
-        this.oscillatorsGrp.connectToFilters();
+        osc.connectToFilters();
         break;
       case 'reverb':
-        this.oscillatorsGrp.connectToReverb();
+        osc.connectToReverb();
         break;
       case 'phasor':
-        this.oscillatorsGrp.connectToPhaser();
-        break
-      case 'off':
-        break;
-      default:
-        console.error('Unknown oscillator output destination');
-    }
-  }
-
-  protected setOsc2OutputTarget($event: string) {
-    this.oscillators2Grp.disconnect();
-    switch ($event) {
-      case 'speaker':
-        this.oscillators2Grp.connect(this.masterVolume.node());
-        break;
-      case 'ringmod':
-        this.oscillators2Grp.connectToRingMod();
-        break;
-      case 'filter':
-        this.oscillators2Grp.connectToFilters();
-        break;
-      case 'reverb':
-        this.oscillators2Grp.connectToReverb();
-        break;
-      case 'phasor':
-        this.oscillators2Grp.connectToPhaser();
+        osc.connectToPhaser();
         break
       case 'off':
         break;
@@ -542,7 +519,15 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   async ngAfterViewInit(): Promise<void> {
-    if(!this.configFileName)
+    const oscillatorWindow = this.oscillatorWindow.nativeElement;
+    const oscillatorSelectForm = this.oscillatorSelectForm.nativeElement;
+    oscillatorSelectForm.addEventListener('change', ($event) => {
+      // @ts-ignore
+      const value = $event.target.value as string;
+      oscillatorWindow.scroll({left:0, top:value === "1" ? 0 : 979, behavior: 'instant'});
+    });
+
+      if(!this.configFileName)
       await this.start(null);
     else {
       this.rest.getSettings(this.configFileName).subscribe({

@@ -3,25 +3,24 @@
     <button class="material-icons" (click)="showHomeForm()">home</button>
   </div>
   <div style="display: flex; flex-direction: row">
-    <app-oscillators #oscillators
-                     [secondary]="false"
-                     [filters]="filters"
-                     [ringMod]="ringMod"
-                     [reverb]="reverb"
-                     [phaser]="phaser"
-                     [numberOfOscillators]="numberOfOscillators"
-                     (output)="setOscOutputTarget($event)">
-    </app-oscillators>
-    <app-oscillators #oscillators2
-                     [name]="'Oscillators 2'"
-                     [secondary]="true"
-                     [filters]="filters"
-                     [ringMod]="ringMod"
-                     [reverb]="reverb"
-                     [phaser]="phaser"
-                     [numberOfOscillators]="numberOfOscillators"
-                     (output)="setOsc2OutputTarget($event)">
-    </app-oscillators>
+    <div #oscillatorWindow class="oscillator-window">
+      @for (osc of oscillatorParams; let i=$index; track osc) {
+        <app-oscillators [secondary]="osc.ringModOutput === 'mod'"
+                         [params]="oscillatorParams[i]"
+                         [filters]="filters"
+                         [ringMod]="ringMod"
+                         [reverb]="reverb"
+                         [phaser]="phaser"
+                         (output)="setOscOutputTarget($event, i)">
+        </app-oscillators>
+      }
+      <div>
+        <form #oscillatorSelectForm>
+          <label><input type="radio" name="oscillatorSelect" value="1"><span>1</span></label>
+          <label><input type="radio" name="oscillatorSelect" value="oscilloscope"><span>2</span></label>
+        </form>
+      </div>
+    </div>
     <app-filters #filters
                  [ringMod]="ringMod"
                  [reverb]="reverb"
@@ -32,21 +31,20 @@
                  (output)="setNoiseOutputTarget($event)">
       </app-noise>
 
-      <app-analyser></app-analyser>
+
     </div>
     <app-ring-modulator #ringMod
                         [filters]="filters"
                         [reverb]="reverb"
                         (output)="setRingModOutPutTarget($event)">
     </app-ring-modulator>
+    <app-analyser></app-analyser>
   </div>
   <div style="display: flex; flex-direction: row">
     <app-reverb-component #reverb
-                          [numberOfOscillators]="numberOfOscillators"
                           (output)="setReverbOutputTarget($event)">
     </app-reverb-component>
     <app-phaser #phaser
-                [numberOfOscillators]="numberOfOscillators"
                 (output)="setPhasorOutputTarget($event)">
     </app-phaser>
     <app-general #general></app-general>

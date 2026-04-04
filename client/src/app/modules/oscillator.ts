@@ -5,6 +5,15 @@ import {filterModType, oscModType} from '../enums/enums';
 import {Subscription, timer} from 'rxjs';
 import {WaveTableDetails} from './WaveTableDetails';
 
+export class OscillatorParams {
+  ringModOutput: "signal" | "mod";
+  settingsId:number;
+  constructor(ringModOutput: "signal" | "mod", settingsId: number) {
+    this.ringModOutput = ringModOutput;
+    this.settingsId = settingsId;
+  }
+}
+
 export class Oscillator extends OscFilterBase {
   public readonly oscillator: OscillatorNode;
   type: string;
