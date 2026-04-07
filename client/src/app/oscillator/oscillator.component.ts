@@ -56,11 +56,11 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   private oscillatorPoolMgr!: DevicePoolManager;
   private chordProcessor!: ChordProcessor;
 
-  @Input() filters!: FilterComponent;
+  @Input() filters!: FilterComponent | undefined;
   @Input() ringMod!: RingModulatorComponent;
   @Input() reverb!: ReverbComponent;
   @Input() phaser!: PhaserComponent;
-  @Input() secondary!: boolean;  // Flag to determine whether to connect to ring mod signal or mod input
+  @Input() oscNumber!: number;  // Flag to determine whether to connect to ring mod signal or mod input
   @Input() params!: OscillatorParams;
 
   @Output() output = new EventEmitter<string>();
@@ -118,7 +118,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   applySettings(settings: OscillatorSettings | null) {
-    const cookieName = "oscillator"+this.params.settingsId;
+    const cookieName = "oscillator" + this.params.settingsId;
     if (!settings) {  // If no settings supplied, create default and check if previously saved in cookie
       settings = new OscillatorSettings();
       const savedSettings = this.cookies.getSettings(cookieName, settings);
@@ -288,13 +288,12 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
    * connectToFilters: Connect to a group of filters
    */
   connectToFilters(): boolean {
-    const filters = this.filters.filters;
+    const filters = this.filters?.filters;
     let ok = false;
     if (filters) {
-      const offset = this.secondary ? DevicePoolManager.numberOfDevices * 2 : DevicePoolManager.numberOfDevices;
       ok = true;
       for (let i = 0; i < this.oscillators.length; i++) {
-        this.oscillators[i].connect(filters[i + offset].filter);
+        this.oscillators[i].connect(filters[i].filter);
       }
     } else
       console.log("Filter array is a different size to the oscillator array")
@@ -306,9 +305,10 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     if (ringMod) {
       ok = true;
-      const secondary = this.secondary;
+      const oscNumber = this.oscNumber;
       this.oscillators.forEach((osc, i) => {
-        this.oscillators[i].connect(secondary ? ringMod.modInput() : ringMod.signalInput());      });
+        this.oscillators[i].connect(oscNumber !==2 ? ringMod.modInput() : ringMod.signalInput());
+      });
     }
     return ok;
   }
@@ -319,7 +319,8 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     if (reverb) {
       ok = true;
       this.oscillators.forEach((osc, i) => {
-        this.oscillators[i].connect(reverb.input);      });
+        this.oscillators[i].connect(reverb.input);
+      });
     }
     return ok;
   }
@@ -342,7 +343,8 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
    */
   connect(node: AudioNode) {
     this.oscillators.forEach((osc, i) => {
-      this.oscillators[i].connect(node);    });
+      this.oscillators[i].connect(node);
+    });
   }
 
   disconnect() {
@@ -355,11 +357,8 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   keyDown(keyIndex: number, velocity: number) {
     const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyDown(keyIndex, velocity, this.proxySettings.portamento === 0);
-    if (keys && ((this.proxySettings.output === oscOutputs.filter) || (!this.secondary && this.proxySettings.output === oscOutputs.ringMod))) {
-      if (!this.secondary)
-        this.devicePoolManagerService.keyDownOscillator1(keys);  // Trigger appropriate filter bank
-      else
-        this.devicePoolManagerService.keyDownOscillator2(keys);  // Trigger appropriate filter bank
+    if (keys && ((this.proxySettings.output === oscOutputs.filter) || (this.proxySettings.output === oscOutputs.ringMod))) {
+      this.devicePoolManagerService.keyDown(keys, this.oscNumber);
     }
 
     const lastKey = this.keysDown.length > 0 ? this.keysDown[this.keysDown.length - 1] : null;
@@ -413,7 +412,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       this.oscillators[keys.deviceIndex].oscillator.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
     }
 
-    if(keys)
+    if (keys)
       this.oscillators[keys.deviceIndex].keyDown(velocity);
   }
 
@@ -432,21 +431,18 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
         const idx = this.keysDown.findIndex(key => key.keyIndex === keyIndex);
         if (idx > -1)
           this.keysDown.splice(idx, 1);
-     //   console.log("keysDown.length = ", this.keysDown.length, " idx = ", idx);
+        //   console.log("keysDown.length = ", this.keysDown.length, " idx = ", idx);
       });
 
-      if (!this.secondary)
-        this.devicePoolManagerService.keyUpOscillator1(keys);  // Trigger appropriate filter bank
-      else
-        this.devicePoolManagerService.keyUpOscillator2(keys);  // Trigger appropriate filter bank
+      this.devicePoolManagerService.keyUp(keys, this.oscNumber);  // Trigger appropriate filter bank
 
       if (this.proxySettings.portamentoType === 'chord')
         if (this.proxySettings.legatoMode === onOff.on)
           this.chordProcessor.release(this.proxySettings.adsr.releaseTime);
         else
-          this.chordProcessor.release(this.proxySettings.adsr.decayTime+this.proxySettings.adsr.releaseTime);
+          this.chordProcessor.release(this.proxySettings.adsr.decayTime + this.proxySettings.adsr.releaseTime);
     } else {
-      console.error("keyIndex "+keyIndex+" not found");
+      console.error("keyIndex " + keyIndex + " not found");
     }
   }
 

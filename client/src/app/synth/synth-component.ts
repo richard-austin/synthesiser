@@ -12,6 +12,7 @@ import {SynthSettings} from '../settings/synth-settings';
 import {RestfulApiService} from '../services/restful-api.service';
 import {OscillatorParams} from '../modules/oscillator';
 import {OscillatorSettings} from '../settings/oscillator';
+import {FilterSettings} from '../settings/filter';
 
 @Component({
   selector: 'app-synth-component',
@@ -30,8 +31,9 @@ import {OscillatorSettings} from '../settings/oscillator';
 })
 export class SynthComponent implements AfterViewInit, OnDestroy {
   audioCtx!: AudioContext;
-  protected readonly oscillatorParams:OscillatorParams[] =[new OscillatorParams("signal", 1), new OscillatorParams("mod", 2)];
-  protected readonly numberOfOscillators: number = this.oscillatorParams.length;
+  public static readonly oscillatorParams:OscillatorParams[] =[new OscillatorParams("signal", 1), new OscillatorParams("mod", 2)];
+  protected _oscillatorParams = SynthComponent.oscillatorParams;
+  protected readonly numberOfOscillators: number = SynthComponent.oscillatorParams.length;
   midiInputs: MIDIInput[] = [];
   settings: SynthSettings | null = null;
   configFileName: string | null = null;
@@ -56,7 +58,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChildren(OscillatorComponent) oscillatorsGrp!: QueryList<OscillatorComponent>;
   @ViewChild('oscillatorSelectForm') oscillatorSelectForm!: ElementRef<HTMLFormElement>;
   @ViewChild('oscillatorWindow') oscillatorWindow!: ElementRef<HTMLDivElement>;
-  @ViewChild(FilterComponent) filtersGrp!: FilterComponent;
+  @ViewChildren(FilterComponent) filtersGrp!: QueryList<FilterComponent> | undefined;
   @ViewChild(NoiseComponent) noise!: NoiseComponent;
   @ViewChild(RingModulatorComponent) ringModulator!: RingModulatorComponent;
   @ViewChild(ReverbComponent) reverb!: ReverbComponent;
@@ -78,7 +80,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.audioCtx = new AudioContext();
 
     // Start the module components
-    this.filtersGrp.start(this.audioCtx, settings ? settings.filterSettings : settings);
+    this.filtersGrp?.forEach((filter, i) => filter.start(this.audioCtx, settings ? settings.filterSettings[i] : settings));
 
     await this.noise.start(this.audioCtx, settings ? settings.noiseSettings : settings);
     this.ringModulator.start(this.audioCtx, settings ? settings.ringModSettings : settings);
@@ -100,7 +102,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
     this.ringModulator.setOutputConnection();
     this.noise.setOutputConnection();
-    this.filtersGrp.setOutputConnection();
+    this.filtersGrp?.forEach(filter => filter.setOutputConnection());
     this.reverb.setOutputConnection();
     this.phaser.setOutputConnection();
 
@@ -187,14 +189,18 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   getSettings(): SynthSettings {
-    const settings: OscillatorSettings[] = [];
+    const oscSettings: OscillatorSettings[] = [];
     this.oscillatorsGrp.forEach(oscillator => {
-      settings.push(oscillator.getSettings());
+      oscSettings.push(oscillator.getSettings());
+    });
+    const filterSettings: FilterSettings[] = [];
+    this.filtersGrp?.forEach(filter => {
+      filterSettings.push(filter.getSettings());
     });
     return new SynthSettings(
       this.numberOfOscillators,
-      settings,
-      this.filtersGrp.getSettings(),
+      oscSettings,
+      filterSettings,
       this.noise.getSettings(),
       this.ringModulator.getSettings(),
       this.reverb.getSettings(),
@@ -335,13 +341,13 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
   private pitchBend(value: number) {
     this.oscillatorsGrp.forEach(osc => osc.midiPitchBend(value));
-    this.filtersGrp.midiPitchBend(value);
+    this.filtersGrp?.forEach(filter => filter.midiPitchBend(value));
   }
 
   private modLevel(value: number) {
     value *= 300 / 127;
     this.oscillatorsGrp.forEach(osc => osc.midiModLevel(value));
-    this.filtersGrp.midiModLevel(value);
+    this.filtersGrp?.forEach(filter => filter.midiModLevel(value));
   }
 
   private setMasterVolume(value: number) {
@@ -377,25 +383,29 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  protected setFilterOutputTarget($event: string) {
-    this.filtersGrp.disconnect();
-    switch ($event) {
-      case 'speaker':
-        this.filtersGrp.connect(this.masterVolume.node());
-        break;
-      case 'ringmod':
-        this.filtersGrp.connectToRingMod();
-        break;
-      case 'reverb':
-        this.filtersGrp.connectToReverb();
-        break;
-      case 'phasor':
-        this.filtersGrp.connectToPhasor();
-        break;
-      case 'off':
-        break;
-      default:
-        console.error('Unknown filter output destination');
+  protected setFilterOutputTarget($event: string, index: number) {
+    const filter = this.filtersGrp?.get(index);
+
+    if(filter) {
+      filter.disconnect();
+      switch ($event) {
+        case 'speaker':
+          filter.connect(this.masterVolume.node());
+          break;
+        case 'ringmod':
+          filter.connectToRingMod();
+          break;
+        case 'reverb':
+          filter.connectToReverb();
+          break;
+        case 'phasor':
+          filter.connectToPhasor();
+          break;
+        case 'off':
+          break;
+        default:
+          console.error('Unknown filter output destination');
+      }
     }
   }
 
@@ -560,4 +570,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     window.removeEventListener('keydown', this.keydownHandler);
     window.removeEventListener('keyup', this.keyupHandler);
   }
+
+  protected readonly FilterComponent = FilterComponent;
 }

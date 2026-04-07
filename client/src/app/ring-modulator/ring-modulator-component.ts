@@ -23,7 +23,7 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
   proxySettings!: RingModSettings;
   private cookies!: Cookies;
 
-  @Input() filters!: FilterComponent;
+  @Input() filters!: FilterComponent | undefined;
   @Input() reverb!: ReverbComponent;
   numberOfDevices: number = DevicePoolManager.numberOfDevices;
   @Output() output: EventEmitter<string> = new EventEmitter();
@@ -101,7 +101,7 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
   }
 
   connectToFilters() {
-    const filters = this.filters.filters;
+    const filters = this.filters?.filters;
     let ok = false;
     if (filters && filters.length >= this.numberOfDevices) {
       ok = true;

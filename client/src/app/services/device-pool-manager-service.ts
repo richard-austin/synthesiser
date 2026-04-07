@@ -1,4 +1,5 @@
-import {effect, EffectRef, Injectable, OnDestroy, signal} from '@angular/core';
+import {effect, EffectRef, Injectable, OnDestroy, signal, WritableSignal} from '@angular/core';
+import {SynthComponent} from '../synth/synth-component';
 
 export class DeviceKeys {
   public  keyIndex: number;  // Index of Midi key pressed
@@ -16,37 +17,41 @@ export class DeviceKeys {
   providedIn: 'root',
 })
 export class DevicePoolManagerService implements OnDestroy {
+  private signalKeydown: WritableSignal<DeviceKeys>[];
+  private signalKeyup: WritableSignal<DeviceKeys>[];
+  private effectRefKeyUp: EffectRef[];
+  private effectRefKeydown: EffectRef[];
+  public notifyKeydown!: ((key: DeviceKeys) => void)[];
+  public notifyKeyup!: ((key: DeviceKeys) => void)[];
+
+  constructor() {
+    this.signalKeydown= [];
+    this.signalKeyup = [];
+    this.effectRefKeyUp = [];
+    this.effectRefKeydown = [];
+    this.notifyKeydown = [];
+    this.notifyKeyup = [];
+    SynthComponent.oscillatorParams.forEach((p, i) =>{
+      this.signalKeydown.push(signal<DeviceKeys>(new DeviceKeys(-1, -1, 0)));
+      this.signalKeyup.push(signal<DeviceKeys>(new DeviceKeys(-1, -1, 0)));
+      this.effectRefKeyUp.push(effect(() => {
+        this.signalKeyup[i]();
+        if (this.notifyKeyup[i])
+          this.notifyKeyup[i](this.signalKeyup[i]());
+      }));
+      this.effectRefKeydown.push(effect(() => {
+        this.signalKeydown[i]();
+        if(this.notifyKeydown[i]) {
+          this.notifyKeydown[i](this.signalKeydown[i]());
+        }
+      }))
+    });
+  }
+
+
   // Signal to set the corresponding filter and its frequency when activating an oscillator
-  private signalKeydown1 = signal<DeviceKeys>(new DeviceKeys(-1, -1, 0));  // For oscillator 1 and its filters
-  private signalKeydown2 = signal<DeviceKeys>(new DeviceKeys(-1, -1, 0)); // For oscillator 2 and its filters
-  private signalKeyup1 = signal<DeviceKeys>(new DeviceKeys(-1, -1, 0));  // For oscillator 1 and its filters
-  private signalKeyup2 = signal<DeviceKeys>(new DeviceKeys(-1, -1, 0)); // For oscillator 2 and its filters
   private signalKeydownNoise = signal<DeviceKeys>(new DeviceKeys(-1, -1, 0)); // For oscillator 2 and its filters
   private signalKeyupNoise = signal<DeviceKeys>(new DeviceKeys(-1, -1, 0)); // For oscillator 2 and its filters
-
-  private effectRef1: EffectRef = effect(() => {
-    this.signalKeydown1();
-    if (this.notifyKeyDown1)
-      this.notifyKeyDown1(this.signalKeydown1());
-  });
-
-  private effectRef2: EffectRef = effect(() => {
-    this.signalKeydown2();
-    if (this.notifyKeyDown2)
-      this.notifyKeyDown2(this.signalKeydown2());
-  });
-
-  private effectRef3: EffectRef = effect(() => {
-    this.signalKeyup1();
-    if (this.notifyKeyUp1)
-      this.notifyKeyUp1(this.signalKeyup1());
-  });
-
-  private effectRef4: EffectRef = effect(() => {
-    this.signalKeyup2();
-    if (this.notifyKeyUp2)
-      this.notifyKeyUp2(this.signalKeyup2());
-  });
 
   private effectRef5: EffectRef = effect(() => {
     this.signalKeydownNoise();
@@ -60,27 +65,14 @@ export class DevicePoolManagerService implements OnDestroy {
       this.notifyKeyUpNoise(this.signalKeyupNoise());
   });
 
-  public notifyKeyDown1!: (key: DeviceKeys) => void;  // Callback to notify oscillators1 keydown to filters
-  public notifyKeyDown2!: (key: DeviceKeys) => void;  // Callback to notify oscillators2 keydown to filters
-  public notifyKeyUp1!: (key: DeviceKeys) => void;    // Callback to notify oscillators1 keyup to filters
-  public notifyKeyUp2!: (key: DeviceKeys) => void;    // Callback to notify oscillators2 keyup to filters
   public notifyKeyDownNoise!: (key: DeviceKeys) => void; // Callback to notify noise gen key down to filters
   public notifyKeyUpNoise!: (key: DeviceKeys) => void; // Callback to notify noise gen key down to filters
 
-  keyDownOscillator1(deviceKeys: DeviceKeys) {
-    this.signalKeydown1.set(deviceKeys);
+  keyDown(key: DeviceKeys, index: number): void {
+    this.signalKeydown[index].set(key);
   }
-
-  keyDownOscillator2(deviceKeys: DeviceKeys) {
-    this.signalKeydown2.set(deviceKeys);
-  }
-
-  keyUpOscillator1(deviceKeys: DeviceKeys) {
-    this.signalKeyup1.set(deviceKeys);
-  }
-
-  keyUpOscillator2(deviceKeys: DeviceKeys) {
-    this.signalKeyup2.set(deviceKeys);
+  keyUp(key: DeviceKeys, index: number): void {
+    this.signalKeyup[index].set(key);
   }
 
   keyDownNoise(deviceKeys: DeviceKeys) {
@@ -92,18 +84,11 @@ export class DevicePoolManagerService implements OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.effectRef1) {
-      this.effectRef1.destroy();
-    }
-    if (this.effectRef2) {
-      this.effectRef2.destroy();
-    }
-    if(this.effectRef3) {
-      this.effectRef3.destroy();
-    }
-    if (this.effectRef4) {
-      this.effectRef4.destroy();
-    }
+    if(this.effectRefKeyUp)
+      this.effectRefKeyUp.forEach(er => er.destroy());
+    if(this.effectRefKeydown)
+      this.effectRefKeydown.forEach(er => er.destroy());
+
     if(this.effectRef5) {
       this.effectRef5.destroy();
     }

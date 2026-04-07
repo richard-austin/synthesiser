@@ -50,11 +50,12 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   // One set for oscillator1, one set for oscillator2 and one for the noise source
-  private readonly numberOfFilters: number = DevicePoolManager.numberOfDevices * 3;
+  private readonly numberOfFilters: number = DevicePoolManager.numberOfDevices;
 
   @Input() reverb!: ReverbComponent;
   @Input() ringMod!: RingModulatorComponent;
   @Input() phaser!: PhaserComponent;
+  @Input() filterNumber!: number;
 
   @Output() output = new EventEmitter<string>();
   @ViewChild('frequency') frequency!: LevelControlComponent;
@@ -85,23 +86,11 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   start(audioCtx: AudioContext, settings: FilterSettings | null): boolean {
 
-    this.devicePoolManagerService.notifyKeyDown1 = (keys: DeviceKeys) => {
-      keys.deviceIndex += DevicePoolManager.numberOfDevices;  // Oscillator 1 triggered
+    this.devicePoolManagerService.notifyKeydown[this.filterNumber] = (keys: DeviceKeys) => {
       this.deviceKeyDown(keys);
     }
 
-    this.devicePoolManagerService.notifyKeyDown2 = (keys: DeviceKeys) => {
-      keys.deviceIndex += 2 * DevicePoolManager.numberOfDevices; // Oscillator 2 triggered
-      this.deviceKeyDown(keys);
-    }
-
-    this.devicePoolManagerService.notifyKeyUp1 = (keys: DeviceKeys) => {
-      keys.deviceIndex += DevicePoolManager.numberOfDevices;
-      this.deviceKeyUp(keys);
-    }
-
-    this.devicePoolManagerService.notifyKeyUp2 = (keys: DeviceKeys) => {
-      keys.deviceIndex += 2 * DevicePoolManager.numberOfDevices;
+    this.devicePoolManagerService.notifyKeyup[this.filterNumber] = (keys: DeviceKeys) => {
       this.deviceKeyUp(keys);
     }
 
@@ -198,7 +187,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   protected setFrequency(freq: number) {
     this.proxySettings.frequency = freq;
     // Set frequency on the oscillators bank 1 and 2 related filters
-    for (let i = 0; i < 3 * DevicePoolManager.numberOfDevices; ++i) {
+    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
       const filter = this.filters[i];
       if (filter.keyIndex > -1) {
         filter.setFrequency(this.keyToFrequency(filter.keyIndex))

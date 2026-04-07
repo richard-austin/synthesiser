@@ -10,7 +10,7 @@ import {AnalyserSettings} from './analyser-settings';
 export class SynthSettings {
   numberOfOscillators: number;
   oscillatorSettings: OscillatorSettings[];
-  filterSettings: FilterSettings;
+  filterSettings: FilterSettings[];
   noiseSettings: NoiseSettings;
   ringModSettings: RingModSettings;
   reverbSettings: ReverbSettings;
@@ -20,7 +20,7 @@ export class SynthSettings {
 
   constructor(numberOfOscillators: number,
               oscillatorSettings: OscillatorSettings[],
-              filterSettings: FilterSettings,
+              filterSettings: FilterSettings[],
               noiseSettings: NoiseSettings,
               ringModSettings: RingModSettings,
               reverbSettings: ReverbSettings,

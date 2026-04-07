@@ -39,7 +39,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   private velocitySensitive: boolean = true;
   private noisePoolMgr!: DevicePoolManager;
 
-  @Input() filters!: FilterComponent;
+  @Input() filters!: FilterComponent | undefined;
   @Output() output = new EventEmitter<string>();
 
   @ViewChild('attack') attack!: LevelControlComponent;
@@ -168,10 +168,12 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   connectToFilters(): void {
     this.proxySettings.output = noiseOutputs.filter;
     const filters = this.filters?.filters;
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
-      this.whiteNoise[i].connect(filters[i].filter);
-      this.pinkNoise[i].connect(filters[i].filter);
-      this.brownNoise[i].connect(filters[i].filter);
+    if(filters) {
+      for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
+        this.whiteNoise[i].connect(filters[i].filter);
+        this.pinkNoise[i].connect(filters[i].filter);
+        this.brownNoise[i].connect(filters[i].filter);
+      }
     }
   }
 
