@@ -26,7 +26,7 @@ export class OscillatorSettings {
 
   constructor(adsr: ADSRValues= new ADSRValues(0.0, 3, .4, 3),
               freqBend: FreqBendValues = new FreqBendValues(0, 0.2, .2, 0, .2, 0.0),
-              legatoMode: onOff = onOff.on,
+              legatoMode: onOff = onOff.off,
               velocitySensitive: onOff = onOff.on,
               useFrequencyEnvelope: onOff = onOff.off,
               frequency: number = 0,

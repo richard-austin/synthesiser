@@ -31,7 +31,12 @@ import {FilterSettings} from '../settings/filter';
 })
 export class SynthComponent implements AfterViewInit, OnDestroy {
   audioCtx!: AudioContext;
-  public static readonly oscillatorParams:OscillatorParams[] =[new OscillatorParams("signal", 1), new OscillatorParams("mod", 2)];
+  public static readonly oscillatorParams: OscillatorParams[] = [
+    new OscillatorParams("signal", 1),
+    new OscillatorParams("mod", 2),
+    new OscillatorParams("signal", 3),
+    new OscillatorParams("signal", 4),
+  ];
   protected _oscillatorParams = SynthComponent.oscillatorParams;
   protected readonly numberOfOscillators: number = SynthComponent.oscillatorParams.length;
   midiInputs: MIDIInput[] = [];
@@ -58,6 +63,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChildren(OscillatorComponent) oscillatorsGrp!: QueryList<OscillatorComponent>;
   @ViewChild('oscillatorSelectForm') oscillatorSelectForm!: ElementRef<HTMLFormElement>;
   @ViewChild('oscillatorWindow') oscillatorWindow!: ElementRef<HTMLDivElement>;
+  @ViewChild('filterWindow') filterWindow!: ElementRef<HTMLDivElement>;
   @ViewChildren(FilterComponent) filtersGrp!: QueryList<FilterComponent> | undefined;
   @ViewChild(NoiseComponent) noise!: NoiseComponent;
   @ViewChild(RingModulatorComponent) ringModulator!: RingModulatorComponent;
@@ -95,8 +101,8 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       oscillator.start(this.audioCtx, settings ? settings.oscillatorSettings[i] : settings);
 
       // Finish setting up the oscillators, as they cross-reference each other, we need to call start on them first
-     // this.oscillator.setModulators(this.oscillators2Grp);
-     // this.oscillators2Grp.setModulators(this.oscillatorsGrp);
+      // this.oscillator.setModulators(this.oscillators2Grp);
+      // this.oscillators2Grp.setModulators(this.oscillatorsGrp);
       oscillator.setOutputConnection();
     });
 
@@ -128,7 +134,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
         //console.log(str);
         switch (event.data[0]) {
           case 0x90:
-          //  console.log("Key up/down = " + performance.now());
+            //  console.log("Key up/down = " + performance.now());
             if (event.data[2] === 0)
               this.keyup(event.data[1]);  // Zero velocity on keydown event === keyup
             else
@@ -210,6 +216,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   downKeys: Set<number> = new Set();
+
   protected computerKeydown($event: KeyboardEvent) {
     let code = this.keyCode($event);
     if (code >= 0) {
@@ -224,7 +231,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   protected keydown(code: number, velocity: number) {
     this.oscillatorsGrp.forEach(osc => osc.keyDown(code, velocity));
 
-   // this.filtersGrp.keyDown(code, velocity);
+    // this.filtersGrp.keyDown(code, velocity);
     this.noise.keyDown(code, velocity);
   }
 
@@ -386,7 +393,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   protected setFilterOutputTarget($event: string, index: number) {
     const filter = this.filtersGrp?.get(index);
 
-    if(filter) {
+    if (filter) {
       filter.disconnect();
       switch ($event) {
         case 'speaker':
@@ -530,14 +537,16 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
   async ngAfterViewInit(): Promise<void> {
     const oscillatorWindow = this.oscillatorWindow.nativeElement;
+    const filterWindow = this.filterWindow.nativeElement
     const oscillatorSelectForm = this.oscillatorSelectForm.nativeElement;
     oscillatorSelectForm.addEventListener('change', ($event) => {
       // @ts-ignore
-      const value = $event.target.value as string;
-      oscillatorWindow.scroll({left:0, top:value === "1" ? 0 : 979, behavior: 'instant'});
+      const value = $event.target.value-1;
+      oscillatorWindow.scroll({left: 0, top: value * 979.3, behavior: 'instant'});
+      filterWindow.scroll({left: 0, top: value * 980, behavior: 'instant'});
     });
 
-      if(!this.configFileName)
+    if (!this.configFileName)
       await this.start(null);
     else {
       this.rest.getSettings(this.configFileName).subscribe({
@@ -561,7 +570,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.ringModulator.disconnect();
     this.reverb.disconnect();
     this.phaser.disconnect();
-   // this.noise.disconnect();
+    // this.noise.disconnect();
     await this.audioCtx.close();
     this.midiInputs.forEach(input => {
       input.close();

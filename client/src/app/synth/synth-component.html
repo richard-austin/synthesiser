@@ -16,19 +16,20 @@
       }
       <div>
         <form #oscillatorSelectForm>
-          <label><input type="radio" name="oscillatorSelect" value="1"><span>1</span></label>
-          <label><input type="radio" name="oscillatorSelect" value="oscilloscope"><span>2</span></label>
+          @for(param of _oscillatorParams; let i = $index; track  param) {
+            <label><input type="radio" name="oscillatorSelect" value="{{i+1}}"><span>{{i+1}}</span></label>
+          }
         </form>
       </div>
     </div>
-    <div #filterWindow>
+    <div #filterWindow class="oscillator-window">
       @for (filter of _oscillatorParams; let i = $index; track filter) {
-        <app-filters #filters
-                     [filterNumber]="i"
+        <app-filters [filterNumber]="i"
                      [ringMod]="ringMod"
                      [reverb]="reverb"
                      [phaser]="phaser"
-                     (output)="setFilterOutputTarget($event, i)"></app-filters>
+                     (output)="setFilterOutputTarget($event, i)">
+        </app-filters>
 
       }
     </div>

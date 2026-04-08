@@ -125,7 +125,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   applySettings(settings: FilterSettings | null) {
-    const cookieName = 'filter';
+    const cookieName = 'filter'+this.filterNumber;
     if (!settings) {
       settings = new FilterSettings();
       const savedSettings = this.cookies.getSettings(cookieName, settings);
