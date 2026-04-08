@@ -17,8 +17,10 @@ export class SynthSettings {
   phasorSettings: PhasorSettings;
   generalSettings: GeneralSettings;
   analyserSettings: AnalyserSettings;
+  selectedOscillator: number
 
   constructor(numberOfOscillators: number,
+              selectedOscillator: number,
               oscillatorSettings: OscillatorSettings[],
               filterSettings: FilterSettings[],
               noiseSettings: NoiseSettings,
@@ -29,6 +31,7 @@ export class SynthSettings {
               analyserSettings: AnalyserSettings)
    {
      this.numberOfOscillators = numberOfOscillators;
+     this.selectedOscillator = selectedOscillator;
      this.oscillatorSettings = oscillatorSettings;
      this.filterSettings = filterSettings;
      this.noiseSettings = noiseSettings;

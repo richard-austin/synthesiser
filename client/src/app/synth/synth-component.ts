@@ -13,6 +13,7 @@ import {RestfulApiService} from '../services/restful-api.service';
 import {OscillatorParams} from '../modules/oscillator';
 import {OscillatorSettings} from '../settings/oscillator';
 import {FilterSettings} from '../settings/filter';
+import {SetRadioButtons} from '../settings/set-radio-buttons';
 
 @Component({
   selector: 'app-synth-component',
@@ -105,6 +106,8 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       // this.oscillators2Grp.setModulators(this.oscillatorsGrp);
       oscillator.setOutputConnection();
     });
+
+    SetRadioButtons.set(this.oscillatorSelectForm, settings? settings.selectedOscillator : "1");
 
     this.ringModulator.setOutputConnection();
     this.noise.setOutputConnection();
@@ -205,6 +208,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     });
     return new SynthSettings(
       this.numberOfOscillators,
+      1,
       oscSettings,
       filterSettings,
       this.noise.getSettings(),
