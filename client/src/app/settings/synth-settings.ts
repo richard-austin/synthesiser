@@ -6,9 +6,11 @@ import {ReverbSettings} from './reverb';
 import {PhasorSettings} from './phasor';
 import {GeneralSettings} from './General';
 import {AnalyserSettings} from './analyser-settings';
+import {SynthComponentSettings} from './synth-component-settings';
+import {SynthComponent} from '../synth/synth-component';
 
 export class SynthSettings {
-  numberOfOscillators: number;
+  synthComponentSettings: SynthComponentSettings;
   oscillatorSettings: OscillatorSettings[];
   filterSettings: FilterSettings[];
   noiseSettings: NoiseSettings;
@@ -17,21 +19,18 @@ export class SynthSettings {
   phasorSettings: PhasorSettings;
   generalSettings: GeneralSettings;
   analyserSettings: AnalyserSettings;
-  selectedOscillator: number
 
-  constructor(numberOfOscillators: number,
-              selectedOscillator: number,
-              oscillatorSettings: OscillatorSettings[],
-              filterSettings: FilterSettings[],
-              noiseSettings: NoiseSettings,
-              ringModSettings: RingModSettings,
-              reverbSettings: ReverbSettings,
-              phasorSettings: PhasorSettings,
-              generalSettings: GeneralSettings,
-              analyserSettings: AnalyserSettings)
+  constructor(synthComponentSettings: SynthComponentSettings = new SynthComponentSettings(),
+              oscillatorSettings: OscillatorSettings[] = new Array(SynthComponent.oscillatorParams.length).fill(new OscillatorSettings()),
+              filterSettings: FilterSettings[] = new Array(SynthComponent.oscillatorParams.length).fill(new FilterSettings()),
+              noiseSettings: NoiseSettings = new NoiseSettings(),
+              ringModSettings: RingModSettings = new RingModSettings(),
+              reverbSettings: ReverbSettings = new ReverbSettings(),
+              phasorSettings: PhasorSettings = new PhasorSettings(),
+              generalSettings: GeneralSettings = new GeneralSettings(),
+              analyserSettings: AnalyserSettings = new AnalyserSettings())
    {
-     this.numberOfOscillators = numberOfOscillators;
-     this.selectedOscillator = selectedOscillator;
+     this.synthComponentSettings = synthComponentSettings;
      this.oscillatorSettings = oscillatorSettings;
      this.filterSettings = filterSettings;
      this.noiseSettings = noiseSettings;

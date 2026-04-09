@@ -14,6 +14,8 @@ import {OscillatorParams} from '../modules/oscillator';
 import {OscillatorSettings} from '../settings/oscillator';
 import {FilterSettings} from '../settings/filter';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
+import {Cookies} from '../settings/cookies/cookies';
+import {SynthComponentSettings} from '../settings/synth-component-settings';
 
 @Component({
   selector: 'app-synth-component',
@@ -42,7 +44,9 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   protected readonly numberOfOscillators: number = SynthComponent.oscillatorParams.length;
   midiInputs: MIDIInput[] = [];
   settings: SynthSettings | null = null;
+  proxySettings!: SynthComponentSettings;
   configFileName: string | null = null;
+  cookies: Cookies
   keydownHandler = (e: KeyboardEvent) => {
     const target = e.target as HTMLInputElement;
     if (target.id === 'configFile') {
@@ -81,9 +85,25 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     } else {
       this.configFileName = this.settings = null;
     }
+    this.cookies = new Cookies();
   }
 
   protected async start(settings: SynthSettings | null): Promise<void> {
+    const cookieName = 'synthComponent';
+
+    if (!settings) {
+      let synthComponentSettings = new SynthComponentSettings();
+      const savedSettings = this.cookies.getSettings(cookieName, synthComponentSettings);
+
+      if (Object.keys(savedSettings).length > 0) {
+        // Use values from cookie
+        synthComponentSettings = savedSettings as SynthComponentSettings;
+      }
+      // else use default settings
+      this.proxySettings = this.cookies.getSettingsProxy(synthComponentSettings, cookieName);
+    } else
+      this.proxySettings = this.cookies.getSettingsProxy(settings.synthComponentSettings, cookieName);
+
     this.audioCtx = new AudioContext();
 
     // Start the module components
@@ -107,7 +127,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       oscillator.setOutputConnection();
     });
 
-    SetRadioButtons.set(this.oscillatorSelectForm, settings? settings.selectedOscillator : "1");
+    SetRadioButtons.set(this.oscillatorSelectForm, this.proxySettings.selectedOscillator);
 
     this.ringModulator.setOutputConnection();
     this.noise.setOutputConnection();
@@ -206,9 +226,9 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.filtersGrp?.forEach(filter => {
       filterSettings.push(filter.getSettings());
     });
+
     return new SynthSettings(
-      this.numberOfOscillators,
-      1,
+      this.proxySettings,
       oscSettings,
       filterSettings,
       this.noise.getSettings(),
@@ -545,9 +565,10 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     const oscillatorSelectForm = this.oscillatorSelectForm.nativeElement;
     oscillatorSelectForm.addEventListener('change', ($event) => {
       // @ts-ignore
-      const value = $event.target.value-1;
+      const value = $event.target.value - 1;
       oscillatorWindow.scroll({left: 0, top: value * 979.3, behavior: 'instant'});
       filterWindow.scroll({left: 0, top: value * 980, behavior: 'instant'});
+      this.proxySettings.selectedOscillator = (value+1).toString();
     });
 
     if (!this.configFileName)
