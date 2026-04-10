@@ -5,7 +5,7 @@ import {
   Input,
   OnDestroy,
   OnInit,
-  ViewChild
+  ViewChild, WritableSignal
 } from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {RestfulApiService} from '../services/restful-api.service';
@@ -23,6 +23,7 @@ import {SortPipePipe} from '../sort-pipe-pipe';
   styleUrl: './home.component.scss',
 })
 export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
+  @Input() filename!: WritableSignal<string>;
   @Input() disappearOnMouseOut!: boolean;
 
   @ViewChild('html') html!: ElementRef<HTMLDivElement>;
@@ -133,7 +134,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (e) => console.log(e),
       complete: () => {
         console.log("complete: settings loaded");
-        this.router.navigate(['synth', fileName]).then();
+        this.filename.set(fileName);
       }
     });
   }

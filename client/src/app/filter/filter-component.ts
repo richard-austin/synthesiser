@@ -83,34 +83,13 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   @ViewChild('lfoWaveForm') lfoWaveForm!: ElementRef<HTMLFormElement>;
 
   private devicePoolManagerService: DevicePoolManagerService = inject(DevicePoolManagerService);
+  private started = false;
 
   start(audioCtx: AudioContext, settings: FilterSettings | null): boolean {
 
-    this.devicePoolManagerService.notifyKeydown[this.filterNumber] = (keys: DeviceKeys) => {
-      this.deviceKeyDown(keys);
-    }
-
-    this.devicePoolManagerService.notifyKeyup[this.filterNumber] = (keys: DeviceKeys) => {
-      this.deviceKeyUp(keys);
-    }
-
-    this.devicePoolManagerService.notifyKeyDownNoise = (keys: DeviceKeys) => {
-      this.deviceKeyDown(keys);
-    }
-
-    this.devicePoolManagerService.notifyKeyUpNoise = (keys: DeviceKeys) => {
-      this.deviceKeyUp(keys);
-    }
-    this.chordProcessorNoise = new ChordProcessor();
-    this.chordProcessorNoise.setKeyDownCallback(this.chordProcessorKeyDownCallback);
-    this.chordProcessorOscillator1 = new ChordProcessor();
-    this.chordProcessorOscillator1.setKeyDownCallback(this.chordProcessorKeyDownCallback);
-    this.chordProcessorOscillator2 = new ChordProcessor();
-    this.chordProcessorOscillator2.setKeyDownCallback(this.chordProcessorKeyDownCallback);
-
     this.audioCtx = audioCtx;
     let ok = false;
-    if (this.numberOfFilters) {
+    if (this.numberOfFilters && !this.started) {
       this.lfo = new OscillatorNode(this.audioCtx);
       this.lfo.start();
       this.cookies = new Cookies();
@@ -139,16 +118,20 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     // else use default settings
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
-
-    for (let i = 0; i < this.numberOfFilters; ++i) {
-      this.filters.push(new Filter(this.audioCtx));
-      this.filters[i].setFrequency(this.keyToFrequency(i));
-      this.filters[i].setDetune(this.proxySettings.deTune);
-      this.filters[i].setFreqBendEnvelope(this.proxySettings.freqBend);
-      this.filters[i].useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.off);
-      this.filters[i].setType(this.proxySettings.filterType);
-      this.filters[i].modulation(this.lfo, filterModType.off);
+    if(!this.started) {
+      for (let i = 0; i < this.numberOfFilters; ++i) {
+        this.filters.push(new Filter(this.audioCtx));
+      }
+      this.started = true;
     }
+    this.filters.forEach((filter, i) => {
+      filter.setFrequency(this.keyToFrequency(i));
+      filter.setDetune(this.proxySettings.deTune);
+      filter.setFreqBendEnvelope(this.proxySettings.freqBend);
+      filter.useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.off);
+      filter.setType(this.proxySettings.filterType);
+      filter.modulation(this.lfo, filterModType.off);
+    });
 
     this.frequency.setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
     this.deTune.setValue(this.proxySettings.deTune);
@@ -468,6 +451,28 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
+    this.devicePoolManagerService.notifyKeydown[this.filterNumber] = (keys: DeviceKeys) => {
+      this.deviceKeyDown(keys);
+    }
+
+    this.devicePoolManagerService.notifyKeyup[this.filterNumber] = (keys: DeviceKeys) => {
+      this.deviceKeyUp(keys);
+    }
+
+    this.devicePoolManagerService.notifyKeyDownNoise = (keys: DeviceKeys) => {
+      this.deviceKeyDown(keys);
+    }
+
+    this.devicePoolManagerService.notifyKeyUpNoise = (keys: DeviceKeys) => {
+      this.deviceKeyUp(keys);
+    }
+    this.chordProcessorNoise = new ChordProcessor();
+    this.chordProcessorNoise.setKeyDownCallback(this.chordProcessorKeyDownCallback);
+    this.chordProcessorOscillator1 = new ChordProcessor();
+    this.chordProcessorOscillator1.setKeyDownCallback(this.chordProcessorKeyDownCallback);
+    this.chordProcessorOscillator2 = new ChordProcessor();
+    this.chordProcessorOscillator2.setKeyDownCallback(this.chordProcessorKeyDownCallback);
+
     const filterOutForm = this.filterOutputTo.nativeElement;
     for (let i = 0; i < filterOutForm.elements.length; ++i) {
       filterOutForm.elements[i].addEventListener('change', ($event) => {

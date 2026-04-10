@@ -1,4 +1,13 @@
-import {AfterViewInit, Component, ElementRef, OnDestroy, QueryList, ViewChild, ViewChildren} from '@angular/core';
+import {
+  AfterViewInit,
+  Component, effect, EffectRef,
+  ElementRef,
+  Input,
+  OnDestroy,
+  QueryList,
+  ViewChild,
+  ViewChildren, WritableSignal
+} from '@angular/core';
 import {FilterComponent} from "../filter/filter-component";
 import {OscillatorComponent} from "../oscillator/oscillator.component";
 import {NoiseComponent} from '../noise/noise-component';
@@ -41,12 +50,13 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     new OscillatorParams("signal", 4),
   ];
   protected _oscillatorParams = SynthComponent.oscillatorParams;
-  protected readonly numberOfOscillators: number = SynthComponent.oscillatorParams.length;
   midiInputs: MIDIInput[] = [];
   settings: SynthSettings | null = null;
   proxySettings!: SynthComponentSettings;
-  configFileName: string | null = null;
   cookies: Cookies
+  fileNameEffectRef!: EffectRef;
+  private started = false;
+
   keydownHandler = (e: KeyboardEvent) => {
     const target = e.target as HTMLInputElement;
     if (target.id === 'configFile') {
@@ -65,6 +75,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  @Input() filename!: WritableSignal<string>;
   @ViewChildren(OscillatorComponent) oscillatorsGrp!: QueryList<OscillatorComponent>;
   @ViewChild('oscillatorSelectForm') oscillatorSelectForm!: ElementRef<HTMLFormElement>;
   @ViewChild('oscillatorWindow') oscillatorWindow!: ElementRef<HTMLDivElement>;
@@ -79,12 +90,29 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChild('general') masterVolume!: GeneralComponent;
 
   constructor(private route: ActivatedRoute, private router: Router, private rest: RestfulApiService) {
-    const fileName = this.route.snapshot.params['fileName'];
-    if (fileName) {
-      this.configFileName = fileName;
-    } else {
-      this.configFileName = this.settings = null;
-    }
+    this.audioCtx = new AudioContext();
+    this.fileNameEffectRef = effect(() => {
+      const fileName = this.filename();
+      if (fileName !== "") {
+        //       this.ngOnDestroy().then(() => {
+        this.rest.getSettings(fileName).subscribe({
+          next: (v) => this.settings = v,
+          error: (e) => console.log(e),
+          complete: async () => {
+            console.log("complete: settings loaded");
+            await this.start(this.settings);
+          }
+        });
+        //       });
+      }
+    });
+
+    // const fileName = this.route.snapshot.params['fileName'];
+    // if (fileName) {
+    //   this.configFileName = fileName;
+    // } else {
+    //   this.configFileName = this.settings = null;
+    // }
     this.cookies = new Cookies();
   }
 
@@ -104,7 +132,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     } else
       this.proxySettings = this.cookies.getSettingsProxy(settings.synthComponentSettings, cookieName);
 
-    this.audioCtx = new AudioContext();
 
     // Start the module components
     this.filtersGrp?.forEach((filter, i) => filter.start(this.audioCtx, settings ? settings.filterSettings[i] : settings));
@@ -138,58 +165,61 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     window.addEventListener("keydown", this.keydownHandler);
     window.addEventListener("keyup", this.keyupHandler);
 
-    navigator.requestMIDIAccess()
-      .then(onMIDISuccess, onMIDIFailure);
+    if (!this.started) {
+      navigator.requestMIDIAccess()
+        .then(onMIDISuccess, onMIDIFailure);
 
-    function onMIDISuccess(midiAccess: any) {
-      console.log(midiAccess);
+      function onMIDISuccess(midiAccess: any) {
+        console.log(midiAccess);
 
-      listInputsAndOutput(midiAccess);
-      startLoggingMIDIInput(midiAccess);
-    }
-
-    const onMIDIMessage = (event: any) => {
-      let str = `MIDI message received at timestamp ${event.timeStamp}[${event.data.length} bytes]: `;
-      for (const character of event.data) {
-        str += `0x${character.toString(16)} `;
+        listInputsAndOutput(midiAccess);
+        startLoggingMIDIInput(midiAccess);
       }
-      if (event.data[0] !== 0xfe) {
-        //console.log(str);
-        switch (event.data[0]) {
-          case 0x90:
-            //  console.log("Key up/down = " + performance.now());
-            if (event.data[2] === 0)
-              this.keyup(event.data[1]);  // Zero velocity on keydown event === keyup
-            else
-              this.keydown(event.data[1], event.data[2]);
-            break;
-          case 0x80:
-            //  console.log("midi key = " + event.data[0]+" (keyup)");
-            this.keyup(event.data[1]);
-            break;
-          case 0xe0:
-            //  console.log("pitch bend "+event.data[2]);
-            this.pitchBend(event.data[2]);
-            break;
-          case 0xb0:
-            if (event.data[1] === 0x01) {
-              //    console.log("mod level "+event.data[2]);
-              this.modLevel(event.data[2]);
-              break
-            } else if (event.data[1] === 0x07) {
-              //      console.log("volume level "+event.data[2]);
-              this.setMasterVolume(event.data[2]);
-            }
+
+      const onMIDIMessage = (event: any) => {
+        let str = `MIDI message received at timestamp ${event.timeStamp}[${event.data.length} bytes]: `;
+        for (const character of event.data) {
+          str += `0x${character.toString(16)} `;
+        }
+        if (event.data[0] !== 0xfe) {
+          //console.log(str);
+          switch (event.data[0]) {
+            case 0x90:
+              //  console.log("Key up/down = " + performance.now());
+              if (event.data[2] === 0)
+                this.keyup(event.data[1]);  // Zero velocity on keydown event === keyup
+              else
+                this.keydown(event.data[1], event.data[2]);
+              break;
+            case 0x80:
+              //  console.log("midi key = " + event.data[0]+" (keyup)");
+              this.keyup(event.data[1]);
+              break;
+            case 0xe0:
+              //  console.log("pitch bend "+event.data[2]);
+              this.pitchBend(event.data[2]);
+              break;
+            case 0xb0:
+              if (event.data[1] === 0x01) {
+                //    console.log("mod level "+event.data[2]);
+                this.modLevel(event.data[2]);
+                break
+              } else if (event.data[1] === 0x07) {
+                //      console.log("volume level "+event.data[2]);
+                this.setMasterVolume(event.data[2]);
+              }
+          }
         }
       }
-    }
 
-    const startLoggingMIDIInput = (midiAccess: any) => {
-      this.midiInputs = midiAccess.inputs;
+      const startLoggingMIDIInput = (midiAccess: any) => {
+        this.midiInputs = midiAccess.inputs;
 
-      midiAccess.inputs.forEach((entry: any) => {
-        entry.onmidimessage = onMIDIMessage;
-      });
+        midiAccess.inputs.forEach((entry: any) => {
+          entry.onmidimessage = onMIDIMessage;
+        });
+      }
+      this.started = true;
     }
 
     function listInputsAndOutput(midiAccess: any) {
@@ -503,7 +533,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   protected async showHomeForm() {
-    await this.router.navigate(['/home']);
   }
 
 // The wake lock sentinel.
@@ -568,21 +597,10 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       const value = $event.target.value - 1;
       oscillatorWindow.scroll({left: 0, top: value * 979.3, behavior: 'instant'});
       filterWindow.scroll({left: 0, top: value * 980, behavior: 'instant'});
-      this.proxySettings.selectedOscillator = (value+1).toString();
+      this.proxySettings.selectedOscillator = (value + 1).toString();
     });
 
-    if (!this.configFileName)
-      await this.start(null);
-    else {
-      this.rest.getSettings(this.configFileName).subscribe({
-        next: (v) => this.settings = v,
-        error: (e) => console.log(e),
-        complete: async () => {
-          console.log("complete: settings loaded");
-          await this.start(this.settings);
-        }
-      });
-    }
+    await this.start(null);
     await this.requestWakeLock()
     this.scaleToFitSmallWindow();
     window.onresize = () => {
@@ -603,6 +621,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     window.onresize = null;
     window.removeEventListener('keydown', this.keydownHandler);
     window.removeEventListener('keyup', this.keyupHandler);
+    this.fileNameEffectRef.destroy();
   }
 
   protected readonly FilterComponent = FilterComponent;

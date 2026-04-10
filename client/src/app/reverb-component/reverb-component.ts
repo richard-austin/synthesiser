@@ -34,15 +34,18 @@ export class ReverbComponent implements AfterViewInit, OnDestroy {
   @ViewChild('wetDry') wetDryDial!: LevelControlComponent;
 
   protected readonly dialStyle = dialStyle;
+  private started = false;
 
   start(audioCtx: AudioContext, settings: ReverbSettings | null) {
-    this.audioCtx = audioCtx;
-    this.input = this.audioCtx.createGain();
-    this.input.gain.value = 1;
-    this.gain = this.audioCtx.createGain();
-    this.gain.gain.value = 1;
-    this.reverb = new Reverb(audioCtx, this.input, this.gain, this.gain);
-    this.cookies = new Cookies();
+    if(!this.started) {
+      this.audioCtx = audioCtx;
+      this.input = this.audioCtx.createGain();
+      this.input.gain.value = 1;
+      this.gain = this.audioCtx.createGain();
+      this.gain.gain.value = 1;
+      this.reverb = new Reverb(audioCtx, this.input, this.gain, this.gain);
+      this.cookies = new Cookies();
+    }
     this.applySettings(settings);
   }
 

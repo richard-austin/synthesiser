@@ -159,5 +159,6 @@ export abstract class GainEnvelopeBase {
 
   disconnect() {
     this.amplitudeMod.disconnect();
+    this.frequencyMod.disconnect();
   }
 }

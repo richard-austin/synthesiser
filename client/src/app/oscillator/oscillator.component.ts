@@ -98,6 +98,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   @ViewChild('mod2Depth') mod2Level!: LevelControlComponent;
 
   private devicePoolManagerService = inject(DevicePoolManagerService);
+  private started: boolean = false;
 
   start(audioCtx: AudioContext, settings: OscillatorSettings | null): boolean {
     let ok = false;
@@ -113,6 +114,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   // Called after all synth components have been started
+
   setOutputConnection() {
     SetRadioButtons.set(this.oscOutputToForm, this.proxySettings.output);
   }
@@ -132,15 +134,22 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
 
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      this.oscillators.push(new Oscillator(this.audioCtx));
-      this.oscillators[i].setFrequency(this.keyToFrequency(i));
-      this.oscillators[i].setAmplitudeEnvelope(this.proxySettings.adsr)
-      this.oscillators[i].legatoMode = this.proxySettings.legatoMode === onOff.on;
-      this.oscillators[i].setFreqBendEnvelope(this.proxySettings.freqBend);
-      this.oscillators[i].useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.on);
-      this.oscillators[i].setType(this.proxySettings.waveForm);
+    if(!this.started) {
+      for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
+        this.oscillators.push(new Oscillator(this.audioCtx));
+      }
+      this.started = true;
     }
+
+    this.oscillators.forEach((osc, i) => {
+      osc.setFrequency(this.keyToFrequency(i));
+      osc.setAmplitudeEnvelope(this.proxySettings.adsr)
+      osc.legatoMode = this.proxySettings.legatoMode === onOff.on;
+      osc.setFreqBendEnvelope(this.proxySettings.freqBend);
+      osc.useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.on);
+      osc.setType(this.proxySettings.waveForm);
+    });
+
     this.oscillatorPoolMgr = new DevicePoolManager(this.oscillators, this.proxySettings);
     this.frequency.setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
     this.deTune.setValue(this.proxySettings.deTune);

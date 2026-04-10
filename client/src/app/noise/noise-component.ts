@@ -54,18 +54,23 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   @ViewChild('velocity') velocityOnOffForm!: ElementRef<HTMLFormElement>;
 
   private devicePoolManagerService = inject(DevicePoolManagerService);
+  private started: boolean;
 
   constructor() {
+    this.started = false;
   }
 
   async start(audioCtx: AudioContext, settings: NoiseSettings | null) {
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      this.whiteNoise.push(new WhiteNoise(audioCtx));
-      this.pinkNoise.push(new PinkNoise(audioCtx));
-      this.brownNoise.push(new BrownNoise(audioCtx));
-      await this.whiteNoise[i].start();
-      await this.pinkNoise[i].start();
-      await this.brownNoise[i].start();
+    if(!this.started) {
+      for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
+        this.whiteNoise.push(new WhiteNoise(audioCtx));
+        this.pinkNoise.push(new PinkNoise(audioCtx));
+        this.brownNoise.push(new BrownNoise(audioCtx));
+        await this.whiteNoise[i].start();
+        await this.pinkNoise[i].start();
+        await this.brownNoise[i].start();
+      }
+      this.started = true;
     }
     this.cookies = new Cookies();
     this.applySettings(settings);
@@ -303,10 +308,10 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     this.whiteNoise[0].destroy();
     this.pinkNoise[0].destroy();
     this.brownNoise[0].destroy();
-    for (let i = 0; i < this.whiteNoise.length; i++) {
-      // @ts-ignore
-      this.pinkNoise[i] = this.pinkNoise[i] = this.brownNoise[i] = null;
-    }
+    this.whiteNoise = [];
+    this.pinkNoise = [];
+    this.brownNoise = [];
+
     WhiteNoise.theNode = PinkNoise.theNode = BrownNoise.theNode = undefined;
   }
 }
