@@ -1,7 +1,4 @@
 <div #synth>
-  <div class="home-button">
-    <button class="material-icons" (click)="showHomeForm()">home</button>
-  </div>
   <div style="display: flex; flex-direction: row">
     <div #oscillatorWindow class="oscillator-window">
       @for (osc of _oscillatorParams; let i = $index; track osc) {

@@ -1,4 +1,7 @@
 <div class="options">
-  <app-synth-component [filename]="fileName"></app-synth-component>
-  <app-options [filename]="fileName" style="position: absolute; z-index: 10"></app-options>
+  <div #home class="home-button">
+    <button class="material-icons" (click)="showHomeForm()">home</button>
+  </div>
+  <app-synth-component [filename]="fileName" [homeComponentControl]="homeComponentControl"></app-synth-component>
+  <app-options [filename]="fileName" [homeComponentControl]="homeComponentControl" style="position: absolute; z-index: 10"></app-options>
 </div>

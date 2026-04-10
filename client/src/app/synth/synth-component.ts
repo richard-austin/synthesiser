@@ -16,7 +16,6 @@ import {ReverbComponent} from '../reverb-component/reverb-component';
 import {PhaserComponent} from '../phaser/phaser.component';
 import {AnalyserComponent} from '../analyser/analyser-component';
 import {GeneralComponent} from '../general/general.component';
-import {ActivatedRoute, Router} from '@angular/router';
 import {SynthSettings} from '../settings/synth-settings';
 import {RestfulApiService} from '../services/restful-api.service';
 import {OscillatorParams} from '../modules/oscillator';
@@ -55,6 +54,8 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   proxySettings!: SynthComponentSettings;
   cookies: Cookies
   fileNameEffectRef!: EffectRef;
+  homeControlEffectRef!: EffectRef;
+
   private started = false;
 
   keydownHandler = (e: KeyboardEvent) => {
@@ -76,6 +77,8 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   @Input() filename!: WritableSignal<string>;
+  @Input() homeComponentControl!: WritableSignal<boolean>;
+
   @ViewChildren(OscillatorComponent) oscillatorsGrp!: QueryList<OscillatorComponent>;
   @ViewChild('oscillatorSelectForm') oscillatorSelectForm!: ElementRef<HTMLFormElement>;
   @ViewChild('oscillatorWindow') oscillatorWindow!: ElementRef<HTMLDivElement>;
@@ -89,12 +92,11 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChild('synth') synth!: ElementRef<HTMLDivElement>;
   @ViewChild('general') masterVolume!: GeneralComponent;
 
-  constructor(private route: ActivatedRoute, private router: Router, private rest: RestfulApiService) {
+  constructor(private rest: RestfulApiService) {
     this.audioCtx = new AudioContext();
     this.fileNameEffectRef = effect(() => {
       const fileName = this.filename();
       if (fileName !== "") {
-        //       this.ngOnDestroy().then(() => {
         this.rest.getSettings(fileName).subscribe({
           next: (v) => this.settings = v,
           error: (e) => console.log(e),
@@ -103,16 +105,17 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
             await this.start(this.settings);
           }
         });
-        //       });
       }
     });
 
-    // const fileName = this.route.snapshot.params['fileName'];
-    // if (fileName) {
-    //   this.configFileName = fileName;
-    // } else {
-    //   this.configFileName = this.settings = null;
-    // }
+    this.homeControlEffectRef = effect(() => {
+      this.homeComponentControl();
+      const synth = this.synth?.nativeElement;
+      if(synth) {
+        synth.setAttribute('style', 'opacity:' + (this.homeComponentControl() ? "0.2" : "1")+'; pointer-events:' + (this.homeComponentControl() ? "none" : "auto"));
+      }
+    });
+
     this.cookies = new Cookies();
   }
 
@@ -532,13 +535,10 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  protected async showHomeForm() {
-  }
-
-// The wake lock sentinel.
+  // The wake lock sentinel.
   wakeLock: WakeLockSentinel | null = null;
 
-// Function that attempts to request a wake lock.
+  // Function that attempts to request a wake lock.
   requestWakeLock = async () => {
     try {
       this.wakeLock = await navigator.wakeLock.request('screen');
@@ -622,6 +622,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     window.removeEventListener('keydown', this.keydownHandler);
     window.removeEventListener('keyup', this.keyupHandler);
     this.fileNameEffectRef.destroy();
+    this.homeControlEffectRef.destroy();
   }
 
   protected readonly FilterComponent = FilterComponent;

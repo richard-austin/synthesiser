@@ -1,8 +1,6 @@
 <div #html
      class="options">
   <div class="metallic-button">
-    <h2>Select Synthesiser</h2>
-    <button [disabled]="selectedConfig!==''" (click)="selectLastConfig()">Last Config</button>
     <h2>Select saved configuration</h2>
     <select #configOptions [(ngModel)]="selectedConfig">
       <option value="">Select configuration or click Last Config</option>

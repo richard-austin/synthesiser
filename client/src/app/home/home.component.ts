@@ -1,6 +1,6 @@
 import {
   AfterViewInit, ChangeDetectorRef,
-  Component,
+  Component, effect, EffectRef,
   ElementRef,
   Input,
   OnDestroy,
@@ -9,7 +9,6 @@ import {
 } from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {RestfulApiService} from '../services/restful-api.service';
-import {Router} from '@angular/router';
 import {GeneralComponent} from '../general/general.component';
 import {SortPipePipe} from '../sort-pipe-pipe';
 
@@ -24,6 +23,8 @@ import {SortPipePipe} from '../sort-pipe-pipe';
 })
 export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() filename!: WritableSignal<string>;
+  @Input() homeComponentControl!: WritableSignal<boolean>;
+
   @Input() disappearOnMouseOut!: boolean;
 
   @ViewChild('html') html!: ElementRef<HTMLDivElement>;
@@ -37,14 +38,16 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   protected readonly configFileNameRegex = GeneralComponent._configFileNameRegex;
   protected successMessage: string = "";
   protected errorMessage: string = "";
+  private homeControlEffectRef: EffectRef;
+  private outerDiv!: HTMLDivElement;
+  constructor(private cdr: ChangeDetectorRef, private rest: RestfulApiService) {
 
-  constructor(private cdr: ChangeDetectorRef, private rest: RestfulApiService, private router: Router) {
+    this.homeControlEffectRef = effect(() => {
+      const visible = this.homeComponentControl();
+      const display = visible ? 'block' : 'none';
+      this.outerDiv.setAttribute('style', 'display:'+display);
+    });
   }
-
-  selectLastConfig() {
-    this.router.navigate(['synth']).then();
-  }
-
 
   private reset() {
     this.rest.getConfigFileList().subscribe({
@@ -135,6 +138,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       complete: () => {
         console.log("complete: settings loaded");
         this.filename.set(fileName);
+        this.homeComponentControl.set(false);
       }
     });
   }
@@ -144,10 +148,13 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
+    this.outerDiv = this.html.nativeElement;
+    this.outerDiv.setAttribute('style', 'display:none');
   }
 
   ngOnDestroy(): void {
     const configOptions = this.configOptions.nativeElement;
     configOptions.onchange = null;
+    this.homeControlEffectRef.destroy();
   }
 }

@@ -13,9 +13,15 @@ export class App implements AfterViewInit {
   @ViewChild(HomeComponent) homeComponent!: ElementRef<HomeComponent>;
 
   fileName: WritableSignal<string>;
+  homeComponentControl: WritableSignal<boolean>;
 
   constructor() {
     this.fileName = signal<string>("");
+    this.homeComponentControl = signal<boolean>(false);
+  }
+  protected async showHomeForm() {
+    // Toggle home component
+    this.homeComponentControl.set(!this.homeComponentControl());
   }
 
   ngAfterViewInit(): void {
