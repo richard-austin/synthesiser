@@ -24,18 +24,18 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/compiler": "21.1.0-rc.0",
-    "@angular/core": "^21.1.0-rc.0",
-    "@angular/forms": "^21.1.0-rc.0",
-    "@angular/platform-browser": "^21.1.0-rc.0",
-    "@angular/router": "^21.1.0-rc.0",
+    "@angular/compiler": "22.0.0-next.7",
+    "@angular/core": "22.0.0-next.7",
+    "@angular/forms": "^22.0.0-next.7",
+    "@angular/platform-browser": "^22.0.0-next.7",
+    "@angular/router": "^22.0.0-next.7",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@angular/build": "^21.1.0-rc.0",
-    "@angular/cli": "^21.1.0-rc.0",
-    "@angular/compiler-cli": "^21.1.0-rc.0",
+    "@angular/build": "^22.0.0-next.5",
+    "@angular/cli": "^22.0.0-next.5",
+    "@angular/compiler-cli": "^22.0.0-next.7",
     "@types/jasmine": "~5.1.0",
     "@types/node": "^25.2.3",
     "baseline-browser-mapping": "^2.9.14",
@@ -45,6 +45,6 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "~5.9.2"
+    "typescript": "~6.0.2"
   }
 }

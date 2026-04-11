@@ -93,8 +93,8 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
       this.lfo = new OscillatorNode(this.audioCtx);
       this.lfo.start();
       this.cookies = new Cookies();
-      this.applySettings(settings);
     }
+    this.applySettings(settings);
     return ok;
   }
 

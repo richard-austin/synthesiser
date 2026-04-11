@@ -45,7 +45,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.homeControlEffectRef = effect(() => {
       const visible = this.homeComponentControl();
       const display = visible ? 'block' : 'none';
-      this.outerDiv.setAttribute('style', 'display:'+display);
+      this.outerDiv?.setAttribute('style', 'display:'+display);
     });
   }
 
