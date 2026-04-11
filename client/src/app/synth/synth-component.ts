@@ -590,15 +590,18 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
   async ngAfterViewInit(): Promise<void> {
     const oscillatorWindow = this.oscillatorWindow.nativeElement;
-    const filterWindow = this.filterWindow.nativeElement
+    const filterWindow = this.filterWindow.nativeElement;
+
     const oscillatorSelectForm = this.oscillatorSelectForm.nativeElement;
-    oscillatorSelectForm.addEventListener('change', ($event) => {
-      // @ts-ignore
-      const value = $event.target.value - 1;
-      oscillatorWindow.scroll({left: 0, top: value * 979.3, behavior: 'instant'});
-      filterWindow.scroll({left: 0, top: value * 980, behavior: 'instant'});
-      this.proxySettings.selectedOscillator = (value + 1).toString();
-    });
+    for (let i = 0; i < oscillatorSelectForm.elements.length; ++i) {
+      oscillatorSelectForm.elements[i].addEventListener('change', ($event) => {
+        // @ts-ignore
+        const value = $event.target.value - 1;
+        oscillatorWindow.scroll({left: 0, top: value * 979.3, behavior: 'instant'});
+        filterWindow.scroll({left: 0, top: value * 980, behavior: 'instant'});
+        this.proxySettings.selectedOscillator = (value + 1).toString();
+      });
+    }
 
     await this.start(null);
     await this.requestWakeLock()
