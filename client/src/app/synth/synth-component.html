@@ -19,7 +19,7 @@
         </form>
       </div>
     </div>
-    <div #filterWindow class="oscillator-window">
+    <div #filterWindow class="filter-window">
       @for (filter of _oscillatorParams; let i = $index; track filter) {
         <app-filters [filterNumber]="i"
                      [ringMod]="ringMod"

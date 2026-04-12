@@ -5,7 +5,7 @@ div.analyser {
   }
 }
 
-div.oscillator-window {
+@mixin scrollable-window {
   height: 979px;
   overflow: hidden;
   > div {
@@ -14,4 +14,14 @@ div.oscillator-window {
     left:300px;
     position: absolute;
   }
+}
+
+div.oscillator-window {
+  min-width: 591.11px;
+  @include scrollable-window();
+}
+
+div.filter-window {
+  min-width: 525.51px;
+  @include scrollable-window();
 }

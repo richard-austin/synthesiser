@@ -17,7 +17,7 @@ import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component
 import {ReverbComponent} from '../reverb-component/reverb-component';
 import {PhaserComponent} from '../phaser/phaser.component';
 import {OscillatorSettings} from '../settings/oscillator';
-import {modWaveforms, onOff, oscModType, oscOutputs, oscWaveforms} from '../enums/enums';
+import {modWaveforms, onOff, oscModOutput, oscModType, oscOutputs, oscWaveforms} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {timer} from 'rxjs';
 import {Cookies} from '../settings/cookies/cookies';
@@ -52,7 +52,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   private proxySettings!: OscillatorSettings;
   private cookies!: Cookies;
   private velocitySensitive: boolean = true;
-  private modulators!: OscillatorComponent;
   private oscillatorPoolMgr!: DevicePoolManager;
   private chordProcessor!: ChordProcessor;
 
@@ -90,12 +89,11 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   @ViewChild('oscWaveform') oscWaveForm!: ElementRef<HTMLSelectElement>;
 
   @ViewChild('modSettingsForm') modSettingsForm!: ElementRef<HTMLFormElement>;
-  @ViewChild('oscModSettingsForm') oscModSettingsForm!: ElementRef<HTMLFormElement>;
+  @ViewChild('oscModOutputForm') oscModOutputForm!: ElementRef<HTMLFormElement>;
 
   @ViewChild('modFreq') modFreq!: LevelControlComponent;
   @ViewChild('modDepth') modLevel!: LevelControlComponent;
   @ViewChild('modWaveForm') lfoWaveForm!: ElementRef<HTMLFormElement>;
-  @ViewChild('mod2Depth') mod2Level!: LevelControlComponent;
 
   private devicePoolManagerService = inject(DevicePoolManagerService);
   private started: boolean = false;
@@ -174,9 +172,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     // Set up LFO default values
     this.modFreq.setValue(this.proxySettings.modFreq);  // Set dial
     this.modLevel.setValue(this.proxySettings.modLevel);  // Set dial
-    if (!this.proxySettings.mod2Level)
-      this.proxySettings.mod2Level = 0;
-    this.mod2Level.setValue(this.proxySettings.mod2Level);  // Set dial
 
     this.modulation(this.lfo, this.proxySettings.modType);
     // Set up the buttons and selectors
@@ -188,14 +183,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     SetRadioButtons.set(this.freqEnveOnOffForm, this.proxySettings.useFrequencyEnvelope);
     SetRadioButtons.set(this.modSettingsForm, this.proxySettings.modType);
     SetRadioButtons.set(this.lfoWaveForm, this.proxySettings.modWaveform);
-  }
-
-  public setModulators(modulators: OscillatorComponent) {
-    this.modulators = modulators;
-
-    this.modulation2(this.modulators.oscillators, this.proxySettings.modType2);
-    if (this.proxySettings.modType2)  // In case config or cookie predates addition of this field
-      SetRadioButtons.set(this.oscModSettingsForm, this.proxySettings.modType2);
   }
 
   public getSettings(): OscillatorSettings {
@@ -272,13 +259,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  modulation2(modulators: Oscillator[], type: oscModType) {
-    this.proxySettings.modType2 = type;
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      this.oscillators[i].modulation2(type, modulators[i]);
-    }
-  }
-
   protected setModType(type: oscModType) {
     this.proxySettings.modType = type;
     for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
@@ -286,10 +266,10 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  protected setMod2Type(type: oscModType) {
-    this.proxySettings.modType2 = type;
+  protected setModOutput(modOutput: oscModOutput) {
+    this.proxySettings.modOutput = modOutput;
     for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      this.oscillators[i].modulation2(type);
+      this.oscillators[i].setModOutput(modOutput);
     }
   }
 
@@ -533,14 +513,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  protected setMod2Level($event: number) {
-    this.proxySettings.mod2Level = $event;
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      this.oscillators[i].setMod2Level($event);
-    }
-  }
-
-  ngAfterViewInit(): void {
+   ngAfterViewInit(): void {
     const oscOutForm = this.oscOutputToForm.nativeElement;
     for (let i = 0; i < oscOutForm.elements.length; ++i) {
       oscOutForm.elements[i].addEventListener('change', ($event) => {
@@ -601,12 +574,12 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       });
     }
 
-    const oscModSettingsForm = this.oscModSettingsForm.nativeElement;
-    for (let j = 0; j < oscModSettingsForm.elements.length; ++j) {
-      oscModSettingsForm.elements[j].addEventListener('change', ($event) => {
+    const oscModOutputForm = this.oscModOutputForm.nativeElement;
+    for (let j = 0; j < oscModOutputForm.elements.length; ++j) {
+      oscModOutputForm.elements[j].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value as modulationType;
-        this.setMod2Type(value);
+        this.setModOutput(value);
       });
     }
 

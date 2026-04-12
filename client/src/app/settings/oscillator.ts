@@ -1,6 +1,6 @@
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {FreqBendValues} from '../util-classes/freq-bend-values';
-import {modWaveforms, onOff, oscModType, oscOutputs, oscWaveforms} from '../enums/enums';
+import {modWaveforms, onOff, oscModOutput, oscModType, oscOutputs, oscWaveforms} from '../enums/enums';
 import {PortamentoType} from '../oscillator/oscillator.component';
 
 export class OscillatorSettings {
@@ -15,8 +15,7 @@ export class OscillatorSettings {
   modFreq: number;
   modLevel: number;
   modType: oscModType;
-  modType2: oscModType;
-  mod2Level: number;
+  modOutput: oscModOutput;
   modWaveform: modWaveforms;
   legatoMode: onOff;
   velocitySensitive: onOff;
@@ -41,8 +40,7 @@ export class OscillatorSettings {
               modType: oscModType = oscModType.off,
               portamento: number = 0,
               portamentoType: PortamentoType = 'last',
-              modType2: oscModType = oscModType.off,
-              mod2Level: number = 0.0)
+              modOutput: oscModOutput = oscModOutput.direct)
   {
     this.adsr = adsr;
     this.freqBend = freqBend;
@@ -59,9 +57,8 @@ export class OscillatorSettings {
     this.modLevel = modLevel;
     this.modWaveform = modWaveForm;
     this.modType = modType;
-    this.modType2 = modType2;
+    this.modOutput = modOutput;
     this.portamento = portamento;
     this.portamentoType = portamentoType;
-    this.mod2Level = mod2Level;
   }
 }

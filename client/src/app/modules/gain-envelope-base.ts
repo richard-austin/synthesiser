@@ -1,20 +1,17 @@
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {OscFilterBase} from './osc-filter-base';
-import {filterModType, oscModType} from '../enums/enums';
+import {filterModType, oscModOutput, oscModType} from '../enums/enums';
 import {Subscription, timer} from 'rxjs';
 
 export abstract class GainEnvelopeBase {
   protected readonly envelope: GainNode;
   protected readonly modOutput: GainNode;
   frequencyMod: GainNode;
-  frequencyMod2: GainNode;
   amplitudeMod: GainNode;
   amplitudeModDepth: GainNode;
-  amplitudeMod2Depth: GainNode;
   protected modType: oscModType | filterModType;
-  protected modType2: oscModType | filterModType;
+  protected modOutputType: oscModOutput;
   protected modLevel: number = 0;
-  protected mod2Level: number = 0;
   private _legatoMode = false;
   env: ADSRValues;
   modulator!: AudioNode;
@@ -31,20 +28,15 @@ export abstract class GainEnvelopeBase {
     // Default ADSR values
     this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
     this.frequencyMod = audioCtx.createGain();
-    this.frequencyMod2 = this.audioCtx.createGain();
     this.frequencyMod.gain.value = 0;
-    this.frequencyMod2.gain.value = 0;
     this.amplitudeMod = audioCtx.createGain();
     this.amplitudeMod.gain.value = 1;
     this.amplitudeModDepth = audioCtx.createGain();
-    this.amplitudeMod2Depth = audioCtx.createGain();
     this.amplitudeModDepth.gain.value = 0;
-    this.amplitudeMod2Depth.gain.value = 0;
     this.envelope.connect(this.amplitudeMod);
     this.amplitudeModDepth.connect(this.amplitudeMod.gain);
-    this.amplitudeMod2Depth.connect(this.amplitudeMod.gain);
     this.modType = oscModType.amplitude;
-    this.modType2 = oscModType.amplitude;
+    this.modOutputType = oscModOutput.direct;
   }
 
   public static exponentiateGain(gain: number) {
@@ -59,11 +51,6 @@ export abstract class GainEnvelopeBase {
   modulationOff() {
     this.frequencyMod.gain.value = 0;
     this.amplitudeModDepth.gain.value = 0;
-  }
-
-  modulation2Off() {
-    this.frequencyMod2.gain.value = 0;
-    this.amplitudeMod2Depth.gain.value = 0;
   }
 
   abstract modulation(modulator: AudioNode, type: oscModType | filterModType): void;

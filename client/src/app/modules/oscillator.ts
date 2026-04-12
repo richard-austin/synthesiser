@@ -1,7 +1,7 @@
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {OscFilterBase} from './osc-filter-base';
 import {FreqBendValues} from '../util-classes/freq-bend-values';
-import {filterModType, oscModType} from '../enums/enums';
+import {filterModType, oscModOutput, oscModType} from '../enums/enums';
 import {Subscription, timer} from 'rxjs';
 import {WaveTableDetails} from './WaveTableDetails';
 
@@ -202,9 +202,9 @@ export class Oscillator extends OscFilterBase {
     // Default ADSR values
     this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
     this.oscillator.connect(this.panner);
-    this.panner.connect(this.gain);
+    this.panner.connect(this.envelope);
     this.oscillator.connect(this.modOutput);
-    this.gain.connect(this.envelope);
+    this.envelope.connect(this.gain);
     this.oscillator.start();
   }
 
@@ -237,14 +237,27 @@ export class Oscillator extends OscFilterBase {
     this.setOscModulation();
   }
 
-  modulation2(type: oscModType, modulator: Oscillator | null = null) {
-    this.modType2 = type;
-    if (modulator) {
-      modulator.modOutput.connect(this.frequencyMod2);
-      modulator.modOutput.connect(this.amplitudeMod2Depth);
-      this.frequencyMod2.connect(this.oscillator.detune);
+  connectedTo!: oscModOutput;
+  setModOutput(modOutput: oscModOutput) {
+    this.modOutputType = modOutput;
+    if(this.connectedTo === oscModOutput.direct)
+      this.oscillator.disconnect(this.modOutput);
+    else if(this.connectedTo === oscModOutput.envelope)
+      this.envelope.disconnect(this.modOutput);
+
+    this.connectedTo = modOutput;
+
+    switch(modOutput) {
+      case oscModOutput.direct:
+        this.oscillator.connect(this.modOutput);
+        break;
+      case oscModOutput.envelope:
+        this.envelope.connect(this.modOutput);
+        break;
+      default:
+        console.error("Unknown mod output type "+modOutput)
+
     }
-    this.setOscModulation2();
   }
 
   private readonly freqModGainBase = 1.02;
@@ -269,18 +282,6 @@ export class Oscillator extends OscFilterBase {
     }
   }
 
-  setOscModulation2() {
-    if (this.modType2 === oscModType.frequency) {
-      this.amplitudeMod2Depth.gain.value = 0;
-      this.frequencyMod2.gain.value = this.gainFactor * (Math.pow(this.freqModGainBase, this.mod2Level) - 1);
-    } else if (this.modType2 === oscModType.amplitude) {
-      this.frequencyMod2.gain.value = 0;
-      this.amplitudeMod2Depth.gain.value = this.ampModFactor * (Math.pow(this.ampModGainBase, this.mod2Level) - 1);
-    } else if (this.modType2 === oscModType.off) {
-      this.modulation2Off();
-    }
-  }
-
   setModLevel(level: number) {
     this.modLevel = level;
     if (this.modType === oscModType.frequency)
@@ -289,15 +290,6 @@ export class Oscillator extends OscFilterBase {
       this.amplitudeModDepth.gain.value = this.ampModFactor * (Math.pow(this.ampModGainBase, this.modLevel) - 1);
   }
 
-
-  setMod2Level(level: number) {
-    this.mod2Level = level;
-
-    if (this.modType2 === oscModType.frequency)
-      this.frequencyMod2.gain.value = this.gainFactor * (Math.pow(this.freqModGainBase, this.mod2Level) - 1);
-    else if (this.modType2 === oscModType.amplitude)
-      this.amplitudeMod2Depth.gain.value = this.ampModFactor * (Math.pow(this.ampModGainBase, this.mod2Level) - 1);
-  }
 
   override setFreqBendEnvelope(envelope: FreqBendValues) {
     super.setFreqBendEnvelope(envelope);

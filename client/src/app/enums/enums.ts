@@ -23,6 +23,8 @@ export enum filterOutputs {speaker = 'speaker', ringMod = 'ringmod', phasor = 'p
 
 export enum oscModType {amplitude = 'amplitude', frequency = 'frequency', off = 'off'}
 
+export enum oscModOutput{direct="direct", envelope="envelope"}
+
 export enum filterModType {frequency = 'frequency', off = 'off'}
 
 export enum onOff {on = 'on', off = 'off'}
