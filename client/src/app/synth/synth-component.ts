@@ -24,6 +24,8 @@ import {FilterSettings} from '../settings/filter';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {Cookies} from '../settings/cookies/cookies';
 import {SynthComponentSettings} from '../settings/synth-component-settings';
+import {MatrixControlComponent} from '../matrix-control/matrix-control-component';
+import {MatrixComponent} from '../matrix/matrix-component';
 
 @Component({
   selector: 'app-synth-component',
@@ -35,7 +37,8 @@ import {SynthComponentSettings} from '../settings/synth-component-settings';
     ReverbComponent,
     PhaserComponent,
     AnalyserComponent,
-    GeneralComponent
+    GeneralComponent,
+    MatrixComponent
   ],
   templateUrl: `./synth-component.html`,
   styleUrl: './synth-component.scss',

@@ -1,0 +1,26 @@
+.group-container {
+  height: 730px;
+}
+.module {
+  width: 550px;
+}
+
+div.carrier-label {
+  height: 630px;
+  width: 45px;
+   display: flex;
+  align-items: center;
+  > h2 {
+    vertical-align: middle;
+    display: flex;
+    position: absolute;
+    text-orientation: upright;
+    writing-mode: vertical-lr;
+  }
+}
+
+div.controls {
+  > h2 {
+    margin-bottom: 15px;
+  }
+}

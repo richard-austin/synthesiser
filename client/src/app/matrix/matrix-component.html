@@ -1,0 +1,27 @@
+<div class="group-container metallic-button">
+  <h1>Operator Matrix</h1>
+  <div class="group">
+    <div class="column">
+      <div class="module">
+        <div class="row">
+          <div class="carrier-label">
+            <h2>Carriers</h2>
+          </div>
+          <div class="controls">
+            <h2>Modulators</h2>
+            @for (b of _oscillatorParams; let carrier = $index; track carrier) {
+              <div class="row">
+                <div style="width: 30px"></div>
+                @for (a of _oscillatorParams; let modulator = $index; track modulator) {
+                  <app-matrix-control [modulator]="modulator" [carrier]="carrier"></app-matrix-control>
+                  <div style="width: 5px"></div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+        <div style="height:30px"></div>
+      </div>
+    </div>
+  </div>
+</div>

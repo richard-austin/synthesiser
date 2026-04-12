@@ -1,0 +1,40 @@
+div {
+  >form {
+    position: relative;
+    top: -20px;
+    >label:first-child {
+      position: absolute;
+      width: 19px;
+      margin-left: -21px;
+    }
+    >label:nth-child(2) {
+      position: absolute;
+      width: 19px;
+      margin-left: 70px;
+    }
+  }
+}
+.row {
+  position: relative;
+}
+
+.column {
+  position: relative;
+}
+
+h3.modulator-label {
+  position: absolute;
+  top: -10px;
+  width: 110px;
+  display: flex;
+  justify-content: center;
+}
+
+h3.carrier-label {
+  position: absolute;
+  left: -15px;
+  top: 70px;
+  width: 25px;
+  display: flex;
+  justify-content: left;
+}

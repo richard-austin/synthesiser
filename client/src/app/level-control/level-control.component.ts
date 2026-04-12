@@ -67,6 +67,11 @@ export class LevelControlComponent implements AfterViewInit, OnDestroy {
     this.currentAngle = this.setAngle(p.calAngle * value/this.factor, 0);
   }
 
+  changeStyle(style: dialStyle) {
+    this.params.style = style;
+    this.drawOperationsWorker.postMessage({angle: this.currentAngle, style: style});
+  }
+
   ngAfterViewInit(): void {
     this.startRender();
     const canvas = this.canvas.nativeElement;
@@ -144,5 +149,4 @@ export class LevelControlComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.drawOperationsWorker.terminate();
   }
-
 }

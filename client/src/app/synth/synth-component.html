@@ -27,7 +27,6 @@
                      [phaser]="phaser"
                      (output)="setFilterOutputTarget($event, i)">
         </app-filters>
-
       }
     </div>
     <div class="analyser">
@@ -40,6 +39,7 @@
                         [reverb]="reverb"
                         (output)="setRingModOutPutTarget($event)">
     </app-ring-modulator>
+    <app-matrix></app-matrix>
     <app-analyser></app-analyser>
   </div>
   <div style="display: flex; flex-direction: row">

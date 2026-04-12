@@ -11,7 +11,10 @@ addEventListener('message', ({data}) => {
     render.drawLabel();
   }
   if (render && data.angle !== undefined) {
-    render.drawDial(data.angle);
+    if(data.style !== undefined)
+      render.changeStyle(data.angle, data.style);
+    else
+      render.drawDial(data.angle);
   } else if (data === "focus" || data === "blur") {
     render.focus(data === "focus");
   }
@@ -65,6 +68,11 @@ class Renderer {
       [dialStyle.yellow, [['#ffc', '#aaa'],['gray','darkgray'],['yellow','brown']]],
       [dialStyle.magenta, [['#fcf', '#aaa'],['gray','darkgray'],['#d3d','#525']]]
   ]);
+
+  changeStyle(angle: number, style: dialStyle) {
+    this.params.style = style;
+    this.drawDial(angle);
+  }
 
   drawDial(angle: number) {
     // const canvas = this.canvas;
