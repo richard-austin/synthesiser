@@ -3,6 +3,16 @@ import {OscFilterBase} from './osc-filter-base';
 import {filterModType, oscModOutput, oscModType} from '../enums/enums';
 import {Subscription, timer} from 'rxjs';
 
+class Modulation{
+  constructor(carrier: AudioNode, modulator: AudioNode){
+    this.carrier = carrier;
+    this.modulator = modulator;
+  }
+
+  carrier: AudioNode;
+  modulator: AudioNode;
+}
+
 export abstract class GainEnvelopeBase {
   protected readonly envelope: GainNode;
   protected readonly modOutput: GainNode;
@@ -13,6 +23,7 @@ export abstract class GainEnvelopeBase {
   protected modOutputType: oscModOutput;
   protected modLevel: number = 0;
   private _legatoMode = false;
+  protected readonly freqModGainBase = 1.02;
   env: ADSRValues;
   modulator!: AudioNode;
 
@@ -48,12 +59,57 @@ export abstract class GainEnvelopeBase {
     this.envelope.gain.setValueAtTime(this.clampLevel(OscFilterBase.minLevel), this.audioCtx.currentTime);
   }
 
-  modulationOff() {
-    this.frequencyMod.gain.value = 0;
-    this.amplitudeModDepth.gain.value = 0;
+  connectModOutput(input: AudioParam) {
+    this.modOutput.connect(input);
   }
 
-  abstract modulation(modulator: AudioNode, type: oscModType | filterModType): void;
+  disconnectModOutput(input: AudioParam) {
+    this.modOutput.disconnect(input);
+  }
+
+  abstract setModulation(): void;
+
+  private readonly modConnections: Modulation[] = [];
+
+  modulation(modulator: AudioNode, type: oscModType | filterModType = oscModType.frequency) {
+    this.modType = type;
+    if (modulator) {
+      if (type === oscModType.amplitude) {
+        if (!this.modConnections.find((mod) => mod.modulator === modulator && mod.carrier === this.amplitudeModDepth)) {
+         // modulator.connect(this.frequencyMod);
+          modulator.connect(this.amplitudeModDepth);
+          this.modConnections.push(new Modulation(this.amplitudeModDepth, modulator));
+          // Remove any previous connection from this modulator to the frequencyMod node
+          const idx = this.modConnections.findIndex(mod => mod.modulator === modulator && mod.carrier === this.frequencyMod);
+          if(idx > -1) {
+            modulator.disconnect(this.modConnections[idx].carrier);
+            this.modConnections.splice(idx, 1);
+          }
+        }
+      }
+      else if (type === oscModType.frequency) {
+        if (!this.modConnections.find((mod) => mod.modulator === modulator && mod.carrier === this.frequencyMod)) {
+          // modulator.connect(this.frequencyMod);
+          modulator.connect(this.frequencyMod);
+          this.modConnections.push(new Modulation(this.frequencyMod, modulator));
+          // Remove any previous connection from this modulator to the amplitudeModDepth node
+          const idx = this.modConnections.findIndex(mod => mod.modulator === modulator && mod.carrier === this.amplitudeModDepth);
+          if(idx > -1) {
+            modulator.disconnect(this.modConnections[idx].carrier);
+            this.modConnections.splice(idx, 1);
+          }
+        }
+      } else {
+        const idx = this.modConnections.findIndex((mod) => mod.modulator === modulator);
+        if (idx > -1) {
+          modulator.disconnect(this.modConnections[idx].carrier);
+          this.modConnections.splice(idx, 1);
+        }
+      }
+    }
+    this.setModulation();
+  }
+
 
   public set legatoMode(legatoMode: boolean) {
     this._legatoMode = legatoMode;
@@ -87,7 +143,7 @@ export abstract class GainEnvelopeBase {
       this.sub?.unsubscribe();
       this.velocity = Math.pow(velocity / 127, .75);
       this.envelope.gain.cancelAndHoldAtTime(currentTime);
-      if(this.envelope.gain.value < this.justAudible)
+      if (this.envelope.gain.value < this.justAudible)
         this.envelope.gain.value = this.justAudible;
       else
         this.envelope.gain.setValueAtTime(this.envelope.gain.value, currentTime);  // Prevent clicks
@@ -122,7 +178,7 @@ export abstract class GainEnvelopeBase {
         this.envelope.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel), this.audioCtx.currentTime + this.env.releaseTime + this._minRampTime);  // Ramp to release level
       })
     }
-    if(this.releaseFinished) {
+    if (this.releaseFinished) {
       this.releaseFinishedSub = timer((this._minRampTime + (!this.legatoMode ? this.env.releaseTime : 0)) * 1000 + 0.1).subscribe(() => {
         this.releaseFinishedSub?.unsubscribe();
         this.releaseFinishedSub = null;
@@ -146,6 +202,5 @@ export abstract class GainEnvelopeBase {
 
   disconnect() {
     this.amplitudeMod.disconnect();
-    this.frequencyMod.disconnect();
   }
 }

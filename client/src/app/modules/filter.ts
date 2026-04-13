@@ -64,26 +64,21 @@ export class Filter extends OscFilterBase {
     this.setGain(this.gainValue);
   }
 
-  modulation(modulator: AudioNode, type: filterModType | oscModType = filterModType.frequency) {
-    if(type === 'frequency') {
-      modulator.connect(this.frequencyMod);
-      this.frequencyMod.connect(this.filter.detune);
-      this.frequencyMod.gain.value = this.modLevel * 2;
-    }
-    else if(type === 'off') {
-      this.modulationOff();
-    }
+  setModulation() {
+    if (this.modType === oscModType.frequency) {
+      this.frequencyMod.gain.value = this.gainFactor * (Math.pow(this.freqModGainBase, this.modLevel) - 1);
+      // this.amplitudeModDepth.gain.value = 0;
+    } else if (this.modType === oscModType.amplitude) {
+      this.amplitudeModDepth.gain.value = this.modLevel / 200;
+      //   this.frequencyMod.gain.value = 0;
+    } //else if (this.modType === oscModType.off) {
+    // this.modulationOff();
+    // }
   }
 
   setModLevel(level: number) {
     this.modLevel = level;
     this.frequencyMod.gain.value = this.modLevel * 2;
-  }
-
-  override modulationOff() {
-    super.modulationOff();
-    // this.filter.frequency.value = this.freq; ???????????????????????????????????????
-    // this.filter2.frequency.value = this.freq;
   }
 
   override connect(param: AudioParam) : void;

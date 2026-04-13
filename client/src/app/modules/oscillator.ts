@@ -206,6 +206,7 @@ export class Oscillator extends OscFilterBase {
     this.oscillator.connect(this.modOutput);
     this.envelope.connect(this.gain);
     this.oscillator.start();
+    this.frequencyMod.connect(this.oscillator.detune);
   }
 
   setFrequency(freq: number) {
@@ -225,16 +226,6 @@ export class Oscillator extends OscFilterBase {
 
   pan(pan: number) {
     this.panner.pan.value = pan;
-  }
-
-  modulation(modulator: AudioNode, type: oscModType | filterModType = oscModType.frequency) {
-    this.modType = type;
-    if (modulator) {
-      modulator.connect(this.frequencyMod);
-      modulator.connect(this.amplitudeModDepth);
-      this.frequencyMod.connect(this.oscillator.detune);
-    }
-    this.setOscModulation();
   }
 
   connectedTo!: oscModOutput;
@@ -260,7 +251,6 @@ export class Oscillator extends OscFilterBase {
     }
   }
 
-  private readonly freqModGainBase = 1.02;
   private readonly freqModeGainMaxInput = 300;
   private readonly maxFreqModGain = 3000;
   private readonly gainFactor = this.maxFreqModGain / (Math.pow(this.freqModGainBase, this.freqModeGainMaxInput) - 1);
@@ -270,15 +260,11 @@ export class Oscillator extends OscFilterBase {
   private readonly maxAmpModGain = 6;
   private readonly ampModFactor = this.maxAmpModGain / (Math.pow(this.ampModGainBase, this.ampModeGainMaxInput) - 1);
 
-  setOscModulation() {
+  setModulation() {
     if (this.modType === oscModType.frequency) {
       this.frequencyMod.gain.value = this.gainFactor * (Math.pow(this.freqModGainBase, this.modLevel) - 1);
-      this.amplitudeModDepth.gain.value = 0;
     } else if (this.modType === oscModType.amplitude) {
       this.amplitudeModDepth.gain.value = this.modLevel / 200;
-      this.frequencyMod.gain.value = 0;
-    } else if (this.modType === oscModType.off) {
-      this.modulationOff();
     }
   }
 
@@ -354,5 +340,6 @@ export class Oscillator extends OscFilterBase {
   destroy() {
     this.disconnect();
     this.oscillator.stop();
+    this.frequencyMod.disconnect();
   }
 }

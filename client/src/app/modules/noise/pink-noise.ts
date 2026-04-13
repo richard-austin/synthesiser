@@ -9,6 +9,10 @@ export class PinkNoise extends GainEnvelopeBase {
     this.gain.connect(this.envelope);
   }
 
+  override setModulation(): void {
+    throw new Error("Method not implemented.");
+  }
+
   async start() {
     function worklet() {
       // @ts-ignore
@@ -71,11 +75,6 @@ export class PinkNoise extends GainEnvelopeBase {
 
   setGain(gain: number) {
     this.gain.gain.value = gain;
-  }
-
-  modulation(modulator: OscillatorNode) {
-    this.modulator = modulator;
-    modulator.connect(this.frequencyMod);
   }
 
   keyDown(velocity: number) {
