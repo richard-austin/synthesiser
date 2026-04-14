@@ -10,7 +10,7 @@ import {HomeComponent} from './home/home.component';
 })
 export class App implements AfterViewInit {
   @ViewChild(SynthComponent) synthComponent!: ElementRef<SynthComponent>
-  @ViewChild(HomeComponent) homeComponent!: ElementRef<HomeComponent>;
+  @ViewChild(HomeComponent) homeComponent!: HomeComponent;
 
   fileName: WritableSignal<string>;
   homeComponentControl: WritableSignal<boolean>;
@@ -20,6 +20,7 @@ export class App implements AfterViewInit {
     this.homeComponentControl = signal<boolean>(false);
   }
   protected async showHomeForm() {
+    this.homeComponent.ngOnInit(); // Ensure file list is reloaded
     // Toggle home component
     this.homeComponentControl.set(!this.homeComponentControl());
   }

@@ -82,11 +82,11 @@ export class Cookies {
         // @ts-ignore
        // console.log(`${key} set from ${target[key]} to ${value}`);
         target[key] = value;
-        saveSettings(settings, cookieName);
+        saveSettings(cookieName);
         return true;
       }
     };
-    const saveSettings= (settings: {}, name: string) => {
+    const saveSettings= (name: string) => {
       if (this.sub) {
         this.sub.unsubscribe();
       }

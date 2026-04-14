@@ -146,6 +146,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       osc.setFreqBendEnvelope(this.proxySettings.freqBend);
       osc.useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.on);
       osc.setType(this.proxySettings.waveForm);
+      osc.clearModulation();  // Remove any preexisting mod settings
     });
 
     this.oscillatorPoolMgr = new DevicePoolManager(this.oscillators, this.proxySettings);
@@ -183,6 +184,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     SetRadioButtons.set(this.freqEnveOnOffForm, this.proxySettings.useFrequencyEnvelope);
     SetRadioButtons.set(this.modSettingsForm, this.proxySettings.modType);
     SetRadioButtons.set(this.lfoWaveForm, this.proxySettings.modWaveform);
+    SetRadioButtons.set(this.oscModOutputForm, this.proxySettings.modOutput);
   }
 
   public getSettings(): OscillatorSettings {

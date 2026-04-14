@@ -1,7 +1,7 @@
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {OscFilterBase} from './osc-filter-base';
 import {FreqBendValues} from '../util-classes/freq-bend-values';
-import {filterModType, oscModOutput, oscModType} from '../enums/enums';
+import {oscModOutput, oscModType} from '../enums/enums';
 import {Subscription, timer} from 'rxjs';
 import {WaveTableDetails} from './WaveTableDetails';
 
@@ -260,12 +260,8 @@ export class Oscillator extends OscFilterBase {
   private readonly maxAmpModGain = 6;
   private readonly ampModFactor = this.maxAmpModGain / (Math.pow(this.ampModGainBase, this.ampModeGainMaxInput) - 1);
 
-  setModulation() {
-    if (this.modType === oscModType.frequency) {
-      this.frequencyMod.gain.value = this.gainFactor * (Math.pow(this.freqModGainBase, this.modLevel) - 1);
-    } else if (this.modType === oscModType.amplitude) {
-      this.amplitudeModDepth.gain.value = this.modLevel / 200;
-    }
+  override setModulation() {
+    this.setModLevel(this.modLevel);
   }
 
   setModLevel(level: number) {

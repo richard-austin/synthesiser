@@ -1,7 +1,7 @@
 import {OscFilterBase} from './osc-filter-base';
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {FreqBendValues} from '../util-classes/freq-bend-values';
-import {filterModType, oscModType} from '../enums/enums';
+import {oscModType} from '../enums/enums';
 import {Subscription, timer} from 'rxjs';
 
 export class Filter extends OscFilterBase {
@@ -64,21 +64,17 @@ export class Filter extends OscFilterBase {
     this.setGain(this.gainValue);
   }
 
-  setModulation() {
-    if (this.modType === oscModType.frequency) {
-      this.frequencyMod.gain.value = this.gainFactor * (Math.pow(this.freqModGainBase, this.modLevel) - 1);
-      // this.amplitudeModDepth.gain.value = 0;
-    } else if (this.modType === oscModType.amplitude) {
-      this.amplitudeModDepth.gain.value = this.modLevel / 200;
-      //   this.frequencyMod.gain.value = 0;
-    } //else if (this.modType === oscModType.off) {
-    // this.modulationOff();
-    // }
+  override setModulation() {
+    this.setModLevel(this.modLevel);
   }
 
   setModLevel(level: number) {
     this.modLevel = level;
-    this.frequencyMod.gain.value = this.modLevel * 2;
+    if (this.modType === oscModType.frequency) {
+      this.frequencyMod.gain.value = this.gainFactor * (Math.pow(this.freqModGainBase, this.modLevel) - 1);
+    } else if (this.modType === oscModType.amplitude) {
+      this.amplitudeModDepth.gain.value = this.modLevel / 200;
+    }
   }
 
   override connect(param: AudioParam) : void;

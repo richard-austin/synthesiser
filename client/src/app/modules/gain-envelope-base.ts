@@ -3,8 +3,8 @@ import {OscFilterBase} from './osc-filter-base';
 import {filterModType, oscModOutput, oscModType} from '../enums/enums';
 import {Subscription, timer} from 'rxjs';
 
-class Modulation{
-  constructor(carrier: AudioNode, modulator: AudioNode){
+class Modulation {
+  constructor(carrier: AudioNode, modulator: AudioNode) {
     this.carrier = carrier;
     this.modulator = modulator;
   }
@@ -76,30 +76,29 @@ export abstract class GainEnvelopeBase {
     if (modulator) {
       if (type === oscModType.amplitude) {
         if (!this.modConnections.find((mod) => mod.modulator === modulator && mod.carrier === this.amplitudeModDepth)) {
-         // modulator.connect(this.frequencyMod);
+          // modulator.connect(this.frequencyMod);
           modulator.connect(this.amplitudeModDepth);
           this.modConnections.push(new Modulation(this.amplitudeModDepth, modulator));
           // Remove any previous connection from this modulator to the frequencyMod node
           const idx = this.modConnections.findIndex(mod => mod.modulator === modulator && mod.carrier === this.frequencyMod);
-          if(idx > -1) {
+          if (idx > -1) {
             modulator.disconnect(this.modConnections[idx].carrier);
             this.modConnections.splice(idx, 1);
           }
         }
-      }
-      else if (type === oscModType.frequency) {
+      } else if (type === oscModType.frequency) {
         if (!this.modConnections.find((mod) => mod.modulator === modulator && mod.carrier === this.frequencyMod)) {
           // modulator.connect(this.frequencyMod);
           modulator.connect(this.frequencyMod);
           this.modConnections.push(new Modulation(this.frequencyMod, modulator));
           // Remove any previous connection from this modulator to the amplitudeModDepth node
           const idx = this.modConnections.findIndex(mod => mod.modulator === modulator && mod.carrier === this.amplitudeModDepth);
-          if(idx > -1) {
+          if (idx > -1) {
             modulator.disconnect(this.modConnections[idx].carrier);
             this.modConnections.splice(idx, 1);
           }
         }
-      } else {
+      } else if (type === oscModType.off) {
         const idx = this.modConnections.findIndex((mod) => mod.modulator === modulator);
         if (idx > -1) {
           modulator.disconnect(this.modConnections[idx].carrier);
@@ -110,6 +109,12 @@ export abstract class GainEnvelopeBase {
     this.setModulation();
   }
 
+  clearModulation(): void {
+    this.modConnections.forEach(mod => {
+      mod.modulator.disconnect(mod.carrier);
+    });
+    this.modConnections.splice(0, this.modConnections.length);
+  }
 
   public set legatoMode(legatoMode: boolean) {
     this._legatoMode = legatoMode;
