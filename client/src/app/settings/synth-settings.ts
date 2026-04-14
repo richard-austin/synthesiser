@@ -8,6 +8,7 @@ import {GeneralSettings} from './General';
 import {AnalyserSettings} from './analyser-settings';
 import {SynthComponentSettings} from './synth-component-settings';
 import {SynthComponent} from '../synth/synth-component';
+import {MatrixSettings} from './matrix';
 
 export class SynthSettings {
   synthComponentSettings: SynthComponentSettings;
@@ -19,12 +20,14 @@ export class SynthSettings {
   phasorSettings: PhasorSettings;
   generalSettings: GeneralSettings;
   analyserSettings: AnalyserSettings;
+  matrixSettings: MatrixSettings;
 
   constructor(synthComponentSettings: SynthComponentSettings = new SynthComponentSettings(),
               oscillatorSettings: OscillatorSettings[] = new Array(SynthComponent.oscillatorParams.length).fill(new OscillatorSettings()),
               filterSettings: FilterSettings[] = new Array(SynthComponent.oscillatorParams.length).fill(new FilterSettings()),
               noiseSettings: NoiseSettings = new NoiseSettings(),
               ringModSettings: RingModSettings = new RingModSettings(),
+              matrixSettings: MatrixSettings = new MatrixSettings(),
               reverbSettings: ReverbSettings = new ReverbSettings(),
               phasorSettings: PhasorSettings = new PhasorSettings(),
               generalSettings: GeneralSettings = new GeneralSettings(),
@@ -39,5 +42,6 @@ export class SynthSettings {
      this.phasorSettings = phasorSettings;
      this.generalSettings = generalSettings;
      this.analyserSettings = analyserSettings;
+     this.matrixSettings = matrixSettings;
   }
 }

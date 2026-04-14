@@ -5,7 +5,7 @@ export class SetRadioButtons {
     const form = formElRef.nativeElement;
     for (let elementsKey in form.elements) {
       // @ts-ignore
-      if (form[elementsKey].value === setting) {
+      if (elementsKey.match(/^[0123456789]$/) && form[elementsKey].value === setting) {
         // @ts-ignore
         form[elementsKey].checked = true;
         const event = new Event('change');

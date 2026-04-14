@@ -24,7 +24,6 @@ import {FilterSettings} from '../settings/filter';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {Cookies} from '../settings/cookies/cookies';
 import {SynthComponentSettings} from '../settings/synth-component-settings';
-import {MatrixControlComponent} from '../matrix-control/matrix-control-component';
 import {MatrixComponent} from '../matrix/matrix-component';
 
 @Component({
@@ -89,6 +88,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChildren(FilterComponent) filtersGrp!: QueryList<FilterComponent> | undefined;
   @ViewChild(NoiseComponent) noise!: NoiseComponent;
   @ViewChild(RingModulatorComponent) ringModulator!: RingModulatorComponent;
+  @ViewChild(MatrixComponent) matrixComponent!: MatrixComponent;
   @ViewChild(ReverbComponent) reverb!: ReverbComponent;
   @ViewChild(PhaserComponent) phaser!: PhaserComponent;
   @ViewChild(AnalyserComponent) analyser!: AnalyserComponent;
@@ -144,6 +144,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
     await this.noise.start(this.audioCtx, settings ? settings.noiseSettings : settings);
     this.ringModulator.start(this.audioCtx, settings ? settings.ringModSettings : settings);
+    this.matrixComponent.start(settings ? settings.matrixSettings : settings);
     this.reverb.start(this.audioCtx, settings ? settings.reverbSettings : settings);
     await this.phaser.setUp(this.audioCtx, settings ? settings.phasorSettings : settings);
     await this.analyser.start(this.audioCtx, settings ? settings.analyserSettings : settings);
@@ -269,6 +270,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       filterSettings,
       this.noise.getSettings(),
       this.ringModulator.getSettings(),
+      this.matrixComponent.getSettings(),
       this.reverb.getSettings(),
       this.phaser.getSettings(),
       this.masterVolume.getSettings(),
