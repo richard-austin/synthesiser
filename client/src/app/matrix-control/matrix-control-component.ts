@@ -2,7 +2,6 @@ import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewC
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {oscModType} from '../enums/enums';
-import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {MatrixControl} from '../settings/matrix';
 
 export interface ModSetting {modType:oscModType, carrier: number, modulator: number}
@@ -27,12 +26,24 @@ export class MatrixControlComponent implements AfterViewInit{
   @ViewChild('level') levelControl!: LevelControlComponent;
 
   start(control: MatrixControl) {
-    SetRadioButtons.set(this.modSelect, control.setting);
+   // SetCheckboxes.set(this.modSelect, control.setting);
+    this._setModType(control.setting);
     this.levelControl.setValue(control.level);
   }
 
   protected setModLevel(level: number) {
     this.modLevel.emit({level: level, carrier: this.carrier, modulator: this.modulator});
+  }
+
+  public _setModType(modType: oscModType) {
+    const elements = this.modSelect.nativeElement.elements;
+    // @ts-ignore
+    elements["0"].checked = elements["1"].checked = false;
+    const element = modType === oscModType.frequency ? elements["1"] : elements["0"];
+
+    // @ts-ignore
+    element.checked = modType === oscModType.frequency || modType === oscModType.amplitude;
+    element.dispatchEvent(new Event('change'));
   }
 
   private setModType(modType: oscModType) {

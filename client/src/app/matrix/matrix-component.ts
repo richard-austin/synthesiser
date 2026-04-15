@@ -42,7 +42,7 @@ export class MatrixComponent implements AfterViewInit {
     this.proxySettings.matrix.forEach((row, i) =>
     row.forEach((mtxCtl, j) => {
       // @ts-ignore
-      const control = this.matrixControls.get(i+this.proxySettings.size * j) as MatrixControlComponent;
+      const control = this.matrixControls.get(i*this.proxySettings.size + j) as MatrixControlComponent;
       control.start(mtxCtl);
     }));
   }
@@ -61,8 +61,5 @@ export class MatrixComponent implements AfterViewInit {
     element.level = modLevel.level;
   }
   ngAfterViewInit(): void {
-    this.matrixControls.forEach(control => {
-      //control.
-    });
   }
 }
