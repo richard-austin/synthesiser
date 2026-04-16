@@ -144,7 +144,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
     await this.noise.start(this.audioCtx, settings ? settings.noiseSettings : settings);
     this.ringModulator.start(this.audioCtx, settings ? settings.ringModSettings : settings);
-    this.matrixComponent.start(settings ? settings.matrixSettings : settings);
     this.reverb.start(this.audioCtx, settings ? settings.reverbSettings : settings);
     await this.phaser.setUp(this.audioCtx, settings ? settings.phasorSettings : settings);
     await this.analyser.start(this.audioCtx, settings ? settings.analyserSettings : settings);
@@ -160,6 +159,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       // this.oscillators2Grp.setModulators(this.oscillatorsGrp);
       oscillator.setOutputConnection();
     });
+    this.matrixComponent.start(settings ? settings.matrixSettings : settings);
 
     SetRadioButtons.set(this.oscillatorSelectForm, this.proxySettings.selectedOscillator);
 

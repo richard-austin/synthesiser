@@ -1,12 +1,12 @@
 <div>
 
   <div class="column">
-    @if (carrier === 0) {
-      <h3 class="modulator-label">{{ modulator + 1 }}</h3>
+    @if (carrierNum === 0) {
+      <h3 class="modulator-label">{{ modulatorNum + 1 }}</h3>
     }
     <div class="row">
-      @if (modulator === 0) {
-        <h3 class="carrier-label">{{ carrier + 1 }}</h3>
+      @if (modulatorNum === 0) {
+        <h3 class="carrier-label">{{ carrierNum + 1 }}</h3>
       }
       <div>
         <app-level-control #level

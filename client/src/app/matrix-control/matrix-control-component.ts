@@ -3,6 +3,7 @@ import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {oscModType} from '../enums/enums';
 import {MatrixControl} from '../settings/matrix';
+import {OscillatorComponent} from '../oscillator/oscillator.component';
 
 export interface ModSetting {modType:oscModType, carrier: number, modulator: number}
 export interface ModLevel {level: number, carrier: number, modulator: number}
@@ -17,25 +18,33 @@ export interface ModLevel {level: number, carrier: number, modulator: number}
 })
 export class MatrixControlComponent implements AfterViewInit{
   protected dialStyle: dialStyle = dialStyle.green;
-  @Input() carrier!: number;
-  @Input() modulator!: number;
+  @Input() carrierNum!: number;
+  @Input() modulatorNum!: number;
+
   @Output() modSelection = new EventEmitter<ModSetting>();
   @Output() modLevel = new EventEmitter<ModLevel>();
 
   @ViewChild('modSelect') modSelect!: ElementRef<HTMLFormElement>;
   @ViewChild('level') levelControl!: LevelControlComponent;
 
+  modulator!: OscillatorComponent;
+  carrier!: OscillatorComponent;
+
   start(control: MatrixControl) {
-   // SetCheckboxes.set(this.modSelect, control.setting);
-    this._setModType(control.setting);
+    this.setModType(control.setting);
     this.levelControl.setValue(control.level);
   }
 
-  protected setModLevel(level: number) {
-    this.modLevel.emit({level: level, carrier: this.carrier, modulator: this.modulator});
+  setModulatorAndCarrier(modulator: OscillatorComponent | undefined, carrier: OscillatorComponent | undefined): void {
+      this.modulator = modulator as OscillatorComponent;
+      this.carrier = carrier as OscillatorComponent;
   }
 
-  public _setModType(modType: oscModType) {
+  protected setModLevel(level: number) {
+    this.modLevel.emit({level: level, carrier: this.carrierNum, modulator: this.modulatorNum});
+  }
+
+  public setModType(modType: oscModType) {
     const elements = this.modSelect.nativeElement.elements;
     // @ts-ignore
     elements["0"].checked = elements["1"].checked = false;
@@ -46,7 +55,7 @@ export class MatrixControlComponent implements AfterViewInit{
     element.dispatchEvent(new Event('change'));
   }
 
-  private setModType(modType: oscModType) {
+  private _setModType(modType: oscModType) {
     if(modType === oscModType.off){
       this.dialStyle = dialStyle.green;
     } else if (modType === oscModType.amplitude) {
@@ -55,7 +64,8 @@ export class MatrixControlComponent implements AfterViewInit{
       this.dialStyle = dialStyle.red;
     }
     this.levelControl.changeStyle(this.dialStyle)
-    this.modSelection.emit({modType: modType, carrier: this.carrier, modulator: this.modulator});
+ //   this.carrier.modulation(this.gainNode, modType);
+    this.modSelection.emit({modType: modType, carrier: this.carrierNum, modulator: this.modulatorNum});
   }
 
   ngAfterViewInit(): void {
@@ -68,7 +78,8 @@ export class MatrixControlComponent implements AfterViewInit{
         const otherCheckBox = (j+1) % 2;
         if(checked)
           (modSelect.elements[otherCheckBox] as HTMLInputElement).checked = false;
-        this.setModType(value);
+        this._setModType(value);
+        this.carrier.modulation(this.modulator, value);
       });
     }
   }

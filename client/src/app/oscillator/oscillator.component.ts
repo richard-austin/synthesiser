@@ -254,10 +254,16 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     return Oscillator.frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
   }
 
-  modulation(source: AudioNode, type: oscModType) {
+  modulation(source: AudioNode | OscillatorComponent, type: oscModType) {
     this.proxySettings.modType = type;
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      this.oscillators[i].modulation(source, type);
+    if(source instanceof AudioNode) {
+      this.oscillators.forEach((osc) => {
+        osc.modulation(source, type);
+      });
+    } else {
+      this.oscillators.forEach((osc, i) => {
+        osc.modulation(source.oscillators[i].getModOutput(), type);
+      });
     }
   }
 
@@ -273,6 +279,12 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
       this.oscillators[i].setModOutput(modOutput);
     }
+  }
+
+  public setModOutputGain(gain: number) {
+    this.oscillators.forEach(osc => {
+      osc.setModOutputGain(gain);
+    })
   }
 
   /**

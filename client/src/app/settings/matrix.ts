@@ -7,7 +7,7 @@ export class MatrixControl {
 }
 
 export class MatrixSettings {
-  private readonly size = SynthComponent.oscillatorParams.length;
+  public readonly size = SynthComponent.oscillatorParams.length;
 
   public readonly matrix: MatrixControl[][];
 

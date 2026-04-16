@@ -35,7 +35,7 @@ export abstract class GainEnvelopeBase {
     this.envelope.gain.value = 1;
 
     this.modOutput = new GainNode(this.audioCtx);
-    this.modOutput.gain.value = 1;  // Fixed gain on this as the modulated oscillator sets the gain
+    this.modOutput.gain.value = 0;
     // Default ADSR values
     this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
     this.frequencyMod = audioCtx.createGain();
@@ -59,12 +59,12 @@ export abstract class GainEnvelopeBase {
     this.envelope.gain.setValueAtTime(this.clampLevel(OscFilterBase.minLevel), this.audioCtx.currentTime);
   }
 
-  connectModOutput(input: AudioParam) {
-    this.modOutput.connect(input);
+  getModOutput():AudioNode {
+    return this.modOutput;
   }
 
-  disconnectModOutput(input: AudioParam) {
-    this.modOutput.disconnect(input);
+  setModOutputGain(gain: number) {
+    this.modOutput.gain.value = 3 * gain;
   }
 
   abstract setModulation(): void;

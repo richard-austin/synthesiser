@@ -16,10 +16,12 @@ import {Cookies} from '../settings/cookies/cookies';
 export class MatrixComponent implements AfterViewInit {
   @ViewChildren(MatrixControlComponent) matrixControls!: QueryList<MatrixControlComponent>;
   @Input() oscillators!: QueryList<OscillatorComponent>;
+  @Input() audioCtx!: AudioContext;
 
   protected _oscillatorParams = SynthComponent.oscillatorParams;
   private cookies!: Cookies;
   private proxySettings!: MatrixSettings;
+
   constructor() {
     this.cookies = new Cookies();
   }
@@ -41,8 +43,8 @@ export class MatrixComponent implements AfterViewInit {
 
     this.proxySettings.matrix.forEach((row, i) =>
     row.forEach((mtxCtl, j) => {
-      // @ts-ignore
       const control = this.matrixControls.get(i*this.proxySettings.size + j) as MatrixControlComponent;
+      control.setModulatorAndCarrier(this.oscillators.get(j), this.oscillators.get(i))
       control.start(mtxCtl);
     }));
   }
@@ -59,7 +61,10 @@ export class MatrixComponent implements AfterViewInit {
   protected modLevel(modLevel: ModLevel) {
     const element = this.proxySettings.matrix[modLevel.carrier][modLevel.modulator]
     element.level = modLevel.level;
+    const control = this.matrixControls.get(modLevel.carrier+this.proxySettings.size *modLevel.modulator);
+    control?.carrier.setModOutputGain(modLevel.level);
   }
+
   ngAfterViewInit(): void {
   }
 }
