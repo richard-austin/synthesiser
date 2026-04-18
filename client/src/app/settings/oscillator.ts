@@ -15,6 +15,7 @@ export class OscillatorSettings {
   modFreq: number;
   modLevel: number;
   modType: oscModType;
+  modTypeExternal: oscModType;
   modOutput: oscModOutput;
   modWaveform: modWaveforms;
   legatoMode: onOff;
@@ -38,6 +39,7 @@ export class OscillatorSettings {
               modLevel: number=.4,
               modWaveForm: modWaveforms = modWaveforms.sine,
               modType: oscModType = oscModType.off,
+              modTypeExternal: oscModType = oscModType.off,
               portamento: number = 0,
               portamentoType: PortamentoType = 'last',
               modOutput: oscModOutput = oscModOutput.direct)
@@ -57,6 +59,7 @@ export class OscillatorSettings {
     this.modLevel = modLevel;
     this.modWaveform = modWaveForm;
     this.modType = modType;
+    this.modTypeExternal = modTypeExternal;
     this.modOutput = modOutput;
     this.portamento = portamento;
     this.portamentoType = portamentoType;

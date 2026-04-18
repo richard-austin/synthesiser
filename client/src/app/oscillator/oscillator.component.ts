@@ -99,7 +99,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   private started: boolean = false;
 
   start(audioCtx: AudioContext, settings: OscillatorSettings | null): boolean {
-    let ok = false;
     this.audioCtx = audioCtx;
     this.cookies = new Cookies();
     this.chordProcessor = new ChordProcessor();
@@ -107,8 +106,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.lfo = this.audioCtx.createOscillator();
     this.lfo.start();
     this.applySettings(settings);
-    ok = true;
-    return ok;
+    return true;
   }
 
   // Called after all synth components have been started
@@ -255,14 +253,15 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   modulation(source: AudioNode | AudioNode[], type: oscModType) {
-    this.proxySettings.modType = type;
     if(source instanceof AudioNode) {
+      this.proxySettings.modType = type;
       this.oscillators.forEach((osc) => {
         osc.modulation(source, type);
       });
     } else {
+      this.proxySettings.modTypeExternal = type;
       this.oscillators.forEach((osc, i) => {
-        osc.modulation(source[i], type);
+        osc.modulationExternal(source[i], type);
       });
     }
   }

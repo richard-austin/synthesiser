@@ -17,8 +17,10 @@ export abstract class GainEnvelopeBase {
   protected readonly envelope: GainNode;
   protected readonly modOutput: GainNode;
   frequencyMod: GainNode;
+  frequencyModExternal: GainNode;
   amplitudeMod: GainNode;
   amplitudeModDepth: GainNode;
+  amplitudeModDepthExternal: GainNode;
   protected modType: oscModType | filterModType;
   protected modOutputType: oscModOutput;
   protected modLevel: number = 0;
@@ -40,12 +42,17 @@ export abstract class GainEnvelopeBase {
     this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
     this.frequencyMod = audioCtx.createGain();
     this.frequencyMod.gain.value = 0;
+    this.frequencyModExternal = audioCtx.createGain();
+    this.frequencyModExternal.gain.value = 3000;  // Always fixed at 3000 as this is used for external modulation set up on the matrix
     this.amplitudeMod = audioCtx.createGain();
     this.amplitudeMod.gain.value = 1;
     this.amplitudeModDepth = audioCtx.createGain();
     this.amplitudeModDepth.gain.value = 0;
+    this.amplitudeModDepthExternal = audioCtx.createGain();
+    this.amplitudeModDepthExternal.gain.value = 1;  // Always fixed at one as this is used for external modulation set up on the matrix
     this.envelope.connect(this.amplitudeMod);
     this.amplitudeModDepth.connect(this.amplitudeMod.gain);
+    this.amplitudeModDepthExternal.connect(this.amplitudeMod.gain);
     this.modType = oscModType.amplitude;
     this.modOutputType = oscModOutput.direct;
   }
@@ -59,10 +66,6 @@ export abstract class GainEnvelopeBase {
     this.envelope.gain.setValueAtTime(this.clampLevel(OscFilterBase.minLevel), this.audioCtx.currentTime);
   }
 
-  getModOutput():AudioNode {
-    return this.modOutput;
-  }
-
   connectModOut(node: AudioNode) {
     this.modOutput.connect(node);
   }
@@ -71,7 +74,7 @@ export abstract class GainEnvelopeBase {
 
   private readonly modConnections: Modulation[] = [];
 
-  modulation(modulator: AudioNode, type: oscModType | filterModType = oscModType.frequency) {
+  modulation(modulator: AudioNode, type: oscModType | filterModType) {
     this.modType = type;
     if (modulator) {
       if (type === oscModType.amplitude) {
@@ -107,6 +110,42 @@ export abstract class GainEnvelopeBase {
       }
     }
     this.setModulation();
+  }
+
+  modulationExternal(modulator: AudioNode, type: oscModType) {
+    if (modulator) {
+      if (type === oscModType.amplitude) {
+        if (!this.modConnections.find((mod) => mod.modulator === modulator && mod.carrier === this.amplitudeModDepthExternal)) {
+          // modulator.connect(this.frequencyModExternal);
+          modulator.connect(this.amplitudeModDepthExternal);
+          this.modConnections.push(new Modulation(this.amplitudeModDepthExternal, modulator));
+          // Remove any previous connection from this modulator to the frequencyModExternal node
+          const idx = this.modConnections.findIndex(mod => mod.modulator === modulator && mod.carrier === this.frequencyModExternal);
+          if (idx > -1) {
+            modulator.disconnect(this.modConnections[idx].carrier);
+            this.modConnections.splice(idx, 1);
+          }
+        }
+      } else if (type === oscModType.frequency) {
+        if (!this.modConnections.find((mod) => mod.modulator === modulator && mod.carrier === this.frequencyModExternal)) {
+          // modulator.connect(this.frequencyModExternal);
+          modulator.connect(this.frequencyModExternal);
+          this.modConnections.push(new Modulation(this.frequencyModExternal, modulator));
+          // Remove any previous connection from this modulator to the amplitudeModDepthExternal node
+          const idx = this.modConnections.findIndex(mod => mod.modulator === modulator && mod.carrier === this.amplitudeModDepthExternal);
+          if (idx > -1) {
+            modulator.disconnect(this.modConnections[idx].carrier);
+            this.modConnections.splice(idx, 1);
+          }
+        }
+      } else if (type === oscModType.off) {
+        const idx = this.modConnections.findIndex((mod) => mod.modulator === modulator);
+        if (idx > -1) {
+          modulator.disconnect(this.modConnections[idx].carrier);
+          this.modConnections.splice(idx, 1);
+        }
+      }
+    }
   }
 
   clearModulation(): void {
