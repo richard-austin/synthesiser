@@ -12,6 +12,8 @@ export class App implements AfterViewInit {
   @ViewChild(SynthComponent) synthComponent!: ElementRef<SynthComponent>
   @ViewChild(HomeComponent) homeComponent!: HomeComponent;
 
+  started = false;
+
   fileName: WritableSignal<string>;
   homeComponentControl: WritableSignal<boolean>;
 
@@ -20,9 +22,12 @@ export class App implements AfterViewInit {
     this.homeComponentControl = signal<boolean>(false);
   }
   protected async showHomeForm() {
-    this.homeComponent.ngOnInit(); // Ensure file list is reloaded
-    // Toggle home component
-    this.homeComponentControl.set(!this.homeComponentControl());
+    if(this.started) {
+      this.homeComponent.ngOnInit(); // Ensure file list is reloaded
+      // Toggle home component
+      this.homeComponentControl.set(!this.homeComponentControl());
+    } else
+      this.started = true;
   }
 
   ngAfterViewInit(): void {

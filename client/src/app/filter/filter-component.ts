@@ -283,6 +283,8 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   keysDown: DeviceKeys[] = [];
 
   deviceKeyDown = (keys: DeviceKeys) => {
+    if(keys === undefined || keys.keyIndex === -1)
+      return;
     const freq = this.keyToFrequency(keys.keyIndex);
     const dev = this.filters[keys.deviceIndex]
     dev.freq = freq;
@@ -294,7 +296,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
       this.keysDown.push(keys as DeviceKeys);
     }
 
-    if (keys !== undefined && this.proxySettings.portamento > 0) {
+    if (this.proxySettings.portamento > 0) {
       // dev.filter.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
       // dev.filter2.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
       const proxySettings = this.proxySettings;
@@ -359,6 +361,8 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   deviceKeyUp = (keys: DeviceKeys) => {
     if (keys) {
+      if(keys.deviceIndex === -1)
+        return;
       const dev = this.filters[keys.deviceIndex]
 
       const sub = timer((keys.filterTimeout) * 1000).subscribe(() => {
