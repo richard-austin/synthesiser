@@ -35,7 +35,7 @@ export abstract class GainEnvelopeBase {
     this.envelope.gain.value = 1;
 
     this.modOutput = new GainNode(this.audioCtx);
-    this.modOutput.gain.value = 0;
+    this.modOutput.gain.value = 1;
     // Default ADSR values
     this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
     this.frequencyMod = audioCtx.createGain();
@@ -63,8 +63,8 @@ export abstract class GainEnvelopeBase {
     return this.modOutput;
   }
 
-  setModOutputGain(gain: number) {
-    this.modOutput.gain.value = 3 * gain;
+  connectModOut(node: AudioNode) {
+    this.modOutput.connect(node);
   }
 
   abstract setModulation(): void;
@@ -207,5 +207,6 @@ export abstract class GainEnvelopeBase {
 
   disconnect() {
     this.amplitudeMod.disconnect();
+   // this.modOutput.disconnect();
   }
 }

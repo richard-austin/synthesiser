@@ -254,7 +254,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     return Oscillator.frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
   }
 
-  modulation(source: AudioNode | OscillatorComponent, type: oscModType) {
+  modulation(source: AudioNode | AudioNode[], type: oscModType) {
     this.proxySettings.modType = type;
     if(source instanceof AudioNode) {
       this.oscillators.forEach((osc) => {
@@ -262,8 +262,18 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       });
     } else {
       this.oscillators.forEach((osc, i) => {
-        osc.modulation(source.oscillators[i].getModOutput(), type);
+        osc.modulation(source[i], type);
       });
+    }
+  }
+
+  connectModOut(modGainNodes: GainNode[]) {
+    if(modGainNodes.length === this.oscillators.length) {
+      this.oscillators.forEach((osc, i) => {
+        osc.connectModOut(modGainNodes[i])
+      });
+    } else {
+      throw new Error("Modulation gain nodes array size ("+modGainNodes.length+") does not equal oscillators array size ("+this.oscillators.length+")");
     }
   }
 
@@ -279,12 +289,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
       this.oscillators[i].setModOutput(modOutput);
     }
-  }
-
-  public setModOutputGain(gain: number) {
-    this.oscillators.forEach(osc => {
-      osc.setModOutputGain(gain);
-    })
   }
 
   /**
@@ -609,12 +613,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    for (let i = 0; i < this.oscillators.length; i++) {
-
-      this.oscillators[i].destroy();
-      // @ts-ignore
-      this.oscillators[i] = undefined;
-    }
+    this.oscillators.forEach((osc) => {
+      osc.destroy();
+     });
   }
 
   showWaveformSelector = false;

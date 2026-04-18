@@ -159,7 +159,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       // this.oscillators2Grp.setModulators(this.oscillatorsGrp);
       oscillator.setOutputConnection();
     });
-    this.matrixComponent.start(settings ? settings.matrixSettings : settings);
+    this.matrixComponent.start(this.audioCtx, settings ? settings.matrixSettings : settings);
 
     SetRadioButtons.set(this.oscillatorSelectForm, this.proxySettings.selectedOscillator);
 

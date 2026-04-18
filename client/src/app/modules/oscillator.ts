@@ -203,7 +203,6 @@ export class Oscillator extends OscFilterBase {
     this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
     this.oscillator.connect(this.panner);
     this.panner.connect(this.envelope);
-    this.oscillator.connect(this.modOutput);
     this.envelope.connect(this.gain);
     this.oscillator.start();
     this.frequencyMod.connect(this.oscillator.detune);
@@ -247,7 +246,6 @@ export class Oscillator extends OscFilterBase {
         break;
       default:
         console.error("Unknown mod output type "+modOutput)
-
     }
   }
 

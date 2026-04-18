@@ -1,5 +1,5 @@
 import {AfterViewInit, Component, Input, QueryList, ViewChildren} from '@angular/core';
-import {MatrixControlComponent, ModLevel, ModSetting} from '../matrix-control/matrix-control-component';
+import {MatrixControlComponent, ModSetting} from '../matrix-control/matrix-control-component';
 import {SynthComponent} from '../synth/synth-component';
 import {OscillatorComponent} from '../oscillator/oscillator.component';
 import {MatrixSettings} from '../settings/matrix';
@@ -16,17 +16,19 @@ import {Cookies} from '../settings/cookies/cookies';
 export class MatrixComponent implements AfterViewInit {
   @ViewChildren(MatrixControlComponent) matrixControls!: QueryList<MatrixControlComponent>;
   @Input() oscillators!: QueryList<OscillatorComponent>;
-  @Input() audioCtx!: AudioContext;
 
   protected _oscillatorParams = SynthComponent.oscillatorParams;
   private cookies!: Cookies;
   private proxySettings!: MatrixSettings;
+  private audioCtx!: AudioContext;
 
   constructor() {
     this.cookies = new Cookies();
   }
 
-  public start(settings: MatrixSettings | null): void {
+  public start(audioCtx: AudioContext, settings: MatrixSettings | null): void {
+    this.audioCtx = audioCtx;
+
     const cookieName = 'matrix';
     if (!settings) {  // If no settings supplied, create default and check if previously saved in cookie
       settings = new MatrixSettings();
@@ -41,11 +43,10 @@ export class MatrixComponent implements AfterViewInit {
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
 
-    this.proxySettings.matrix.forEach((row, i) =>
-    row.forEach((mtxCtl, j) => {
-      const control = this.matrixControls.get(i*this.proxySettings.size + j) as MatrixControlComponent;
-      control.setModulatorAndCarrier(this.oscillators.get(j), this.oscillators.get(i))
-      control.start(mtxCtl);
+    this.proxySettings.matrix.forEach((row, carrierIdx) =>
+    row.forEach((mtxCtl, modIdx) => {
+      const control = this.matrixControls.get(carrierIdx*this.proxySettings.size + modIdx) as MatrixControlComponent;
+      control.start(this.audioCtx, mtxCtl,this.oscillators.get(modIdx), this.oscillators.get(carrierIdx));
     }));
   }
 
@@ -56,13 +57,6 @@ export class MatrixComponent implements AfterViewInit {
   protected modSelection(modSetting: ModSetting) {
     const element = this.proxySettings.matrix[modSetting.carrier][modSetting.modulator]
     element.setting = modSetting.modType;
-  }
-
-  protected modLevel(modLevel: ModLevel) {
-    const element = this.proxySettings.matrix[modLevel.carrier][modLevel.modulator]
-    element.level = modLevel.level;
-    const control = this.matrixControls.get(modLevel.carrier+this.proxySettings.size *modLevel.modulator);
-    control?.carrier.setModOutputGain(modLevel.level);
   }
 
   ngAfterViewInit(): void {

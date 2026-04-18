@@ -2,8 +2,9 @@ import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewC
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {oscModType} from '../enums/enums';
-import {MatrixControl} from '../settings/matrix';
+import {MatrixControlSettings} from '../settings/matrix';
 import {OscillatorComponent} from '../oscillator/oscillator.component';
+import DevicePoolManager from '../util-classes/device-pool-manager';
 
 export interface ModSetting {modType:oscModType, carrier: number, modulator: number}
 export interface ModLevel {level: number, carrier: number, modulator: number}
@@ -18,6 +19,7 @@ export interface ModLevel {level: number, carrier: number, modulator: number}
 })
 export class MatrixControlComponent implements AfterViewInit{
   protected dialStyle: dialStyle = dialStyle.green;
+  private ctlSettings!: MatrixControlSettings;
   @Input() carrierNum!: number;
   @Input() modulatorNum!: number;
 
@@ -29,19 +31,25 @@ export class MatrixControlComponent implements AfterViewInit{
 
   modulator!: OscillatorComponent;
   carrier!: OscillatorComponent;
+  modulationGain: GainNode[] = [];
 
-  start(control: MatrixControl) {
-    this.setModType(control.setting);
-    this.levelControl.setValue(control.level);
-  }
+  start(audioCtx:AudioContext, ctrlSettings: MatrixControlSettings, modulator: OscillatorComponent | undefined, carrier: OscillatorComponent | undefined) {
+    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
+      this.modulationGain.push(new GainNode(audioCtx));
+      this.modulationGain[i].gain.value = 1;
+    }
 
-  setModulatorAndCarrier(modulator: OscillatorComponent | undefined, carrier: OscillatorComponent | undefined): void {
-      this.modulator = modulator as OscillatorComponent;
-      this.carrier = carrier as OscillatorComponent;
+    this.ctlSettings = ctrlSettings;
+    this.modulator = modulator as OscillatorComponent;
+    this.modulator.connectModOut(this.modulationGain);
+    this.carrier = carrier as OscillatorComponent;
+    this.setModType(ctrlSettings.setting);
+    this.levelControl.setValue(ctrlSettings.level);
   }
 
   protected setModLevel(level: number) {
-    this.modLevel.emit({level: level, carrier: this.carrierNum, modulator: this.modulatorNum});
+    this.modulationGain.forEach((gain) => gain.gain.value = level);
+    this.ctlSettings.level = level;
   }
 
   public setModType(modType: oscModType) {
@@ -79,7 +87,7 @@ export class MatrixControlComponent implements AfterViewInit{
         if(checked)
           (modSelect.elements[otherCheckBox] as HTMLInputElement).checked = false;
         this._setModType(value);
-        this.carrier.modulation(this.modulator, value);
+        this.carrier.modulation(this.modulationGain, value);
       });
     }
   }

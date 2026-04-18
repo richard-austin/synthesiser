@@ -1,7 +1,7 @@
 import {oscModType} from '../enums/enums';
 import {SynthComponent} from '../synth/synth-component';
 
-export class MatrixControl {
+export class MatrixControlSettings {
   public setting: oscModType = oscModType.off;
   public level: number = 0;
 }
@@ -9,14 +9,14 @@ export class MatrixControl {
 export class MatrixSettings {
   public readonly size = SynthComponent.oscillatorParams.length;
 
-  public readonly matrix: MatrixControl[][];
+  public readonly matrix: MatrixControlSettings[][];
 
   constructor() {
     this.matrix =  new Array(this.size);
     for(let i = 0; i < this.size; i++) {
       this.matrix[i] = new Array(this.size);
       for(let j = 0; j < this.size; ++j)
-      this.matrix[i][j]= new MatrixControl();
+      this.matrix[i][j]= new MatrixControlSettings();
     }
   }
 }
