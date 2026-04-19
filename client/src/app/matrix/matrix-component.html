@@ -14,7 +14,8 @@
                 <div style="width: 30px"></div>
                 @for (a of _oscillatorParams; let modulator = $index; track modulator) {
                   <app-matrix-control [modulatorNum]="modulator"
-                                      [carrierNum]="carrier" (modSelection)="modSelection($event)">
+                                      [carrierNum]="carrier" (modSelection)="modSelection($event)"
+                                      [signalSelectOperator]="selectOperator">
                   </app-matrix-control>
                   <div style="width: 5px"></div>
                 }

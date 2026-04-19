@@ -2,11 +2,11 @@
 
   <div class="column">
     @if (carrierNum === 0) {
-      <h3 class="modulator-label">{{ modulatorNum + 1 }}</h3>
+      <h3 class="modulator-button" (click)="selectOperator(modulatorNum)">{{ modulatorNum + 1 }}</h3>
     }
     <div class="row">
       @if (modulatorNum === 0) {
-        <h3 class="carrier-label">{{ carrierNum + 1 }}</h3>
+        <h3 class="carrier-button" (click)="selectOperator(carrierNum)">{{ carrierNum + 1 }}</h3>
       }
       <div>
         <app-level-control #level

@@ -11,13 +11,6 @@
                          (output)="setOscOutputTarget($event, i)">
         </app-oscillators>
       }
-      <div>
-        <form #oscillatorSelectForm>
-          @for(param of _oscillatorParams; let i = $index; track  param) {
-            <label><input type="radio" name="oscillatorSelect" value="{{i+1}}"><span>{{i+1}}</span></label>
-          }
-        </form>
-      </div>
     </div>
     <div #filterWindow class="filter-window">
       @for (filter of _oscillatorParams; let i = $index; track filter) {
@@ -29,6 +22,7 @@
         </app-filters>
       }
     </div>
+    <app-matrix [oscillators]="oscillatorsGrp" [selectOperator]="signalSelectOperator"></app-matrix>
     <div class="analyser">
         <app-noise [filters]="filtersGrp?.get(0)"
                    (output)="setNoiseOutputTarget($event)">
@@ -39,7 +33,6 @@
                         [reverb]="reverb"
                         (output)="setRingModOutPutTarget($event)">
     </app-ring-modulator>
-    <app-matrix [oscillators]="oscillatorsGrp"></app-matrix>
   </div>
   <div style="display: flex; flex-direction: row">
     <app-reverb-component #reverb

@@ -4,7 +4,7 @@ import {
   ElementRef,
   Input,
   OnDestroy,
-  QueryList,
+  QueryList, signal,
   ViewChild,
   ViewChildren, WritableSignal
 } from '@angular/core';
@@ -21,7 +21,6 @@ import {RestfulApiService} from '../services/restful-api.service';
 import {OscillatorParams} from '../modules/oscillator';
 import {OscillatorSettings} from '../settings/oscillator';
 import {FilterSettings} from '../settings/filter';
-import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {Cookies} from '../settings/cookies/cookies';
 import {SynthComponentSettings} from '../settings/synth-component-settings';
 import {MatrixComponent} from '../matrix/matrix-component';
@@ -57,6 +56,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   cookies: Cookies
   fileNameEffectRef!: EffectRef;
   homeControlEffectRef!: EffectRef;
+  signalSelectOperator = signal<number>(0);
 
   private started = false;
 
@@ -82,7 +82,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @Input() homeComponentControl!: WritableSignal<boolean>;
 
   @ViewChildren(OscillatorComponent) oscillatorsGrp!: QueryList<OscillatorComponent>;
-  @ViewChild('oscillatorSelectForm') oscillatorSelectForm!: ElementRef<HTMLFormElement>;
   @ViewChild('oscillatorWindow') oscillatorWindow!: ElementRef<HTMLDivElement>;
   @ViewChild('filterWindow') filterWindow!: ElementRef<HTMLDivElement>;
   @ViewChildren(FilterComponent) filtersGrp!: QueryList<FilterComponent> | undefined;
@@ -120,6 +119,16 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     });
 
     this.cookies = new Cookies();
+    this.effectRef = effect(() => {
+      const value = this.signalSelectOperator();
+      if(this.oscillatorWindow) {
+        this.oscillatorWindow.nativeElement.scroll({left: 0, top: value * 979.3, behavior: 'instant'});
+        this.filterWindow.nativeElement.scroll({left: 0, top: value * 980, behavior: 'instant'});
+        this.proxySettings.selectedOscillator = (value + 1).toString();
+      }
+    });
+
+
   }
 
   protected async start(settings: SynthSettings | null): Promise<void> {
@@ -161,14 +170,12 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     });
     this.matrixComponent.start(this.audioCtx, settings ? settings.matrixSettings : settings);
 
-    SetRadioButtons.set(this.oscillatorSelectForm, this.proxySettings.selectedOscillator);
-
     this.ringModulator.setOutputConnection();
     this.noise.setOutputConnection();
     this.filtersGrp?.forEach(filter => filter.setOutputConnection());
     this.reverb.setOutputConnection();
     this.phaser.setOutputConnection();
-
+    this.signalSelectOperator.set(parseInt(this.proxySettings.selectedOscillator)-1);
     window.addEventListener("keydown", this.keydownHandler);
     window.addEventListener("keyup", this.keyupHandler);
 
@@ -593,21 +600,9 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       synth.style.transform = `scale(1)`;
   }
 
+  effectRef!: EffectRef;
+
   async ngAfterViewInit(): Promise<void> {
-    const oscillatorWindow = this.oscillatorWindow.nativeElement;
-    const filterWindow = this.filterWindow.nativeElement;
-
-    const oscillatorSelectForm = this.oscillatorSelectForm.nativeElement;
-    for (let i = 0; i < oscillatorSelectForm.elements.length; ++i) {
-      oscillatorSelectForm.elements[i].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value - 1;
-        oscillatorWindow.scroll({left: 0, top: value * 979.3, behavior: 'instant'});
-        filterWindow.scroll({left: 0, top: value * 980, behavior: 'instant'});
-        this.proxySettings.selectedOscillator = (value + 1).toString();
-      });
-    }
-
     await this.start(null);
     await this.requestWakeLock()
     this.scaleToFitSmallWindow();

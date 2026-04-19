@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, Input, QueryList, ViewChildren} from '@angular/core';
+import {AfterViewInit, Component, Input, QueryList, ViewChildren, WritableSignal} from '@angular/core';
 import {MatrixControlComponent, ModSetting} from '../matrix-control/matrix-control-component';
 import {SynthComponent} from '../synth/synth-component';
 import {OscillatorComponent} from '../oscillator/oscillator.component';
@@ -16,11 +16,13 @@ import {Cookies} from '../settings/cookies/cookies';
 export class MatrixComponent implements AfterViewInit {
   @ViewChildren(MatrixControlComponent) matrixControls!: QueryList<MatrixControlComponent>;
   @Input() oscillators!: QueryList<OscillatorComponent>;
+  @Input() selectOperator!: WritableSignal<number>;
 
   protected _oscillatorParams = SynthComponent.oscillatorParams;
   private cookies!: Cookies;
   private proxySettings!: MatrixSettings;
   private audioCtx!: AudioContext;
+
 
   constructor() {
     this.cookies = new Cookies();

@@ -1,4 +1,13 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild} from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  Output,
+  ViewChild,
+  WritableSignal
+} from '@angular/core';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {oscModType} from '../enums/enums';
@@ -22,6 +31,7 @@ export class MatrixControlComponent implements AfterViewInit{
   private ctlSettings!: MatrixControlSettings;
   @Input() carrierNum!: number;
   @Input() modulatorNum!: number;
+  @Input() signalSelectOperator!: WritableSignal<number>;
 
   @Output() modSelection = new EventEmitter<ModSetting>();
   @Output() modLevel = new EventEmitter<ModLevel>();
@@ -32,6 +42,7 @@ export class MatrixControlComponent implements AfterViewInit{
   modulator!: OscillatorComponent;
   carrier!: OscillatorComponent;
   modulationGain: GainNode[] = [];
+
 
   start(audioCtx:AudioContext, ctrlSettings: MatrixControlSettings, modulator: OscillatorComponent | undefined, carrier: OscillatorComponent | undefined) {
     this.modulationGain = [];
@@ -77,6 +88,10 @@ export class MatrixControlComponent implements AfterViewInit{
     this.modSelection.emit({modType: modType, carrier: this.carrierNum, modulator: this.modulatorNum});
   }
 
+  protected selectOperator(modulatorNum: number) {
+      this.signalSelectOperator.set(modulatorNum);
+  }
+
   ngAfterViewInit(): void {
     const modSelect = this.modSelect.nativeElement;
     for (let j = 0; j < modSelect.elements.length; ++j) {
@@ -92,4 +107,5 @@ export class MatrixControlComponent implements AfterViewInit{
       });
     }
   }
+
 }
