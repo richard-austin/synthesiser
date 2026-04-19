@@ -1,5 +1,6 @@
 div.analyser {
   position: relative;
+
   > app-analyser {
     position: absolute;
   }
@@ -11,7 +12,7 @@ div.analyser {
   > div {
     width: 200px;
     top: 930px;
-    left:300px;
+    left: 300px;
     position: absolute;
   }
 }
@@ -24,4 +25,17 @@ div.oscillator-window {
 div.filter-window {
   min-width: 525.51px;
   @include scrollable-window();
+}
+
+div.reverb-row {
+  display: flex;
+  flex-direction: row;
+}
+
+div.analyser {
+  position: relative;
+  > app-analyser {
+    position: absolute;
+    top: -249px;
+  }
 }

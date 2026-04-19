@@ -34,7 +34,7 @@
                         (output)="setRingModOutPutTarget($event)">
     </app-ring-modulator>
   </div>
-  <div style="display: flex; flex-direction: row">
+  <div class="reverb-row">
     <app-reverb-component #reverb
                           (output)="setReverbOutputTarget($event)">
     </app-reverb-component>
@@ -42,7 +42,9 @@
                 (output)="setPhasorOutputTarget($event)">
     </app-phaser>
     <app-general #general></app-general>
-    <app-analyser></app-analyser>
+    <div class="analyser">
+      <app-analyser></app-analyser>
+    </div>
   </div>
 </div>
 

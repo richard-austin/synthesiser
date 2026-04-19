@@ -105,6 +105,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
           complete: async () => {
             console.log("complete: settings loaded");
             await this.start(this.settings);
+            this.scaleToFitSmallWindow();
           }
         });
       }
