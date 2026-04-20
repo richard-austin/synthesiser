@@ -28,6 +28,7 @@ export abstract class GainEnvelopeBase {
   protected readonly freqModGainBase = 1.02;
   env: ADSRValues;
   modulator!: AudioNode;
+  protected frequency:number = 400;
 
   public static readonly maxLevel: number = 1;
   public static readonly minLevel: number = 0.000001;
@@ -178,6 +179,7 @@ export abstract class GainEnvelopeBase {
   private readonly justAudible = GainEnvelopeBase.maxLevel / 50;
 
   attack(velocity: number, frequency: number = 2000) {
+    this.frequency = frequency;
     if (this.releaseFinishedSub)
       this.releaseFinishedSub.unsubscribe();
 

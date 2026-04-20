@@ -249,14 +249,8 @@ export class Oscillator extends OscFilterBase {
     }
   }
 
-  private readonly freqModeGainMaxInput = 300;
-  private readonly maxFreqModGain = 3000;
-  private readonly gainFactor = this.maxFreqModGain / (Math.pow(this.freqModGainBase, this.freqModeGainMaxInput) - 1);
-
   private readonly ampModGainBase = 1.01;
-  private readonly ampModeGainMaxInput = 300;
-  private readonly maxAmpModGain = 6;
-  private readonly ampModFactor = this.maxAmpModGain / (Math.pow(this.ampModGainBase, this.ampModeGainMaxInput) - 1);
+  private readonly ampModFactor = 300;
 
   override setModulation() {
     this.setModLevel(this.modLevel);
@@ -264,7 +258,9 @@ export class Oscillator extends OscFilterBase {
 
   setModLevel(level: number) {
     this.modLevel = level;
-    if (this.modType === oscModType.amplitude)  // Frequency mod handled in keyDown
+    if (this.modType === oscModType.frequency)
+      this.frequencyMod.gain.value = level * this.frequency * 3000 / 400;
+    else if (this.modType === oscModType.amplitude)  // Frequency mod handled in keyDown
       this.amplitudeModDepth.gain.value = this.ampModFactor * (Math.pow(this.ampModGainBase, this.modLevel) - 1);
   }
 
@@ -301,7 +297,7 @@ export class Oscillator extends OscFilterBase {
   override keyDown(velocity: number, frequency: number) {
     super.attack(velocity, frequency);
     this.frequencyModExternal.gain.value = frequency * 3000 /400;
-    this.frequencyMod.gain.value = this.gainFactor * (Math.pow(this.freqModGainBase, this.modLevel) - 1) * frequency / 400;
+    this.frequencyMod.gain.value =  this.modLevel * frequency * 3000 / 400;
     //console.log("Oscillator keyDown = " + performance.now());
     if (this._useFreqBendEnvelope) {
       const ctx = this.audioCtx;
