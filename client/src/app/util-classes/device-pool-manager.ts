@@ -115,9 +115,9 @@ class DevicePoolManager {
     if (device) {
       const dev = device.device;
 
+      const freq = this.keyToFrequency(keyIndex);
       if (playNote && dev instanceof Oscillator || dev instanceof Filter) {
-        const freq = this.keyToFrequency(keyIndex);
-        dev.freq = freq;
+         dev.freq = freq;
         if (dev instanceof Oscillator)
           dev.oscillator.frequency.value = freq;
         else
@@ -125,7 +125,7 @@ class DevicePoolManager {
 
         //   dev.keyDown(velocity);
       } else if (playNote) {
-        dev.keyDown(velocity);
+        dev.keyDown(velocity, freq);
       }
 
       device.inUse = true;

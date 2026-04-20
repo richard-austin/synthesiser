@@ -205,8 +205,8 @@ export class Oscillator extends OscFilterBase {
     this.panner.connect(this.envelope);
     this.envelope.connect(this.gain);
     this.oscillator.start();
-    this.frequencyMod.connect(this.oscillator.detune);
-    this.frequencyModExternal.connect(this.oscillator.detune);
+    this.frequencyMod.connect(this.oscillator.frequency);
+    this.frequencyModExternal.connect(this.oscillator.frequency);
   }
 
   setFrequency(freq: number) {
@@ -264,9 +264,7 @@ export class Oscillator extends OscFilterBase {
 
   setModLevel(level: number) {
     this.modLevel = level;
-    if (this.modType === oscModType.frequency)
-      this.frequencyMod.gain.value = this.gainFactor * (Math.pow(this.freqModGainBase, this.modLevel) - 1);
-    else if (this.modType === oscModType.amplitude)
+    if (this.modType === oscModType.amplitude)  // Frequency mod handled in keyDown
       this.amplitudeModDepth.gain.value = this.ampModFactor * (Math.pow(this.ampModGainBase, this.modLevel) - 1);
   }
 
@@ -300,8 +298,10 @@ export class Oscillator extends OscFilterBase {
   freqBendEnvTimerSub!: Subscription;
 
   // Key down for this oscillator
-  override keyDown(velocity: number) {
-    super.attack(velocity, this.oscillator.frequency.value);
+  override keyDown(velocity: number, frequency: number) {
+    super.attack(velocity, frequency);
+    this.frequencyModExternal.gain.value = frequency * 3000 /400;
+    this.frequencyMod.gain.value = this.gainFactor * (Math.pow(this.freqModGainBase, this.modLevel) - 1) * frequency / 400;
     //console.log("Oscillator keyDown = " + performance.now());
     if (this._useFreqBendEnvelope) {
       const ctx = this.audioCtx;

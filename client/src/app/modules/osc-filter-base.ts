@@ -36,7 +36,7 @@ export abstract class OscFilterBase extends GainEnvelopeBase{
 
   abstract setModLevel(level: number): void;
 
-  abstract keyDown(velocity: number): void;
+  abstract keyDown(velocity: number, frequency: number): void;
 
   abstract keyUp(): void;
 }

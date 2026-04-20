@@ -374,6 +374,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
     if (!this.velocitySensitive)
       velocity = 0x7f;
+    const freq = this.keyToFrequency(keyIndex);
 
     if (keys !== undefined && this.proxySettings.portamento > 0) {
       this.oscillators[keys.deviceIndex].oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
@@ -415,18 +416,19 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
           break;
       }
 
-      this.oscillators[keys.deviceIndex].oscillator.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
+      this.oscillators[keys.deviceIndex].oscillator.frequency.exponentialRampToValueAtTime(freq, this.audioCtx.currentTime + this.proxySettings.portamento);
     }
 
     if (keys)
-      this.oscillators[keys.deviceIndex].keyDown(velocity);
+      this.oscillators[keys.deviceIndex].keyDown(velocity, freq);
   }
 
   private chordProcessorKeyDownCallback: (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => void = (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => {
+    const freq =  this.keyToFrequency(prevKeys.keyIndex);
     this.oscillators[theseKeys.deviceIndex].oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
-    this.oscillators[theseKeys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(prevKeys.keyIndex);
+    this.oscillators[theseKeys.deviceIndex].oscillator.frequency.value = freq;
     this.oscillators[theseKeys.deviceIndex].oscillator.frequency.exponentialRampToValueAtTime(this.keyToFrequency(theseKeys.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
-    this.oscillators[theseKeys.deviceIndex].keyDown(0x7f);  // TODO: Need to pass velocity through ChordProcessor
+    this.oscillators[theseKeys.deviceIndex].keyDown(0x7f, freq);  // TODO: Need to pass velocity through ChordProcessor
   }
 
   keyUp(keyIndex: number) {
