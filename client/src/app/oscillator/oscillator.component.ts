@@ -1,5 +1,5 @@
 import {
-  AfterViewInit,
+  AfterViewInit, ChangeDetectorRef,
   Component,
   ElementRef,
   EventEmitter,
@@ -24,6 +24,7 @@ import {Cookies} from '../settings/cookies/cookies';
 import {ChordProcessor} from '../modules/chord-processor';
 import DevicePoolManager from '../util-classes/device-pool-manager';
 import {DeviceKeys, DevicePoolManagerService} from '../services/device-pool-manager-service';
+import {ClipboardService} from './clipboard-service';
 
 export type PortamentoType =
   'chord'
@@ -62,6 +63,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   @Input() oscNumber!: number;  // Flag to determine whether to connect to ring mod signal or mod input
   @Input() params!: OscillatorParams;
 
+  @ViewChild('oscPanel') oscPanel!: ElementRef<HTMLDivElement>;
+  @ViewChild('contextMenu') contextMenu!: ElementRef<HTMLDivElement>;
+
   @Output() output = new EventEmitter<string>();
   @ViewChild('frequency') frequency!: LevelControlComponent;
   @ViewChild('deTune') deTune!: LevelControlComponent;
@@ -98,6 +102,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   private devicePoolManagerService = inject(DevicePoolManagerService);
   private started: boolean = false;
 
+  clipboard: ClipboardService = inject(ClipboardService);
+  cd: ChangeDetectorRef = inject(ChangeDetectorRef);
+
   start(audioCtx: AudioContext, settings: OscillatorSettings | null): boolean {
     this.audioCtx = audioCtx;
     this.cookies = new Cookies();
@@ -107,12 +114,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.lfo.start();
     this.applySettings(settings);
     return true;
-  }
-
-  // Called after all synth components have been started
-
-  setOutputConnection() {
-    SetRadioButtons.set(this.oscOutputToForm, this.proxySettings.output);
   }
 
   applySettings(settings: OscillatorSettings | null) {
@@ -130,10 +131,11 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
 
-    if(!this.started) {
+    if (!this.started) {
       for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
         this.oscillators.push(new Oscillator(this.audioCtx));
       }
+      this.oscillatorPoolMgr = new DevicePoolManager(this.oscillators, this.proxySettings);
       this.started = true;
     }
 
@@ -147,7 +149,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       osc.clearModulation();  // Remove any preexisting mod settings
     });
 
-    this.oscillatorPoolMgr = new DevicePoolManager(this.oscillators, this.proxySettings);
+
     this.frequency.setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
     this.deTune.setValue(this.proxySettings.deTune);
     this.gain.setValue(this.proxySettings.gain);
@@ -183,6 +185,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     SetRadioButtons.set(this.modSettingsForm, this.proxySettings.modType);
     SetRadioButtons.set(this.lfoWaveForm, this.proxySettings.modWaveform);
     SetRadioButtons.set(this.oscModOutputForm, this.proxySettings.modOutput);
+    SetRadioButtons.set(this.oscOutputToForm, this.proxySettings.output);
   }
 
   public getSettings(): OscillatorSettings {
@@ -253,13 +256,12 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   modulation(source: AudioNode | AudioNode[], type: oscModType) {
-    if(source instanceof AudioNode) {
+    if (source instanceof AudioNode) {
       this.proxySettings.modType = type;
       this.oscillators.forEach((osc) => {
         osc.modulation(source, type);
       });
     } else {
-      this.proxySettings.modTypeExternal = type;
       this.oscillators.forEach((osc, i) => {
         osc.modulationExternal(source[i], type);
       });
@@ -267,12 +269,12 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   connectModOut(modGainNodes: GainNode[]) {
-    if(modGainNodes.length === this.oscillators.length) {
+    if (modGainNodes.length === this.oscillators.length) {
       this.oscillators.forEach((osc, i) => {
         osc.connectModOut(modGainNodes[i])
       });
     } else {
-      throw new Error("Modulation gain nodes array size ("+modGainNodes.length+") does not equal oscillators array size ("+this.oscillators.length+")");
+      throw new Error("Modulation gain nodes array size (" + modGainNodes.length + ") does not equal oscillators array size (" + this.oscillators.length + ")");
     }
   }
 
@@ -313,7 +315,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       ok = true;
       const oscNumber = this.oscNumber;
       this.oscillators.forEach((osc, i) => {
-        this.oscillators[i].connect(oscNumber !==2 ? ringMod.modInput() : ringMod.signalInput());
+        this.oscillators[i].connect(oscNumber !== 2 ? ringMod.modInput() : ringMod.signalInput());
       });
     }
     return ok;
@@ -424,7 +426,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   private chordProcessorKeyDownCallback: (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => void = (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => {
-    const freq =  this.keyToFrequency(prevKeys.keyIndex);
+    const freq = this.keyToFrequency(prevKeys.keyIndex);
     this.oscillators[theseKeys.deviceIndex].oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
     this.oscillators[theseKeys.deviceIndex].oscillator.frequency.value = freq;
     this.oscillators[theseKeys.deviceIndex].oscillator.frequency.exponentialRampToValueAtTime(this.keyToFrequency(theseKeys.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
@@ -532,7 +534,64 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-   ngAfterViewInit(): void {
+  private async ctxMenu(e: PointerEvent) {
+    this.cd.detectChanges();
+    const contextMenu = this.contextMenu.nativeElement;
+    contextMenu.style.visibility = "visible";
+    const zoomStr = document.body.style.zoom;
+    const zoom = parseFloat(zoomStr.substring(0, zoomStr.length - 1)) / 100;
+    // @ts-ignore
+    const bounds = this.oscPanel.nativeElement.getBoundingClientRect();
+    contextMenu.style.top = (e.clientY - bounds.y) / zoom + "px";
+    contextMenu.style.left = (e.clientX - bounds.x) / zoom + "px";
+  }
+
+  protected contextSelected($event: PointerEvent) {
+    const target = $event.target;
+    // @ts-ignore
+    if (target.value === 1) {
+      this.clipboard.config = JSON.stringify(this.proxySettings);
+      this.clipboard.source = this.params.settingsId;
+      this.clipboard.type = "oscillator";
+    }
+    // @ts-ignore
+    else if (target.value === 2) {
+        const settings: OscillatorSettings = JSON.parse(this.clipboard.config as string);
+        this.start(this.audioCtx, settings);
+    }
+    const contextMenu = this.contextMenu.nativeElement;
+    contextMenu.style.visibility = "hidden";
+  }
+
+  ngAfterViewInit(): void {
+    window.addEventListener("mousedown", (e) => {
+      if (!this.contextMenu.nativeElement.contains(e.target as Node)) {
+        const contextMenu = this.contextMenu.nativeElement;
+        contextMenu.style.visibility = "hidden";
+        const pasteElement = contextMenu.getElementsByTagName('li')[1];
+        const style = pasteElement.style;
+        if (this.clipboard.source === this.params.settingsId || this.clipboard.config === undefined||this.clipboard.type !== "oscillator") {
+          style.fontWeight = "lighter";
+          style.fontStyle = "italic";
+          style.color = "#b5a8a8";
+          style.cursor = "default";
+          style.pointerEvents = "none";
+        } else {
+          style.fontWeight = "bold";
+          style.fontStyle = "normal";
+          style.color = "black";
+          style.cursor = "pointer";
+          style.pointerEvents = "all";
+        }
+      }
+    });
+
+    const oscPanel = this.oscPanel.nativeElement;
+    oscPanel.addEventListener('contextmenu', async (e) => {
+      e.preventDefault();
+      await this.ctxMenu(e);
+    }, false);
+
     const oscOutForm = this.oscOutputToForm.nativeElement;
     for (let i = 0; i < oscOutForm.elements.length; ++i) {
       oscOutForm.elements[i].addEventListener('change', ($event) => {
@@ -616,7 +675,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.oscillators.forEach((osc) => {
       osc.destroy();
-     });
+    });
   }
 
   showWaveformSelector = false;

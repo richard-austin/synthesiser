@@ -1,9 +1,9 @@
-<div class="group-container metallic-button">
-  <h1>Oscillators {{params.settingsId}}</h1>
+<div #oscPanel class="group-container metallic-button">
+  <h1>Oscillators {{ params.settingsId }}</h1>
   <div class="group">
     <div class="column">
       <div class="module osc-width">
-        <h2>Oscillators {{params.settingsId}}</h2>
+        <h2>Oscillators {{ params.settingsId }}</h2>
         <div class="row">
           <app-level-control #frequency
                              label="Tuning"
@@ -12,14 +12,14 @@
                              [calAngle]="300"
                              [radius]="50"
                              (setLevel)="setFrequency($event)"></app-level-control>
-        <app-level-control #deTune
-                           label="Detune"
-                           [plusMinus]="true"
-                           [divisions]="24"
-                           [factor]="2400"
-                           (setLevel)="setDetune($event)">
-        </app-level-control>
-      </div>
+          <app-level-control #deTune
+                             label="Detune"
+                             [plusMinus]="true"
+                             [divisions]="24"
+                             [factor]="2400"
+                             (setLevel)="setDetune($event)">
+          </app-level-control>
+        </div>
         <div class="row">
           <app-level-control #gain
                              label="Gain"
@@ -208,5 +208,12 @@
         <label><input type="radio" name="freqenvelope" value="off" checked><span>Off</span></label>
       </form>
     </div>
+  </div>
+  <div #contextMenu class="context-menu">
+    <ol (click)="contextSelected($event)">
+      <li value="1">Copy Oscillator {{ params.settingsId }} Config</li>
+      <li value="2">Paste Oscillator {{clipboard.source}} Config
+      </li>
+    </ol>
   </div>
 </div>

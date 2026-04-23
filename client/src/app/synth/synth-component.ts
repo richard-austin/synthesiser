@@ -95,7 +95,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChild('general') masterVolume!: GeneralComponent;
 
   constructor(private rest: RestfulApiService) {
-    this.audioCtx = new AudioContext();
+    this.audioCtx = new AudioContext({sampleRate: 96000});
     this.fileNameEffectRef = effect(() => {
       const fileName = this.filename();
       if (fileName !== "") {
@@ -114,15 +114,15 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.homeControlEffectRef = effect(() => {
       this.homeComponentControl();
       const synth = this.synth?.nativeElement;
-      if(synth) {
-        synth.setAttribute('style', 'opacity:' + (this.homeComponentControl() ? "0.2" : "1")+'; pointer-events:' + (this.homeComponentControl() ? "none" : "auto"));
+      if (synth) {
+        synth.setAttribute('style', 'opacity:' + (this.homeComponentControl() ? "0.2" : "1") + '; pointer-events:' + (this.homeComponentControl() ? "none" : "auto"));
       }
     });
 
     this.cookies = new Cookies();
     this.effectRef = effect(() => {
       const value = this.signalSelectOperator();
-      if(this.oscillatorWindow) {
+      if (this.oscillatorWindow) {
         this.oscillatorWindow.nativeElement.scroll({left: 0, top: value * 979.3, behavior: 'instant'});
         this.filterWindow.nativeElement.scroll({left: 0, top: value * 980, behavior: 'instant'});
         this.proxySettings.selectedOscillator = (value + 1).toString();
@@ -163,11 +163,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     // Connect the module component outputs
     this.oscillatorsGrp.forEach((oscillator, i) => {
       oscillator.start(this.audioCtx, settings ? settings.oscillatorSettings[i] : settings);
-
-      // Finish setting up the oscillators, as they cross-reference each other, we need to call start on them first
-      // this.oscillator.setModulators(this.oscillators2Grp);
-      // this.oscillators2Grp.setModulators(this.oscillatorsGrp);
-      oscillator.setOutputConnection();
     });
     this.matrixComponent.start(this.audioCtx, settings ? settings.matrixSettings : settings);
 
@@ -176,7 +171,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.filtersGrp?.forEach(filter => filter.setOutputConnection());
     this.reverb.setOutputConnection();
     this.phaser.setOutputConnection();
-    this.signalSelectOperator.set(parseInt(this.proxySettings.selectedOscillator)-1);
+    this.signalSelectOperator.set(parseInt(this.proxySettings.selectedOscillator) - 1);
     window.addEventListener("keydown", this.keydownHandler);
     window.addEventListener("keyup", this.keyupHandler);
 
@@ -581,7 +576,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   };
 
   scaleToFitSmallWindow() {
-    const synth = this.synth.nativeElement;
     const topClearance = 35;
 
     let vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
@@ -592,13 +586,12 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     const requiredWidth = 2350;
     const requiredHeight = 1300 - topClearance;
     if (vw < requiredWidth || vh < requiredHeight) {
-      synth.style.transformOrigin = `0 ${topClearance}px`;
       if (vw / requiredWidth < vh / requiredHeight)
-        synth.style.transform = `scale(${vw / requiredWidth})`;
+        document.body.style.zoom = (100 * vw / requiredWidth).toString() + "%";
       else
-        synth.style.transform = `scale(${vh / requiredHeight})`;
+        document.body.style.zoom = (100 * vh / requiredHeight).toString() + "%";
     } else
-      synth.style.transform = `scale(1)`;
+      document.body.style.zoom = "100%";
   }
 
   effectRef!: EffectRef;
