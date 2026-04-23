@@ -212,7 +212,7 @@
   <div #contextMenu class="context-menu">
     <ol (click)="contextSelected($event)">
       <li value="1">Copy Oscillator {{ params.settingsId }} Config</li>
-      <li value="2">Paste Oscillator {{clipboard.source}} Config
+      <li value="2">Paste Oscillator {{clipboard.source !== params.settingsId && clipboard.type === "oscillator" ? clipboard.source : ''}} Config
       </li>
     </ol>
   </div>

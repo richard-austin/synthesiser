@@ -37,6 +37,7 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
   private modGain2!: GainNode;
   protected readonly minStages: number = 1;
   protected readonly maxStages: number = 61;
+  private started = false;
   @Output() output: EventEmitter<string> = new EventEmitter();
 
   @ViewChild('phasorOnOffForm') phasorOnOffForm!: ElementRef<HTMLFormElement>;
@@ -100,6 +101,8 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
 
+    this.phaser?.destroy();
+    this.phaser2?.destroy();
     this.phaser = new Phaser(this.audioCtx, this.input, this.panner, settings.stages);
     this.phaser2 = new Phaser(this.audioCtx, this.input, this.panner2, settings.stages);
     await this.phaser.start();
@@ -107,6 +110,7 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
     // Set up LFO default values
     this.modGain.connect(this.phaser.modInput);
     this.modGain2.connect(this.phaser2.modInput);
+    this.started = true;
 
     // Set up the dials
     this.modFreq.setValue(settings.lfoFrequency);
@@ -137,6 +141,7 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
     this.phaser.setBandWidth(bandwidth);
     this.phaser2.setBandWidth(bandwidth);
   }
+
   protected setLevel($event: number) {
     this.proxySettings.gain = $event;
     this.phaser.setLevel($event);

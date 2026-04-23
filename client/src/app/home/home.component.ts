@@ -137,6 +137,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (e) => console.log(e),
       complete: () => {
         console.log("complete: settings loaded");
+        this.filename.set("");  // To ensure reload if filename not changed
         this.filename.set(fileName);
         this.homeComponentControl.set(false);
       }

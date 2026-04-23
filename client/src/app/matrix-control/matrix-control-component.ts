@@ -42,15 +42,18 @@ export class MatrixControlComponent implements AfterViewInit{
   modulator!: OscillatorComponent;
   carrier!: OscillatorComponent;
   modulationGain: GainNode[] = [];
+  started = false;
 
 
   start(audioCtx:AudioContext, ctrlSettings: MatrixControlSettings, modulator: OscillatorComponent | undefined, carrier: OscillatorComponent | undefined) {
-    this.modulationGain = [];
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      this.modulationGain.push(new GainNode(audioCtx));
-      this.modulationGain[i].gain.value = 1;
+    if(!this.started) {
+      this.modulationGain = [];
+      for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
+        this.modulationGain.push(new GainNode(audioCtx));
+        this.modulationGain[i].gain.value = 1;
+      }
+      this.started = true;
     }
-
     this.ctlSettings = ctrlSettings;
     this.modulator = modulator as OscillatorComponent;
     this.modulator.connectModOut(this.modulationGain);
