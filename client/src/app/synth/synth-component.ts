@@ -95,7 +95,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChild('general') masterVolume!: GeneralComponent;
 
   constructor(private rest: RestfulApiService) {
-    this.audioCtx = new AudioContext({sampleRate: 96000});
+    this.audioCtx = new AudioContext({sampleRate: 192000, latencyHint: "interactive"});
     this.fileNameEffectRef = effect(() => {
       const fileName = this.filename();
       if (fileName !== "") {
