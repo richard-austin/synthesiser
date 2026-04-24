@@ -4,8 +4,7 @@ import {GainEnvelopeBase} from './gain-envelope-base';
 export abstract class OscFilterBase extends GainEnvelopeBase{
   freqBendEnv: FreqBendValues;
   protected _useFreqBendEnvelope: boolean;
-  public static readonly maxFrequency = 20000;
-  public static readonly minFrequency = 0.01;
+  public static readonly minFrequency = 0.0;
 
   protected constructor(audioCtx: AudioContext) {
     super(audioCtx);
@@ -25,8 +24,9 @@ export abstract class OscFilterBase extends GainEnvelopeBase{
   }
 
   clampFrequency(freq: number): number {
+    const maxFrequency = this.audioCtx.sampleRate / 2;
     return freq < OscFilterBase.minFrequency ? OscFilterBase.minFrequency :
-      freq > OscFilterBase.maxFrequency ? OscFilterBase.maxFrequency :
+      freq > maxFrequency ? maxFrequency :
       freq;
   }
 
