@@ -226,7 +226,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
         keyIndex = 0;  // Wired straight to the output, so we only use a single channel to avoid overload
       if (!this.velocitySensitive)
         velocity = 0x7f;
-      const keys: DeviceKeys | undefined = this.noisePoolMgr.keyDown(keyIndex, velocity);
+      this.noisePoolMgr.keyDown(keyIndex, velocity);
     }
   }
 
@@ -234,9 +234,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     if (keyIndex >= 0) {
       if (this.proxySettings.output === noiseOutputs.speaker)
         keyIndex = 0; // Wired straight to the output, so we only use a single channel to avoid overload
-      //source[keyIndex].keyUp();
-
-      const keys: DeviceKeys | undefined = this.noisePoolMgr.keyUp(keyIndex);
+      this.noisePoolMgr.keyUp(keyIndex);
     }
   }
 

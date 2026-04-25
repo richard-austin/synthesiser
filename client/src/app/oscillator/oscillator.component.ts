@@ -17,7 +17,7 @@ import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component
 import {ReverbComponent} from '../reverb-component/reverb-component';
 import {PhaserComponent} from '../phaser/phaser.component';
 import {OscillatorSettings} from '../settings/oscillator';
-import {modWaveforms, onOff, oscModOutput, oscModType, oscOutputs, oscWaveforms} from '../enums/enums';
+import {modWaveforms, onOff, oscModOutput, oscModType, oscWaveforms} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {timer} from 'rxjs';
 import {Cookies} from '../settings/cookies/cookies';
