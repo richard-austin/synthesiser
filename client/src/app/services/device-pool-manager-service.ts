@@ -17,10 +17,10 @@ export class DeviceKeys {
   providedIn: 'root',
 })
 export class DevicePoolManagerService implements OnDestroy {
-  private signalKeydown: WritableSignal<DeviceKeys>[];
-  private signalKeyup: WritableSignal<DeviceKeys>[];
-  private effectRefKeyUp: EffectRef[];
-  private effectRefKeydown: EffectRef[];
+  private readonly signalKeydown: WritableSignal<DeviceKeys>[];
+  private readonly signalKeyup: WritableSignal<DeviceKeys>[];
+  private readonly effectRefKeyUp: EffectRef[];
+  private readonly effectRefKeydown: EffectRef[];
   public notifyKeydown!: ((key: DeviceKeys) => void)[];
   public notifyKeyup!: ((key: DeviceKeys) => void)[];
 
@@ -49,25 +49,6 @@ export class DevicePoolManagerService implements OnDestroy {
   }
 
 
-  // Signal to set the corresponding filter and its frequency when activating an oscillator
-  private signalKeydownNoise = signal<DeviceKeys>(new DeviceKeys(-1, -1, 0)); // For oscillator 2 and its filters
-  private signalKeyupNoise = signal<DeviceKeys>(new DeviceKeys(-1, -1, 0)); // For oscillator 2 and its filters
-
-  private effectRef5: EffectRef = effect(() => {
-    this.signalKeydownNoise();
-    if(this.notifyKeyDownNoise)
-      this.notifyKeyDownNoise(this.signalKeydownNoise());
-  });
-
-  private effectRef6: EffectRef = effect(() => {
-    this.signalKeyupNoise();
-    if(this.notifyKeyUpNoise)
-      this.notifyKeyUpNoise(this.signalKeyupNoise());
-  });
-
-  public notifyKeyDownNoise!: (key: DeviceKeys) => void; // Callback to notify noise gen key down to filters
-  public notifyKeyUpNoise!: (key: DeviceKeys) => void; // Callback to notify noise gen key down to filters
-
   keyDown(key: DeviceKeys, index: number): void {
     this.signalKeydown[index].set(key);
   }
@@ -75,25 +56,10 @@ export class DevicePoolManagerService implements OnDestroy {
     this.signalKeyup[index].set(key);
   }
 
-  keyDownNoise(deviceKeys: DeviceKeys) {
-    this.signalKeydownNoise.set(deviceKeys);
-  }
-
-  keyUpNoise(deviceKeys: DeviceKeys) {
-    this.signalKeyupNoise.set(deviceKeys);
-  }
-
   ngOnDestroy() {
     if(this.effectRefKeyUp)
       this.effectRefKeyUp.forEach(er => er.destroy());
     if(this.effectRefKeydown)
       this.effectRefKeydown.forEach(er => er.destroy());
-
-    if(this.effectRef5) {
-      this.effectRef5.destroy();
-    }
-    if (this.effectRef6) {
-      this.effectRef6.destroy();
-    }
   }
 }

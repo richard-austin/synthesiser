@@ -199,9 +199,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   protected setGain(gain: number) {
     this.proxySettings.gain = gain;
-    for (let i = 0; i < this.oscillators.length; i++) {
-      this.oscillators[i].setGain(gain);
-    }
+    this.oscillators.forEach((osc, i) => {
+      osc.setGain(gain);
+    });
   }
 
   protected pan(pan: number) {
@@ -313,9 +313,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     if (ringMod) {
       ok = true;
-      const oscNumber = this.oscNumber;
+      const oscNumber = this.oscNumber+1;
       this.oscillators.forEach((osc, i) => {
-        this.oscillators[i].connect(oscNumber !== 2 ? ringMod.modInput() : ringMod.signalInput());
+        this.oscillators[i].connect(oscNumber === 2 ? ringMod.modInput() : ringMod.signalInput());
       });
     }
     return ok;
@@ -365,7 +365,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   keyDown(keyIndex: number, velocity: number) {
     const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyDown(keyIndex, velocity, this.proxySettings.portamento === 0);
-    if (keys && ((this.proxySettings.output === oscOutputs.filter) || (this.proxySettings.output === oscOutputs.ringMod))) {
+    if (keys) {
       this.devicePoolManagerService.keyDown(keys, this.oscNumber);
     }
 

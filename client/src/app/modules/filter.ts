@@ -114,8 +114,9 @@ export class Filter extends OscFilterBase {
       const freq = this.freq;
       this.filter.frequency.cancelAndHoldAtTime(ctx.currentTime);
       this.filter2.frequency.cancelAndHoldAtTime(ctx.currentTime);
-      this.filter.frequency.setValueAtTime(freq*Math.pow(this.freqBendBase,this.freqBendEnv.releaseLevel), this.audioCtx.currentTime);
-      this.filter2.frequency.setValueAtTime(freq*Math.pow(this.freqBendBase,this.freqBendEnv.releaseLevel), this.audioCtx.currentTime);
+
+      this.filter.frequency.value = this.filter2.frequency.value = freq*Math.pow(this.freqBendBase,this.freqBendEnv.releaseLevel);;
+
       this.filter.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * Math.pow(this.freqBendBase,this.freqBendEnv.attackLevel)), ctx.currentTime + this.freqBendEnv.attackTime);
       this.filter2.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * Math.pow(this.freqBendBase,this.freqBendEnv.attackLevel)), ctx.currentTime + this.freqBendEnv.attackTime);
       this.freqBendEnvTimerSub = timer(this.freqBendEnv.attackTime).subscribe(() => {

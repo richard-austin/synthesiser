@@ -297,8 +297,6 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     }
 
     if (this.proxySettings.portamento > 0) {
-      // dev.filter.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
-      // dev.filter2.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
       const proxySettings = this.proxySettings;
       switch (proxySettings.portamentoType) {
         case 'chord':
@@ -463,13 +461,6 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
       this.deviceKeyUp(keys);
     }
 
-    this.devicePoolManagerService.notifyKeyDownNoise = (keys: DeviceKeys) => {
-      this.deviceKeyDown(keys);
-    }
-
-    this.devicePoolManagerService.notifyKeyUpNoise = (keys: DeviceKeys) => {
-      this.deviceKeyUp(keys);
-    }
     this.chordProcessorNoise = new ChordProcessor();
     this.chordProcessorNoise.setKeyDownCallback(this.chordProcessorKeyDownCallback);
     this.chordProcessorOscillator1 = new ChordProcessor();
