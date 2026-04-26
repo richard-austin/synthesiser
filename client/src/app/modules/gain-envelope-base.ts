@@ -250,11 +250,10 @@ export abstract class GainEnvelopeBase {
     if (arg instanceof AudioNode)
       this.gain.connect(arg);
     else if (arg instanceof AudioParam)
-      this.amplitudeMod.connect(arg);
+      this.gain.connect(arg);
   }
 
   disconnect() {
     this.gain.disconnect();
-   // this.modOutput.disconnect();
   }
 }

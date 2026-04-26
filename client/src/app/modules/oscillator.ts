@@ -316,16 +316,11 @@ export class Oscillator extends OscFilterBase {
     }
   }
 
-  override disconnect() {
-    super.disconnect();
-    //this.envelope.connect(this.gain); // Mustn't get disconnected from gain, or we'll have no oscillator sound
-    this.gain.disconnect(); // Disconnect the gain output instead
-  }
-
   destroy() {
-    this.disconnect();
+    super.disconnect();
     this.oscillator.stop();
     this.frequencyMod.disconnect();
     this.frequencyModExternal.disconnect();
+    this.modOutput.disconnect();
   }
 }
