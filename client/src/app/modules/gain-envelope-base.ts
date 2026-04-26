@@ -14,6 +14,7 @@ class Modulation {
 }
 
 export abstract class GainEnvelopeBase {
+  protected readonly gain: GainNode;
   protected readonly envelope: GainNode;
   protected readonly modOutput: GainNode;
   frequencyMod: GainNode;
@@ -34,6 +35,7 @@ export abstract class GainEnvelopeBase {
   public static readonly minLevel: number = 0.000001;
 
   protected constructor(protected audioCtx: AudioContext) {
+    this.gain = audioCtx.createGain();
     this.envelope = audioCtx.createGain();
     this.envelope.gain.value = 1;
 
@@ -60,6 +62,10 @@ export abstract class GainEnvelopeBase {
 
   public static exponentiateGain(gain: number) {
     return (Math.pow(10, gain) - 1) / (Math.pow(10, 1) - 1);
+  }
+
+  setGain(gain: number) {
+    this.gain.gain.value = gain;
   }
 
   setAmplitudeEnvelope(env: ADSRValues) {

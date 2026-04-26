@@ -2,10 +2,8 @@ import {GainEnvelopeBase} from '../gain-envelope-base';
 
 export class PinkNoise extends GainEnvelopeBase {
   public static theNode: AudioWorkletNode | undefined = undefined;
-  private gain: GainNode;
   constructor(audioCtx: AudioContext) {
     super(audioCtx);
-    this.gain = audioCtx.createGain();
     this.gain.connect(this.envelope);
   }
 
@@ -71,10 +69,6 @@ export class PinkNoise extends GainEnvelopeBase {
       PinkNoise.theNode = new AudioWorkletNode(this.audioCtx, "pink-noise");
     }
     PinkNoise.theNode.connect(this.gain);
-  }
-
-  setGain(gain: number) {
-    this.gain.gain.value = gain;
   }
 
   keyDown(velocity: number) {

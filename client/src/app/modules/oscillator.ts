@@ -18,7 +18,6 @@ export class Oscillator extends OscFilterBase {
   public readonly oscillator: OscillatorNode;
   type: string;
   private readonly panner: StereoPannerNode;
-  private readonly gain: GainNode;
 
   public static readonly wavetables: WaveTableDetails[] = [
     new WaveTableDetails(
@@ -194,7 +193,6 @@ export class Oscillator extends OscFilterBase {
   constructor(protected override audioCtx: AudioContext) {
     super(audioCtx);
     this.panner = audioCtx.createStereoPanner();
-    this.gain = audioCtx.createGain();
 
     this.legatoMode = true;
     this.oscillator = audioCtx.createOscillator();
@@ -217,10 +215,6 @@ export class Oscillator extends OscFilterBase {
 
   setDetune(deTune: number) {
     this.oscillator.detune.value = deTune;
-  }
-
-  setGain(gain: number) {
-    this.gain.gain.value = gain;
   }
 
   pan(pan: number) {
