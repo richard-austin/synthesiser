@@ -24,11 +24,11 @@ export class RingModulator {
   }
 
   setModFrequency(freq: number): void {
-    this.modulator.frequency.setValueAtTime(freq *5, this.audioCtx.currentTime);
+    this.modulator.frequency.value = freq *5;
   }
 
   setModDepth(depth: number) {
-    this._gainNode.gain.setValueAtTime(depth * 2, this.audioCtx.currentTime);
+    this._gainNode.gain.value = depth * 2;
   }
 
   setModWaveform(value: OscillatorType) {
@@ -36,7 +36,7 @@ export class RingModulator {
   }
 
   setGain(gain: number) {
-    this._ringMod.gain.setValueAtTime(gain, this.audioCtx.currentTime);
+    this._ringMod.gain.value = gain;
   }
 
   internalMod(enable: boolean) {

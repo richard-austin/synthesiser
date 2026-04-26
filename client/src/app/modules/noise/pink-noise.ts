@@ -4,7 +4,6 @@ export class PinkNoise extends GainEnvelopeBase {
   public static theNode: AudioWorkletNode | undefined = undefined;
   constructor(audioCtx: AudioContext) {
     super(audioCtx);
-    this.gain.connect(this.envelope);
   }
 
   override setModulation(): void {
@@ -68,7 +67,7 @@ export class PinkNoise extends GainEnvelopeBase {
       await this.audioCtx.audioWorklet.addModule(`data:text/javascript,(${worklet.toString()})()`);
       PinkNoise.theNode = new AudioWorkletNode(this.audioCtx, "pink-noise");
     }
-    PinkNoise.theNode.connect(this.gain);
+    PinkNoise.theNode.connect(this.amplitudeMod);
   }
 
   keyDown(velocity: number) {

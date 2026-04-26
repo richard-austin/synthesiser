@@ -27,9 +27,8 @@ export class Filter extends OscFilterBase {
     this.filter.gain.value = this.filter2.gain.value = 0;
     this.envelope.gain.value = 1;
     this.filter.connect(this.filter2);
-    this.filter2.connect(this.gain);
-    this.gain.connect(this.envelope);
-    this.frequencyMod.connect(this.filter.detune);
+    this.filter2.connect(this.amplitudeMod);
+    this.frequencyMod.connect(this.filter.frequency);
   }
 
 
@@ -75,21 +74,7 @@ export class Filter extends OscFilterBase {
     }
   }
 
-  override connect(param: AudioParam) : void;
-  override connect(node: AudioNode) : AudioNode;
-
-  override connect(arg: AudioNode | AudioParam): AudioNode | void{
-    if(arg instanceof AudioNode)
-      return this.amplitudeMod.connect(arg);
-    else if(arg instanceof AudioParam)
-      this.amplitudeMod.connect(arg);
-  }
-
-  override disconnect() {
-    this.amplitudeMod.disconnect();
-  }
-
-  override setFreqBendEnvelope(envelope: FreqBendValues) {
+   override setFreqBendEnvelope(envelope: FreqBendValues) {
     super.setFreqBendEnvelope(envelope);
     //this.initialFrequencyFactor = envelope.releaseLevel;  // Ensure frequency starts at the level it ends at in the frequency bend envelope.
     this.filter.frequency.setValueAtTime(super.clampFrequency(this.freq * envelope.releaseLevel), this.audioCtx.currentTime);

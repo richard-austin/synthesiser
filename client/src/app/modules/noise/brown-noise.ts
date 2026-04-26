@@ -5,7 +5,6 @@ export class BrownNoise extends GainEnvelopeBase{
 
   constructor(audioCtx: AudioContext) {
     super(audioCtx);
-    this.gain.connect(this.envelope);
   }
 
   override setModulation(): void {
@@ -55,7 +54,7 @@ export class BrownNoise extends GainEnvelopeBase{
        await this.audioCtx.audioWorklet.addModule(`data:text/javascript,(${worklet.toString()})()`);
        BrownNoise.theNode = new AudioWorkletNode(this.audioCtx, "brown-noise");
      }
-     BrownNoise.theNode.connect(this.gain);   }
+     BrownNoise.theNode.connect(this.amplitudeMod);   }
 
   keyDown(velocity: number) {
     super.attack(velocity);

@@ -200,8 +200,7 @@ export class Oscillator extends OscFilterBase {
     // Default ADSR values
     this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
     this.oscillator.connect(this.panner);
-    this.panner.connect(this.envelope);
-    this.amplitudeMod.connect(this.gain);
+    this.panner.connect(this.amplitudeMod);
     this.oscillator.start();
     this.frequencyMod.connect(this.oscillator.frequency);
     this.frequencyModExternal.connect(this.oscillator.frequency);
@@ -225,7 +224,7 @@ export class Oscillator extends OscFilterBase {
   setModOutput(modOutput: oscModOutput) {
     this.modOutputType = modOutput;
     if(this.connectedTo === oscModOutput.direct)
-      this.oscillator.disconnect(this.modOutput);
+      this.amplitudeMod.disconnect(this.modOutput);
     else if(this.connectedTo === oscModOutput.envelope)
       this.envelope.disconnect(this.modOutput);
 
@@ -233,7 +232,7 @@ export class Oscillator extends OscFilterBase {
 
     switch(modOutput) {
       case oscModOutput.direct:
-        this.oscillator.connect(this.modOutput);
+        this.amplitudeMod.connect(this.modOutput);
         break;
       case oscModOutput.envelope:
         this.envelope.connect(this.modOutput);
@@ -285,13 +284,6 @@ export class Oscillator extends OscFilterBase {
     }
   }
 
-  override connect(node:AudioNode | AudioParam) {
-    if(node instanceof AudioNode)
-      this.gain.connect(node);
-    else
-      this.gain.connect(node);
-  }
-
   freqBendEnvTimerSub!: Subscription;
 
   // Key down for this oscillator
@@ -326,7 +318,7 @@ export class Oscillator extends OscFilterBase {
 
   override disconnect() {
     super.disconnect();
-    this.amplitudeMod.connect(this.gain); // Mustn't get disconnected from gain, or we'll have no oscillator sound
+    //this.envelope.connect(this.gain); // Mustn't get disconnected from gain, or we'll have no oscillator sound
     this.gain.disconnect(); // Disconnect the gain output instead
   }
 

@@ -53,7 +53,8 @@ export abstract class GainEnvelopeBase {
     this.amplitudeModDepth.gain.value = 0;
     this.amplitudeModDepthExternal = audioCtx.createGain();
     this.amplitudeModDepthExternal.gain.value = 1;  // Always fixed at one as this is used for external modulation set up on the matrix
-    this.envelope.connect(this.amplitudeMod);
+    this.amplitudeMod.connect(this.envelope);
+    this.envelope.connect(this.gain);
     this.amplitudeModDepth.connect(this.amplitudeMod.gain);
     this.amplitudeModDepthExternal.connect(this.amplitudeMod.gain);
     this.modType = oscModType.amplitude;
@@ -247,13 +248,13 @@ export abstract class GainEnvelopeBase {
 
   connect(arg: AudioNode | AudioParam) {
     if (arg instanceof AudioNode)
-      this.amplitudeMod.connect(arg);
+      this.gain.connect(arg);
     else if (arg instanceof AudioParam)
       this.amplitudeMod.connect(arg);
   }
 
   disconnect() {
-    this.amplitudeMod.disconnect();
+    this.gain.disconnect();
    // this.modOutput.disconnect();
   }
 }

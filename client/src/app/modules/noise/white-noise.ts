@@ -4,7 +4,6 @@ export class WhiteNoise extends GainEnvelopeBase {
   public static theNode: AudioWorkletNode | undefined = undefined;
   constructor(audioCtx: AudioContext) {
     super(audioCtx);
-    this.gain.connect(this.envelope);
   }
 
   override setModulation(): void {
@@ -52,7 +51,7 @@ export class WhiteNoise extends GainEnvelopeBase {
       await this.audioCtx.audioWorklet.addModule(`data:text/javascript,(${worklet.toString()})()`);
       WhiteNoise.theNode = new AudioWorkletNode(this.audioCtx, "white-noise");
     }
-    WhiteNoise.theNode.connect(this.gain);
+    WhiteNoise.theNode.connect(this.amplitudeMod);
   }
 
   keyDown(velocity: number) {
