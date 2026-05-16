@@ -1,5 +1,6 @@
 export class HilbertFIRProcessor {
   public node!: AudioWorkletNode;
+  public port!: MessagePort;
   audioCtx: AudioContext;
 
   constructor(audioCtx: AudioContext) {
@@ -12,36 +13,43 @@ export class HilbertFIRProcessor {
       registerProcessor('hilbert-fir-processor', class Processor extends AudioWorkletProcessor {
         // FIR kernel coefficients (set from parameters)
         kernel: Float32Array;
-        buffer: number[][] = [];
-        bufferIndex: number[] = [0,0]
+        buffer: Float32Array[] = Array(2);
+        bufferIndex: number[] = [0, 0]
         order: number;
+
+        running: boolean = true;
 
         constructor(options: any) {
           super();
           this.kernel = options.processorOptions?.kernel || new Float32Array([1]);
           this.order = this.kernel.length;
-          this.buffer[0] = [this.order];
-          this.buffer[1] = [this.order];
+          this.buffer[0] = new Float32Array(this.order);
+          this.buffer[1] = new Float32Array(this.order);
           // @ts-ignore
           this.port.onmessage = (event) => {
             if (event.data.type === 'kernel') {
               this.kernel = event.data.kernel;
               this.order = this.kernel.length;
-              this.buffer[0] = [this.order];
-              this.buffer[1] = [this.order];
+              this.buffer[0] = new Float32Array(this.order);
+              this.buffer[1] = new Float32Array(this.order);
+            } else if (event.data.type === 'shutdown') {
+              this.running = false;
+              // @ts-ignore
+              this.port.close();
+              console.log("Hilbert FIR processor closed");
             }
           };
         }
 
-        process(inputs: number[][][], outputs: number[][][]) {
-          const output: number[][] = outputs[0];
-          const input: number[][] = inputs[0];
+        process(inputs: Float32Array[][], outputs: Float32Array[][]) {
+          const output: Float32Array[] = outputs[0];
+          const input: Float32Array[] = inputs[0];
 
           if (!input || !output) return true;
 
           for (let channel = 0; channel < input.length; ++channel) {
-            const outputChannel: number[] = output[channel];
-            const inputChannel: number[] = input[channel];
+            const outputChannel: Float32Array = output[channel];
+            const inputChannel: Float32Array = input[channel];
             for (let i = 0; i < inputChannel.length; i++) {
               /* Circular buffer update */
               this.buffer[channel][this.bufferIndex[channel]] = inputChannel[i];
@@ -58,7 +66,7 @@ export class HilbertFIRProcessor {
               this.bufferIndex[channel] = (this.bufferIndex[channel] + 1) % this.order;
             }
           }
-          return true;
+          return this.running;
         }
       });
     }
@@ -74,6 +82,7 @@ export class HilbertFIRProcessor {
       channelInterpretation: 'speakers',
       processorOptions: {kernel}
     });
+    this.port = this.node.port;
 
     /**
      * Designs an FIR Hilbert transformer kernel with the given order.
@@ -101,5 +110,16 @@ export class HilbertFIRProcessor {
       }
       return kernel;
     }
+  }
+
+  public disconnect() {
+    this.node?.disconnect();
+  }
+
+  public destroy() {
+    this.port.postMessage({type: 'shutdown'});
+    this.disconnect();
+    // @ts-ignore
+    this.node = this.port = undefined;
   }
 }
