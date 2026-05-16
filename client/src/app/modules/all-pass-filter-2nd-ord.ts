@@ -109,7 +109,7 @@ export class AllPassFilter2ndOrd {
 
   public destroy() {
     this._node?.port.postMessage({type: 'shutdown'});
-    this._node = undefined;
     this.disconnect();
+    this._node = undefined;
   }
 }
