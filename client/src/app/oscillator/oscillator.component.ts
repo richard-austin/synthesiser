@@ -105,7 +105,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   clipboard: ClipboardService = inject(ClipboardService);
   cd: ChangeDetectorRef = inject(ChangeDetectorRef);
 
-  start(audioCtx: AudioContext, settings: OscillatorSettings | null): boolean {
+  start(audioCtx: AudioContext, settings: OscillatorSettings | null): void {
     this.audioCtx = audioCtx;
     this.cookies = new Cookies();
     this.chordProcessor = new ChordProcessor();
@@ -113,7 +113,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.lfo = this.audioCtx.createOscillator();
     this.lfo.start();
     this.applySettings(settings);
-    return true;
   }
 
   applySettings(settings: OscillatorSettings | null) {
@@ -139,16 +138,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       this.started = true;
     }
 
-    this.oscillators.forEach((osc, i) => {
-      osc.setFrequency(this.keyToFrequency(i));
-      osc.setAmplitudeEnvelope(this.proxySettings.adsr)
-      osc.legatoMode = this.proxySettings.legatoMode === onOff.on;
-      osc.setFreqBendEnvelope(this.proxySettings.freqBend);
-      osc.useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.on);
-      osc.setType(this.proxySettings.waveForm);
-      osc.clearModulation();  // Remove any preexisting mod settings
-    });
-
+    for(const osc of this.oscillators) {
+      osc.applySettings(this.proxySettings);
+    }
 
     this.frequency.setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
     this.deTune.setValue(this.proxySettings.deTune);

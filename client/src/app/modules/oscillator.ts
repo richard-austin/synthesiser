@@ -1,13 +1,16 @@
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {OscFilterBase} from './osc-filter-base';
 import {FreqBendValues} from '../util-classes/freq-bend-values';
-import {oscModOutput, oscModType} from '../enums/enums';
+import {onOff, oscModOutput, oscModType} from '../enums/enums';
 import {Subscription, timer} from 'rxjs';
 import {WaveTableDetails} from './WaveTableDetails';
+import {PhaseModulator} from './hilbert/phase-modulator';
+import { OscillatorSettings } from "../settings/oscillator";
 
 export class OscillatorParams {
   ringModOutput: "signal" | "mod";
-  settingsId:number;
+  settingsId: number;
+
   constructor(ringModOutput: "signal" | "mod", settingsId: number) {
     this.ringModOutput = ringModOutput;
     this.settingsId = settingsId;
@@ -189,21 +192,38 @@ export class Oscillator extends OscFilterBase {
   public static readonly frequencyFactor = 7.717057388; // To give middle C at 261.63 Hz on key 60
 
   readonly freqBendBase = 2;
+  private phaseModulator: PhaseModulator;
 
   constructor(protected override audioCtx: AudioContext) {
     super(audioCtx);
     this.panner = audioCtx.createStereoPanner();
-
+    this.phaseModulator = new PhaseModulator(this.audioCtx);
     this.legatoMode = true;
     this.oscillator = audioCtx.createOscillator();
     this.type = this.oscillator.type = "sine";
     // Default ADSR values
     this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
     this.oscillator.connect(this.panner);
-    this.panner.connect(this.amplitudeMod);
+
     this.oscillator.start();
     this.frequencyMod.connect(this.oscillator.frequency);
-    this.frequencyModExternal.connect(this.oscillator.frequency);
+
+    //this.panner.connect(this.amplitudeMod);
+    this.phaseModulator.start().then(() => {
+      this.panner.connect(this.phaseModulator.node);
+      this.phaseModulator.node.connect(this.amplitudeMod);
+      this.frequencyModExternal.connect(this.phaseModulator.modInput());
+    });
+  }
+
+  applySettings(proxySettings: OscillatorSettings) {
+    this.setFrequency(0);
+    this.setAmplitudeEnvelope(proxySettings.adsr)
+    this.legatoMode = proxySettings.legatoMode === onOff.on;
+    this.setFreqBendEnvelope(proxySettings.freqBend);
+    this.useFreqBendEnvelope(proxySettings.useFrequencyEnvelope === onOff.on);
+    this.setType(proxySettings.waveForm);
+    this.clearModulation();  // Remove any preexisting mod settings
   }
 
   setFrequency(freq: number) {
@@ -289,7 +309,7 @@ export class Oscillator extends OscFilterBase {
   // Key down for this oscillator
   override keyDown(velocity: number, frequency: number) {
     super.attack(velocity, frequency);
-    this.frequencyModExternal.gain.value = frequency * 3000 /400;
+    this.frequencyModExternal.gain.value = Math.PI * 4;
     this.frequencyMod.gain.value =  this.modLevel * frequency * 3000 / 400;
     //console.log("Oscillator keyDown = " + performance.now());
     if (this._useFreqBendEnvelope) {
@@ -322,5 +342,6 @@ export class Oscillator extends OscFilterBase {
     this.frequencyMod.disconnect();
     this.frequencyModExternal.disconnect();
     this.modOutput.disconnect();
+    this.phaseModulator.destroy();
   }
 }

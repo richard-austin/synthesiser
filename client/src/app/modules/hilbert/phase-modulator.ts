@@ -1,4 +1,4 @@
-export class HilbertFIRProcessor {
+export class PhaseModulator {
   public node!: AudioWorkletNode;
   public port!: MessagePort;
   audioCtx: AudioContext;
@@ -11,9 +11,12 @@ export class HilbertFIRProcessor {
     function worklet() {
       // @ts-ignore
       registerProcessor('hilbert-fir-processor', class Processor extends AudioWorkletProcessor {
+        static get parameterDescriptors() {
+          return [{name: 'mod', defaultValue: 0, minValue: -Math.PI*4, maxValue:Math.PI*4, automationRate: "a-rate"}];
+        }
         // FIR kernel coefficients (set from parameters)
         kernel: Float32Array;
-        buffer: Float32Array[] = Array(2);
+        buffer: Float32Array[];
         bufferIndex: number[] = [0, 0]
         order: number;
 
@@ -23,15 +26,16 @@ export class HilbertFIRProcessor {
           super();
           this.kernel = options.processorOptions?.kernel || new Float32Array([1]);
           this.order = this.kernel.length;
-          this.buffer[0] = new Float32Array(this.order);
-          this.buffer[1] = new Float32Array(this.order);
-          // @ts-ignore
+          this.buffer = Array(2);
+          this.buffer[0] = Float32Array.from({length:this.order}, () => 0);
+          this.buffer[1] = Float32Array.from({length:this.order}, () => 0);
+           // @ts-ignore
           this.port.onmessage = (event) => {
             if (event.data.type === 'kernel') {
               this.kernel = event.data.kernel;
               this.order = this.kernel.length;
-              this.buffer[0] = new Float32Array(this.order);
-              this.buffer[1] = new Float32Array(this.order);
+              this.buffer[0] = Float32Array.from({length:this.order}, () => 0);
+              this.buffer[1] = Float32Array.from({length:this.order}, () => 0);
             } else if (event.data.type === 'shutdown') {
               this.running = false;
               // @ts-ignore
@@ -41,10 +45,10 @@ export class HilbertFIRProcessor {
           };
         }
 
-        process(inputs: Float32Array[][], outputs: Float32Array[][]) {
+        process(inputs: Float32Array[][], outputs: Float32Array[][], parameters:any) {
           const output: Float32Array[] = outputs[0];
           const input: Float32Array[] = inputs[0];
-
+          const modParam = parameters["mod"];
           if (!input || !output) return true;
 
           for (let channel = 0; channel < input.length; ++channel) {
@@ -61,18 +65,19 @@ export class HilbertFIRProcessor {
                 const bufferIdx = (this.bufferIndex[channel] - j + this.order) % this.order;
                 y += this.buffer[channel][bufferIdx] * this.kernel[j];
               }
-              outputChannel[i] = y;
+              const mod = modParam.length > 1 ? modParam[i] : modParam[0];
+              outputChannel[i] = y * Math.sin(mod) + inputChannel[i] * Math.cos(mod);
               /* Advance buffer pointer */
               this.bufferIndex[channel] = (this.bufferIndex[channel] + 1) % this.order;
             }
           }
-          return this.running;
+           return this.running;
         }
       });
     }
 
     await this.audioCtx.audioWorklet.addModule(`data:text/javascript,(${worklet.toString()})()`);
-    const order = 101;
+    const order = 71;
     // Design kernel
     const kernel = designHilbertKernel(order);
 
@@ -110,6 +115,10 @@ export class HilbertFIRProcessor {
       }
       return kernel;
     }
+  }
+
+  modInput(): AudioParam {
+    return this.node.parameters.get("mod") as AudioParam;
   }
 
   public disconnect() {

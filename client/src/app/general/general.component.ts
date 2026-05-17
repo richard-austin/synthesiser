@@ -61,7 +61,8 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   start(audioCtx: AudioContext, settings: GeneralSettings | null): boolean {
     let ok = true;
     this.compressor = audioCtx.createDynamicsCompressor();
-    this.compressor.knee.value = 40;
+    this.compressor.threshold.value = -3;
+    this.compressor.knee.value = 0;
     this.compressor.ratio.value = 12;
     this.compressor.attack.value = 0;
     this.compressor.release.value = 0.25;
