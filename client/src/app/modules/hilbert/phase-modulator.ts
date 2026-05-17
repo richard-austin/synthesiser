@@ -1,3 +1,7 @@
+interface IDictionary {
+  [index: string]: Float32Array;
+}
+
 export class PhaseModulator {
   public node!: AudioWorkletNode;
   public port!: MessagePort;
@@ -45,7 +49,7 @@ export class PhaseModulator {
           };
         }
 
-        process(inputs: Float32Array[][], outputs: Float32Array[][], parameters:any) {
+        process(inputs: Float32Array[][], outputs: Float32Array[][], parameters:IDictionary) {
           const output: Float32Array[] = outputs[0];
           const input: Float32Array[] = inputs[0];
           const modParam = parameters["mod"];

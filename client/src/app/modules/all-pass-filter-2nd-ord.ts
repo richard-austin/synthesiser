@@ -1,3 +1,8 @@
+
+interface IDictionary {
+  [index: string]: Float32Array;
+}
+
 export class AllPassFilter2ndOrd {
   private _node: AudioWorkletNode | undefined = undefined;
   private readonly audioCtx: AudioContext;
@@ -36,7 +41,7 @@ export class AllPassFilter2ndOrd {
           };
         }
 
-        process(inputs: number[][][], outputs: number[][][], parameters: any) {
+        process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: IDictionary) {
           this.bandwidth = parameters["bandwidth"][0];
           const fx = parameters["frequency"][0];
           if(fx !== this.lastFrequency) {
@@ -44,8 +49,8 @@ export class AllPassFilter2ndOrd {
             this.frequency =0.850918128 * Math.exp(fx) -1.313035285;
           }
 
-          const output: number[][] = outputs[0];
-          const input: number[][] = inputs[0];
+          const output: Float32Array[] = outputs[0];
+          const input: Float32Array[] = inputs[0];
 
           let sum1: number;
           let sum2: number;
@@ -53,8 +58,8 @@ export class AllPassFilter2ndOrd {
           let sum4: number;
 
           for (let channel = 0; channel < input.length; ++channel) {
-            const outputChannel: number[] = output[channel];
-            const inputChannel: number[] = input[channel];
+            const outputChannel: Float32Array = output[channel];
+            const inputChannel: Float32Array = input[channel];
             for (let i = 0; i < outputChannel.length; ++i) {
               sum2 = this.zMiOne[channel] * -this.frequency*(1 - this.bandwidth);
               sum2 += this.zMiTwo[channel] * this.bandwidth;
