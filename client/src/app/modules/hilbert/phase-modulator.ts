@@ -81,14 +81,14 @@ export class PhaseModulator {
     }
 
     await this.audioCtx.audioWorklet.addModule(`data:text/javascript,(${worklet.toString()})()`);
-    const order = 71;
+    const order = 101;
     // Design kernel
     const kernel = designHilbertKernel(order);
 
     // Create worklet node
     this.node = new AudioWorkletNode(this.audioCtx, 'hilbert-fir-processor', {
       channelCount: 1,
-      channelInterpretation: 'speakers',
+      channelInterpretation: 'discrete',
       processorOptions: {kernel}
     });
     this.port = this.node.port;

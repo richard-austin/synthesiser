@@ -217,7 +217,7 @@ export class Oscillator extends OscFilterBase {
   }
 
   applySettings(proxySettings: OscillatorSettings) {
-    this.setFrequency(0);
+    this.setFrequency(100);
     this.setAmplitudeEnvelope(proxySettings.adsr)
     this.legatoMode = proxySettings.legatoMode === onOff.on;
     this.setFreqBendEnvelope(proxySettings.freqBend);
