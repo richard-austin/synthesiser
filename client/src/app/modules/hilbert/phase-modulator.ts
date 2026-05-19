@@ -59,6 +59,9 @@ export class PhaseModulator {
             const outputChannel: Float32Array = output[channel];
             const inputChannel: Float32Array = input[channel];
             for (let i = 0; i < inputChannel.length; i++) {
+              // The Hilbert transformation is reduced to an order of 25 due to overrunning the render quantum.
+              // I'll look into making this into a WebAssembly,
+
               /* Circular buffer update */
               this.buffer[channel][this.bufferIndex[channel]] = inputChannel[i];
 
@@ -73,6 +76,7 @@ export class PhaseModulator {
               outputChannel[i] = y * Math.sin(mod) + inputChannel[i] * Math.cos(mod);
               /* Advance buffer pointer */
               this.bufferIndex[channel] = (this.bufferIndex[channel] + 1) % this.order;
+            //  outputChannel[i] = inputChannel[i] * Math.cos(mod);
             }
           }
            return this.running;
@@ -81,13 +85,13 @@ export class PhaseModulator {
     }
 
     await this.audioCtx.audioWorklet.addModule(`data:text/javascript,(${worklet.toString()})()`);
-    const order = 101;
+    const order = 25;
     // Design kernel
     const kernel = designHilbertKernel(order);
 
     // Create worklet node
     this.node = new AudioWorkletNode(this.audioCtx, 'hilbert-fir-processor', {
-      channelCount: 1,
+      channelCount: 2,
       channelInterpretation: 'discrete',
       processorOptions: {kernel}
     });
