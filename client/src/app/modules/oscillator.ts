@@ -4,7 +4,6 @@ import {FreqBendValues} from '../util-classes/freq-bend-values';
 import {onOff, oscModOutput, oscModType} from '../enums/enums';
 import {Subscription, timer} from 'rxjs';
 import {WaveTableDetails} from './WaveTableDetails';
-import {PhaseModulator} from './hilbert/phase-modulator';
 import { OscillatorSettings } from "../settings/oscillator";
 
 export class OscillatorParams {
@@ -192,12 +191,9 @@ export class Oscillator extends OscFilterBase {
   public static readonly frequencyFactor = 7.717057388; // To give middle C at 261.63 Hz on key 60
 
   readonly freqBendBase = 2;
-  private phaseModulator: PhaseModulator;
-
   constructor(protected override audioCtx: AudioContext) {
     super(audioCtx);
     this.panner = audioCtx.createStereoPanner();
-    this.phaseModulator = new PhaseModulator(this.audioCtx);
     this.legatoMode = true;
     this.oscillator = audioCtx.createOscillator();
     this.type = this.oscillator.type = "sine";
@@ -209,11 +205,8 @@ export class Oscillator extends OscFilterBase {
     this.frequencyMod.connect(this.oscillator.frequency);
 
     //this.panner.connect(this.amplitudeMod);
-    this.phaseModulator.start().then(() => {
-      this.panner.connect(this.phaseModulator.node);
-      this.phaseModulator.node.connect(this.amplitudeMod);
-      this.frequencyModExternal.connect(this.phaseModulator.modInput());
-    });
+    this.panner.connect(this.amplitudeMod);
+    this.frequencyModExternal.connect(this.oscillator.frequency);
   }
 
   applySettings(proxySettings: OscillatorSettings) {
@@ -309,7 +302,7 @@ export class Oscillator extends OscFilterBase {
   // Key down for this oscillator
   override keyDown(velocity: number, frequency: number) {
     super.attack(velocity, frequency);
-    this.frequencyModExternal.gain.value = Math.PI * 4;
+    this.frequencyModExternal.gain.value = frequency * 3000 / 400;
     this.frequencyMod.gain.value =  this.modLevel * frequency * 3000 / 400;
     //console.log("Oscillator keyDown = " + performance.now());
     if (this._useFreqBendEnvelope) {
@@ -342,6 +335,5 @@ export class Oscillator extends OscFilterBase {
     this.frequencyMod.disconnect();
     this.frequencyModExternal.disconnect();
     this.modOutput.disconnect();
-    this.phaseModulator.destroy();
   }
 }

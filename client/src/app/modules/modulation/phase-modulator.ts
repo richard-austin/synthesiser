@@ -2,7 +2,7 @@ interface IDictionary {
   [index: string]: Float32Array;
 }
 
-export class PhaseModulator {
+export class PhaseModulatorHilbert {
   public node!: AudioWorkletNode;
   public port!: MessagePort;
   audioCtx: AudioContext;
@@ -85,7 +85,7 @@ export class PhaseModulator {
     }
 
     await this.audioCtx.audioWorklet.addModule(`data:text/javascript,(${worklet.toString()})()`);
-    const order = 25;
+    const order = 31;
     // Design kernel
     const kernel = designHilbertKernel(order);
 

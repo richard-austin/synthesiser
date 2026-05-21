@@ -105,17 +105,17 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   clipboard: ClipboardService = inject(ClipboardService);
   cd: ChangeDetectorRef = inject(ChangeDetectorRef);
 
-  start(audioCtx: AudioContext, settings: OscillatorSettings | null): void {
+  async start(audioCtx: AudioContext, settings: OscillatorSettings | null): Promise<void> {
     this.audioCtx = audioCtx;
     this.cookies = new Cookies();
     this.chordProcessor = new ChordProcessor();
     this.chordProcessor.setKeyDownCallback(this.chordProcessorKeyDownCallback);
     this.lfo = this.audioCtx.createOscillator();
     this.lfo.start();
-    this.applySettings(settings);
+    await this.applySettings(settings);
   }
 
-  applySettings(settings: OscillatorSettings | null) {
+  async applySettings(settings: OscillatorSettings | null) {
     const cookieName = "oscillator" + this.params.settingsId;
     if (!settings) {  // If no settings supplied, create default and check if previously saved in cookie
       settings = new OscillatorSettings();
