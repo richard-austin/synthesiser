@@ -107,18 +107,28 @@ export class OscillatorWithPhaseMod {
 
         private render: (x: number) => number = this.sineFunction;
 
-        phase = 0;
-
+        private phase = 0;
+        private lastDetune = 0;
+        private detuneFactor = 1;
+        private readonly twelthRoot2 = Math.pow(2, 1/12);
         process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: IDictionary) {
           const output: Float32Array[] = outputs[0];
           // const input: Float32Array[] = inputs[0];
           const modParam = parameters["mod"];
           const frequencyParam = parameters["frequency"];
+          const detuneParam  = parameters["detune"];
 
           if (!output) return true;
           const outputChannel: Float32Array = output[0];
           for (let i = 0; i < outputChannel.length; i++) {
-            const f = frequencyParam.length === 1 ? frequencyParam[0] : frequencyParam[i];
+            let f = frequencyParam.length === 1 ? frequencyParam[0] : frequencyParam[i];
+            const detune = detuneParam.length === 1 ? detuneParam[0] : detuneParam[i];
+            if(detune !== this.lastDetune) {
+              this.lastDetune = detune;
+              this.detuneFactor = Math.pow(this.twelthRoot2, detune/100);
+            }
+            f *= this.detuneFactor;
+
             const mod = (modParam.length === 1 ? modParam[0] : modParam[i]) * 10;
             const inc = f / this.sampleRate;
             this.phase += inc
@@ -151,8 +161,18 @@ export class OscillatorWithPhaseMod {
     return this.node?.parameters.get("frequency") as AudioParam;
   }
 
+  get detune(): AudioParam {
+    return this.node.parameters.get("detune") as AudioParam;
+  }
+
+  savedType: OscillatorType = "sine";
   set type(type: OscillatorType) {
+    this.savedType = type;
     this.port.postMessage({type: 'type', payload: type});
+  }
+
+  get type(): OscillatorType {
+    return this.savedType;
   }
 
   public createPeriodicWave(real: number[], imag: number[]): Float32Array {
