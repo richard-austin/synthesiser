@@ -6,6 +6,7 @@ export class OscillatorWithPhaseMod {
   public node!: AudioWorkletNode;
   public port!: MessagePort;
   audioCtx: AudioContext;
+  waveTableSize = 2048;
 
   constructor(audioCtx: AudioContext) {
     this.audioCtx = audioCtx;
@@ -44,14 +45,13 @@ export class OscillatorWithPhaseMod {
         private readonly periodicWave: Float32Array;
         private type: OscillatorType = "sine";
         private readonly xToIndex: number;
+        private readonly waveTableSize = 2048;
 
         constructor(options: any) {
           super();
-          console.log(options)
           this.sampleRate = options?.processorOptions?.sampleRate || 48000;
-          this.xToIndex = this.sampleRate / 2;
-          this.periodicWave = new Float32Array(this.sampleRate / 2);
-          console.log(this.sampleRate);
+          this.xToIndex = this.waveTableSize;
+          this.periodicWave = new Float32Array(this.waveTableSize);
           // @ts-ignore
           this.port.onmessage = (event) => {
             if (event.data.type === 'shutdown') {
@@ -98,7 +98,7 @@ export class OscillatorWithPhaseMod {
         }
 
         private sawtoothFunction(x: number) {
-          return 2 * (0.5 - x);
+          return 2 * (x -0.5);
         }
 
         private triangleFunction(x: number){
@@ -111,6 +111,7 @@ export class OscillatorWithPhaseMod {
         private lastDetune = 0;
         private detuneFactor = 1;
         private readonly twelthRoot2 = Math.pow(2, 1/12);
+
         process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: IDictionary) {
           const output: Float32Array[] = outputs[0];
           // const input: Float32Array[] = inputs[0];
@@ -144,13 +145,13 @@ export class OscillatorWithPhaseMod {
     }
 
     await this.audioCtx.audioWorklet.addModule(`data:text/javascript,(${worklet.toString()})()`);
-    // Create worklet node
-    this.node = new AudioWorkletNode(this.audioCtx, 'oscillator', {
-      channelCount: 1,
-      channelInterpretation: 'speakers',
-      processorOptions: {sampleRate: this.audioCtx.sampleRate}
-    });
-    this.port = this.node.port;
+      // Create worklet node
+      this.node = new AudioWorkletNode(this.audioCtx, 'oscillator', {
+        channelCount: 1,
+        channelInterpretation: 'speakers',
+        processorOptions: {sampleRate: this.audioCtx.sampleRate}
+      });
+      this.port = this.node.port;
   }
 
   get modInput(): AudioParam {
@@ -176,7 +177,7 @@ export class OscillatorWithPhaseMod {
   }
 
   public createPeriodicWave(real: number[], imag: number[]): Float32Array {
-    const retVal = new Float32Array(this.audioCtx.sampleRate / 2);
+    const retVal = new Float32Array(this.waveTableSize);
     if (real.length !== imag.length)
       throw Error("real and imaginary arrays must be the same length in createPeriodicWave");
     const phaseFactor = Math.PI * 2 / retVal.length;

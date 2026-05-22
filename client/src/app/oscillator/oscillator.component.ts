@@ -135,12 +135,13 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
         this.oscillators.push(new Oscillator(this.audioCtx));
       }
       this.oscillatorPoolMgr = new DevicePoolManager(this.oscillators, this.proxySettings);
-      this.started = true;
     }
 
     for(const osc of this.oscillators) {
+      await osc.start(this.started);
       osc.applySettings(this.proxySettings);
     }
+    this.started = true;
 
     this.frequency.setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
     this.deTune.setValue(this.proxySettings.deTune);
@@ -191,7 +192,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   protected setGain(gain: number) {
     this.proxySettings.gain = gain;
-    this.oscillators.forEach((osc, i) => {
+    this.oscillators.forEach((osc) => {
       osc.setGain(gain);
     });
   }
