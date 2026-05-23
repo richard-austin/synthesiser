@@ -6,7 +6,7 @@ export class OscillatorWithPhaseMod {
   public node!: AudioWorkletNode;
   public port!: MessagePort;
   audioCtx: AudioContext;
-  waveTableSize = 2048;
+  private static waveTableSize = 3000;
 
   constructor(audioCtx: AudioContext) {
     this.audioCtx = audioCtx;
@@ -45,11 +45,12 @@ export class OscillatorWithPhaseMod {
         private readonly periodicWave: Float32Array;
         private type: OscillatorType = "sine";
         private readonly xToIndex: number;
-        private readonly waveTableSize = 2048;
+        private readonly waveTableSize = -1;
 
         constructor(options: any) {
           super();
           this.sampleRate = options?.processorOptions?.sampleRate || 48000;
+          this.waveTableSize = options?.processorOptions?.waveTableSize;
           this.xToIndex = this.waveTableSize;
           this.periodicWave = new Float32Array(this.waveTableSize);
           // @ts-ignore
@@ -149,7 +150,7 @@ export class OscillatorWithPhaseMod {
       this.node = new AudioWorkletNode(this.audioCtx, 'oscillator', {
         channelCount: 1,
         channelInterpretation: 'speakers',
-        processorOptions: {sampleRate: this.audioCtx.sampleRate}
+        processorOptions: {sampleRate: this.audioCtx.sampleRate, waveTableSize: OscillatorWithPhaseMod.waveTableSize},
       });
       this.port = this.node.port;
   }
@@ -176,7 +177,17 @@ export class OscillatorWithPhaseMod {
     return this.savedType;
   }
 
-  public createPeriodicWave(real: number[], imag: number[]): Float32Array {
+  static lastReal: number[];
+  static lastImag: number[];
+  static lastTable: Float32Array;
+  public static createPeriodicWave(real: number[], imag: number[]): Float32Array {
+    if(real === this.lastReal && imag === this.lastImag) {
+      return this.lastTable;
+    }
+    // Cache this input
+    this.lastReal = real;
+    this.lastImag = imag;
+
     const retVal = new Float32Array(this.waveTableSize);
     if (real.length !== imag.length)
       throw Error("real and imaginary arrays must be the same length in createPeriodicWave");
@@ -189,7 +200,8 @@ export class OscillatorWithPhaseMod {
       });
       retVal[i] = term;
     }
-
+    // Cache this output
+    this.lastTable = retVal;
     return retVal;
   }
 
