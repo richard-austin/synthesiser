@@ -180,7 +180,7 @@ export class OscillatorWithPhaseMod {
   static lastReal: number[];
   static lastImag: number[];
   static lastTable: Float32Array;
-  public static createPeriodicWave(real: number[], imag: number[]): Float32Array {
+  public static createPeriodicWave(real: number[], imag: number[], constraints: {disableNormalization: boolean} = {disableNormalization: false}): Float32Array {
     if(real === this.lastReal && imag === this.lastImag) {
       return this.lastTable;
     }
@@ -199,6 +199,18 @@ export class OscillatorWithPhaseMod {
         term += (r * Math.cos(i * j * phaseFactor) + imag[j] * Math.sin(i * j * phaseFactor));
       });
       retVal[i] = term;
+    }
+    if(!constraints.disableNormalization) {
+      let maxValue = 0;
+      retVal.forEach((r) => {
+        if(Math.abs(r) > maxValue)
+          maxValue = r;
+      });
+
+      const correction = 1/maxValue;
+      for(let i = 0; i < retVal.length; ++i) {
+        retVal[i] *= correction;
+      }
     }
     // Cache this output
     this.lastTable = retVal;
