@@ -19,6 +19,8 @@ export class OscillatorParams {
 
 export class Oscillator extends OscFilterBase {
   public readonly oscillator: OscillatorWithPhaseMod;
+  phaseModOutputGain: GainNode;
+
   type: OscillatorType;
   private readonly panner: StereoPannerNode;
 
@@ -197,6 +199,8 @@ export class Oscillator extends OscFilterBase {
     this.panner = audioCtx.createStereoPanner();
     this.legatoMode = true;
     this.oscillator =new OscillatorWithPhaseMod(this.audioCtx);
+    this.phaseModOutputGain = audioCtx.createGain();
+    this.phaseModOutputGain.gain.value = 1;
     this.type = "sine";
     // Default ADSR values
     this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
@@ -209,6 +213,7 @@ export class Oscillator extends OscFilterBase {
       await this.oscillator.start();
       this.oscillator.connect(this.panner);
       this.frequencyMod.connect(this.oscillator.frequency);
+      this.oscillator.connect(this.phaseModOutputGain);
       this.frequencyModExternal.connect(this.oscillator.modInput);
     }
 
@@ -243,7 +248,7 @@ export class Oscillator extends OscFilterBase {
   setModOutput(modOutput: oscModOutput) {
     this.modOutputType = modOutput;
     if(this.connectedTo === oscModOutput.direct)
-      this.amplitudeMod.disconnect(this.modOutput);
+      this.phaseModOutputGain.disconnect(this.modOutput);
     else if(this.connectedTo === oscModOutput.envelope)
       this.envelope.disconnect(this.modOutput);
 
@@ -251,7 +256,7 @@ export class Oscillator extends OscFilterBase {
 
     switch(modOutput) {
       case oscModOutput.direct:
-        this.amplitudeMod.connect(this.modOutput);
+        this.phaseModOutputGain.connect(this.modOutput);
         break;
       case oscModOutput.envelope:
         this.envelope.connect(this.modOutput);

@@ -221,8 +221,8 @@ export class OscillatorWithPhaseMod {
     this.port.postMessage({type: 'periodicWave', periodicWave: periodicWave});
   }
 
-  public disconnect() {
-    this.node?.disconnect();
+  public disconnect(node?:AudioNode) {
+    node ? this.node?.disconnect(node) : this.node.disconnect();
   }
 
   public connect(node: AudioNode) {
