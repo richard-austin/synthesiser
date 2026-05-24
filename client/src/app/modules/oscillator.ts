@@ -5,7 +5,6 @@ import {onOff, oscModOutput, oscModType} from '../enums/enums';
 import {Subscription, timer} from 'rxjs';
 import {WaveTableDetails} from './WaveTableDetails';
 import { OscillatorSettings } from "../settings/oscillator";
-import {OscillatorWithPhaseMod} from './modulation/oscillator-with-phase-mod';
 
 export class OscillatorParams {
   ringModOutput: "signal" | "mod";
@@ -18,7 +17,7 @@ export class OscillatorParams {
 }
 
 export class Oscillator extends OscFilterBase {
-  public readonly oscillator: OscillatorWithPhaseMod;
+  public readonly oscillator: OscillatorNode;
   phaseModOutputGain: GainNode;
 
   type: OscillatorType;
@@ -197,29 +196,21 @@ export class Oscillator extends OscFilterBase {
   constructor(protected override audioCtx: AudioContext) {
     super(audioCtx);
     this.panner = audioCtx.createStereoPanner();
-    this.legatoMode = true;
-    this.oscillator =new OscillatorWithPhaseMod(this.audioCtx);
     this.phaseModOutputGain = audioCtx.createGain();
     this.phaseModOutputGain.gain.value = 1;
-    this.type = "sine";
+    this.legatoMode = true;
+    this.oscillator = audioCtx.createOscillator();
+    this.oscillator.start();
+    this.type = this.oscillator.type = "sine";
+    this.oscillator.connect(this.panner);
+    this.frequencyMod.connect(this.oscillator.frequency);
+    this.oscillator.connect(this.phaseModOutputGain);
+    this.frequencyModExternal.connect(this.oscillator.frequency);
     // Default ADSR values
     this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
     this.panner.connect(this.amplitudeMod);
 
   }
-
-  async start(started:boolean) {
-    if(!started) {
-      await this.oscillator.start();
-      this.oscillator.connect(this.panner);
-      this.frequencyMod.connect(this.oscillator.frequency);
-      this.oscillator.connect(this.phaseModOutputGain);
-      this.frequencyModExternal.connect(this.oscillator.modInput);
-    }
-
-    //this.oscillator.type = this.type;
-  }
-
   applySettings(proxySettings: OscillatorSettings) {
     this.setFrequency(100);
     this.setAmplitudeEnvelope(proxySettings.adsr)
@@ -234,6 +225,7 @@ export class Oscillator extends OscFilterBase {
     let f = super.clampFrequency(freq);
     this.oscillator.frequency.value = f;
     this.freq = f;
+    this.setModGainFactor(f);
   }
 
   setDetune(deTune: number) {
@@ -300,7 +292,7 @@ export class Oscillator extends OscFilterBase {
     } else {
       const wtDetails = Oscillator.wavetables.find(el => el.value === type);
       if (wtDetails)
-        this.oscillator.setPeriodicWave(OscillatorWithPhaseMod.createPeriodicWave(wtDetails?.waveTable.real, wtDetails?.waveTable.imag));
+        this.oscillator.setPeriodicWave(this.audioCtx.createPeriodicWave(wtDetails?.waveTable.real, wtDetails?.waveTable.imag));
       else {
         console.error("Cannot find wave table for " + "hammondFull")
         this.type = this.oscillator.type = "sine";
@@ -308,12 +300,22 @@ export class Oscillator extends OscFilterBase {
     }
   }
 
+
+  // Adjust frequency modulation gain with frequency to prevent aliasing
+  setModGainFactor(frequency: number): void {
+    const modGainFactor = frequency/500/(1+Math.pow(4, (frequency-700)/1000));
+    this.frequencyModExternal.gain.value = 5000 * modGainFactor;
+    this.modOutput.gain.value = 2 * modGainFactor;
+   // console.log("frequency = "+frequency+": modGainFactor = "+modGainFactor);
+  }
+
   freqBendEnvTimerSub!: Subscription;
 
   // Key down for this oscillator
   override keyDown(velocity: number, frequency: number) {
     super.attack(velocity, frequency);
-    this.frequencyMod.gain.value =  this.modLevel * frequency * 3000 / 400;
+    this.setModGainFactor(frequency);
+      this.frequencyMod.gain.value =  this.modLevel * frequency * 3000 / 400;
     //console.log("Oscillator keyDown = " + performance.now());
     if (this._useFreqBendEnvelope) {
       const ctx = this.audioCtx;
@@ -341,7 +343,7 @@ export class Oscillator extends OscFilterBase {
 
   destroy() {
     super.disconnect();
-    this.oscillator.destroy();
+    this.oscillator.stop();
     this.frequencyMod.disconnect();
     this.frequencyModExternal.disconnect();
     this.modOutput.disconnect();

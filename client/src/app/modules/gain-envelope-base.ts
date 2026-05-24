@@ -46,7 +46,7 @@ export abstract class GainEnvelopeBase {
     this.frequencyMod = audioCtx.createGain();
     this.frequencyMod.gain.value = 0;
     this.frequencyModExternal = audioCtx.createGain();
-    this.frequencyModExternal.gain.value = 0.3;  // Always fixed at 0.3 as this is used for external modulation set up on the matrix
+    this.frequencyModExternal.gain.value = 1;
     this.amplitudeMod = audioCtx.createGain();
     this.amplitudeMod.gain.value = 1;
     this.amplitudeModDepth = audioCtx.createGain();

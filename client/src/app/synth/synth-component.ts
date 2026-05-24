@@ -95,7 +95,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   @ViewChild('general') masterVolume!: GeneralComponent;
 
   constructor(private rest: RestfulApiService) {
-    this.audioCtx = new AudioContext({sampleRate: 96000, latencyHint: "interactive"});
+    this.audioCtx = new AudioContext({sampleRate: 48000, latencyHint: "interactive"});
     this.fileNameEffectRef = effect(() => {
       const fileName = this.filename();
       if (fileName !== "") {
@@ -162,7 +162,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
     // Connect the module component outputs
     for(const [i, oscillator] of this.oscillatorsGrp.toArray().entries()) {
-      await oscillator.start(this.audioCtx, settings ? settings.oscillatorSettings[i] : settings);
+      oscillator.start(this.audioCtx, settings ? settings.oscillatorSettings[i] : settings);
     }
 
     this.matrixComponent.start(this.audioCtx, settings ? settings.matrixSettings : settings);
