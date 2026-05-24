@@ -303,10 +303,10 @@ export class Oscillator extends OscFilterBase {
 
   // Adjust frequency modulation gain with frequency to prevent aliasing
   setModGainFactor(frequency: number): void {
-    const modGainFactor = frequency/500/(1+Math.pow(4, (frequency-700)/1000));
+    const modGainFactor = frequency/380/(1+Math.pow(9, (frequency-600)/1000));
     this.frequencyModExternal.gain.value = 5000 * modGainFactor;
     this.modOutput.gain.value = 2 * modGainFactor;
-   // console.log("frequency = "+frequency+": modGainFactor = "+modGainFactor);
+   console.log("frequency = "+frequency+": modGainFactor = "+modGainFactor);
   }
 
   freqBendEnvTimerSub!: Subscription;
