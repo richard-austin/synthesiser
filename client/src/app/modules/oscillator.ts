@@ -35,7 +35,7 @@ export class Oscillator extends OscFilterBase {
     ),
     new WaveTableDetails(
       "Sawtooth", "sawtooth",
-      {imag: [], real: []}
+      {imag: [0, 1, 0.5, 1/3, 1/4, 1/5, 1/6,1/7,1/8,1/9,1/10], real: [0,0,0,0,0,0,0,0,0,0,0]}
     ),
     new WaveTableDetails(
       "Triangle", "triangle",
@@ -295,7 +295,7 @@ export class Oscillator extends OscFilterBase {
 
   setType(type: OscillatorType) {
     this.type = type;
-    if (/^(sine|square|sawtooth|triangle)$/.test(type)) {
+    if (/^(sine|square|triangle)$/.test(type)) {
       this.oscillator.type = type as OscillatorType;
     } else {
       const wtDetails = Oscillator.wavetables.find(el => el.value === type);

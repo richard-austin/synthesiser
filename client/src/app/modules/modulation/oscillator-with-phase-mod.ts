@@ -56,7 +56,6 @@ export class OscillatorWithPhaseMod {
         private b2: number;
         private a1: number;
         private a2: number;
-        private prevCutoff: number;
 
         constructor(options: any) {
           super();
@@ -104,7 +103,6 @@ export class OscillatorWithPhaseMod {
           this.y2 = 0;
 
           // Cache the previous cutoff to prevent unnecessary recalculations
-          this.prevCutoff = -1;
           this.b0 = 0; this.b1 = 0; this.b2 = 0;
           this.a1 = 0; this.a2 = 0;
           this.calculateCoefficients(500, this.sampleRate);
