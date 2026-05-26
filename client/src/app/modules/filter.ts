@@ -28,7 +28,7 @@ export class Filter extends OscFilterBase {
     this.envelope.gain.value = 1;
     this.filter.connect(this.filter2);
     this.filter2.connect(this.amplitudeMod);
-    this.frequencyMod.connect(this.filter.frequency);
+    this.frequencyModInternal.connect(this.filter.frequency);
   }
 
 
@@ -68,7 +68,7 @@ export class Filter extends OscFilterBase {
   setModLevel(level: number) {
     this.modLevel = level;
     if (this.modType === oscModType.frequency) {
-      this.frequencyMod.gain.value = this.gainFactor * (Math.pow(this.freqModGainBase, this.modLevel) - 1);
+      this.frequencyModInternal.gain.value = this.gainFactor * (Math.pow(this.freqModGainBase, this.modLevel) - 1);
     } else if (this.modType === oscModType.amplitude) {
       this.amplitudeModDepth.gain.value = this.modLevel / 200;
     }

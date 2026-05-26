@@ -47,13 +47,26 @@ export class OscillatorWithPhaseMod {
         private readonly xToIndex: number;
         private readonly waveTableSize = -1;
 
+        private x1: number;
+        private x2: number;
+        private y1: number;
+        private y2: number;
+        private b0: number;
+        private b1: number;
+        private b2: number;
+        private a1: number;
+        private a2: number;
+        private prevCutoff: number;
+
         constructor(options: any) {
           super();
           this.sampleRate = options?.processorOptions?.sampleRate || 48000;
           this.waveTableSize = options?.processorOptions?.waveTableSize;
           this.xToIndex = this.waveTableSize;
           this.periodicWave = new Float32Array(this.waveTableSize);
-          // @ts-ignore
+
+          // Pre-warp the cutoff frequency for the bilinear transform
+           // @ts-ignore
           this.port.onmessage = (event) => {
             if (event.data.type === 'shutdown') {
               this.running = false;
@@ -82,6 +95,38 @@ export class OscillatorWithPhaseMod {
               }
             }
           }
+
+          // Two pole butterworth filter on the mod input to help prevent aliasing
+          // Initialize biquad state variables (x: inputs, y: outputs)
+          this.x1 = 0;
+          this.x2 = 0;
+          this.y1 = 0;
+          this.y2 = 0;
+
+          // Cache the previous cutoff to prevent unnecessary recalculations
+          this.prevCutoff = -1;
+          this.b0 = 0; this.b1 = 0; this.b2 = 0;
+          this.a1 = 0; this.a2 = 0;
+          this.calculateCoefficients(500, this.sampleRate);
+        }
+
+        calculateCoefficients(cutoff:number, sampleRate:number) {
+          // Bilinear Transform Pre-warping
+          const omega = Math.PI * cutoff / sampleRate;
+          const tanVal = Math.tan(omega);
+
+          // 2nd-order Butterworth prototype parameters
+          const sqrt2 = Math.SQRT2; // $\sqrt{2} \approx 1.4142$
+
+          const c2 = tanVal * tanVal;
+          const a0 = 1 + sqrt2 * tanVal + c2;
+
+          // Direct Form II Transposed coefficients
+          this.b0 = c2 / a0;
+          this.b1 = 2 * c2 / a0;
+          this.b2 = c2 / a0;
+          this.a1 = 2 * (c2 - 1) / a0;
+          this.a2 = (1 - sqrt2 * tanVal + c2) / a0;
         }
 
         private readonly twoPi = Math.PI * 2.0;
@@ -111,7 +156,7 @@ export class OscillatorWithPhaseMod {
         private phase = 0;
         private lastDetune = 0;
         private detuneFactor = 1;
-        private readonly twelthRoot2 = Math.pow(2, 1/12);
+        private readonly twelfthRoot2 = Math.pow(2, 1/12);
 
         process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: IDictionary) {
           const output: Float32Array[] = outputs[0];
@@ -127,11 +172,22 @@ export class OscillatorWithPhaseMod {
             const detune = detuneParam.length === 1 ? detuneParam[0] : detuneParam[i];
             if(detune !== this.lastDetune) {
               this.lastDetune = detune;
-              this.detuneFactor = Math.pow(this.twelthRoot2, detune/100);
+              this.detuneFactor = Math.pow(this.twelfthRoot2, detune/100);
             }
             f *= this.detuneFactor;
 
-            const mod = (modParam.length === 1 ? modParam[0] : modParam[i]) * 10;
+            const x = (modParam.length === 1 ? modParam[0] : modParam[i] * 10);
+
+            // Biquad Difference Equation (Direct Form I)
+            const mod = this.b0 * x + this.b1 * this.x1 + this.b2 * this.x2
+              - this.a1 * this.y1 - this.a2 * this.y2;
+
+            // Shift delay taps
+            this.x2 = this.x1;
+            this.x1 = x;
+            this.y2 = this.y1;
+            this.y1 = mod;
+
             const inc = f / this.sampleRate;
             this.phase += inc
             let currentPhase = this.phase + mod;

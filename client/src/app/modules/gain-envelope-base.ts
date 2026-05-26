@@ -17,8 +17,8 @@ export abstract class GainEnvelopeBase {
   protected readonly gain: GainNode;
   protected readonly envelope: GainNode;
   protected readonly modOutput: GainNode;
-  frequencyMod: GainNode;
-  frequencyModExternal: GainNode;
+  frequencyModInternal: GainNode;
+  phaseModExternal: GainNode;
   amplitudeMod: GainNode;
   amplitudeModDepth: GainNode;
   amplitudeModDepthExternal: GainNode;
@@ -43,10 +43,10 @@ export abstract class GainEnvelopeBase {
     this.modOutput.gain.value = 1;
     // Default ADSR values
     this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
-    this.frequencyMod = audioCtx.createGain();
-    this.frequencyMod.gain.value = 0;
-    this.frequencyModExternal = audioCtx.createGain();
-    this.frequencyModExternal.gain.value = 1;
+    this.frequencyModInternal = audioCtx.createGain();
+    this.frequencyModInternal.gain.value = 0;
+    this.phaseModExternal = audioCtx.createGain();
+    this.phaseModExternal.gain.value = 0.3;
     this.amplitudeMod = audioCtx.createGain();
     this.amplitudeMod.gain.value = 1;
     this.amplitudeModDepth = audioCtx.createGain();
@@ -91,17 +91,17 @@ export abstract class GainEnvelopeBase {
           modulator.connect(this.amplitudeModDepth);
           this.modConnections.push(new Modulation(this.amplitudeModDepth, modulator));
           // Remove any previous connection from this modulator to the frequencyMod node
-          const idx = this.modConnections.findIndex(mod => mod.modulator === modulator && mod.carrier === this.frequencyMod);
+          const idx = this.modConnections.findIndex(mod => mod.modulator === modulator && mod.carrier === this.frequencyModInternal);
           if (idx > -1) {
             modulator.disconnect(this.modConnections[idx].carrier);
             this.modConnections.splice(idx, 1);
           }
         }
       } else if (type === oscModType.frequency) {
-        if (!this.modConnections.find((mod) => mod.modulator === modulator && mod.carrier === this.frequencyMod)) {
+        if (!this.modConnections.find((mod) => mod.modulator === modulator && mod.carrier === this.frequencyModInternal)) {
           // modulator.connect(this.frequencyMod);
-          modulator.connect(this.frequencyMod);
-          this.modConnections.push(new Modulation(this.frequencyMod, modulator));
+          modulator.connect(this.frequencyModInternal);
+          this.modConnections.push(new Modulation(this.frequencyModInternal, modulator));
           // Remove any previous connection from this modulator to the amplitudeModDepth node
           const idx = this.modConnections.findIndex(mod => mod.modulator === modulator && mod.carrier === this.amplitudeModDepth);
           if (idx > -1) {
@@ -128,17 +128,17 @@ export abstract class GainEnvelopeBase {
           modulator.connect(this.amplitudeModDepthExternal);
           this.modConnections.push(new Modulation(this.amplitudeModDepthExternal, modulator));
           // Remove any previous connection from this modulator to the frequencyModExternal node
-          const idx = this.modConnections.findIndex(mod => mod.modulator === modulator && mod.carrier === this.frequencyModExternal);
+          const idx = this.modConnections.findIndex(mod => mod.modulator === modulator && mod.carrier === this.phaseModExternal);
           if (idx > -1) {
             modulator.disconnect(this.modConnections[idx].carrier);
             this.modConnections.splice(idx, 1);
           }
         }
       } else if (type === oscModType.frequency) {
-        if (!this.modConnections.find((mod) => mod.modulator === modulator && mod.carrier === this.frequencyModExternal)) {
+        if (!this.modConnections.find((mod) => mod.modulator === modulator && mod.carrier === this.phaseModExternal)) {
           // modulator.connect(this.frequencyModExternal);
-          modulator.connect(this.frequencyModExternal);
-          this.modConnections.push(new Modulation(this.frequencyModExternal, modulator));
+          modulator.connect(this.phaseModExternal);
+          this.modConnections.push(new Modulation(this.phaseModExternal, modulator));
           // Remove any previous connection from this modulator to the amplitudeModDepthExternal node
           const idx = this.modConnections.findIndex(mod => mod.modulator === modulator && mod.carrier === this.amplitudeModDepthExternal);
           if (idx > -1) {
