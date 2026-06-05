@@ -300,7 +300,7 @@ export class Oscillator extends OscFilterBase {
     } else {
       const wtDetails = Oscillator.wavetables.find(el => el.value === type);
       if (wtDetails)
-        this.oscillator.setPeriodicWave(OscillatorWithPhaseMod.createPeriodicWave(wtDetails?.waveTable.real, wtDetails?.waveTable.imag));
+        this.oscillator.setPeriodicWave(OscillatorWithPhaseMod.createPeriodicWave(this.audioCtx, wtDetails?.waveTable.real, wtDetails?.waveTable.imag));
       else {
         console.error("Cannot find wave table for " + "hammondFull")
         this.type = this.oscillator.type = "sine";

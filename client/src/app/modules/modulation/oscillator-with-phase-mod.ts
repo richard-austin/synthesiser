@@ -14,39 +14,8 @@ export class OscillatorWithPhaseMod {
 
   async start(): Promise<void> {
     function worklet() {
-      // @ts-ignore
-      registerProcessor('oscillator', class Processor extends AudioWorkletProcessor {
-        static get parameterDescriptors() {
-          return [{
-            name: 'mod',
-            defaultValue: 0,
-            minValue: -Math.PI * 4,
-            maxValue: Math.PI * 4,
-            automationRate: "a-rate"
-          },
-          {
-            name: 'frequency',
-            defaultValue: 263,
-            minValue: 0,
-            maxValue: 25000,
-            automationRate: "a-rate"
-          },
-          {
-            name: 'detune',
-            defaultValue: 0,
-            minValue: -400000,
-            maxValue: 400000,
-            automationRate: "a-rate"
-          }];
-        }
 
-        running: boolean = true;
-        readonly sampleRate: number;
-        private readonly periodicWave: Float32Array;
-        private type: OscillatorType = "sine";
-        private readonly xToIndex: number;
-        private readonly waveTableSize = -1;
-
+      class ButterworthFilter {
         private x1: number;
         private x2: number;
         private y1: number;
@@ -57,6 +26,92 @@ export class OscillatorWithPhaseMod {
         private a1: number;
         private a2: number;
 
+        constructor() {
+          // Two pole butterworth filter on the mod input to help prevent aliasing
+          // Initialize biquad state variables (x: inputs, y: outputs)
+          this.x1 = 0;
+          this.x2 = 0;
+          this.y1 = 0;
+          this.y2 = 0;
+
+          // Cache the previous cutoff to prevent unnecessary recalculations
+          this.b0 = 0;
+          this.b1 = 0;
+          this.b2 = 0;
+          this.a1 = 0;
+          this.a2 = 0;
+
+        }
+
+        calculateCoefficients(cutoff: number, sampleRate: number) {
+          // Bilinear Transform Pre-warping
+          const omega = Math.PI * cutoff / sampleRate;
+          const tanVal = Math.tan(omega);
+
+          // 2nd-order Butterworth prototype parameters
+          const sqrt2 = Math.SQRT2; // $\sqrt{2} \approx 1.4142$
+
+          const c2 = tanVal * tanVal;
+          const a0 = 1 + sqrt2 * tanVal + c2;
+
+          // Direct Form II Transposed coefficients
+          this.b0 = c2 / a0;
+          this.b1 = 2 * c2 / a0;
+          this.b2 = c2 / a0;
+          this.a1 = 2 * (c2 - 1) / a0;
+          this.a2 = (1 - sqrt2 * tanVal + c2) / a0;
+        }
+
+        process(input: number): number {
+          // Biquad Difference Equation (Direct Form I)
+          const output = this.b0 * input + this.b1 * this.x1 + this.b2 * this.x2 - this.a1 * this.y1 - this.a2 * this.y2;
+
+          // Shift delay taps
+          this.x2 = this.x1;
+          this.x1 = input;
+          this.y2 = this.y1;
+          this.y1 = output;
+
+          return output;
+        }
+      }
+
+
+      // @ts-ignore
+      registerProcessor('oscillator', class Processor extends AudioWorkletProcessor {
+        static get parameterDescriptors() {
+          return [{
+            name: 'mod',
+            defaultValue: 0,
+            minValue: -Math.PI * 4,
+            maxValue: Math.PI * 4,
+            automationRate: "a-rate"
+          },
+            {
+              name: 'frequency',
+              defaultValue: 263,
+              minValue: 0,
+              maxValue: 25000,
+              automationRate: "a-rate"
+            },
+            {
+              name: 'detune',
+              defaultValue: 0,
+              minValue: -400000,
+              maxValue: 400000,
+              automationRate: "a-rate"
+            }];
+        }
+
+        running: boolean = true;
+        readonly sampleRate: number;
+        private readonly periodicWave: Float32Array;
+        private type: OscillatorType = "sine";
+        private readonly xToIndex: number;
+        private readonly waveTableSize = -1;
+        private readonly modFilter: ButterworthFilter;
+
+
         constructor(options: any) {
           super();
           this.sampleRate = options?.processorOptions?.sampleRate || 48000;
@@ -65,7 +120,7 @@ export class OscillatorWithPhaseMod {
           this.periodicWave = new Float32Array(this.waveTableSize);
 
           // Pre-warp the cutoff frequency for the bilinear transform
-           // @ts-ignore
+          // @ts-ignore
           this.port.onmessage = (event) => {
             if (event.data.type === 'shutdown') {
               this.running = false;
@@ -95,36 +150,8 @@ export class OscillatorWithPhaseMod {
             }
           }
 
-          // Two pole butterworth filter on the mod input to help prevent aliasing
-          // Initialize biquad state variables (x: inputs, y: outputs)
-          this.x1 = 0;
-          this.x2 = 0;
-          this.y1 = 0;
-          this.y2 = 0;
-
-          // Cache the previous cutoff to prevent unnecessary recalculations
-          this.b0 = 0; this.b1 = 0; this.b2 = 0;
-          this.a1 = 0; this.a2 = 0;
-          this.calculateCoefficients(500, this.sampleRate);
-        }
-
-        calculateCoefficients(cutoff:number, sampleRate:number) {
-          // Bilinear Transform Pre-warping
-          const omega = Math.PI * cutoff / sampleRate;
-          const tanVal = Math.tan(omega);
-
-          // 2nd-order Butterworth prototype parameters
-          const sqrt2 = Math.SQRT2; // $\sqrt{2} \approx 1.4142$
-
-          const c2 = tanVal * tanVal;
-          const a0 = 1 + sqrt2 * tanVal + c2;
-
-          // Direct Form II Transposed coefficients
-          this.b0 = c2 / a0;
-          this.b1 = 2 * c2 / a0;
-          this.b2 = c2 / a0;
-          this.a1 = 2 * (c2 - 1) / a0;
-          this.a2 = (1 - sqrt2 * tanVal + c2) / a0;
+          this.modFilter = new ButterworthFilter();
+          this.modFilter.calculateCoefficients(500, this.sampleRate);
         }
 
         private readonly twoPi = Math.PI * 2.0;
@@ -142,10 +169,10 @@ export class OscillatorWithPhaseMod {
         }
 
         private sawtoothFunction(x: number) {
-          return 2 * (x -0.5);
+          return 2 * (x - 0.5);
         }
 
-        private triangleFunction(x: number){
+        private triangleFunction(x: number) {
           return x < 0.5 ? 4 * x - 1 : 3 - 4 * x;
         }
 
@@ -154,45 +181,35 @@ export class OscillatorWithPhaseMod {
         private phase = 0;
         private lastDetune = 0;
         private detuneFactor = 1;
-        private readonly twelfthRoot2 = Math.pow(2, 1/12);
+        private readonly twelfthRoot2 = Math.pow(2, 1 / 12);
 
         process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: IDictionary) {
           const output: Float32Array[] = outputs[0];
-          // const input: Float32Array[] = inputs[0];
           const modParam = parameters["mod"];
           const frequencyParam = parameters["frequency"];
-          const detuneParam  = parameters["detune"];
+          const detuneParam = parameters["detune"];
 
-          if (!output) return true;
-          const outputChannel: Float32Array = output[0];
-          for (let i = 0; i < outputChannel.length; i++) {
-            let f = frequencyParam.length === 1 ? frequencyParam[0] : frequencyParam[i];
-            const detune = detuneParam.length === 1 ? detuneParam[0] : detuneParam[i];
-            if(detune !== this.lastDetune) {
-              this.lastDetune = detune;
-              this.detuneFactor = Math.pow(this.twelfthRoot2, detune/100);
-            }
-            f *= this.detuneFactor;
+            if (!output) return true;
+            const outputChannel: Float32Array = output[0];
+            for (let i = 0; i < outputChannel.length; i++) {
+              let f = frequencyParam.length === 1 ? frequencyParam[0] : frequencyParam[i];
+              const detune = detuneParam.length === 1 ? detuneParam[0] : detuneParam[i];
+              if (detune !== this.lastDetune) {
+                this.lastDetune = detune;
+                this.detuneFactor = Math.pow(this.twelfthRoot2, detune / 100);
+              }
+              f *= this.detuneFactor;
 
-            const x = (modParam.length === 1 ? modParam[0] : modParam[i] * 10);
+              const x = (modParam.length === 1 ? modParam[0] : modParam[i] * 10);
+              const mod = this.modFilter.process(x);
+              const inc = f / this.sampleRate;
+              this.phase += inc
+              let currentPhase = this.phase + mod;
+              currentPhase = currentPhase - Math.floor(currentPhase);
+              this.phase = this.phase - Math.floor(this.phase);
 
-            // Biquad Difference Equation (Direct Form I)
-            const mod = this.b0 * x + this.b1 * this.x1 + this.b2 * this.x2
-              - this.a1 * this.y1 - this.a2 * this.y2;
-
-            // Shift delay taps
-            this.x2 = this.x1;
-            this.x1 = x;
-            this.y2 = this.y1;
-            this.y1 = mod;
-
-            const inc = f / this.sampleRate;
-            this.phase += inc
-            let currentPhase = this.phase + mod;
-            currentPhase = currentPhase - Math.floor(currentPhase);
-            this.phase = this.phase - Math.floor(this.phase);
-
-            outputChannel[i] = this.render(currentPhase);
+              outputChannel[i] = this.render(currentPhase);
+              outputChannel[i] = this.render(currentPhase);
           }
           return this.running;
         }
@@ -200,13 +217,13 @@ export class OscillatorWithPhaseMod {
     }
 
     await this.audioCtx.audioWorklet.addModule(`data:text/javascript,(${worklet.toString()})()`);
-      // Create worklet node
-      this.node = new AudioWorkletNode(this.audioCtx, 'oscillator', {
-        channelCount: 1,
-        channelInterpretation: 'speakers',
+    // Create worklet node
+    this.node = new AudioWorkletNode(this.audioCtx, 'oscillator', {
+      channelCount: 1,
+      channelInterpretation: 'speakers',
         processorOptions: {sampleRate: this.audioCtx.sampleRate, waveTableSize: OscillatorWithPhaseMod.waveTableSize},
-      });
-      this.port = this.node.port;
+    });
+    this.port = this.node.port;
   }
 
   get modInput(): AudioParam {
@@ -234,48 +251,27 @@ export class OscillatorWithPhaseMod {
   static lastReal: number[];
   static lastImag: number[];
   static lastTable: Float32Array;
-  public static createPeriodicWave(real: number[], imag: number[], constraints: {disableNormalization: boolean} = {disableNormalization: false}): Float32Array {
-    if(real === this.lastReal && imag === this.lastImag) {
-      return this.lastTable;
-    }
-    // Cache this input
+  public static createPeriodicWave(audioCtx: AudioContext, real: number[], imag: number[], constraints: {disableNormalization: boolean} = {disableNormalization: false}): Promise<AudioBuffer> {
     this.lastReal = real;
     this.lastImag = imag;
-
-    const retVal = new Float32Array(this.waveTableSize);
-    if (real.length !== imag.length)
-      throw Error("real and imaginary arrays must be the same length in createPeriodicWave");
-    const phaseFactor = Math.PI * 2 / retVal.length;
-
-    for (let i = 0; i < retVal.length; i++) {
-      let term = 0;
-      real.forEach((r, j) => {
-        term += (r * Math.cos(i * j * phaseFactor) + imag[j] * Math.sin(i * j * phaseFactor));
-      });
-      retVal[i] = term;
-    }
-    if(!constraints.disableNormalization) {
-      let maxValue = 0;
-      retVal.forEach((r) => {
-        if(Math.abs(r) > maxValue)
-          maxValue = r;
-      });
-
-      const correction = 1/maxValue;
-      for(let i = 0; i < retVal.length; ++i) {
-        retVal[i] *= correction;
-      }
-    }
-    // Cache this output
-    this.lastTable = retVal;
-    return retVal;
+    const sampleRate = audioCtx.sampleRate;
+    const olac = new OfflineAudioContext(1, sampleRate/8.13, sampleRate);
+      const o = olac.createOscillator();
+    o.setPeriodicWave(olac.createPeriodicWave(real.slice(0,100), imag.slice(0, 100), constraints));
+    o.frequency.value = 8.13
+      o.connect(olac.destination);
+      o.start();
+    return olac.startRendering();
   }
 
-  setPeriodicWave(periodicWave: Float32Array) {
-    this.port.postMessage({type: 'periodicWave', periodicWave: periodicWave});
+  setPeriodicWave(periodicWave: Promise<AudioBuffer>) {
+    periodicWave.then(ab => {
+      const cd = ab.getChannelData(0);
+      this.port.postMessage({type: 'periodicWave', periodicWave: cd});
+    });
   }
 
-  public disconnect(node?:AudioNode) {
+  public disconnect(node?: AudioNode) {
     node ? this.node?.disconnect(node) : this.node.disconnect();
   }
 
