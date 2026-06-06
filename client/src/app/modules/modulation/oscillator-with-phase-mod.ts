@@ -6,7 +6,7 @@ export class OscillatorWithPhaseMod {
   public node!: AudioWorkletNode;
   public port!: MessagePort;
   audioCtx: AudioContext;
-  private static waveTableSize = 3000;
+  private static waveTableSize = 1024;
 
   constructor(audioCtx: AudioContext) {
     this.audioCtx = audioCtx;
@@ -104,17 +104,17 @@ export class OscillatorWithPhaseMod {
 
         running: boolean = true;
         readonly sampleRate: number;
-        private periodicWave!: Float32Array;
+        private periodicWave!: Float32Array[];
         private type: OscillatorType = "sine";
-        private readonly xToIndex: number;
         private readonly waveTableSize = -1;
+        private readonly startFx: number;
         private readonly modFilter: ButterworthFilter;
 
         constructor(options: any) {
           super();
           this.sampleRate = options?.processorOptions?.sampleRate || 48000;
           this.waveTableSize = options?.processorOptions?.waveTableSize;
-          this.xToIndex = this.waveTableSize;
+          this.startFx = options?.processorOptions?.startFx;
 
           // @ts-ignore
           this.port.onmessage = (event) => {
@@ -153,8 +153,10 @@ export class OscillatorWithPhaseMod {
           return Math.sin(x * this.twoPi);
         }
 
-        private periodicWaveFunction(x: number): number {
-          return this.periodicWave[Math.floor(x * this.xToIndex)];
+        currentPeriodicWave!: Float32Array[];
+
+        private periodicWaveFunction(x: number, band: number): number {
+          return this.currentPeriodicWave[band][Math.floor(x * this.waveTableSize)];
         }
 
         private squareFunction = (x: number): number => {
@@ -169,12 +171,13 @@ export class OscillatorWithPhaseMod {
           return x < 0.5 ? 4 * x - 1 : 3 - 4 * x;
         }
 
-        private render: (x: number) => number = this.sineFunction;
+        private render: (x: number, band: number) => number = this.sineFunction;
 
         private phase = 0;
         private lastDetune = 0;
         private detuneFactor = 1;
         private readonly twelfthRoot2 = Math.pow(2, 1 / 12);
+        private readonly root2 = Math.pow(2, 1 / 2);
 
         process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: IDictionary) {
           const output: Float32Array[] = outputs[0];
@@ -183,30 +186,38 @@ export class OscillatorWithPhaseMod {
           const frequencyParam = parameters["frequency"];
           const detuneParam = parameters["detune"];
 
-          if (!output) return this.running;
-          const outputChannel: Float32Array = output[0];
-          for (let i = 0; i < outputChannel.length; i++) {
-            let f = frequencyParam.length === 1 ? frequencyParam[0] : frequencyParam[i];
-            const detune = detuneParam.length === 1 ? detuneParam[0] : detuneParam[i];
-            if (detune !== this.lastDetune) {
-              this.lastDetune = detune;
-              this.detuneFactor = Math.pow(this.twelfthRoot2, detune / 100);
+          if (this.periodicWave) {
+            this.currentPeriodicWave = this.periodicWave;  // Update the periodic wave on a k-rate basis
+
+            if (!output) return true;
+            const outputChannel: Float32Array = output[0];
+            for (let i = 0; i < outputChannel.length; i++) {
+              let f = frequencyParam.length === 1 ? frequencyParam[0] : frequencyParam[i];
+              let band = Math.floor(Math.log2(f / this.startFx) / Math.log2(this.root2));
+
+              if (band < 0) band = 0;
+              else if (band > this.currentPeriodicWave.length - 1) band = this.currentPeriodicWave.length - 1;
+
+              const detune = detuneParam.length === 1 ? detuneParam[0] : detuneParam[i];
+              if (detune !== this.lastDetune) {
+                this.lastDetune = detune;
+                this.detuneFactor = Math.pow(this.twelfthRoot2, detune / 100);
+              }
+              f *= this.detuneFactor;
+
+              const x = (modParam.length === 1 ? modParam[0] : modParam[i] * 10);
+              const mod = this.modFilter.process(x);
+              const inc = f / this.sampleRate;
+              this.phase += inc
+              let currentPhase = this.phase + mod;
+              currentPhase = currentPhase - Math.floor(currentPhase);
+              this.phase = this.phase - Math.floor(this.phase);
+
+              outputChannel[i] = this.render(currentPhase, band);
             }
-            f *= this.detuneFactor;
-
-            const x = (modParam.length === 1 ? modParam[0] : modParam[i] * 10);
-            const mod = this.modFilter.process(x);
-            const inc = f / this.sampleRate;
-            this.phase += inc
-            let currentPhase = this.phase + mod;
-            currentPhase = currentPhase - Math.floor(currentPhase);
-            this.phase = this.phase - Math.floor(this.phase);
-
-            outputChannel[i] = this.render(currentPhase);
           }
           return this.running;
         }
-
       });
     }
 
@@ -215,7 +226,11 @@ export class OscillatorWithPhaseMod {
     this.node = new AudioWorkletNode(this.audioCtx, 'oscillator', {
       channelCount: 1,
       channelInterpretation: 'speakers',
-      processorOptions: {sampleRate: this.audioCtx.sampleRate, waveTableSize: OscillatorWithPhaseMod.waveTableSize},
+      processorOptions: {
+        sampleRate: this.audioCtx.sampleRate,
+        waveTableSize: OscillatorWithPhaseMod.waveTableSize,
+        startFx: OscillatorWithPhaseMod.startFx
+      }
     });
     this.port = this.node.port;
   }
@@ -246,25 +261,37 @@ export class OscillatorWithPhaseMod {
   static lastReal: number[];
   static lastImag: number[];
   static lastTable: Float32Array;
+  static readonly startFx = 1000;
 
   public static createPeriodicWave(audioCtx: AudioContext, real: number[], imag: number[], constraints: {
     disableNormalization: boolean
-  } = {disableNormalization: false}): Promise<AudioBuffer> {
+  } = {disableNormalization: false}): Promise<AudioBuffer[]> {
     this.lastReal = real;
     this.lastImag = imag;
+    const refFreq = audioCtx.sampleRate / OscillatorWithPhaseMod.waveTableSize;
     const sampleRate = audioCtx.sampleRate;
-    const olac = new OfflineAudioContext(1, sampleRate / 8.13, sampleRate);
-    const o = olac.createOscillator();
-    o.setPeriodicWave(olac.createPeriodicWave(real.slice(0, 100), imag.slice(0, 100), constraints));
-    o.frequency.value = 8.13
-    o.connect(olac.destination);
-    o.start();
-    return olac.startRendering();
+    const retVal = [];
+    const root2 = Math.pow(2, 1 / 2);
+    for (let fx = this.startFx; fx < sampleRate / 2; fx *= root2) {
+      const olac = new OfflineAudioContext(1, OscillatorWithPhaseMod.waveTableSize, sampleRate);
+      const o = olac.createOscillator();
+      const numberOfTerms = fx < this.startFx ? 5000 : Math.floor(sampleRate / 2 / fx) + 1;
+      o.setPeriodicWave(olac.createPeriodicWave(real.slice(0, numberOfTerms), imag.slice(0, numberOfTerms), constraints));
+      o.frequency.value = refFreq;
+      o.connect(olac.destination);
+      o.start();
+      retVal.push(olac.startRendering());
+    }
+    return Promise.all(retVal);
   }
 
-  setPeriodicWave(periodicWave: Promise<AudioBuffer>) {
-    periodicWave.then(ab => {
-      const cd = ab.getChannelData(0);
+  setPeriodicWave(periodicWaves: Promise<AudioBuffer[]>) {
+    periodicWaves.then(aba => {
+      const cd: Float32Array[] = [];
+
+      aba.forEach(ab => {
+        cd.push(ab.getChannelData(0));
+      });
       this.port.postMessage({type: 'periodicWave', periodicWave: cd});
     });
   }
