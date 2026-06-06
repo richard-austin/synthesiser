@@ -40,7 +40,6 @@ export class OscillatorWithPhaseMod {
           this.b2 = 0;
           this.a1 = 0;
           this.a2 = 0;
-
         }
 
         calculateCoefficients(cutoff: number, sampleRate: number) {
@@ -105,21 +104,18 @@ export class OscillatorWithPhaseMod {
 
         running: boolean = true;
         readonly sampleRate: number;
-        private readonly periodicWave: Float32Array;
+        private periodicWave!: Float32Array;
         private type: OscillatorType = "sine";
         private readonly xToIndex: number;
         private readonly waveTableSize = -1;
         private readonly modFilter: ButterworthFilter;
-
 
         constructor(options: any) {
           super();
           this.sampleRate = options?.processorOptions?.sampleRate || 48000;
           this.waveTableSize = options?.processorOptions?.waveTableSize;
           this.xToIndex = this.waveTableSize;
-          this.periodicWave = new Float32Array(this.waveTableSize);
 
-          // Pre-warp the cutoff frequency for the bilinear transform
           // @ts-ignore
           this.port.onmessage = (event) => {
             if (event.data.type === 'shutdown') {
@@ -128,10 +124,7 @@ export class OscillatorWithPhaseMod {
               this.port.close();
               console.log("Phase modulator closed");
             } else if (event.data.type === 'periodicWave') {
-              const periodicWave: Float32Array = event.data.periodicWave;
-              periodicWave.forEach((term: number, i: number) => {
-                this.periodicWave[i] = term;
-              });
+              this.periodicWave = event.data.periodicWave;
               this.type = "custom";
               this.render = this.periodicWaveFunction;
             } else if (event.data.type === 'type') {
@@ -185,34 +178,35 @@ export class OscillatorWithPhaseMod {
 
         process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: IDictionary) {
           const output: Float32Array[] = outputs[0];
+
           const modParam = parameters["mod"];
           const frequencyParam = parameters["frequency"];
           const detuneParam = parameters["detune"];
 
-            if (!output) return true;
-            const outputChannel: Float32Array = output[0];
-            for (let i = 0; i < outputChannel.length; i++) {
-              let f = frequencyParam.length === 1 ? frequencyParam[0] : frequencyParam[i];
-              const detune = detuneParam.length === 1 ? detuneParam[0] : detuneParam[i];
-              if (detune !== this.lastDetune) {
-                this.lastDetune = detune;
-                this.detuneFactor = Math.pow(this.twelfthRoot2, detune / 100);
-              }
-              f *= this.detuneFactor;
+          if (!output) return this.running;
+          const outputChannel: Float32Array = output[0];
+          for (let i = 0; i < outputChannel.length; i++) {
+            let f = frequencyParam.length === 1 ? frequencyParam[0] : frequencyParam[i];
+            const detune = detuneParam.length === 1 ? detuneParam[0] : detuneParam[i];
+            if (detune !== this.lastDetune) {
+              this.lastDetune = detune;
+              this.detuneFactor = Math.pow(this.twelfthRoot2, detune / 100);
+            }
+            f *= this.detuneFactor;
 
-              const x = (modParam.length === 1 ? modParam[0] : modParam[i] * 10);
-              const mod = this.modFilter.process(x);
-              const inc = f / this.sampleRate;
-              this.phase += inc
-              let currentPhase = this.phase + mod;
-              currentPhase = currentPhase - Math.floor(currentPhase);
-              this.phase = this.phase - Math.floor(this.phase);
+            const x = (modParam.length === 1 ? modParam[0] : modParam[i] * 10);
+            const mod = this.modFilter.process(x);
+            const inc = f / this.sampleRate;
+            this.phase += inc
+            let currentPhase = this.phase + mod;
+            currentPhase = currentPhase - Math.floor(currentPhase);
+            this.phase = this.phase - Math.floor(this.phase);
 
-              outputChannel[i] = this.render(currentPhase);
-              outputChannel[i] = this.render(currentPhase);
+            outputChannel[i] = this.render(currentPhase);
           }
           return this.running;
         }
+
       });
     }
 
@@ -221,7 +215,7 @@ export class OscillatorWithPhaseMod {
     this.node = new AudioWorkletNode(this.audioCtx, 'oscillator', {
       channelCount: 1,
       channelInterpretation: 'speakers',
-        processorOptions: {sampleRate: this.audioCtx.sampleRate, waveTableSize: OscillatorWithPhaseMod.waveTableSize},
+      processorOptions: {sampleRate: this.audioCtx.sampleRate, waveTableSize: OscillatorWithPhaseMod.waveTableSize},
     });
     this.port = this.node.port;
   }
@@ -239,6 +233,7 @@ export class OscillatorWithPhaseMod {
   }
 
   savedType: OscillatorType = "sine";
+
   set type(type: OscillatorType) {
     this.savedType = type;
     this.port.postMessage({type: 'type', payload: type});
@@ -251,16 +246,19 @@ export class OscillatorWithPhaseMod {
   static lastReal: number[];
   static lastImag: number[];
   static lastTable: Float32Array;
-  public static createPeriodicWave(audioCtx: AudioContext, real: number[], imag: number[], constraints: {disableNormalization: boolean} = {disableNormalization: false}): Promise<AudioBuffer> {
+
+  public static createPeriodicWave(audioCtx: AudioContext, real: number[], imag: number[], constraints: {
+    disableNormalization: boolean
+  } = {disableNormalization: false}): Promise<AudioBuffer> {
     this.lastReal = real;
     this.lastImag = imag;
     const sampleRate = audioCtx.sampleRate;
-    const olac = new OfflineAudioContext(1, sampleRate/8.13, sampleRate);
-      const o = olac.createOscillator();
-    o.setPeriodicWave(olac.createPeriodicWave(real.slice(0,100), imag.slice(0, 100), constraints));
+    const olac = new OfflineAudioContext(1, sampleRate / 8.13, sampleRate);
+    const o = olac.createOscillator();
+    o.setPeriodicWave(olac.createPeriodicWave(real.slice(0, 100), imag.slice(0, 100), constraints));
     o.frequency.value = 8.13
-      o.connect(olac.destination);
-      o.start();
+    o.connect(olac.destination);
+    o.start();
     return olac.startRendering();
   }
 
