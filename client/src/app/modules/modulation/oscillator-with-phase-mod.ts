@@ -192,12 +192,15 @@ export class OscillatorWithPhaseMod {
           if (!output) return true;
           const outputChannel: Float32Array = output[0];
           for (let i = 0; i < outputChannel.length; i++) {
+
             let f = frequencyParam.length === 1 ? frequencyParam[0] : frequencyParam[i];
-            let band = Math.floor(Math.log2(f / this.startFx) / Math.log2(this.root2));
+            let band = 0;
+            if (this.render === this.periodicWaveFunction) {
+              band = Math.floor(Math.log2(f / this.startFx) / Math.log2(this.root2));
 
-            if (band < 0) band = 0;
-            else if (band > this.currentPeriodicWave.length - 1) band = this.currentPeriodicWave.length - 1;
-
+              if (band < 0) band = 0;
+              else if (band > this.currentPeriodicWave.length - 1) band = this.currentPeriodicWave.length - 1;
+            }
             const detune = detuneParam.length === 1 ? detuneParam[0] : detuneParam[i];
             if (detune !== this.lastDetune) {
               this.lastDetune = detune;
