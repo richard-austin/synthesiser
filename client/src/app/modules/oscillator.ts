@@ -35,10 +35,10 @@ export class Oscillator extends OscFilterBase {
     ),
     new WaveTableDetails(
       "Sawtooth", "sawtooth",
-      {imag: Array.from({ length: 8192 }, (_, n) =>
+      {imag: Array.from({ length: 1024 }, (_, n) =>
           n === 0 ? 0 : 1/n
         ),
-        real: Array.from({ length: 8192 }, (_, n) => 0)}
+        real: Array.from({ length: 1024 }, (_, n) => 0)}
     ),
     new WaveTableDetails(
       "Triangle", "triangle",
