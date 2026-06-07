@@ -6,7 +6,7 @@ export class OscillatorWithPhaseMod {
   public node!: AudioWorkletNode;
   public port!: MessagePort;
   audioCtx: AudioContext;
-  private static waveTableSize = 1024;
+  private static readonly waveTableSize = 2048;
 
   constructor(audioCtx: AudioContext) {
     this.audioCtx = audioCtx;
@@ -155,7 +155,12 @@ export class OscillatorWithPhaseMod {
 
         currentPeriodicWave!: Float32Array[];
 
+        lastBand = -1;
         private periodicWaveFunction(x: number, band: number): number {
+          if(band != this.lastBand) {
+            this.lastBand = band;
+            console.log("band = "+band);
+          }
           return this.currentPeriodicWave[band][Math.floor(x * this.waveTableSize)];
         }
 
@@ -262,12 +267,15 @@ export class OscillatorWithPhaseMod {
 
   static lastReal: number[];
   static lastImag: number[];
-  static lastTable: Float32Array;
-  static readonly startFx = 1000;
+  static lastTable: Promise<AudioBuffer[]>;
+  static readonly startFx = 20;
 
   public static createPeriodicWave(audioCtx: AudioContext, real: number[], imag: number[], constraints: {
     disableNormalization: boolean
   } = {disableNormalization: false}): Promise<AudioBuffer[]> {
+    if(real === this.lastReal && imag === this.lastImag)
+      return this.lastTable;
+
     this.lastReal = real;
     this.lastImag = imag;
     const refFreq = audioCtx.sampleRate / OscillatorWithPhaseMod.waveTableSize;
@@ -277,14 +285,14 @@ export class OscillatorWithPhaseMod {
     for (let fx = this.startFx; fx < sampleRate / 2; fx *= root2) {
       const olac = new OfflineAudioContext(1, OscillatorWithPhaseMod.waveTableSize, sampleRate);
       const o = olac.createOscillator();
-      const numberOfTerms = fx < this.startFx ? 5000 : Math.floor(sampleRate / 2 / fx) + 1;
+      const numberOfTerms = Math.floor(sampleRate / 2 / fx) + 1;
       o.setPeriodicWave(olac.createPeriodicWave(real.slice(0, numberOfTerms), imag.slice(0, numberOfTerms), constraints));
       o.frequency.value = refFreq;
       o.connect(olac.destination);
       o.start();
       retVal.push(olac.startRendering());
     }
-    return Promise.all(retVal);
+    return this.lastTable = Promise.all(retVal);
   }
 
   setPeriodicWave(periodicWaves: Promise<AudioBuffer[]>) {

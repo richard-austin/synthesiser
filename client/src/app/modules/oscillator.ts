@@ -4,7 +4,7 @@ import {FreqBendValues} from '../util-classes/freq-bend-values';
 import {onOff, oscModOutput, oscModType} from '../enums/enums';
 import {Subscription, timer} from 'rxjs';
 import {WaveTableDetails} from './WaveTableDetails';
-import { OscillatorSettings } from "../settings/oscillator";
+import {OscillatorSettings} from "../settings/oscillator";
 import {OscillatorWithPhaseMod} from './modulation/oscillator-with-phase-mod';
 
 export class OscillatorParams {
@@ -31,18 +31,41 @@ export class Oscillator extends OscFilterBase {
     ),
     new WaveTableDetails(
       "Square", "square",
-      {imag: [], real: []}
+      {
+        imag: Array.from({length: 5000}, (_, n) => {
+          if (n === 0) return 0; // DC offset
+
+          // Odd harmonics fall off by 1 / n
+          return n % 2 !== 0 ? (4 / Math.PI) / n : 0;
+        }),
+        real: Array.from({length: 5000}, (_, n) => 0)
+      }
     ),
     new WaveTableDetails(
       "Sawtooth", "sawtooth",
-      {imag: Array.from({ length: 1024 }, (_, n) =>
-          n === 0 ? 0 : 1/n
-        ),
-        real: Array.from({ length: 1024 }, (_, n) => 0)}
+      {
+        imag: Array.from({ length: 5000 }, (_, n) => {
+          if (n === 0) return 0; // DC offset
+
+          // Both odd and even harmonics drop by 1 / n, alternating in sign
+          return (2 / Math.PI) * (Math.pow(-1, n + 1) / n);
+        }),
+        real: Array.from({length: 5000}, (_, n) => 0)
+      }
     ),
     new WaveTableDetails(
       "Triangle", "triangle",
-      {imag: [], real: []}
+      {
+        imag: Array.from({length: 4096}, (_, n) => {
+          if (n === 0) return 0; // DC offset
+          if (n % 2 !== 0) {
+            // Odd harmonics fall off by 1 / n^2 and alternate signs
+            return (8 / Math.PI ** 2) * Math.sin((n * Math.PI) / 2) / (n ** 2);
+          }
+          return 0; // Even harmonics are 0
+        }),
+        real: Array.from({length: 4096}, (_, n) => 0)
+      }
     ),
     new WaveTableDetails(
       "Dropped square", "droppedSquare",
@@ -197,11 +220,12 @@ export class Oscillator extends OscFilterBase {
   public static readonly frequencyFactor = 7.717057388; // To give middle C at 261.63 Hz on key 60
 
   readonly freqBendBase = 2;
+
   constructor(protected override audioCtx: AudioContext) {
     super(audioCtx);
     this.panner = audioCtx.createStereoPanner();
     this.legatoMode = true;
-    this.oscillator =new OscillatorWithPhaseMod(this.audioCtx);
+    this.oscillator = new OscillatorWithPhaseMod(this.audioCtx);
     this.phaseModOutputGain = audioCtx.createGain();
     this.phaseModOutputGain.gain.value = 1;
     this.type = "sine";
@@ -211,8 +235,8 @@ export class Oscillator extends OscFilterBase {
 
   }
 
-  async start(started:boolean) {
-    if(!started) {
+  async start(started: boolean) {
+    if (!started) {
       await this.oscillator.start();
       this.oscillator.connect(this.panner);
       this.frequencyModInternal.connect(this.oscillator.frequency);
@@ -248,16 +272,17 @@ export class Oscillator extends OscFilterBase {
   }
 
   connectedTo!: oscModOutput;
+
   setModOutput(modOutput: oscModOutput) {
     this.modOutputType = modOutput;
-    if(this.connectedTo === oscModOutput.direct)
+    if (this.connectedTo === oscModOutput.direct)
       this.phaseModOutputGain.disconnect(this.modOutput);
-    else if(this.connectedTo === oscModOutput.envelope)
+    else if (this.connectedTo === oscModOutput.envelope)
       this.envelope.disconnect(this.modOutput);
 
     this.connectedTo = modOutput;
 
-    switch(modOutput) {
+    switch (modOutput) {
       case oscModOutput.direct:
         this.phaseModOutputGain.connect(this.modOutput);
         break;
@@ -265,7 +290,7 @@ export class Oscillator extends OscFilterBase {
         this.envelope.connect(this.modOutput);
         break;
       default:
-        console.error("Unknown mod output type "+modOutput)
+        console.error("Unknown mod output type " + modOutput)
     }
   }
 
@@ -298,7 +323,7 @@ export class Oscillator extends OscFilterBase {
 
   setType(type: OscillatorType) {
     this.type = type;
-    if (/^(sine|square|triangle)$/.test(type)) {
+    if (/^(sine)$/.test(type)) {
       this.oscillator.type = type as OscillatorType;
     } else {
       const wtDetails = Oscillator.wavetables.find(el => el.value === type);
@@ -316,7 +341,7 @@ export class Oscillator extends OscFilterBase {
   // Key down for this oscillator
   override keyDown(velocity: number, frequency: number) {
     super.attack(velocity, frequency);
-    this.frequencyModInternal.gain.value =  this.modLevel * frequency * 3000 / 400;
+    this.frequencyModInternal.gain.value = this.modLevel * frequency * 3000 / 400;
     //console.log("Oscillator keyDown = " + performance.now());
     if (this._useFreqBendEnvelope) {
       const ctx = this.audioCtx;
