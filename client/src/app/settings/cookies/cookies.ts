@@ -69,7 +69,7 @@ export class Cookies {
         const prop = target[key];
 
         // return if property not found
-        if (typeof prop == 'undefined')
+        if (prop === undefined || prop === null)
           return;
 
         // set value as proxy if object

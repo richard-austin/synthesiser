@@ -584,8 +584,8 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
     console.log("client width = " + vw + " client height = " + vh);
     console.log("width = " + window.innerWidth + " height = " + window.innerHeight);
-    const requiredWidth = 2350;
-    const requiredHeight = 1300 - topClearance;
+    const requiredWidth = 2400;
+    const requiredHeight = 1350 - topClearance;
     if (vw < requiredWidth || vh < requiredHeight) {
       if (vw / requiredWidth < vh / requiredHeight)
         document.body.style.zoom = (100 * vw / requiredWidth).toString() + "%";

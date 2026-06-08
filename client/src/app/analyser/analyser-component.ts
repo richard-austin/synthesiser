@@ -1,12 +1,16 @@
-import {AfterViewInit, ChangeDetectorRef, Component, ElementRef, ViewChild} from '@angular/core';
+import {AfterViewInit, ChangeDetectorRef, Component, ElementRef, viewChild, ViewChild} from '@angular/core';
 import {analyserTypes} from '../enums/enums';
 import {AnalyserSettings} from '../settings/analyser-settings';
 import {Cookies} from '../settings/cookies/cookies';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
+import {LevelControlComponent} from '../level-control/level-control.component';
+import {dialStyle} from '../level-control/levelControlParameters';
 
 @Component({
   selector: 'app-analyser',
-  imports: [],
+  imports: [
+    LevelControlComponent
+  ],
   templateUrl: './analyser-component.html',
   styleUrl: './analyser-component.scss',
 })
@@ -16,10 +20,18 @@ export class AnalyserComponent implements AfterViewInit {
   private canvasCtx!: CanvasRenderingContext2D | null;
   private canvasEL!: HTMLCanvasElement;
   private cookies: Cookies;
-  private proxySettings!: AnalyserSettings;
+  protected proxySettings!: AnalyserSettings;
+
+  private triggerEdge = "rising";
+  private triggerLevel = 3;
+  private yScale = 1;
+  private xScale = 1;
 
   @ViewChild('canvas') canvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('analyserTypeForm') analyserTypeForm!: ElementRef<HTMLFormElement>;
+  yScaleControl = viewChild.required<LevelControlComponent>('yScale');
+  xScaleControl = viewChild.required<LevelControlComponent>('xScale');
+  triggerLevelControl = viewChild.required<LevelControlComponent>('trigLevel');
 
   constructor(private cd: ChangeDetectorRef) {
     this.cookies = new Cookies();
@@ -48,6 +60,9 @@ export class AnalyserComponent implements AfterViewInit {
     }
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
+    this.yScaleControl().setValue(this.proxySettings.yScale ? this.proxySettings.yScale : 1);
+    this.xScaleControl().setValue(this.proxySettings?.xScale ? this.proxySettings.xScale : 1);
+    this.triggerLevelControl().setValue(this.proxySettings?.triggerLevel ? this.proxySettings.triggerLevel : 0);
     SetRadioButtons.set(this.analyserTypeForm, this.proxySettings.analyserType);
   }
 
@@ -93,16 +108,45 @@ export class AnalyserComponent implements AfterViewInit {
     ctx.stroke();
   }
 
+  /**
+   * Scans buffer array indices to find threshold intersection.
+   */
+  private calculateTriggerIndex(timeData: Uint8Array): number {
+
+    const searchLimit = timeData.length / 2;
+
+    for (let i = 1; i < searchLimit; i++) {
+      const previousSample = timeData[i - 1]-128;
+      const currentSample = timeData[i]-128;
+
+      if (this.triggerEdge === 'rising') {
+        if (previousSample <= this.triggerLevel && currentSample > this.triggerLevel) {
+          return i;
+        }
+      } else {
+        if (previousSample >= this.triggerLevel && currentSample < this.triggerLevel) {
+          return i;
+        }
+      }
+    }
+    return 0; // Baseline fallback if no edge match occurs
+  }
 
   drawScope(analyser: AnalyserNode, ctx: CanvasRenderingContext2D) {
     const width = ctx.canvas.width;
     const height = ctx.canvas.height;
     const timeData = new Uint8Array(analyser.frequencyBinCount);
-    const scaling = height / 256;
-    let risingEdge = 0;
-    const edgeThreshold = 5;
 
     analyser.getByteTimeDomainData(timeData);
+
+    let minValue = timeData[0];
+    let maxValue = timeData[0];
+    timeData.forEach(d => {
+      if(d < minValue)
+        minValue = d;
+      else if(d > maxValue)
+        maxValue = d;
+    });
 
     ctx.fillStyle = 'rgba(0, 20, 0, 0.1)';
     ctx.fillRect(0, 0, width, height);
@@ -111,17 +155,11 @@ export class AnalyserComponent implements AfterViewInit {
     ctx.strokeStyle = 'rgb(0, 200, 0)';
     ctx.beginPath();
 
-    // No buffer overrun protection
-    while (timeData[risingEdge++] - 128 > 0 && risingEdge <= width) {
-    }
-    if (risingEdge >= width) risingEdge = 0;
-
-    while (timeData[risingEdge++] - 128 < edgeThreshold && risingEdge <= width) {
-    }
-    if (risingEdge >= width) risingEdge = 0;
-
-    for (let x = risingEdge; x < timeData.length && x - risingEdge < width; x++)
-      ctx.lineTo(x - risingEdge, height - timeData[x] * scaling);
+    const offsetXScale = this.xScale +0.7;
+    const triggerIndex = this.calculateTriggerIndex(timeData);
+    //console.log("triggerIndex = ", triggerIndex);
+    for (let x = triggerIndex; x < timeData.length && (x - triggerIndex)*offsetXScale < width; x++)
+      ctx.lineTo((x - triggerIndex)*offsetXScale, (128 - timeData[x])*this.yScale + height/2);
 
     ctx.stroke();
   }
@@ -160,4 +198,20 @@ export class AnalyserComponent implements AfterViewInit {
 
 //  protected readonly analyserTypes = analyserTypes;
   protected readonly analyserTypes = analyserTypes;
+  protected readonly dialStyle = dialStyle;
+
+  protected setTrigLevel($event: number) {
+    this.triggerLevel = $event;
+    this.proxySettings.triggerLevel = $event;
+  }
+
+  protected setYScale($event: number) {
+    this.yScale = $event;
+    this.proxySettings.yScale = $event;
+  }
+
+  protected setXScale($event: number) {
+    this.xScale = $event;
+    this.proxySettings.xScale = $event;
+  }
 }

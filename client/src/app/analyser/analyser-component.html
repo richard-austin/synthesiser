@@ -19,6 +19,14 @@
           <label><input type="radio" name="analyserType" value="oscilloscope"><span>Oscilloscope</span></label>
           <label><input type="radio" name="analyserType" value="off"><span>Off</span></label>
         </form>
+        <div class="row" [style.visibility]="proxySettings && proxySettings.analyserType===analyserTypes.oscilloscope ? 'visible' : 'hidden'">
+          <app-level-control #trigLevel label="Trig Level" [style]="dialStyle.green" [plusMinus]="true" [factor]="100" [divisions]="10" [calAngle]="300"
+                             [radius]="35" (setLevel)="setTrigLevel($event)"></app-level-control>
+          <app-level-control #yScale label="Y Scale" [style]="dialStyle.green" [divisions]="10" [factor]="10" [calAngle]="300"
+                             [radius]="35" (setLevel)="setYScale($event)"></app-level-control>
+          <app-level-control #xScale label="X Scale" [style]="dialStyle.green" [divisions]="10" [factor]="9"  [calAngle]="300"
+                             [radius]="35" (setLevel)="setXScale($event)"></app-level-control>
+        </div>
       </div>
     </div>
   </div>
