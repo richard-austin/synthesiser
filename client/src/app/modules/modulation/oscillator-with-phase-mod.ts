@@ -90,7 +90,7 @@ export class OscillatorWithPhaseMod {
               name: 'frequency',
               defaultValue: 263,
               minValue: 0,
-              maxValue: 25000,
+              maxValue: 3.4028235e37,
               automationRate: "a-rate"
             },
             {
@@ -103,19 +103,19 @@ export class OscillatorWithPhaseMod {
         }
 
         running: boolean = true;
-        readonly sampleRate: number;
         private periodicWave!: Float32Array[];
         private type: OscillatorType = "sine";
         private readonly waveTableSize = -1;
         private readonly startFx: number;
         private readonly modFilter: ButterworthFilter;
+        private readonly nyquist: number;
 
         constructor(options: any) {
           super();
-          this.sampleRate = options?.processorOptions?.sampleRate || 48000;
           this.waveTableSize = options?.processorOptions?.waveTableSize;
           this.startFx = options?.processorOptions?.startFx;
-
+          // @ts-ignore
+          this.nyquist = sampleRate / 2;
           // @ts-ignore
           this.port.onmessage = (event) => {
             if (event.data.type === 'shutdown') {
@@ -131,12 +131,6 @@ export class OscillatorWithPhaseMod {
               this.type = event.data.payload;
               if (this.type === "sine") {
                 this.render = this.sineFunction;
-              } else if (this.type === "square") {
-                this.render = this.squareFunction;
-              } else if (this.type === "sawtooth") {
-                this.render = this.sawtoothFunction;
-              } else if (this.type === "triangle") {
-                this.render = this.triangleFunction;
               } else if (this.type === "custom") {
                 this.render = this.periodicWaveFunction;
               }
@@ -144,7 +138,8 @@ export class OscillatorWithPhaseMod {
           }
 
           this.modFilter = new ButterworthFilter();
-          this.modFilter.calculateCoefficients(1000, this.sampleRate);
+          // @ts-ignore
+          this.modFilter.calculateCoefficients(1000, sampleRate);
         }
 
         private readonly twoPi = Math.PI * 2.0;
@@ -164,18 +159,6 @@ export class OscillatorWithPhaseMod {
           return this.currentPeriodicWave[band][Math.floor(x * this.waveTableSize)];
         }
 
-        private squareFunction = (x: number): number => {
-          return x < 0.5 ? -1 : 1;
-        }
-
-        private sawtoothFunction(x: number) {
-          return 2 * (x - 0.5);
-        }
-
-        private triangleFunction(x: number) {
-          return x < 0.5 ? 4 * x - 1 : 3 - 4 * x;
-        }
-
         private render: (x: number, band: number) => number = this.sineFunction;
 
         private phase = 0;
@@ -190,7 +173,7 @@ export class OscillatorWithPhaseMod {
           const modParam = parameters["mod"];
           const frequencyParam = parameters["frequency"];
           const detuneParam = parameters["detune"];
-
+          const nyquist = this.nyquist;
           if (this.periodicWave)
             this.currentPeriodicWave = this.periodicWave;  // Update the periodic wave on a k-rate basis
 
@@ -199,6 +182,10 @@ export class OscillatorWithPhaseMod {
           for (let i = 0; i < outputChannel.length; i++) {
 
             let f = frequencyParam.length === 1 ? frequencyParam[0] : frequencyParam[i];
+
+            if(f > nyquist)
+              f = nyquist;
+
             let band = 0;
             if (this.render === this.periodicWaveFunction) {
               band = Math.floor(Math.log2(f / this.startFx) / Math.log2(this.root2));
@@ -215,7 +202,8 @@ export class OscillatorWithPhaseMod {
 
             const x = (modParam.length === 1 ? modParam[0] : modParam[i] * 10);
             const mod = this.modFilter.process(x);
-            const inc = f / this.sampleRate;
+            // @ts-ignore
+            const inc = f / sampleRate;
             this.phase += inc
             let currentPhase = this.phase + mod;
             currentPhase = currentPhase - Math.floor(currentPhase);
@@ -234,7 +222,6 @@ export class OscillatorWithPhaseMod {
       channelCount: 1,
       channelInterpretation: 'speakers',
       processorOptions: {
-        sampleRate: this.audioCtx.sampleRate,
         waveTableSize: OscillatorWithPhaseMod.waveTableSize,
         startFx: OscillatorWithPhaseMod.startFx
       }
