@@ -4,7 +4,7 @@
       @for (osc of _oscillatorParams; let i = $index; track osc) {
         <app-oscillators [oscNumber]="i"
                          [params]="_oscillatorParams[i]"
-                         [filters]="filtersGrp?.get(i)"
+                         [filters]="filtersGrp()[0]"
                          [ringMod]="ringMod"
                          [reverb]="reverb"
                          [phaser]="phaser"
@@ -24,12 +24,12 @@
     </div>
     <app-matrix [oscillators]="oscillatorsGrp" [selectOperator]="signalSelectOperator"></app-matrix>
     <div class="analyser">
-        <app-noise [filters]="filtersGrp?.get(0)"
+        <app-noise [filters]="filtersGrp()[0]"
                    (output)="setNoiseOutputTarget($event)">
         </app-noise>
     </div>
     <app-ring-modulator #ringMod
-                        [filters]="filtersGrp?.get(0)"
+                        [filters]="filtersGrp()[0]"
                         [reverb]="reverb"
                         (output)="setRingModOutPutTarget($event)">
     </app-ring-modulator>

@@ -150,12 +150,12 @@ export class OscillatorWithPhaseMod {
 
         currentPeriodicWave!: Float32Array[];
 
-        lastBand = -1;
+//        lastBand = -1;
         private periodicWaveFunction(x: number, band: number): number {
-          if(band != this.lastBand) {
-            this.lastBand = band;
-            console.log("band = "+band);
-          }
+          // if(band != this.lastBand) {
+          //   this.lastBand = band;
+          //   console.log("band = "+band);
+          // }
           return this.currentPeriodicWave[band][Math.floor(x * this.waveTableSize)];
         }
 

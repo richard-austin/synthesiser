@@ -3,8 +3,8 @@ import {
   Component,
   ElementRef,
   EventEmitter,
-  inject,
-  Input,
+  inject, input,
+  InputSignal,
   OnDestroy,
   Output,
   ViewChild
@@ -56,12 +56,12 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   private oscillatorPoolMgr!: DevicePoolManager;
   private chordProcessor!: ChordProcessor;
 
-  @Input() filters!: FilterComponent | undefined;
-  @Input() ringMod!: RingModulatorComponent;
-  @Input() reverb!: ReverbComponent;
-  @Input() phaser!: PhaserComponent;
-  @Input() oscNumber!: number;  // Flag to determine whether to connect to ring mod signal or mod input
-  @Input() params!: OscillatorParams;
+  filters: InputSignal<FilterComponent> = input.required<FilterComponent>();
+  ringMod: InputSignal<RingModulatorComponent> = input.required<RingModulatorComponent>();
+  reverb: InputSignal<ReverbComponent> = input.required<ReverbComponent>();
+  phaser: InputSignal<PhaserComponent> = input.required<PhaserComponent>();
+  oscNumber: InputSignal<number> = input.required<number>();  // Flag to determine whether to connect to ring mod signal or mod input
+  params: InputSignal<OscillatorParams> = input.required<OscillatorParams>();
 
   @ViewChild('oscPanel') oscPanel!: ElementRef<HTMLDivElement>;
   @ViewChild('contextMenu') contextMenu!: ElementRef<HTMLDivElement>;
@@ -116,7 +116,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   async applySettings(settings: OscillatorSettings | null) {
-    const cookieName = "oscillator" + this.params.settingsId;
+    const cookieName = "oscillator" + this.params().settingsId;
     if (!settings) {  // If no settings supplied, create default and check if previously saved in cookie
       settings = new OscillatorSettings();
       const savedSettings = this.cookies.getSettings(cookieName, settings);
@@ -289,7 +289,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
    * connectToFilters: Connect to a group of filters
    */
   connectToFilters(): boolean {
-    const filters = this.filters?.filters;
+    const filters = this.filters().filters;
     let ok = false;
     if (filters) {
       ok = true;
@@ -304,18 +304,18 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   connectToRingMod(): boolean {
     const ringMod = this.ringMod;
     let ok = false;
-    if (ringMod) {
+    if (ringMod()) {
       ok = true;
-      const oscNumber = this.oscNumber+1;
+      const oscNumber = this.oscNumber()+1;
       this.oscillators.forEach((osc, i) => {
-        this.oscillators[i].connect(oscNumber === 2 ? ringMod.modInput() : ringMod.signalInput());
+        this.oscillators[i].connect(oscNumber === 2 ? ringMod().modInput() : ringMod().signalInput());
       });
     }
     return ok;
   }
 
   connectToReverb(): boolean {
-    const reverb = this.reverb;
+    const reverb = this.reverb();
     let ok = false;
     if (reverb) {
       ok = true;
@@ -327,7 +327,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   connectToPhaser(): boolean {
-    const phaser = this.phaser;
+    const phaser = this.phaser();
     let ok = false;
     if (phaser) {
       ok = true;
@@ -359,7 +359,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   keyDown(keyIndex: number, velocity: number) {
     const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyDown(keyIndex, velocity, this.proxySettings.portamento === 0);
     if (keys) {
-      this.devicePoolManagerService.keyDown(keys, this.oscNumber);
+      this.devicePoolManagerService.keyDown(keys, this.oscNumber());
     }
 
     const lastKey = this.keysDown.length > 0 ? this.keysDown[this.keysDown.length - 1] : null;
@@ -437,7 +437,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
         //   console.log("keysDown.length = ", this.keysDown.length, " idx = ", idx);
       });
 
-      this.devicePoolManagerService.keyUp(keys, this.oscNumber);  // Trigger appropriate filter bank
+      this.devicePoolManagerService.keyUp(keys, this.oscNumber());  // Trigger appropriate filter bank
 
       if (this.proxySettings.portamentoType === 'chord')
         if (this.proxySettings.legatoMode === onOff.on)
@@ -544,7 +544,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     // @ts-ignore
     if (target.value === 1) {
       this.clipboard.config = JSON.stringify(this.proxySettings);
-      this.clipboard.source = this.params.settingsId;
+      this.clipboard.source = this.params().settingsId;
       this.clipboard.type = "oscillator";
     }
     // @ts-ignore
@@ -563,7 +563,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
         contextMenu.style.visibility = "hidden";
         const pasteElement = contextMenu.getElementsByTagName('li')[1];
         const style = pasteElement.style;
-        if (this.clipboard.source === this.params.settingsId || this.clipboard.config === undefined||this.clipboard.type !== "oscillator") {
+        if (this.clipboard.source === this.params().settingsId || this.clipboard.config === undefined||this.clipboard.type !== "oscillator") {
           style.fontWeight = "lighter";
           style.fontStyle = "italic";
           style.color = "#b5a8a8";
