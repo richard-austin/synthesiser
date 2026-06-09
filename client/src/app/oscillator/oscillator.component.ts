@@ -2,12 +2,10 @@ import {
   AfterViewInit, ChangeDetectorRef,
   Component,
   ElementRef,
-  EventEmitter,
-  inject, input,
+  inject, input, output,
   InputSignal,
   OnDestroy,
-  Output,
-  ViewChild
+  ViewChild, OutputEmitterRef, viewChild, Signal
 } from '@angular/core';
 import {Oscillator, OscillatorParams} from '../modules/oscillator';
 import {LevelControlComponent} from '../level-control/level-control.component';
@@ -63,11 +61,12 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   oscNumber: InputSignal<number> = input.required<number>();  // Flag to determine whether to connect to ring mod signal or mod input
   params: InputSignal<OscillatorParams> = input.required<OscillatorParams>();
 
-  @ViewChild('oscPanel') oscPanel!: ElementRef<HTMLDivElement>;
-  @ViewChild('contextMenu') contextMenu!: ElementRef<HTMLDivElement>;
+  oscPanel: Signal<ElementRef<HTMLDivElement>> = viewChild.required<ElementRef<HTMLDivElement>>('oscPanel');
+  contextMenu: Signal<ElementRef<HTMLDivElement>> = viewChild.required<ElementRef<HTMLDivElement>>('contextMenu');
 
-  @Output() output = new EventEmitter<string>();
-  @ViewChild('frequency') frequency!: LevelControlComponent;
+  output: OutputEmitterRef<string> = output<string>();
+
+  frequency: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('frequency');
   @ViewChild('deTune') deTune!: LevelControlComponent;
   @ViewChild('gain') gain!: LevelControlComponent;
   @ViewChild('balance') balance!: LevelControlComponent;
@@ -143,7 +142,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     }
     this.started = true;
 
-    this.frequency.setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
+    this.frequency().setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
     this.deTune.setValue(this.proxySettings.deTune);
     this.gain.setValue(this.proxySettings.gain);
     this.balance.setValue(this.proxySettings.balance ? this.proxySettings.balance : 0);
@@ -529,12 +528,12 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   private async ctxMenu(e: PointerEvent) {
     this.cd.detectChanges();
-    const contextMenu = this.contextMenu.nativeElement;
+    const contextMenu = this.contextMenu().nativeElement;
     contextMenu.style.visibility = "visible";
     const zoomStr = document.body.style.zoom;
     const zoom = parseFloat(zoomStr.substring(0, zoomStr.length - 1)) / 100;
     // @ts-ignore
-    const bounds = this.oscPanel.nativeElement.getBoundingClientRect();
+    const bounds = this.oscPanel().nativeElement.getBoundingClientRect();
     contextMenu.style.top = (e.clientY - bounds.y) / zoom + "px";
     contextMenu.style.left = (e.clientX - bounds.x) / zoom + "px";
   }
@@ -552,14 +551,14 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
         const settings: OscillatorSettings = JSON.parse(this.clipboard.config as string);
         this.start(this.audioCtx, settings);
     }
-    const contextMenu = this.contextMenu.nativeElement;
+    const contextMenu = this.contextMenu().nativeElement;
     contextMenu.style.visibility = "hidden";
   }
 
   ngAfterViewInit(): void {
     window.addEventListener("mousedown", (e) => {
-      if (!this.contextMenu.nativeElement.contains(e.target as Node)) {
-        const contextMenu = this.contextMenu.nativeElement;
+      if (!this.contextMenu().nativeElement.contains(e.target as Node)) {
+        const contextMenu = this.contextMenu().nativeElement;
         contextMenu.style.visibility = "hidden";
         const pasteElement = contextMenu.getElementsByTagName('li')[1];
         const style = pasteElement.style;
@@ -579,7 +578,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       }
     });
 
-    const oscPanel = this.oscPanel.nativeElement;
+    const oscPanel = this.oscPanel().nativeElement;
     oscPanel.addEventListener('contextmenu', async (e) => {
       e.preventDefault();
       await this.ctxMenu(e);
