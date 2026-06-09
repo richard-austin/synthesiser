@@ -144,7 +144,7 @@ export class OscillatorWithPhaseMod {
           }
 
           this.modFilter = new ButterworthFilter();
-          this.modFilter.calculateCoefficients(500, this.sampleRate);
+          this.modFilter.calculateCoefficients(1000, this.sampleRate);
         }
 
         private readonly twoPi = Math.PI * 2.0;
