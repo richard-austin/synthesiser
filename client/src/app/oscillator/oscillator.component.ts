@@ -67,13 +67,13 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   output: OutputEmitterRef<string> = output<string>();
 
   frequency: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('frequency');
-  @ViewChild('deTune') deTune!: LevelControlComponent;
-  @ViewChild('gain') gain!: LevelControlComponent;
-  @ViewChild('balance') balance!: LevelControlComponent;
-  @ViewChild('attack') attack!: LevelControlComponent;
-  @ViewChild('decay') decay!: LevelControlComponent;
-  @ViewChild('sustain') sustain!: LevelControlComponent;
-  @ViewChild('release') release!: LevelControlComponent;
+  deTune: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('deTune');
+  gain: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('gain');
+  balance: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('balance');
+  attack: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('attack');
+  decay: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('decay');
+  sustain: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('sustain');
+  release: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('release');
 
   @ViewChild('freqAttack') freqAttack!: LevelControlComponent;
   @ViewChild('freqAttackLevel') freqAttackLevel!: LevelControlComponent;
@@ -81,7 +81,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   @ViewChild('freqSustain') freqSustain!: LevelControlComponent;
   @ViewChild('freqRelease') freqRelease!: LevelControlComponent;
   @ViewChild('freqReleaseLevel') freqReleaseLevel!: LevelControlComponent;
-  @ViewChild('portamento') portamento!: LevelControlComponent;
+  portamento: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('portamento');
   @ViewChild('portamentoType') portamentoType!: ElementRef<HTMLSelectElement>;
 
   @ViewChild('oscOutputToForm') oscOutputToForm!: ElementRef<HTMLFormElement>;
@@ -143,16 +143,16 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.started = true;
 
     this.frequency().setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
-    this.deTune.setValue(this.proxySettings.deTune);
-    this.gain.setValue(this.proxySettings.gain);
-    this.balance.setValue(this.proxySettings.balance ? this.proxySettings.balance : 0);
+    this.deTune().setValue(this.proxySettings.deTune);
+    this.gain().setValue(this.proxySettings.gain);
+    this.balance().setValue(this.proxySettings.balance ? this.proxySettings.balance : 0);
 
-    this.portamento.setValue(this.proxySettings.portamento);
+    this.portamento().setValue(this.proxySettings.portamento);
 
-    this.attack.setValue(this.proxySettings.adsr.attackTime);
-    this.decay.setValue(this.proxySettings.adsr.decayTime);
-    this.sustain.setValue(this.proxySettings.adsr.sustainLevel);
-    this.release.setValue(this.proxySettings.adsr.releaseTime);
+    this.attack().setValue(this.proxySettings.adsr.attackTime);
+    this.decay().setValue(this.proxySettings.adsr.decayTime);
+    this.sustain().setValue(this.proxySettings.adsr.sustainLevel);
+    this.release().setValue(this.proxySettings.adsr.releaseTime);
 
     // Set up default frequency bend envelope values
     this.freqAttack.setValue(this.proxySettings.freqBend.attackTime);
@@ -224,7 +224,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
     if (useFreqBendEnvelope)
-      this.portamento.setValue(0); // Cannot use portamento with frequency envelope
+      this.portamento().setValue(0); // Cannot use portamento with frequency envelope
 
     this.proxySettings.useFrequencyEnvelope = useFreqBendEnvelope ? onOff.on : onOff.off;
     for (let i = 0; i < this.oscillators.length; i++) {
