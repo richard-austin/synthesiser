@@ -2,10 +2,10 @@ import {
   AfterViewInit,
   ChangeDetectorRef,
   Component,
-  ElementRef, EventEmitter,
-  OnDestroy, Output,
+  ElementRef, output,
+  OnDestroy, OutputEmitterRef,
   signal,
-  ViewChild,
+  viewChild,
   ViewEncapsulation
 } from '@angular/core';
 import {LevelControlComponent} from "../level-control/level-control.component";
@@ -45,11 +45,11 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   public static readonly _configFileNameRegex = /^[a-zA-Z]\w{0,14}( ?\w){1,14}$/
   protected readonly configFileNameRegex = GeneralComponent._configFileNameRegex;
 
-  @Output() saveConfig: EventEmitter<string> = new EventEmitter();
+  saveConfig = output<string>();
 
-  @ViewChild('masterVolume') masterVolume!: LevelControlComponent;
-  @ViewChild('configEditor') configEditor!: ElementRef<HTMLDivElement>;
-  @ViewChild('general') general!: ElementRef<HTMLDivElement>;
+  masterVolume = viewChild.required<LevelControlComponent>('masterVolume');
+  configEditor = viewChild.required<ElementRef<HTMLDivElement>>('configEditor');
+  general = viewChild.required<ElementRef<HTMLDivElement>>('general');
 
   animationEnter = signal('enter-animation');
   animationLeave = signal('leaving-animation');
@@ -91,7 +91,7 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
     }
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
     this.configFileName = this.proxySettings.configFileName;
-    this.masterVolume.setValue(this.proxySettings.level);
+    this.masterVolume().setValue(this.proxySettings.level);
   }
 
   public getSettings(): GeneralSettings {
@@ -104,7 +104,7 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   }
 
   setVolume(value: number) {
-    this.masterVolume.setValue(value * 3);
+    this.masterVolume().setValue(value * 3);
   }
 
   node(): DynamicsCompressorNode {
@@ -119,9 +119,9 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
     this.addConfigMode = this.showConfigEditor = !this.showConfigEditor;
     if (this.showConfigEditor) {
       const sub = timer(0).subscribe(() => {
-        if (this.configEditor) {
+        if (this.configEditor()) {
           sub.unsubscribe();
-          const configEditor = this.configEditor.nativeElement;
+          const configEditor = this.configEditor().nativeElement;
           configEditor.style.top = -configEditor.scrollHeight + 'px';
         }
       });
@@ -159,7 +159,7 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
 
   private clickAwayHandler($event: MouseEvent) {
     const target = $event.target as HTMLElement;
-    const general = this.general?.nativeElement;
+    const general = this.general()?.nativeElement;
     if (!general?.contains(target)) {
       this.addConfigMode = this.showConfigEditor = false;
       this.cdr.detectChanges();

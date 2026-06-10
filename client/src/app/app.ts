@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, signal, ViewChild, WritableSignal} from '@angular/core';
+import {AfterViewInit, Component, signal, viewChild, WritableSignal} from '@angular/core';
 import {SynthComponent} from './synth/synth-component';
 import {HomeComponent} from './home/home.component';
 
@@ -9,8 +9,8 @@ import {HomeComponent} from './home/home.component';
   styleUrl: './app.scss'
 })
 export class App implements AfterViewInit {
-  @ViewChild(SynthComponent) synthComponent!: ElementRef<SynthComponent>
-  @ViewChild(HomeComponent) homeComponent!: HomeComponent;
+  synthComponent = viewChild.required<SynthComponent>(SynthComponent);
+  homeComponent = viewChild.required<HomeComponent>(HomeComponent);
 
   started = false;
 
@@ -23,7 +23,7 @@ export class App implements AfterViewInit {
   }
   protected async showHomeForm() {
     if(this.started) {
-      this.homeComponent.ngOnInit(); // Ensure file list is reloaded
+      this.homeComponent().ngOnInit(); // Ensure file list is reloaded
       // Toggle home component
       this.homeComponentControl.set(!this.homeComponentControl());
     } else

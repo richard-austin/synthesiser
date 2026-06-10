@@ -2,10 +2,10 @@ import {
   AfterViewInit, ChangeDetectorRef,
   Component, effect, EffectRef,
   ElementRef,
-  Input,
+  input,
   OnDestroy,
   OnInit,
-  ViewChild, WritableSignal
+  viewChild, WritableSignal
 } from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {RestfulApiService} from '../services/restful-api.service';
@@ -22,13 +22,12 @@ import {SortPipePipe} from '../sort-pipe-pipe';
   styleUrl: './home.component.scss',
 })
 export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
-  @Input() filename!: WritableSignal<string>;
-  @Input() homeComponentControl!: WritableSignal<boolean>;
+  filename = input.required<WritableSignal<string>>();
+  homeComponentControl = input.required<WritableSignal<boolean>>();
+  disappearOnMouseOut = input<boolean>(false);
 
-  @Input() disappearOnMouseOut!: boolean;
-
-  @ViewChild('html') html!: ElementRef<HTMLDivElement>;
-  @ViewChild('configOptions') configOptions!: ElementRef<HTMLSelectElement>;
+  html = viewChild.required<ElementRef<HTMLDivElement>>('html');
+  configOptions = viewChild.required<ElementRef<HTMLSelectElement>>('configOptions');
 
   protected selectedConfig: string = "";
   protected configFileList: string[] = [];
@@ -43,7 +42,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(private cdr: ChangeDetectorRef, private rest: RestfulApiService) {
 
     this.homeControlEffectRef = effect(() => {
-      const visible = this.homeComponentControl();
+      const visible = this.homeComponentControl()();
       const display = visible ? 'block' : 'none';
       this.outerDiv?.setAttribute('style', 'display:'+display);
     });
@@ -58,8 +57,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (e) => this.errorMessage = e,
       complete: () => {
         this._confirmDelete = false;
-        if (this.configOptions && this.configOptions.nativeElement)
-          this.configOptions.nativeElement.value = '';
+        if (this.configOptions() && this.configOptions().nativeElement)
+          this.configOptions().nativeElement.value = '';
         this.cdr.detectChanges();
       }
     });
@@ -77,7 +76,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   protected confirmRename() {
     this._confirmRename = true;
-    const selector = this.configOptions.nativeElement;
+    const selector = this.configOptions().nativeElement;
     selector.disabled = true;
   }
 
@@ -100,13 +99,13 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   protected cancel() {
     this._confirmRename = this._confirmDelete = false;
-    const selector = this.configOptions.nativeElement;
+    const selector = this.configOptions().nativeElement;
     selector.value = '';
     selector.disabled = false;
   }
 
   protected fileName() {
-    const configOptions = this.configOptions.nativeElement;
+    const configOptions = this.configOptions().nativeElement;
     // @ts-ignore
     const fileNameElem = configOptions[configOptions.value];
     return fileNameElem.textContent;
@@ -137,9 +136,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (e) => console.log(e),
       complete: () => {
         console.log("complete: settings loaded");
-        this.filename.set("");  // To ensure reload if filename not changed
-        this.filename.set(fileName);
-        this.homeComponentControl.set(false);
+        this.filename().set("");  // To ensure reload if filename not changed
+        this.filename().set(fileName);
+        this.homeComponentControl().set(false);
       }
     });
   }
@@ -149,12 +148,12 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    this.outerDiv = this.html.nativeElement;
+    this.outerDiv = this.html().nativeElement;
     this.outerDiv.setAttribute('style', 'display:none');
   }
 
   ngOnDestroy(): void {
-    const configOptions = this.configOptions.nativeElement;
+    const configOptions = this.configOptions().nativeElement;
     configOptions.onchange = null;
     this.homeControlEffectRef.destroy();
   }
