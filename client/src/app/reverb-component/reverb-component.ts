@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, OnDestroy, Output, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, OnDestroy, viewChild, output, OutputEmitterRef} from '@angular/core';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {Reverb} from '../modules/reverb';
@@ -23,15 +23,15 @@ export class ReverbComponent implements AfterViewInit, OnDestroy {
   proxySettings!: ReverbSettings;
   private cookies!: Cookies;
 
-  @Output() output = new EventEmitter();
+  readonly output: OutputEmitterRef<string> = output<string>();
 
-  @ViewChild('reverbOnOffForm') reverbOnOffForm!: ElementRef<HTMLFormElement>;
-  @ViewChild('attackTime') attackTimeDial!: LevelControlComponent;
-  @ViewChild('decayTime') decayTimeDial!: LevelControlComponent;
-  @ViewChild('predelay') predelayDial!: LevelControlComponent;
-  @ViewChild('repeatEchoTime') repeatEchoTimeDial!: LevelControlComponent;
-  @ViewChild('repeatEchoLevel') repeatEchoLevelDial!: LevelControlComponent;
-  @ViewChild('wetDry') wetDryDial!: LevelControlComponent;
+  readonly reverbOnOffForm = viewChild.required<ElementRef<HTMLFormElement>>('reverbOnOffForm');
+  readonly attackTimeDial = viewChild.required<LevelControlComponent>('attackTime');
+  readonly decayTimeDial = viewChild.required<LevelControlComponent>('decayTime');
+  readonly predelayDial = viewChild.required<LevelControlComponent>('predelay');
+  readonly repeatEchoTimeDial = viewChild.required<LevelControlComponent>('repeatEchoTime');
+  readonly repeatEchoLevelDial = viewChild.required<LevelControlComponent>('repeatEchoLevel');
+  readonly wetDryDial = viewChild.required<LevelControlComponent>('wetDry');
 
   protected readonly dialStyle = dialStyle;
   private started = false;
@@ -51,7 +51,7 @@ export class ReverbComponent implements AfterViewInit, OnDestroy {
 
   // Called after all synth components have been started
   setOutputConnection() {
-    SetRadioButtons.set(this.reverbOnOffForm, this.proxySettings.output);
+    SetRadioButtons.set(this.reverbOnOffForm(), this.proxySettings.output);
   }
 
   applySettings(settings: ReverbSettings | null) {
@@ -70,12 +70,12 @@ export class ReverbComponent implements AfterViewInit, OnDestroy {
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
     this.reverb.setup(this.proxySettings.attackTime, this.proxySettings.decayTime, this.proxySettings.predelay, this.proxySettings.repeatEchoTime, this.proxySettings.repeatEchoGain);
-    this.predelayDial.setValue(this.proxySettings.predelay);
-    this.repeatEchoTimeDial.setValue(this.proxySettings.repeatEchoTime);
-    this.repeatEchoLevelDial.setValue(this.proxySettings.repeatEchoGain);
-    this.wetDryDial.setValue(this.proxySettings.wetDry);
-    this.attackTimeDial.setValue(this.proxySettings.attackTime);
-    this.decayTimeDial.setValue(this.proxySettings.decayTime);
+    this.predelayDial().setValue(this.proxySettings.predelay);
+    this.repeatEchoTimeDial().setValue(this.proxySettings.repeatEchoTime);
+    this.repeatEchoLevelDial().setValue(this.proxySettings.repeatEchoGain);
+    this.wetDryDial().setValue(this.proxySettings.wetDry);
+    this.attackTimeDial().setValue(this.proxySettings.attackTime);
+    this.decayTimeDial().setValue(this.proxySettings.decayTime);
   }
 
   public getSettings(): ReverbSettings {
@@ -125,7 +125,7 @@ export class ReverbComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    const reverbOnOff = this.reverbOnOffForm.nativeElement;
+    const reverbOnOff = this.reverbOnOffForm().nativeElement;
     for (let i = 0; i < reverbOnOff.elements.length; ++i) {
       reverbOnOff.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore

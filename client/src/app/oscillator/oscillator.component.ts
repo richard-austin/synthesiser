@@ -5,7 +5,7 @@ import {
   inject, input, output,
   InputSignal,
   OnDestroy,
-  ViewChild, OutputEmitterRef, viewChild, Signal
+  OutputEmitterRef, viewChild, Signal
 } from '@angular/core';
 import {Oscillator, OscillatorParams} from '../modules/oscillator';
 import {LevelControlComponent} from '../level-control/level-control.component';
@@ -75,28 +75,28 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   sustain: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('sustain');
   release: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('release');
 
-  @ViewChild('freqAttack') freqAttack!: LevelControlComponent;
-  @ViewChild('freqAttackLevel') freqAttackLevel!: LevelControlComponent;
-  @ViewChild('freqDecay') freqDecay!: LevelControlComponent;
-  @ViewChild('freqSustain') freqSustain!: LevelControlComponent;
-  @ViewChild('freqRelease') freqRelease!: LevelControlComponent;
-  @ViewChild('freqReleaseLevel') freqReleaseLevel!: LevelControlComponent;
+  readonly freqAttack = viewChild.required<LevelControlComponent>('freqAttack');
+  readonly freqAttackLevel = viewChild.required<LevelControlComponent>('freqAttackLevel');
+  readonly freqDecay = viewChild.required<LevelControlComponent>('freqDecay');
+  readonly freqSustain = viewChild.required<LevelControlComponent>('freqSustain');
+  readonly freqRelease = viewChild.required<LevelControlComponent>('freqRelease');
+  readonly freqReleaseLevel = viewChild.required<LevelControlComponent>('freqReleaseLevel');
   portamento: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('portamento');
-  @ViewChild('portamentoType') portamentoType!: ElementRef<HTMLSelectElement>;
+  readonly portamentoType = viewChild.required<ElementRef<HTMLSelectElement>>('portamentoType');
 
-  @ViewChild('oscOutputToForm') oscOutputToForm!: ElementRef<HTMLFormElement>;
+  readonly oscOutputToForm = viewChild.required<ElementRef<HTMLFormElement>>('oscOutputToForm');
 
-  @ViewChild('freqEnveOnOffForm') freqEnveOnOffForm!: ElementRef<HTMLFormElement>;
-  @ViewChild('legatoOnOffForm') legatoOnOffForm!: ElementRef<HTMLFormElement>;
-  @ViewChild('velocity') velocityOnOffForm!: ElementRef<HTMLFormElement>;
-  @ViewChild('oscWaveform') oscWaveForm!: ElementRef<HTMLSelectElement>;
+  readonly freqEnveOnOffForm = viewChild.required<ElementRef<HTMLFormElement>>('freqEnveOnOffForm');
+  readonly legatoOnOffForm = viewChild.required<ElementRef<HTMLFormElement>>('legatoOnOffForm');
+  readonly velocityOnOffForm = viewChild.required<ElementRef<HTMLFormElement>>('velocity');
+  readonly oscWaveForm = viewChild.required<ElementRef<HTMLSelectElement>>('oscWaveform');
 
-  @ViewChild('modSettingsForm') modSettingsForm!: ElementRef<HTMLFormElement>;
-  @ViewChild('oscModOutputForm') oscModOutputForm!: ElementRef<HTMLFormElement>;
+  readonly modSettingsForm = viewChild.required<ElementRef<HTMLFormElement>>('modSettingsForm');
+  readonly oscModOutputForm = viewChild.required<ElementRef<HTMLFormElement>>('oscModOutputForm');
 
-  @ViewChild('modFreq') modFreq!: LevelControlComponent;
-  @ViewChild('modDepth') modLevel!: LevelControlComponent;
-  @ViewChild('modWaveForm') lfoWaveForm!: ElementRef<HTMLFormElement>;
+  readonly modFreq = viewChild.required<LevelControlComponent>('modFreq');
+  readonly modLevel = viewChild.required<LevelControlComponent>('modDepth');
+  readonly lfoWaveForm = viewChild.required<ElementRef<HTMLFormElement>>('modWaveForm');
 
   private devicePoolManagerService = inject(DevicePoolManagerService);
   private started: boolean = false;
@@ -155,29 +155,29 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.release().setValue(this.proxySettings.adsr.releaseTime);
 
     // Set up default frequency bend envelope values
-    this.freqAttack.setValue(this.proxySettings.freqBend.attackTime);
-    this.freqAttackLevel.setValue(this.proxySettings.freqBend.attackLevel);
-    this.freqDecay.setValue(this.proxySettings.freqBend.decayTime);
-    this.freqSustain.setValue(this.proxySettings.freqBend.sustainLevel);
-    this.freqRelease.setValue(this.proxySettings.freqBend.releaseTime);
-    this.freqReleaseLevel.setValue(this.proxySettings.freqBend.releaseLevel);
+    this.freqAttack().setValue(this.proxySettings.freqBend.attackTime);
+    this.freqAttackLevel().setValue(this.proxySettings.freqBend.attackLevel);
+    this.freqDecay().setValue(this.proxySettings.freqBend.decayTime);
+    this.freqSustain().setValue(this.proxySettings.freqBend.sustainLevel);
+    this.freqRelease().setValue(this.proxySettings.freqBend.releaseTime);
+    this.freqReleaseLevel().setValue(this.proxySettings.freqBend.releaseLevel);
 
     // Set up LFO default values
-    this.modFreq.setValue(this.proxySettings.modFreq);  // Set dial
-    this.modLevel.setValue(this.proxySettings.modLevel);  // Set dial
+    this.modFreq().setValue(this.proxySettings.modFreq);  // Set dial
+    this.modLevel().setValue(this.proxySettings.modLevel);  // Set dial
 
     this.modulation(this.lfo, this.proxySettings.modType);
     // Set up the buttons and selectors
-    this.oscWaveForm.nativeElement.value = this.proxySettings.waveForm;
-    this.portamentoType.nativeElement.value = this.proxySettings.portamentoType;
+    this.oscWaveForm().nativeElement.value = this.proxySettings.waveForm;
+    this.portamentoType().nativeElement.value = this.proxySettings.portamentoType;
 
-    SetRadioButtons.set(this.legatoOnOffForm, this.proxySettings.legatoMode);
-    SetRadioButtons.set(this.velocityOnOffForm, this.proxySettings.velocitySensitive);
-    SetRadioButtons.set(this.freqEnveOnOffForm, this.proxySettings.useFrequencyEnvelope);
-    SetRadioButtons.set(this.modSettingsForm, this.proxySettings.modType);
-    SetRadioButtons.set(this.lfoWaveForm, this.proxySettings.modWaveform);
-    SetRadioButtons.set(this.oscModOutputForm, this.proxySettings.modOutput);
-    SetRadioButtons.set(this.oscOutputToForm, this.proxySettings.output);
+    SetRadioButtons.set(this.legatoOnOffForm(), this.proxySettings.legatoMode);
+    SetRadioButtons.set(this.velocityOnOffForm(), this.proxySettings.velocitySensitive);
+    SetRadioButtons.set(this.freqEnveOnOffForm(), this.proxySettings.useFrequencyEnvelope);
+    SetRadioButtons.set(this.modSettingsForm(), this.proxySettings.modType);
+    SetRadioButtons.set(this.lfoWaveForm(), this.proxySettings.modWaveform);
+    SetRadioButtons.set(this.oscModOutputForm(), this.proxySettings.modOutput);
+    SetRadioButtons.set(this.oscOutputToForm(), this.proxySettings.output);
   }
 
   public getSettings(): OscillatorSettings {
@@ -453,7 +453,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     if ($event > 0) {
       // Can't use frequency bend envelope with portamento
       this.proxySettings.useFrequencyEnvelope = onOff.off;
-      SetRadioButtons.set(this.freqEnveOnOffForm, this.proxySettings.useFrequencyEnvelope);
+      SetRadioButtons.set(this.freqEnveOnOffForm(), this.proxySettings.useFrequencyEnvelope);
     }
   }
 
@@ -464,7 +464,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   midiModLevel(value: number) {
-    this.modLevel.setValue(value);
+    this.modLevel().setValue(value);
   }
 
   protected setAttack($event: number) {
@@ -584,7 +584,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       await this.ctxMenu(e);
     }, false);
 
-    const oscOutForm = this.oscOutputToForm.nativeElement;
+    const oscOutForm = this.oscOutputToForm().nativeElement;
     for (let i = 0; i < oscOutForm.elements.length; ++i) {
       oscOutForm.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
@@ -597,7 +597,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       });
     }
 
-    const freqEnveOnOffForm = this.freqEnveOnOffForm.nativeElement;
+    const freqEnveOnOffForm = this.freqEnveOnOffForm().nativeElement;
     for (let i = 0; i < freqEnveOnOffForm.elements.length; ++i) {
       freqEnveOnOffForm.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
@@ -605,7 +605,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
         this.useFreqBendEnvelope(value === 'on')
       })
     }
-    const legatoOnOffForm = this.legatoOnOffForm.nativeElement;
+    const legatoOnOffForm = this.legatoOnOffForm().nativeElement;
     for (let i = 0; i < legatoOnOffForm.elements.length; ++i) {
       legatoOnOffForm.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
@@ -613,7 +613,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
         this.legatoMode(value === 'on');
       });
     }
-    const velocityOnOffForm = this.velocityOnOffForm.nativeElement;
+    const velocityOnOffForm = this.velocityOnOffForm().nativeElement;
     for (let i = 0; i < velocityOnOffForm.elements.length; ++i) {
       velocityOnOffForm.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
@@ -621,21 +621,21 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
         this.useVelocitySensitive(value === 'on');
       });
     }
-    const waveform = this.oscWaveForm.nativeElement;
+    const waveform = this.oscWaveForm().nativeElement;
     waveform.addEventListener('change', ($event) => {
       // @ts-ignore
       const value = $event.target.value as OscillatorType;
       this.setWaveForm(value as OscillatorType);
     });
 
-    const portamentoType = this.portamentoType.nativeElement;
+    const portamentoType = this.portamentoType().nativeElement;
     portamentoType.addEventListener('change', ($event) => {
       // @ts-ignore
       const value = $event.target.value as PortamentoType
       this.setPortamentoType(value as PortamentoType);
     });
 
-    const modSettingsForm = this.modSettingsForm.nativeElement;
+    const modSettingsForm = this.modSettingsForm().nativeElement;
     for (let j = 0; j < modSettingsForm.elements.length; ++j) {
       modSettingsForm.elements[j].addEventListener('change', ($event) => {
         // @ts-ignore
@@ -644,7 +644,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       });
     }
 
-    const oscModOutputForm = this.oscModOutputForm.nativeElement;
+    const oscModOutputForm = this.oscModOutputForm().nativeElement;
     for (let j = 0; j < oscModOutputForm.elements.length; ++j) {
       oscModOutputForm.elements[j].addEventListener('change', ($event) => {
         // @ts-ignore
@@ -653,7 +653,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       });
     }
 
-    const modWaveForm = this.lfoWaveForm.nativeElement;
+    const modWaveForm = this.lfoWaveForm().nativeElement;
     for (let j = 0; j < modWaveForm.elements.length; ++j) {
       modWaveForm.elements[j].addEventListener('change', ($event) => {
         // @ts-ignore

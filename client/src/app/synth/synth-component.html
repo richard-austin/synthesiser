@@ -22,7 +22,7 @@
         </app-filters>
       }
     </div>
-    <app-matrix [oscillators]="oscillatorsGrp" [selectOperator]="signalSelectOperator"></app-matrix>
+    <app-matrix [oscillators]="oscillatorsGrp()" [selectOperator]="signalSelectOperator"></app-matrix>
     <div class="analyser">
         <app-noise [filters]="filtersGrp()[0]"
                    (output)="setNoiseOutputTarget($event)">

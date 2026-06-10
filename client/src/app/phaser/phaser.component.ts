@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, OnDestroy, Output, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, OnDestroy, viewChild, output} from '@angular/core';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {Phaser} from '../modules/phaser';
 import {dialStyle} from '../level-control/levelControlParameters';
@@ -38,18 +38,18 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
   protected readonly minStages: number = 1;
   protected readonly maxStages: number = 61;
   private started = false;
-  @Output() output: EventEmitter<string> = new EventEmitter();
+  readonly output = output<string>();
 
-  @ViewChild('phasorOnOffForm') phasorOnOffForm!: ElementRef<HTMLFormElement>;
-  @ViewChild('modFreq') modFreq!: LevelControlComponent;
-  @ViewChild('modDepth') modLevel!: LevelControlComponent;
-  @ViewChild('frequency') frequency!: LevelControlComponent;
-  @ViewChild('bandwidth') bandwidth!: LevelControlComponent;
-  @ViewChild('level') level!: LevelControlComponent;
-  @ViewChild('wetDry') wetDryDial!: LevelControlComponent;
-  @ViewChild('lfoWaveForm') lfoWaveForm!: ElementRef<HTMLFormElement>;
-  @ViewChild('modOnOffForm') modOnOff!: ElementRef<HTMLFormElement>;
-  @ViewChild('feedback') feedback!: LevelControlComponent;
+  readonly phasorOnOffForm = viewChild.required<ElementRef<HTMLFormElement>>('phasorOnOffForm');
+  readonly modFreq = viewChild.required<LevelControlComponent>('modFreq');
+  readonly modLevel = viewChild.required<LevelControlComponent>('modDepth');
+  readonly frequency = viewChild.required<LevelControlComponent>('frequency');
+  readonly bandwidth = viewChild.required<LevelControlComponent>('bandwidth');
+  readonly level = viewChild.required<LevelControlComponent>('level');
+  readonly wetDryDial = viewChild.required<LevelControlComponent>('wetDry');
+  readonly lfoWaveForm = viewChild.required<ElementRef<HTMLFormElement>>('lfoWaveForm');
+  readonly modOnOff = viewChild.required<ElementRef<HTMLFormElement>>('modOnOffForm');
+  readonly feedback = viewChild.required<LevelControlComponent>('feedback');
 
   async setUp(audioCtx: AudioContext, settings: PhasorSettings | null) {
     this.audioCtx = audioCtx;
@@ -84,7 +84,7 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
 
   // Called after all synth components have been started
   setOutputConnection() {
-    SetRadioButtons.set(this.phasorOnOffForm, this.proxySettings.output);
+    SetRadioButtons.set(this.phasorOnOffForm(), this.proxySettings.output);
   }
 
   async applySettings(settings: PhasorSettings | null) {
@@ -113,17 +113,17 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
     this.started = true;
 
     // Set up the dials
-    this.modFreq.setValue(settings.lfoFrequency);
-    this.modLevel.setValue(settings.modDepth);
-    this.frequency.setValue(settings.phase);
-    this.bandwidth.setValue(settings.bandwidth ? settings.bandwidth : -0.25);
-    this.level.setValue(settings.gain);
-    this.wetDryDial.setValue(settings.wetDry === undefined ? 0 : settings.wetDry);
-    this.feedback.setValue(settings.feedback);
+    this.modFreq().setValue(settings.lfoFrequency);
+    this.modLevel().setValue(settings.modDepth);
+    this.frequency().setValue(settings.phase);
+    this.bandwidth().setValue(settings.bandwidth ? settings.bandwidth : -0.25);
+    this.level().setValue(settings.gain);
+    this.wetDryDial().setValue(settings.wetDry === undefined ? 0 : settings.wetDry);
+    this.feedback().setValue(settings.feedback);
     this.stages = settings.stages;
 
-    SetRadioButtons.set(this.lfoWaveForm, this.proxySettings.modWaveform);
-    SetRadioButtons.set(this.modOnOff, this.proxySettings.modulation);
+    SetRadioButtons.set(this.lfoWaveForm(), this.proxySettings.modWaveform);
+    SetRadioButtons.set(this.modOnOff(), this.proxySettings.modulation);
   }
 
   public getSettings(): PhasorSettings {
@@ -220,7 +220,7 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    const phasorOnOff = this.phasorOnOffForm.nativeElement;
+    const phasorOnOff = this.phasorOnOffForm().nativeElement;
     for (let i = 0; i < phasorOnOff.elements.length; ++i) {
       phasorOnOff.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
@@ -230,7 +230,7 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
       });
     }
 
-    const lfoWaveForm = this.lfoWaveForm.nativeElement;
+    const lfoWaveForm = this.lfoWaveForm().nativeElement;
     for (let j = 0; j < lfoWaveForm.elements.length; ++j) {
       lfoWaveForm.elements[j].addEventListener('change', ($event) => {
         // @ts-ignore
@@ -246,7 +246,7 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
         this.proxySettings.modWaveform = value as modWaveforms;
       });
     }
-    const modOnOff = this.modOnOff.nativeElement;
+    const modOnOff = this.modOnOff().nativeElement;
     for (let j = 0; j < modOnOff.elements.length; ++j) {
       modOnOff.elements[j].addEventListener('change', ($event) => {
         // @ts-ignore

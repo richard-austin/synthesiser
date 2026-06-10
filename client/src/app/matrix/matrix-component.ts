@@ -1,4 +1,11 @@
-import {AfterViewInit, Component, Input, QueryList, ViewChildren, WritableSignal} from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  input,
+  InputSignal,
+  Signal, viewChildren,
+  WritableSignal
+} from '@angular/core';
 import {MatrixControlComponent, ModSetting} from '../matrix-control/matrix-control-component';
 import {SynthComponent} from '../synth/synth-component';
 import {OscillatorComponent} from '../oscillator/oscillator.component';
@@ -14,9 +21,9 @@ import {Cookies} from '../settings/cookies/cookies';
   styleUrl: './matrix-component.scss',
 })
 export class MatrixComponent implements AfterViewInit {
-  @ViewChildren(MatrixControlComponent) matrixControls!: QueryList<MatrixControlComponent>;
-  @Input() oscillators!: QueryList<OscillatorComponent>;
-  @Input() selectOperator!: WritableSignal<number>;
+  matrixControls: Signal<readonly MatrixControlComponent[]> = viewChildren(MatrixControlComponent);
+  oscillators: InputSignal<readonly OscillatorComponent[]> = input.required<readonly OscillatorComponent[]>();
+  selectOperator: InputSignal<WritableSignal<number>> = input.required<WritableSignal<number>>();
 
   protected _oscillatorParams = SynthComponent.oscillatorParams;
   private cookies!: Cookies;
@@ -47,8 +54,8 @@ export class MatrixComponent implements AfterViewInit {
 
     this.proxySettings.matrix.forEach((row, carrierIdx) =>
     row.forEach((mtxCtl, modIdx) => {
-      const control = this.matrixControls.get(carrierIdx*this.proxySettings.size + modIdx) as MatrixControlComponent;
-      control.start(this.audioCtx, mtxCtl,this.oscillators.get(modIdx), this.oscillators.get(carrierIdx));
+      const control = this.matrixControls()[carrierIdx*this.proxySettings.size + modIdx] as MatrixControlComponent;
+      control.start(this.audioCtx, mtxCtl,this.oscillators()[modIdx], this.oscillators()[carrierIdx]);
     }));
   }
 

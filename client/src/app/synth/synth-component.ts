@@ -1,12 +1,12 @@
 import {
   AfterViewInit,
   Component, effect, EffectRef,
-  ElementRef,
-  Input,
+  ElementRef, input,
+  InputSignal,
   OnDestroy,
-  QueryList, signal,
-  ViewChild, viewChildren,
-  ViewChildren, WritableSignal
+  Signal, signal, viewChild,
+  viewChildren,
+  WritableSignal
 } from '@angular/core';
 import {FilterComponent} from "../filter/filter-component";
 import {OscillatorComponent} from "../oscillator/oscillator.component";
@@ -78,26 +78,30 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  @Input() filename!: WritableSignal<string>;
-  @Input() homeComponentControl!: WritableSignal<boolean>;
+  filename: InputSignal<WritableSignal<string>> = input.required<WritableSignal<string>>();
+  homeComponentControl: InputSignal<WritableSignal<boolean>> = input.required<WritableSignal<boolean>>();
 
-  @ViewChildren(OscillatorComponent) oscillatorsGrp!: QueryList<OscillatorComponent>;
-  @ViewChild('oscillatorWindow') oscillatorWindow!: ElementRef<HTMLDivElement>;
-  @ViewChild('filterWindow') filterWindow!: ElementRef<HTMLDivElement>;
+  oscillatorsGrp: Signal<readonly OscillatorComponent[]> = viewChildren(OscillatorComponent);
+  oscillatorWindow: Signal<ElementRef<HTMLDivElement>> = viewChild.required<ElementRef<HTMLDivElement>>('oscillatorWindow');
+
+  filterWindow: Signal<ElementRef<HTMLDivElement>> = viewChild.required<ElementRef<HTMLDivElement>>('filterWindow');
   filtersGrp  = viewChildren(FilterComponent);
-  @ViewChild(NoiseComponent) noise!: NoiseComponent;
-  @ViewChild(RingModulatorComponent) ringModulator!: RingModulatorComponent;
-  @ViewChild(MatrixComponent) matrixComponent!: MatrixComponent;
-  @ViewChild(ReverbComponent) reverb!: ReverbComponent;
-  @ViewChild(PhaserComponent) phaser!: PhaserComponent;
-  @ViewChild(AnalyserComponent) analyser!: AnalyserComponent;
-  @ViewChild('synth') synth!: ElementRef<HTMLDivElement>;
-  @ViewChild('general') masterVolume!: GeneralComponent;
+  noise: Signal<NoiseComponent> = viewChild.required(NoiseComponent);
+  ringModulator: Signal<RingModulatorComponent> = viewChild.required(RingModulatorComponent);
+  matrixComponent: Signal<MatrixComponent> = viewChild.required(MatrixComponent);
+
+  reverb: Signal<ReverbComponent> = viewChild.required(ReverbComponent);
+  phaser: Signal<PhaserComponent> = viewChild.required(PhaserComponent);
+
+  analyser: Signal<AnalyserComponent> = viewChild.required(AnalyserComponent);
+  synth: Signal<ElementRef<HTMLDivElement>> = viewChild.required('synth');
+
+  masterVolume: Signal<GeneralComponent> = viewChild.required('general');
 
   constructor(private rest: RestfulApiService) {
     this.audioCtx = new AudioContext({sampleRate: 48000, latencyHint: "interactive"});
     this.fileNameEffectRef = effect(() => {
-      const fileName = this.filename();
+      const fileName = this.filename()();
       if (fileName !== "") {
         this.rest.getSettings(fileName).subscribe({
           next: (v) => this.settings = v,
@@ -112,24 +116,22 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     });
 
     this.homeControlEffectRef = effect(() => {
-      this.homeComponentControl();
-      const synth = this.synth?.nativeElement;
+      this.homeComponentControl()();
+      const synth = this.synth().nativeElement;
       if (synth) {
-        synth.setAttribute('style', 'opacity:' + (this.homeComponentControl() ? "0.2" : "1") + '; pointer-events:' + (this.homeComponentControl() ? "none" : "auto"));
+        synth.setAttribute('style', 'opacity:' + (this.homeComponentControl()() ? "0.2" : "1") + '; pointer-events:' + (this.homeComponentControl()() ? "none" : "auto"));
       }
     });
 
     this.cookies = new Cookies();
     this.effectRef = effect(() => {
       const value = this.signalSelectOperator();
-      if (this.oscillatorWindow) {
-        this.oscillatorWindow.nativeElement.scroll({left: 0, top: value * 979.3, behavior: 'instant'});
-        this.filterWindow.nativeElement.scroll({left: 0, top: value * 980, behavior: 'instant'});
+      if (this.oscillatorWindow() && this.proxySettings) {
+        this.oscillatorWindow().nativeElement.scroll({left: 0, top: value * 979.3, behavior: 'instant'});
+        this.filterWindow().nativeElement.scroll({left: 0, top: value * 980, behavior: 'instant'});
         this.proxySettings.selectedOscillator = (value + 1).toString();
       }
     });
-
-
   }
 
   protected async start(settings: SynthSettings | null): Promise<void> {
@@ -152,26 +154,26 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     // Start the module components
     this.filtersGrp().forEach((filter, i) => filter.start(this.audioCtx, settings ? settings.filterSettings[i] : settings));
 
-    await this.noise.start(this.audioCtx, settings ? settings.noiseSettings : settings);
-    this.ringModulator.start(this.audioCtx, settings ? settings.ringModSettings : settings);
-    this.reverb.start(this.audioCtx, settings ? settings.reverbSettings : settings);
-    await this.phaser.setUp(this.audioCtx, settings ? settings.phasorSettings : settings);
-    await this.analyser.start(this.audioCtx, settings ? settings.analyserSettings : settings);
-    this.masterVolume.start(this.audioCtx, settings ? settings.generalSettings : settings);
-    this.masterVolume.connect(this.analyser.node())
+    await this.noise().start(this.audioCtx, settings ? settings.noiseSettings : settings);
+    this.ringModulator().start(this.audioCtx, settings ? settings.ringModSettings : settings);
+    this.reverb().start(this.audioCtx, settings ? settings.reverbSettings : settings);
+    await this.phaser().setUp(this.audioCtx, settings ? settings.phasorSettings : settings);
+    await this.analyser().start(this.audioCtx, settings ? settings.analyserSettings : settings);
+    this.masterVolume().start(this.audioCtx, settings ? settings.generalSettings : settings);
+    this.masterVolume().connect(this.analyser().node())
 
     // Connect the module component outputs
-    for(const [i, oscillator] of this.oscillatorsGrp.toArray().entries()) {
+    for(const [i, oscillator] of this.oscillatorsGrp().entries()) {
       await oscillator.start(this.audioCtx, settings ? settings.oscillatorSettings[i] : settings);
     }
 
-    this.matrixComponent.start(this.audioCtx, settings ? settings.matrixSettings : settings);
+    this.matrixComponent().start(this.audioCtx, settings ? settings.matrixSettings : settings);
 
-    this.ringModulator.setOutputConnection();
-    this.noise.setOutputConnection();
+    this.ringModulator().setOutputConnection();
+    this.noise().setOutputConnection();
     this.filtersGrp().forEach(filter => filter.setOutputConnection());
-    this.reverb.setOutputConnection();
-    this.phaser.setOutputConnection();
+    this.reverb().setOutputConnection();
+    this.phaser().setOutputConnection();
     this.signalSelectOperator.set(parseInt(this.proxySettings.selectedOscillator) - 1);
     window.addEventListener("keydown", this.keydownHandler);
     window.addEventListener("keyup", this.keyupHandler);
@@ -260,7 +262,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
   getSettings(): SynthSettings {
     const oscSettings: OscillatorSettings[] = [];
-    this.oscillatorsGrp.forEach(oscillator => {
+    this.oscillatorsGrp().forEach(oscillator => {
       oscSettings.push(oscillator.getSettings());
     });
     const filterSettings: FilterSettings[] = [];
@@ -272,13 +274,13 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       this.proxySettings,
       oscSettings,
       filterSettings,
-      this.noise.getSettings(),
-      this.ringModulator.getSettings(),
-      this.matrixComponent.getSettings(),
-      this.reverb.getSettings(),
-      this.phaser.getSettings(),
-      this.masterVolume.getSettings(),
-      this.analyser.getSettings());
+      this.noise().getSettings(),
+      this.ringModulator().getSettings(),
+      this.matrixComponent().getSettings(),
+      this.reverb().getSettings(),
+      this.phaser().getSettings(),
+      this.masterVolume().getSettings(),
+      this.analyser().getSettings());
   }
 
   downKeys: Set<number> = new Set();
@@ -295,10 +297,10 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   protected keydown(code: number, velocity: number) {
-    this.oscillatorsGrp.forEach(osc => osc.keyDown(code, velocity));
+    this.oscillatorsGrp().forEach(osc => osc.keyDown(code, velocity));
 
     // this.filtersGrp.keyDown(code, velocity);
-    this.noise.keyDown(code, velocity);
+    this.noise().keyDown(code, velocity);
   }
 
   protected computerKeyUp($event: KeyboardEvent) {
@@ -312,9 +314,9 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   protected keyup(code: number) {
-    this.oscillatorsGrp.forEach(osc => osc.keyUp(code));
+    this.oscillatorsGrp().forEach(osc => osc.keyUp(code));
     //this.filtersGrp.keyUp(code);
-    this.noise.keyUp(code);
+    this.noise().keyUp(code);
   }
 
   keyCode(e: KeyboardEvent) {
@@ -413,28 +415,28 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   private pitchBend(value: number) {
-    this.oscillatorsGrp.forEach(osc => osc.midiPitchBend(value));
+    this.oscillatorsGrp().forEach(osc => osc.midiPitchBend(value));
     this.filtersGrp().forEach(filter => filter.midiPitchBend(value));
   }
 
   private modLevel(value: number) {
     value *= 300 / 127;
-    this.oscillatorsGrp.forEach(osc => osc.midiModLevel(value));
+    this.oscillatorsGrp().forEach(osc => osc.midiModLevel(value));
     this.filtersGrp().forEach(filter => filter.midiModLevel(value));
   }
 
   private setMasterVolume(value: number) {
     value /= 127;
-    this.masterVolume.setVolume(value);
+    this.masterVolume().setVolume(value);
   }
 
   protected setOscOutputTarget($event: string, oscNumber: number) {
-    const osc = this.oscillatorsGrp.get(oscNumber) as OscillatorComponent;
+    const osc = this.oscillatorsGrp()[oscNumber] as OscillatorComponent;
 
     osc.disconnect();
     switch ($event) {
       case 'speaker':
-        osc.connect(this.masterVolume.node());
+        osc.connect(this.masterVolume().node());
         break;
       case 'ringmod':
         false
@@ -463,7 +465,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       filter.disconnect();
       switch ($event) {
         case 'speaker':
-          filter.connect(this.masterVolume.node());
+          filter.connect(this.masterVolume().node());
           break;
         case 'ringmod':
           filter.connectToRingMod();
@@ -483,13 +485,13 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   protected setNoiseOutputTarget($event: string) {
-    this.noise.disconnect();
+    this.noise().disconnect();
     switch ($event) {
       case 'speaker':
-        this.noise.connect(this.masterVolume.node());
+        this.noise().connect(this.masterVolume().node());
         break;
       case 'filter':
-        this.noise.connectToFilters();
+        this.noise().connectToFilters();
         break;
       case 'off':
         break;
@@ -500,16 +502,16 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   protected setRingModOutPutTarget($event: string) {
-    this.ringModulator.disconnect();
+    this.ringModulator().disconnect();
     switch ($event) {
       case 'speaker':
-        this.ringModulator.connect(this.masterVolume.node());
+        this.ringModulator().connect(this.masterVolume().node());
         break;
       case 'filter':
-        this.ringModulator.connectToFilters();
+        this.ringModulator().connectToFilters();
         break;
       case 'reverb':
-        this.ringModulator.connectToReverb();
+        this.ringModulator().connectToReverb();
         break;
       case 'off':
         break;
@@ -520,10 +522,10 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   protected setReverbOutputTarget($event: string) {
-    this.reverb.disconnect();
+    this.reverb().disconnect();
     switch ($event) {
       case 'speaker':
-        this.reverb.connect(this.masterVolume.node());
+        this.reverb().connect(this.masterVolume().node());
         break;
       case 'off':
         break;
@@ -531,13 +533,13 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   protected setPhasorOutputTarget($event: string) {
-    this.phaser.disconnect();
+    this.phaser().disconnect();
     switch ($event) {
       case 'speaker':
-        this.phaser.connect(this.masterVolume.node());
+        this.phaser().connect(this.masterVolume().node());
         break;
       case 'reverb':
-        this.phaser.connect(this.reverb.input);
+        this.phaser().connect(this.reverb().input);
         break;
       case 'off':
         break;
@@ -608,9 +610,9 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
   async ngOnDestroy(): Promise<void> {
     await this.releaseWakeLock();
-    this.ringModulator.disconnect();
-    this.reverb.disconnect();
-    this.phaser.disconnect();
+    this.ringModulator().disconnect();
+    this.reverb().disconnect();
+    this.phaser().disconnect();
     // this.noise.disconnect();
     await this.audioCtx.close();
     this.midiInputs.forEach(input => {

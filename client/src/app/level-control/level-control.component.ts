@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, OnDestroy, viewChild, output, input} from '@angular/core';
 import {dialStyle, LevelControlParameters} from './levelControlParameters';
 
 @Component({
@@ -11,15 +11,15 @@ export class LevelControlComponent implements AfterViewInit, OnDestroy {
   drawOperationsWorker!: Worker;
   params!: LevelControlParameters;
   readonly extraForCursor = 26;
-  @ViewChild('theCanvas') canvas!: ElementRef<HTMLCanvasElement>;
-  @Output() setLevel = new EventEmitter<number>();
-  @Input() radius: number = 50;
-  @Input() calAngle: number = 330;
-  @Input() divisions: number = 10;
-  @Input() factor: number = 1;
-  @Input() label: string = '???';
-  @Input() plusMinus: boolean = false;
-  @Input() style: dialStyle = dialStyle.blue
+  readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('theCanvas');
+  readonly setLevel = output<number>();
+  readonly radius = input<number>(50);
+  readonly calAngle = input<number>(330);
+  readonly divisions = input<number>(10);
+  readonly factor = input<number>(1);
+  readonly label = input<string>('???');
+  readonly plusMinus = input<boolean>(false);
+  readonly style = input<dialStyle>(dialStyle.blue);
 
   startRender() {
     this.drawOperationsWorker = new Worker(new URL('./draw-operations.worker', import.meta.url));
@@ -28,9 +28,9 @@ export class LevelControlComponent implements AfterViewInit, OnDestroy {
         this.drawOperationsWorker.terminate();
       }
     };
-    const offScreenCanvas = this.canvas.nativeElement.transferControlToOffscreen();
+    const offScreenCanvas = this.canvas().nativeElement.transferControlToOffscreen();
 
-    this.params = new LevelControlParameters(offScreenCanvas, this.radius, this.calAngle, this.divisions, this.label, this.plusMinus, this.style, this.radius, this.radius + this.extraForCursor);
+    this.params = new LevelControlParameters(offScreenCanvas, this.radius(), this.calAngle(), this.divisions(), this.label(), this.plusMinus(), this.style(), this.radius(), this.radius() + this.extraForCursor);
     this.drawOperationsWorker.postMessage({
       canvas: this.params.canvas,
       params: this.params.getObject()
@@ -54,7 +54,7 @@ export class LevelControlComponent implements AfterViewInit, OnDestroy {
       currentAngle = upperLimit;
     else if (currentAngle < lowerLimit)
       currentAngle = lowerLimit;
-    this.setLevel.emit(this.factor * currentAngle / p.calAngle);
+    this.setLevel.emit(this.factor() * currentAngle / p.calAngle);
 
     this.drawOperationsWorker.postMessage({angle: currentAngle});
     return currentAngle;
@@ -64,7 +64,7 @@ export class LevelControlComponent implements AfterViewInit, OnDestroy {
 
   setValue(value: number) {
     let p = this.params;
-    this.currentAngle = this.setAngle(p.calAngle * value/this.factor, 0);
+    this.currentAngle = this.setAngle(p.calAngle * value/this.factor(), 0);
   }
 
   changeStyle(style: dialStyle) {
@@ -74,7 +74,7 @@ export class LevelControlComponent implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.startRender();
-    const canvas = this.canvas.nativeElement;
+    const canvas = this.canvas().nativeElement;
     let mouseDown = false;
     let lastX = 0
     let lastY = 0;

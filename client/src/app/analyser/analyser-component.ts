@@ -1,4 +1,4 @@
-import {AfterViewInit, ChangeDetectorRef, Component, ElementRef, viewChild, ViewChild} from '@angular/core';
+import {AfterViewInit, ChangeDetectorRef, Component, ElementRef, Signal, viewChild, ViewChild} from '@angular/core';
 import {analyserTypes} from '../enums/enums';
 import {AnalyserSettings} from '../settings/analyser-settings';
 import {Cookies} from '../settings/cookies/cookies';
@@ -27,8 +27,8 @@ export class AnalyserComponent implements AfterViewInit {
   private yScale = 1;
   private xScale = 1;
 
-  @ViewChild('canvas') canvas!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('analyserTypeForm') analyserTypeForm!: ElementRef<HTMLFormElement>;
+  canvas: Signal<ElementRef<HTMLCanvasElement>> = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
+  analyserTypeForm: Signal<ElementRef<HTMLFormElement>> = viewChild.required<ElementRef<HTMLFormElement>>('analyserTypeForm');
   yScaleControl = viewChild.required<LevelControlComponent>('yScale');
   xScaleControl = viewChild.required<LevelControlComponent>('xScale');
   triggerLevelControl = viewChild.required<LevelControlComponent>('trigLevel');
@@ -63,7 +63,7 @@ export class AnalyserComponent implements AfterViewInit {
     this.yScaleControl().setValue(this.proxySettings.yScale ? this.proxySettings.yScale : 1);
     this.xScaleControl().setValue(this.proxySettings?.xScale ? this.proxySettings.xScale : 1);
     this.triggerLevelControl().setValue(this.proxySettings?.triggerLevel ? this.proxySettings.triggerLevel : 0);
-    SetRadioButtons.set(this.analyserTypeForm, this.proxySettings.analyserType);
+    SetRadioButtons.set(this.analyserTypeForm(), this.proxySettings.analyserType);
   }
 
   getSettings(): AnalyserSettings {
@@ -72,7 +72,7 @@ export class AnalyserComponent implements AfterViewInit {
 
   private draw = () => {
     if (this.proxySettings.analyserType === analyserTypes.off) return
-    this.canvasEL = this.canvas.nativeElement;
+    this.canvasEL = this.canvas().nativeElement;
     this.canvasCtx = this.canvasEL.getContext("2d");
     if (this.canvasCtx) {
       if (this.proxySettings.analyserType === analyserTypes.spectrum)
@@ -185,7 +185,7 @@ export class AnalyserComponent implements AfterViewInit {
   }
 
   async ngAfterViewInit(): Promise<void> {
-    const analyserTypeForm = this.analyserTypeForm.nativeElement;
+    const analyserTypeForm = this.analyserTypeForm().nativeElement;
     for (let i = 0; i < analyserTypeForm.elements.length; ++i) {
       analyserTypeForm.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore

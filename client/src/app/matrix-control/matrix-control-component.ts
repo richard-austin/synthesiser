@@ -2,10 +2,9 @@ import {
   AfterViewInit,
   Component,
   ElementRef,
-  EventEmitter,
-  Input,
-  Output,
-  ViewChild,
+  input,
+  InputSignal, output,
+  OutputEmitterRef, Signal, viewChild,
   WritableSignal
 } from '@angular/core';
 import {LevelControlComponent} from '../level-control/level-control.component';
@@ -29,15 +28,15 @@ export interface ModLevel {level: number, carrier: number, modulator: number}
 export class MatrixControlComponent implements AfterViewInit{
   protected dialStyle: dialStyle = dialStyle.green;
   private ctlSettings!: MatrixControlSettings;
-  @Input() carrierNum!: number;
-  @Input() modulatorNum!: number;
-  @Input() signalSelectOperator!: WritableSignal<number>;
+  carrierNum: InputSignal<number> = input.required<number>();
+  modulatorNum: InputSignal<number> = input.required<number>();
+  signalSelectOperator: InputSignal<WritableSignal<number>> = input.required<WritableSignal<number>>();
 
-  @Output() modSelection = new EventEmitter<ModSetting>();
-  @Output() modLevel = new EventEmitter<ModLevel>();
+  modSelection: OutputEmitterRef<ModSetting> = output<ModSetting>();
+  modLevel: OutputEmitterRef<ModLevel> = output<ModLevel>();
 
-  @ViewChild('modSelect') modSelect!: ElementRef<HTMLFormElement>;
-  @ViewChild('level') levelControl!: LevelControlComponent;
+  modSelect: Signal<ElementRef<HTMLFormElement>> = viewChild.required<ElementRef<HTMLFormElement>>('modSelect');
+  levelControl: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('level');
 
   modulator!: OscillatorComponent;
   carrier!: OscillatorComponent;
@@ -59,7 +58,7 @@ export class MatrixControlComponent implements AfterViewInit{
     this.modulator.connectModOut(this.modulationGain);
     this.carrier = carrier as OscillatorComponent;
     this.setModType(ctrlSettings.setting);
-    this.levelControl.setValue(ctrlSettings.level);
+    this.levelControl().setValue(ctrlSettings.level);
   }
 
   protected setModLevel(level: number) {
@@ -68,7 +67,7 @@ export class MatrixControlComponent implements AfterViewInit{
   }
 
   public setModType(modType: oscModType) {
-    const elements = this.modSelect.nativeElement.elements;
+    const elements = this.modSelect().nativeElement.elements;
     // @ts-ignore
     elements["0"].checked = elements["1"].checked = false;
     const element = modType === oscModType.frequency ? elements["1"] : elements["0"];
@@ -86,17 +85,17 @@ export class MatrixControlComponent implements AfterViewInit{
     } else if (modType === oscModType.frequency) {
       this.dialStyle = dialStyle.red;
     }
-    this.levelControl.changeStyle(this.dialStyle)
+    this.levelControl().changeStyle(this.dialStyle)
  //   this.carrier.modulation(this.gainNode, modType);
-    this.modSelection.emit({modType: modType, carrier: this.carrierNum, modulator: this.modulatorNum});
+    this.modSelection.emit({modType: modType, carrier: this.carrierNum(), modulator: this.modulatorNum()});
   }
 
   protected selectOperator(modulatorNum: number) {
-      this.signalSelectOperator.set(modulatorNum);
+      this.signalSelectOperator().set(modulatorNum);
   }
 
   ngAfterViewInit(): void {
-    const modSelect = this.modSelect.nativeElement;
+    const modSelect = this.modSelect().nativeElement;
     for (let j = 0; j < modSelect.elements.length; ++j) {
       modSelect.elements[j].addEventListener('change', ($event) => {
         const target = $event.target as HTMLInputElement;

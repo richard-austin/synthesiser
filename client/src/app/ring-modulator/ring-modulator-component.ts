@@ -1,4 +1,13 @@
-import {AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild} from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnDestroy,
+  viewChild,
+  output,
+  input,
+  OutputEmitterRef
+} from '@angular/core';
 import {RingModulator} from '../modules/ring-modulator';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
@@ -23,16 +32,16 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
   proxySettings!: RingModSettings;
   private cookies!: Cookies;
 
-  @Input() filters!: FilterComponent | undefined;
-  @Input() reverb!: ReverbComponent;
+  readonly filters = input.required<FilterComponent | undefined>();
+  readonly reverb = input.required<ReverbComponent>();
   numberOfDevices: number = DevicePoolManager.numberOfDevices;
-  @Output() output: EventEmitter<string> = new EventEmitter();
+  readonly output: OutputEmitterRef<string> = output<string>();
 
-  @ViewChild('modFreq') modFreq!: LevelControlComponent;
-  @ViewChild('modDepth') modDepth!: LevelControlComponent;
-  @ViewChild('modWaveForm') modWaveForm!: ElementRef<HTMLFormElement>;
-  @ViewChild('internalModForm') internalModForm!: ElementRef<HTMLFormElement>;
-  @ViewChild('outputToForm') outputToForm!: ElementRef<HTMLFormElement>;
+  readonly modFreq = viewChild.required<LevelControlComponent>('modFreq');
+  readonly modDepth = viewChild.required<LevelControlComponent>('modDepth');
+  readonly modWaveForm = viewChild.required<ElementRef<HTMLFormElement>>('modWaveForm');
+  readonly internalModForm = viewChild.required<ElementRef<HTMLFormElement>>('internalModForm');
+  readonly outputToForm = viewChild.required<ElementRef<HTMLFormElement>>('outputToForm');
 
   start(audioCtx: AudioContext, settings: RingModSettings | null) {
     this.ringMod = new RingModulator(audioCtx);
@@ -44,7 +53,7 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
 
   // Called after all synth components have been started
   setOutputConnection() {
-    SetRadioButtons.set(this.outputToForm, this.proxySettings.output);
+    SetRadioButtons.set(this.outputToForm(), this.proxySettings.output);
   }
 
   applySettings(settings: RingModSettings | null) {
@@ -63,12 +72,12 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
 
     // Set up the dial positions
-    this.modFreq.setValue(settings.modFrequency);
-    this.modDepth.setValue(settings.modDepth);
+    this.modFreq().setValue(settings.modFrequency);
+    this.modDepth().setValue(settings.modDepth);
 
     // Set the mod waveform buttons and ring mod settings
-    SetRadioButtons.set(this.modWaveForm, settings.modWaveform);
-    SetRadioButtons.set(this.internalModForm, settings.internalMod);
+    SetRadioButtons.set(this.modWaveForm(), settings.modWaveform);
+    SetRadioButtons.set(this.internalModForm(), settings.internalMod);
   }
 
   public getSettings(): RingModSettings {
@@ -101,7 +110,7 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
   }
 
   connectToFilters() {
-    const filters = this.filters?.filters;
+    const filters = this.filters()?.filters;
     let ok = false;
     if (filters && filters.length >= this.numberOfDevices) {
       ok = true;
@@ -114,7 +123,7 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
   }
 
   connectToReverb(): boolean {
-    const reverb = this.reverb;
+    const reverb = this.reverb();
     let ok = false;
     if (reverb) {
       ok = true;
@@ -129,7 +138,7 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    const internalModForm = this.internalModForm.nativeElement;
+    const internalModForm = this.internalModForm().nativeElement;
     for (let j = 0; j < internalModForm.elements.length; ++j) {
       internalModForm.elements[j].addEventListener('change', ($event) => {
         // @ts-ignore
@@ -138,7 +147,7 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
         this.ringMod.internalMod(value === 'on');
       });
     }
-    const modWaveForm = this.modWaveForm.nativeElement;
+    const modWaveForm = this.modWaveForm().nativeElement;
     for (let j = 0; j < modWaveForm.elements.length; ++j) {
       modWaveForm.elements[j].addEventListener('change', ($event) => {
         // @ts-ignore
@@ -147,7 +156,7 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
         this.ringMod.setModWaveform(value);
       });
     }
-    const outputToForm = this.outputToForm.nativeElement;
+    const outputToForm = this.outputToForm().nativeElement;
     for (let j = 0; j < outputToForm.elements.length; ++j) {
       outputToForm.elements[j].addEventListener('change', ($event) => {
         // @ts-ignore

@@ -2,12 +2,11 @@ import {
   AfterViewInit,
   Component,
   ElementRef,
-  EventEmitter,
-  inject,
-  Input,
+  inject, input,
+  InputSignal,
   OnDestroy,
-  Output,
-  ViewChild
+  output,
+  OutputEmitterRef, Signal, viewChild
 } from '@angular/core';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {LevelControlComponent} from '../level-control/level-control.component';
@@ -52,35 +51,35 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   // One set for oscillator1, one set for oscillator2 and one for the noise source
   private readonly numberOfFilters: number = DevicePoolManager.numberOfDevices;
 
-  @Input() reverb!: ReverbComponent;
-  @Input() ringMod!: RingModulatorComponent;
-  @Input() phaser!: PhaserComponent;
-  @Input() filterNumber!: number;
+  reverb: InputSignal<ReverbComponent> = input.required<ReverbComponent>();
+  ringMod: InputSignal<RingModulatorComponent> = input.required<RingModulatorComponent>();
+  phaser: InputSignal<PhaserComponent> = input.required<PhaserComponent>();
+  filterNumber: InputSignal<number> = input.required<number>();
 
-  @Output() output = new EventEmitter<string>();
-  @ViewChild('frequency') frequency!: LevelControlComponent;
-  @ViewChild('deTune') deTune!: LevelControlComponent;
-  @ViewChild('gain') gain!: LevelControlComponent;
-  @ViewChild('qfactor') qfactor!: LevelControlComponent;
+  output: OutputEmitterRef<string> = output<string>() ;
+  frequency: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('frequency');
+  deTune: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('deTune');
+  gain: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('gain');
+  qfactor: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('qfactor');
 
-  @ViewChild('freqAttack') freqAttack!: LevelControlComponent;
-  @ViewChild('freqAttackLevel') freqAttackLevel!: LevelControlComponent;
-  @ViewChild('freqDecay') freqDecay!: LevelControlComponent;
-  @ViewChild('freqSustain') freqSustain!: LevelControlComponent;
-  @ViewChild('freqRelease') freqRelease!: LevelControlComponent;
-  @ViewChild('freqReleaseLevel') freqReleaseLevel!: LevelControlComponent;
-  @ViewChild('portamento') portamento!: LevelControlComponent;
-  @ViewChild('portamentoType') portamentoType!: ElementRef<HTMLSelectElement>;
+  readonly freqAttack = viewChild.required<LevelControlComponent>('freqAttack');
+  readonly freqAttackLevel = viewChild.required<LevelControlComponent>('freqAttackLevel');
+  readonly freqDecay = viewChild.required<LevelControlComponent>('freqDecay');
+  readonly freqSustain = viewChild.required<LevelControlComponent>('freqSustain');
+  readonly freqRelease = viewChild.required<LevelControlComponent>('freqRelease');
+  readonly freqReleaseLevel = viewChild.required<LevelControlComponent>('freqReleaseLevel');
+  readonly portamento = viewChild.required<LevelControlComponent>('portamento');
+  readonly portamentoType = viewChild.required<ElementRef<HTMLSelectElement>>('portamentoType');
 
-  @ViewChild('filterOutputToForm') filterOutputTo!: ElementRef<HTMLFormElement>;
+  readonly filterOutputTo = viewChild.required<ElementRef<HTMLFormElement>>('filterOutputToForm');
 
-  @ViewChild('freqEnveOnOffForm') freqEnveOnOff!: ElementRef<HTMLFormElement>;
-  @ViewChild('filterTypeForm') filterType!: ElementRef<HTMLFormElement>;
+  readonly freqEnveOnOff = viewChild.required<ElementRef<HTMLFormElement>>('freqEnveOnOffForm');
+  readonly filterType = viewChild.required<ElementRef<HTMLFormElement>>('filterTypeForm');
 
-  @ViewChild('modSettingsForm') modSettingsForm!: ElementRef<HTMLFormElement>;
-  @ViewChild('modFreq') modFreq!: LevelControlComponent;
-  @ViewChild('modDepth') modLevel!: LevelControlComponent;
-  @ViewChild('lfoWaveForm') lfoWaveForm!: ElementRef<HTMLFormElement>;
+  readonly modSettingsForm = viewChild.required<ElementRef<HTMLFormElement>>('modSettingsForm');
+  readonly modFreq = viewChild.required<LevelControlComponent>('modFreq');
+  readonly modLevel = viewChild.required<LevelControlComponent>('modDepth');
+  readonly lfoWaveForm = viewChild.required<ElementRef<HTMLFormElement>>('lfoWaveForm');
 
   private devicePoolManagerService: DevicePoolManagerService = inject(DevicePoolManagerService);
   private started = false;
@@ -100,11 +99,11 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   // Called after all synth components have been started
   setOutputConnection() {
-    SetRadioButtons.set(this.filterOutputTo, this.proxySettings.output);
+    SetRadioButtons.set(this.filterOutputTo(), this.proxySettings.output);
   }
 
   applySettings(settings: FilterSettings | null) {
-    const cookieName = 'filter'+this.filterNumber;
+    const cookieName = 'filter'+this.filterNumber();
     if (!settings) {
       settings = new FilterSettings();
       const savedSettings = this.cookies.getSettings(cookieName, settings);
@@ -133,34 +132,34 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
       filter.clearModulation();  // Remove any preexisting mod settings
     });
 
-    this.frequency.setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
-    this.deTune.setValue(this.proxySettings.deTune);
-    this.gain.setValue(this.proxySettings.gain);
+    this.frequency().setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
+    this.deTune().setValue(this.proxySettings.deTune);
+    this.gain().setValue(this.proxySettings.gain);
 
-    this.portamento.setValue(this.proxySettings.portamento);
-    this.portamentoType.nativeElement.value = this.proxySettings.portamentoType;
+    this.portamento().setValue(this.proxySettings.portamento);
+    this.portamentoType().nativeElement.value = this.proxySettings.portamentoType;
 
-    this.qfactor.setValue(this.proxySettings.qFactor);
+    this.qfactor().setValue(this.proxySettings.qFactor);
 
     // Set up default frequency bend e=velope values
-    this.freqAttack.setValue(this.proxySettings.freqBend.attackTime);
-    this.freqAttackLevel.setValue(this.proxySettings.freqBend.attackLevel);
-    this.freqDecay.setValue(this.proxySettings.freqBend.decayTime);
-    this.freqSustain.setValue(this.proxySettings.freqBend.sustainLevel);
-    this.freqSustain.setValue(this.proxySettings.freqBend.sustainLevel);
-    this.freqRelease.setValue(this.proxySettings.freqBend.releaseTime);
-    this.freqReleaseLevel.setValue(this.proxySettings.freqBend.releaseLevel);
+    this.freqAttack().setValue(this.proxySettings.freqBend.attackTime);
+    this.freqAttackLevel().setValue(this.proxySettings.freqBend.attackLevel);
+    this.freqDecay().setValue(this.proxySettings.freqBend.decayTime);
+    this.freqSustain().setValue(this.proxySettings.freqBend.sustainLevel);
+    this.freqSustain().setValue(this.proxySettings.freqBend.sustainLevel);
+    this.freqRelease().setValue(this.proxySettings.freqBend.releaseTime);
+    this.freqReleaseLevel().setValue(this.proxySettings.freqBend.releaseLevel);
 
     // Set up LFO default values
-    this.modFreq.setValue(this.proxySettings.modFreq);  // Set dial
-    this.modLevel.setValue(this.proxySettings.modLevel);  // Set dial
+    this.modFreq().setValue(this.proxySettings.modFreq);  // Set dial
+    this.modLevel().setValue(this.proxySettings.modLevel);  // Set dial
 
     // Set up the buttons
     //   SetRadioButtons.set(this.filterOutputTo, this.settings.output);
-    SetRadioButtons.set(this.filterType, this.proxySettings.filterType);
-    SetRadioButtons.set(this.freqEnveOnOff, this.proxySettings.useFrequencyEnvelope);
-    SetRadioButtons.set(this.modSettingsForm, this.proxySettings.modType);
-    SetRadioButtons.set(this.lfoWaveForm, this.proxySettings.modWaveform);
+    SetRadioButtons.set(this.filterType(), this.proxySettings.filterType);
+    SetRadioButtons.set(this.freqEnveOnOff(), this.proxySettings.useFrequencyEnvelope);
+    SetRadioButtons.set(this.modSettingsForm(), this.proxySettings.modType);
+    SetRadioButtons.set(this.lfoWaveForm(), this.proxySettings.modWaveform);
   }
 
   public getSettings(): FilterSettings {
@@ -205,7 +204,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
     if (useFreqBendEnvelope)
-      this.portamento.setValue(0); // Cannot use portamento with frequency envelope
+      this.portamento().setValue(0); // Cannot use portamento with frequency envelope
 
     this.proxySettings.useFrequencyEnvelope = useFreqBendEnvelope ? onOff.on : onOff.off;
     for (let i = 0; i < this.filters.length; i++) {
@@ -239,7 +238,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   connectToRingMod(): boolean {
-    const ringMod = this.ringMod;
+    const ringMod = this.ringMod();
     let ok = false;
     if (ringMod) {
       ok = true;
@@ -256,14 +255,14 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     if (phaser) {
       ok = true;
       for (let i = 0; i < this.filters.length; i++) {
-        this.filters[i].connect(phaser.input);
+        this.filters[i].connect(phaser().input);
       }
     }
     return ok;
   }
 
   connectToReverb(): boolean {
-    const reverb = this.reverb;
+    const reverb = this.reverb();
     let ok = false;
     if (reverb) {
       ok = true;
@@ -393,7 +392,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     if ($event > 0) {
       // Can't use frequency bend envelope with portamento
       this.proxySettings.useFrequencyEnvelope = onOff.off;
-      SetRadioButtons.set(this.freqEnveOnOff, this.proxySettings.useFrequencyEnvelope);
+      SetRadioButtons.set(this.freqEnveOnOff(), this.proxySettings.useFrequencyEnvelope);
     }
   }
 
@@ -404,7 +403,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   midiModLevel(value: number) {
-    this.modLevel.setValue(value);
+    this.modLevel().setValue(value);
   }
 
   protected readonly dialStyle = dialStyle;
@@ -453,11 +452,11 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    this.devicePoolManagerService.notifyKeydown[this.filterNumber] = (keys: DeviceKeys) => {
+    this.devicePoolManagerService.notifyKeydown[this.filterNumber()] = (keys: DeviceKeys) => {
       this.deviceKeyDown(keys);
     }
 
-    this.devicePoolManagerService.notifyKeyup[this.filterNumber] = (keys: DeviceKeys) => {
+    this.devicePoolManagerService.notifyKeyup[this.filterNumber()] = (keys: DeviceKeys) => {
       this.deviceKeyUp(keys);
     }
 
@@ -468,7 +467,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     this.chordProcessorOscillator2 = new ChordProcessor();
     this.chordProcessorOscillator2.setKeyDownCallback(this.chordProcessorKeyDownCallback);
 
-    const filterOutForm = this.filterOutputTo.nativeElement;
+    const filterOutForm = this.filterOutputTo().nativeElement;
     for (let i = 0; i < filterOutForm.elements.length; ++i) {
       filterOutForm.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
@@ -477,7 +476,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
         this.proxySettings.output = value;
       });
     }
-    const freqEnveOnOffForm = this.freqEnveOnOff.nativeElement;
+    const freqEnveOnOffForm = this.freqEnveOnOff().nativeElement;
     for (let i = 0; i < freqEnveOnOffForm.elements.length; ++i) {
       freqEnveOnOffForm.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
@@ -485,7 +484,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
         this.useFreqBendEnvelope(value === 'on')
       })
     }
-    const filterType = this.filterType.nativeElement;
+    const filterType = this.filterType().nativeElement;
     for (let i = 0; i < filterType.elements.length; ++i) {
       filterType.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
@@ -493,14 +492,14 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
         this.setFilterType(value as BiquadFilterType);
       });
 
-      const portamentoType = this.portamentoType.nativeElement;
+      const portamentoType = this.portamentoType().nativeElement;
       portamentoType.addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value as PortamentoType
         this.setPortamentoType(value as PortamentoType);
       });
 
-      const modSettingsForm = this.modSettingsForm.nativeElement;
+      const modSettingsForm = this.modSettingsForm().nativeElement;
       for (let j = 0; j < modSettingsForm.elements.length; ++j) {
         modSettingsForm.elements[j].addEventListener('change', ($event) => {
           // @ts-ignore
@@ -509,7 +508,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
         });
       }
 
-      const modWaveForm = this.lfoWaveForm.nativeElement;
+      const modWaveForm = this.lfoWaveForm().nativeElement;
       for (let j = 0; j < modWaveForm.elements.length; ++j) {
         modWaveForm.elements[j].addEventListener('change', ($event) => {
           // @ts-ignore

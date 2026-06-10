@@ -2,12 +2,10 @@ import {
   AfterViewInit,
   Component,
   ElementRef,
-  EventEmitter,
-  inject,
-  Input,
   OnDestroy,
-  Output,
-  ViewChild
+  viewChild,
+  output,
+  input
 } from '@angular/core';
 import {WhiteNoise} from '../modules/noise/white-noise';
 import {PinkNoise} from '../modules/noise/pink-noise';
@@ -20,7 +18,6 @@ import {noiseOutputs, onOff} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {Cookies} from '../settings/cookies/cookies';
 import DevicePoolManager from '../util-classes/device-pool-manager';
-import {DeviceKeys, DevicePoolManagerService} from '../services/device-pool-manager-service';
 
 @Component({
   selector: 'app-noise',
@@ -39,21 +36,19 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   private velocitySensitive: boolean = true;
   private noisePoolMgr!: DevicePoolManager;
 
-  @Input() filters!: FilterComponent | undefined;
-  @Output() output = new EventEmitter<string>();
+  readonly filters = input.required<FilterComponent | undefined>();
+  readonly output = output<string>();
 
-  @ViewChild('attack') attack!: LevelControlComponent;
-  @ViewChild('decay') decay!: LevelControlComponent;
-  @ViewChild('sustain') sustain!: LevelControlComponent;
-  @ViewChild('release') release!: LevelControlComponent;
+  readonly attack = viewChild.required<LevelControlComponent>('attack');
+  readonly decay = viewChild.required<LevelControlComponent>('decay');
+  readonly sustain = viewChild.required<LevelControlComponent>('sustain');
+  readonly release = viewChild.required<LevelControlComponent>('release');
 
-  @ViewChild('noiseTypeForm') noiseTypeForm!: ElementRef<HTMLFormElement>;
-  @ViewChild('noiseOutputToForm') noiseOutputToForm!: ElementRef<HTMLFormElement>;
-  @ViewChild('gainControl') gainControl!: LevelControlComponent;
-  @ViewChild('legatoOnOffForm') legatoOnOffForm!: ElementRef<HTMLFormElement>;
-  @ViewChild('velocity') velocityOnOffForm!: ElementRef<HTMLFormElement>;
-
-  private devicePoolManagerService = inject(DevicePoolManagerService);
+  readonly noiseTypeForm = viewChild.required<ElementRef<HTMLFormElement>>('noiseTypeForm');
+  readonly noiseOutputToForm = viewChild.required<ElementRef<HTMLFormElement>>('noiseOutputToForm');
+  readonly gainControl = viewChild.required<LevelControlComponent>('gainControl');
+  readonly legatoOnOffForm = viewChild.required<ElementRef<HTMLFormElement>>('legatoOnOffForm');
+  readonly velocityOnOffForm = viewChild.required<ElementRef<HTMLFormElement>>('velocity');
   private started: boolean;
 
   constructor() {
@@ -78,7 +73,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
 
   // Called after all synth components have been started
   setOutputConnection() {
-    SetRadioButtons.set(this.noiseOutputToForm, this.proxySettings.output);
+    SetRadioButtons.set(this.noiseOutputToForm(), this.proxySettings.output);
   }
 
   applySettings(settings: NoiseSettings | null) {
@@ -108,16 +103,16 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
     this.noisePoolMgr = new DevicePoolManager(source, this.proxySettings);
 
-    this.attack.setValue(this.proxySettings.adsr.attackTime);
-    this.decay.setValue(this.proxySettings.adsr.decayTime);
-    this.sustain.setValue(this.proxySettings.adsr.sustainLevel);
-    this.release.setValue(this.proxySettings.adsr.releaseTime);
-    this.gainControl.setValue(settings.gain);
+    this.attack().setValue(this.proxySettings.adsr.attackTime);
+    this.decay().setValue(this.proxySettings.adsr.decayTime);
+    this.sustain().setValue(this.proxySettings.adsr.sustainLevel);
+    this.release().setValue(this.proxySettings.adsr.releaseTime);
+    this.gainControl().setValue(settings.gain);
 
     //  SetRadioButtons.set(this.noiseOutputToForm, this.settings.output);
-    SetRadioButtons.set(this.noiseTypeForm, this.proxySettings.type);
-    SetRadioButtons.set(this.legatoOnOffForm, this.proxySettings.legatoMode);
-    SetRadioButtons.set(this.velocityOnOffForm, this.proxySettings.velocitySensitive);
+    SetRadioButtons.set(this.noiseTypeForm(), this.proxySettings.type);
+    SetRadioButtons.set(this.legatoOnOffForm(), this.proxySettings.legatoMode);
+    SetRadioButtons.set(this.velocityOnOffForm(), this.proxySettings.velocitySensitive);
   }
 
   public getSettings(): NoiseSettings {
@@ -172,7 +167,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
    */
   connectToFilters(): void {
     this.proxySettings.output = noiseOutputs.filter;
-    const filters = this.filters?.filters;
+    const filters = this.filters()?.filters;
     if(filters) {
       for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
         this.whiteNoise[i].connect(filters[i].filter);
@@ -257,7 +252,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   protected readonly dialStyle = dialStyle;
 
   ngAfterViewInit(): void {
-    const noiseOutputToForm = this.noiseOutputToForm.nativeElement;
+    const noiseOutputToForm = this.noiseOutputToForm().nativeElement;
     for (let i = 0; i < noiseOutputToForm.elements.length; ++i) {
       noiseOutputToForm.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
@@ -267,7 +262,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
       });
     }
 
-    const noiseTypeForm = this.noiseTypeForm.nativeElement;
+    const noiseTypeForm = this.noiseTypeForm().nativeElement;
     for (let i = 0; i < noiseTypeForm.elements.length; ++i) {
       noiseTypeForm.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
@@ -277,7 +272,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
       });
     }
 
-    const legatoOnOffForm = this.legatoOnOffForm.nativeElement;
+    const legatoOnOffForm = this.legatoOnOffForm().nativeElement;
     for (let i = 0; i < legatoOnOffForm.elements.length; ++i) {
       legatoOnOffForm.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
@@ -287,7 +282,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
       });
     }
 
-    const velocityOnOffForm = this.velocityOnOffForm.nativeElement;
+    const velocityOnOffForm = this.velocityOnOffForm().nativeElement;
     for (let i = 0; i < velocityOnOffForm.elements.length; ++i) {
       velocityOnOffForm.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
