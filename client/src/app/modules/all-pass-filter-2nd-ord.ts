@@ -36,7 +36,6 @@ export class AllPassFilter2ndOrd {
               this.running = false;
               // @ts-ignore
               this.port.close();
-              console.log("Closed");
             }
           };
         }
