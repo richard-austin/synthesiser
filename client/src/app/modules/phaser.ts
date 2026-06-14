@@ -1,8 +1,7 @@
 import {GainEnvelopeBase} from './gain-envelope-base';
-import {AllPassFilter2ndOrd} from './all-pass-filter-2nd-ord';
 
 export class Phaser {
-  filters: AllPassFilter2ndOrd[];
+  filters: BiquadFilterNode[];
   public readonly modInput: GainNode;
   private readonly numberOfNodes: number;
   gain: GainNode;
@@ -30,31 +29,36 @@ export class Phaser {
     this.dryGain.gain.value = 0.0;
     this.input.connect(this.dryGain);
     this.modInput = audioCtx.createGain();
-    this.modInput.gain.value = 1;
+    this.modInput.gain.value = 9600; // Sweep range of 8 octaves in cents
   }
 
   async start() {
+    let stagger = 0;
     for (let i = 0; i < this.numberOfNodes; ++i) {
-      this.filters.push(new AllPassFilter2ndOrd(this.audioCtx));
-      await this.filters[i].start();
+      this.filters.push(new BiquadFilterNode(this.audioCtx));
+      this.filters[i].type = "allpass";
+      this.filters[i].detune.value = stagger;
+      stagger -= 100;
       if (i > 0)
-        this.filters[i - 1].connect(this.filters[i].node());
-      this.modInput.connect(this.filters[i].mod());
+        this.filters[i - 1].connect(this.filters[i]);
+      this.modInput.connect(this.filters[i].detune);
     }
-    this.input.connect(this.filters[0].node());
-    this.feedBack.connect(this.filters[0].node());
+    this.input.connect(this.filters[0]);
+    this.feedBack.connect(this.filters[0]);
     this.filters[this.numberOfNodes - 1].connect(this.feedBack);
     this.filters[this.numberOfNodes - 1].connect(this.wetGain);
   }
 
   setFrequency(frequency: number) {
+    const twelfthRoot2 = Math.pow(2, 1/12);
+
     this.filters.forEach((filter) => {
-      filter.frequency(frequency * 4);
+      filter.frequency.value = Math.pow(twelfthRoot2, frequency *144) * 8;  // Range of 12 octaves in semitones
     })
   }
-  setBandWidth(bandwidth: number) {
+  setQFactor(q: number) {
     this.filters.forEach((filter) => {
-      filter.bandwidth(bandwidth);
+      filter.Q.value = q;
     });
   }
   setLevel(level: number) {
@@ -75,11 +79,10 @@ export class Phaser {
     this.input.disconnect();
     this.wetGain.disconnect();
     this.dryGain.disconnect();
-    this.feedBack.disconnect(this.filters[0].node());
+    this.feedBack.disconnect(this.filters[0]);
     this.filters[this.numberOfNodes - 1].disconnect();
-    this.filters.forEach((filter, i) => {
-      this.modInput.disconnect(this.filters[i].mod());
-      filter.destroy();
-    })
+    this.filters.forEach((filter) => {
+      this.modInput.disconnect(filter.detune);
+    });
   }
 }

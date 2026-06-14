@@ -4,8 +4,8 @@
     <div class="module">
       <div class="column">
         <div class="row">
-          <app-level-control #frequency label="Frequency" [plusMinus]="true" [style]="dialStyle.red" [divisions]="10"
-                             [factor]="0.5"
+          <app-level-control #frequency label="Frequency" [plusMinus]="false" [style]="dialStyle.red" [divisions]="10"
+                             [factor]="1"
                              [calAngle]="300"
                              [radius]="50" (setLevel)="setFrequency($event)"></app-level-control>
 
@@ -16,8 +16,8 @@
           </app-level-control>
         </div>
         <div class="row">
-          <app-level-control #bandwidth label="Bandwidth" [style]="dialStyle.yellow" [radius]="50" [plusMinus]="true"
-                             [divisions]="10" [factor]="2.0" [calAngle]="300" (setLevel)="setBandwidth($event)">
+          <app-level-control #qFactor label="Q" [style]="dialStyle.yellow" [radius]="50" [plusMinus]="false"
+                             [divisions]="10" [factor]="3" [calAngle]="300" (setLevel)="setQFactor($event)">
           </app-level-control>
           <app-level-control #feedback label="Feedback" [style]="dialStyle.yellow" [radius]="50" [plusMinus]="true"
                              [divisions]="10" [factor]="2.0" [calAngle]="300" (setLevel)="setFeedback($event)">
@@ -41,7 +41,7 @@
         <app-level-control #modFreq label="LFO Frequency" [style]="dialStyle.green" [divisions]="10" [calAngle]="300"
                            [radius]="50" (setLevel)="setModFrequency($event)"></app-level-control>
         <app-level-control #modDepth label="Mod Depth" [style]="dialStyle.green" [divisions]="10" [calAngle]="300"
-                           [radius]="50" (setLevel)="setModLevel($event)"></app-level-control>
+                           [radius]="50" [factor]="1" (setLevel)="setModLevel($event)"></app-level-control>
         <form #lfoWaveForm>
           <label><input type="radio" name="waveform" value="sine" checked><span>Sine</span></label>
           <label><input type="radio" name="waveform" value="square"><span>Square</span></label>
