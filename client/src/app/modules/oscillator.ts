@@ -1,4 +1,3 @@
-import {ADSRValues} from '../util-classes/adsrvalues';
 import {OscFilterBase} from './osc-filter-base';
 import {FreqBendValues} from '../util-classes/freq-bend-values';
 import {onOff, oscModOutput, oscModType} from '../enums/enums';
@@ -230,9 +229,7 @@ export class Oscillator extends OscFilterBase {
     this.phaseModOutputGain.gain.value = 1;
     this.type = "sine";
     // Default ADSR values
-    this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
     this.panner.connect(this.amplitudeMod);
-
   }
 
   async start(started: boolean) {

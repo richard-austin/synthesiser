@@ -1,7 +1,6 @@
 import {ADSRValues} from '../util-classes/adsrvalues';
-import {OscFilterBase} from './osc-filter-base';
 import {filterModType, oscModOutput, oscModType} from '../enums/enums';
-import {Subscription, timer} from 'rxjs';
+import {Envelope} from './envelope';
 
 class Modulation {
   constructor(carrier: AudioNode, modulator: AudioNode) {
@@ -15,7 +14,7 @@ class Modulation {
 
 export abstract class GainEnvelopeBase {
   protected readonly gain: GainNode;
-  protected readonly envelope: GainNode;
+  protected readonly envelope: Envelope;
   protected readonly modOutput: GainNode;
   frequencyModInternal: GainNode;
   phaseModExternal: GainNode;
@@ -25,9 +24,7 @@ export abstract class GainEnvelopeBase {
   protected modType: oscModType | filterModType;
   protected modOutputType: oscModOutput;
   protected modLevel: number = 0;
-  private _legatoMode = false;
   protected readonly freqModGainBase = 1.02;
-  env: ADSRValues;
   modulator!: AudioNode;
   protected frequency:number = 400;
 
@@ -36,13 +33,10 @@ export abstract class GainEnvelopeBase {
 
   protected constructor(protected audioCtx: AudioContext) {
     this.gain = audioCtx.createGain();
-    this.envelope = audioCtx.createGain();
-    this.envelope.gain.value = 1;
+    this.envelope = new Envelope(audioCtx);
 
     this.modOutput = new GainNode(this.audioCtx);
     this.modOutput.gain.value = 1;
-    // Default ADSR values
-    this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
     this.frequencyModInternal = audioCtx.createGain();
     this.frequencyModInternal.gain.value = 0;
     this.phaseModExternal = audioCtx.createGain();
@@ -70,8 +64,7 @@ export abstract class GainEnvelopeBase {
   }
 
   setAmplitudeEnvelope(env: ADSRValues) {
-    this.env = env;
-    this.envelope.gain.setValueAtTime(this.clampLevel(OscFilterBase.minLevel), this.audioCtx.currentTime);
+    this.envelope.setAmplitudeEnvelope(env);
   }
 
   connectModOut(node: AudioNode) {
@@ -164,86 +157,19 @@ export abstract class GainEnvelopeBase {
   }
 
   public set legatoMode(legatoMode: boolean) {
-    this._legatoMode = legatoMode;
-    let gainToUse = this.clampLevel(OscFilterBase.minLevel);
-    this.envelope.gain.cancelAndHoldAtTime(this.audioCtx.currentTime);
-    this.envelope.gain.setValueAtTime(this.clampLevel(gainToUse), this.audioCtx.currentTime);
+    this.envelope.legatoMode = legatoMode;
   }
 
   public get legatoMode() {
-    return this._legatoMode;
+    return this.envelope.legatoMode;
   }
-
-  clampLevel(level: number) {
-    return level < GainEnvelopeBase.minLevel ? GainEnvelopeBase.minLevel :
-      level > GainEnvelopeBase.maxLevel ? GainEnvelopeBase.maxLevel :
-        level;
-  }
-
-  private _minRampTime: number = 0.03125;
-  sub!: Subscription;
-  velocity!: number;
-  private readonly justAudible = GainEnvelopeBase.maxLevel / 50;
 
   attack(velocity: number, frequency: number = 2000) {
-    this.frequency = frequency;
-    if (this.releaseFinishedSub)
-      this.releaseFinishedSub.unsubscribe();
-
-    this.minRampTime(frequency);
-    const currentTime = this.audioCtx.currentTime;
-    if (!this.legatoMode) {
-      this.sub?.unsubscribe();
-      this.velocity = Math.pow(velocity / 127, .75);
-      this.envelope.gain.cancelAndHoldAtTime(currentTime);
-      if (this.envelope.gain.value < this.justAudible)
-        this.envelope.gain.value = this.justAudible;
-      else
-        this.envelope.gain.setValueAtTime(this.envelope.gain.value, currentTime);  // Prevent clicks
-      this.envelope.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel * this.velocity), currentTime + this.env.attackTime + this._minRampTime); // Ramp to attack level
-      this.sub = timer((this.env.attackTime + this._minRampTime) * 1000).subscribe(() => {
-        this.envelope.gain.exponentialRampToValueAtTime(this.clampLevel(this.env.sustainLevel * this.velocity), this.audioCtx.currentTime + this.env.decayTime + this._minRampTime);  // Ramp to sustain level
-      });
-    } else { // Legato mode
-      this.sub?.unsubscribe();
-      this.envelope.gain.cancelAndHoldAtTime(currentTime);
-      this.envelope.gain.setValueAtTime(this.envelope.gain.value, currentTime);  // Prevent clicks
-      this.envelope.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel), currentTime + this.env.attackTime + this._minRampTime); // Ramp to attack level
-    }
+    this.envelope.keyDown(velocity, frequency);
   }
-
-  private releaseFinishedSub: Subscription | null = null;
-  public releaseFinished: (() => void) | null = null;
 
   release(frequency: number = 2000) {
-    const currentTime = this.audioCtx.currentTime;
-    this.minRampTime(frequency);
-    if (!this.legatoMode) {
-      this.sub?.unsubscribe();
-      this.envelope.gain.cancelAndHoldAtTime(0);
-      this.envelope.gain.setValueAtTime(this.envelope.gain.value, currentTime);  // Prevent clicks
-      this.envelope.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel), currentTime + this.env.releaseTime + this._minRampTime);  // Ramp to release level
-    } else { // Legato mode
-      this.sub = timer((this.env.decayTime + this._minRampTime) * 1000).subscribe(() => {
-        this.sub.unsubscribe();
-        this.envelope.gain.cancelAndHoldAtTime(0);
-        this.envelope.gain.setValueAtTime(this.envelope.gain.value, this.audioCtx.currentTime);  // Prevent clicks
-        this.envelope.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel), this.audioCtx.currentTime + this.env.releaseTime + this._minRampTime);  // Ramp to release level
-      })
-    }
-    if (this.releaseFinished) {
-      this.releaseFinishedSub = timer((this._minRampTime + (!this.legatoMode ? this.env.releaseTime : 0)) * 1000 + 0.1).subscribe(() => {
-        this.releaseFinishedSub?.unsubscribe();
-        this.releaseFinishedSub = null;
-        // @ts-ignore
-        this.releaseFinished();
-      });
-    }
-  }
-
-  // Calculate the minimum envelope time (2 cycles of the relevant frequency) to prevent clicks with fast attack/decay/release
-  private minRampTime(frequency: number) {
-    this._minRampTime = 1 / frequency;
+    this.envelope.keyUp(frequency);
   }
 
   connect(arg: AudioNode | AudioParam) {
