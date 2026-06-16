@@ -136,7 +136,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       this.oscillatorPoolMgr = new DevicePoolManager(this.oscillators, this.proxySettings);
     }
 
-    for(const osc of this.oscillators) {
+    for (const osc of this.oscillators) {
       await osc.start(this.started);
       osc.applySettings(this.proxySettings);
     }
@@ -305,7 +305,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     if (ringMod()) {
       ok = true;
-      const oscNumber = this.oscNumber()+1;
+      const oscNumber = this.oscNumber() + 1;
       this.oscillators.forEach((osc, i) => {
         this.oscillators[i].connect(oscNumber === 2 ? ringMod().modInput() : ringMod().signalInput());
       });
@@ -548,8 +548,8 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     }
     // @ts-ignore
     else if (target.value === 2) {
-        const settings: OscillatorSettings = JSON.parse(this.clipboard.config as string);
-        this.start(this.audioCtx, settings);
+      const settings: OscillatorSettings = JSON.parse(this.clipboard.config as string);
+      this.start(this.audioCtx, settings);
     }
     const contextMenu = this.contextMenu().nativeElement;
     contextMenu.style.visibility = "hidden";
@@ -562,7 +562,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
         contextMenu.style.visibility = "hidden";
         const pasteElement = contextMenu.getElementsByTagName('li')[1];
         const style = pasteElement.style;
-        if (this.clipboard.source === this.params().settingsId || this.clipboard.config === undefined||this.clipboard.type !== "oscillator") {
+        if (this.clipboard.source === this.params().settingsId || this.clipboard.config === undefined || this.clipboard.type !== "oscillator") {
           style.fontWeight = "lighter";
           style.fontStyle = "italic";
           style.color = "#b5a8a8";

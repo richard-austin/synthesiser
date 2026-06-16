@@ -5,11 +5,11 @@ interface IDictionary {
 export class OscillatorWithPhaseMod {
   public node!: AudioWorkletNode;
   public port!: MessagePort;
-  audioCtx: AudioContext;
+  public readonly context: AudioContext;
   private static readonly waveTableSize = 2048;
 
   constructor(audioCtx: AudioContext) {
-    this.audioCtx = audioCtx;
+    this.context = audioCtx;
   }
 
   async start(): Promise<void> {
@@ -216,9 +216,9 @@ export class OscillatorWithPhaseMod {
       });
     }
 
-    await this.audioCtx.audioWorklet.addModule(`data:text/javascript,(${worklet.toString()})()`);
+    await this.context.audioWorklet.addModule(`data:text/javascript,(${worklet.toString()})()`);
     // Create worklet node
-    this.node = new AudioWorkletNode(this.audioCtx, 'oscillator', {
+    this.node = new AudioWorkletNode(this.context, 'oscillator', {
       channelCount: 1,
       channelInterpretation: 'speakers',
       processorOptions: {
