@@ -17,7 +17,6 @@ export class Filter extends OscFilterBase {
     this.filter.type = "bandpass";
     this.filter2 = audioCtx.createBiquadFilter();
     this.filter2.type = "bandpass";
-    this.legatoMode = false;
 
     this.filter.frequency.value = this.filter2.frequency.value = 5000; // Initial setting
 
