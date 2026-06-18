@@ -27,14 +27,15 @@ export class OscillatorWithPhaseMod {
         private a2: number;
 
         constructor() {
-          // Two pole butterworth filter on the mod input to help prevent aliasing
-          // Initialize biquad state variables (x: inputs, y: outputs)
+          /* Two pole butterworth filter on the mod input to help prevent aliasing
+           Initialize biquad state variables (x: inputs, y: outputs)
+          */
           this.x1 = 0;
           this.x2 = 0;
           this.y1 = 0;
           this.y2 = 0;
 
-          // Cache the previous cutoff to prevent unnecessary recalculations
+          /* Cache the previous cutoff to prevent unnecessary recalculations */
           this.b0 = 0;
           this.b1 = 0;
           this.b2 = 0;
@@ -43,17 +44,17 @@ export class OscillatorWithPhaseMod {
         }
 
         calculateCoefficients(cutoff: number, sampleRate: number) {
-          // Bilinear Transform Pre-warping
+          /* Bilinear Transform Pre-warping */
           const omega = Math.PI * cutoff / sampleRate;
           const tanVal = Math.tan(omega);
 
-          // 2nd-order Butterworth prototype parameters
-          const sqrt2 = Math.SQRT2; // $\sqrt{2} \approx 1.4142$
+          /* 2nd-order Butterworth prototype parameters */
+          const sqrt2 = Math.SQRT2; /* $\sqrt{2} \approx 1.4142$ */
 
           const c2 = tanVal * tanVal;
           const a0 = 1 + sqrt2 * tanVal + c2;
 
-          // Direct Form II Transposed coefficients
+          /* Direct Form II Transposed coefficients */
           this.b0 = c2 / a0;
           this.b1 = 2 * c2 / a0;
           this.b2 = c2 / a0;
@@ -62,10 +63,10 @@ export class OscillatorWithPhaseMod {
         }
 
         process(input: number): number {
-          // Biquad Difference Equation (Direct Form I)
+          /* Biquad Difference Equation (Direct Form I) */
           const output = this.b0 * input + this.b1 * this.x1 + this.b2 * this.x2 - this.a1 * this.y1 - this.a2 * this.y2;
 
-          // Shift delay taps
+          /* Shift delay taps */
           this.x2 = this.x1;
           this.x1 = input;
           this.y2 = this.y1;
@@ -76,7 +77,7 @@ export class OscillatorWithPhaseMod {
       }
 
 
-      // @ts-ignore
+      /* @ts-ignore */
       registerProcessor('oscillator', class Processor extends AudioWorkletProcessor {
         static get parameterDescriptors() {
           return [{
@@ -114,13 +115,13 @@ export class OscillatorWithPhaseMod {
           super();
           this.waveTableSize = options?.processorOptions?.waveTableSize;
           this.startFx = options?.processorOptions?.startFx;
-          // @ts-ignore
+          /* @ts-ignore */
           this.nyquist = sampleRate / 2;
-          // @ts-ignore
+          /* @ts-ignore */
           this.port.onmessage = (event) => {
             if (event.data.type === 'shutdown') {
               this.running = false;
-              // @ts-ignore
+              /* @ts-ignore */
               this.port.close();
               console.log("Phase modulator closed");
             } else if (event.data.type === 'periodicWave') {
@@ -138,7 +139,7 @@ export class OscillatorWithPhaseMod {
           }
 
           this.modFilter = new ButterworthFilter();
-          // @ts-ignore
+          /* @ts-ignore */
           this.modFilter.calculateCoefficients(1000, sampleRate);
         }
 
@@ -150,12 +151,12 @@ export class OscillatorWithPhaseMod {
 
         currentPeriodicWave!: Float32Array[];
 
-//        lastBand = -1;
+/*        lastBand = -1; */
         private periodicWaveFunction(x: number, band: number): number {
-          // if(band != this.lastBand) {
-          //   this.lastBand = band;
-          //   console.log("band = "+band);
-          // }
+          /* if(band != this.lastBand) {
+             this.lastBand = band;
+             console.log("band = "+band);
+           } */
           return this.currentPeriodicWave[band][Math.floor(x * this.waveTableSize)];
         }
 
@@ -175,7 +176,7 @@ export class OscillatorWithPhaseMod {
           const detuneParam = parameters["detune"];
           const nyquist = this.nyquist;
           if (this.periodicWave)
-            this.currentPeriodicWave = this.periodicWave;  // Update the periodic wave on a k-rate basis
+            this.currentPeriodicWave = this.periodicWave;  /* Update the periodic wave on a k-rate basis */
 
           if (!output) return true;
           const outputChannel: Float32Array = output[0];
@@ -202,7 +203,7 @@ export class OscillatorWithPhaseMod {
 
             const x = (modParam.length === 1 ? modParam[0] : modParam[i] * 10);
             const mod = this.modFilter.process(x);
-            // @ts-ignore
+            /* @ts-ignore */
             const inc = f / sampleRate;
             this.phase += inc
             let currentPhase = this.phase + mod;
@@ -304,7 +305,7 @@ export class OscillatorWithPhaseMod {
   public destroy() {
     this.port.postMessage({type: 'shutdown'});
     this.disconnect();
-    // @ts-ignore
+    /* @ts-ignore */
     this.node = this.port = undefined;
   }
 }

@@ -19,7 +19,7 @@ export class Phaser {
     this.gain = audioCtx.createGain();
     this.gain.connect(output);
     this.feedBack = audioCtx.createGain();
-    this.feedBack.gain.value = 0.0;
+    this.feedBack.gain.value = 0.1;
 
     this.wetGain = audioCtx.createGain();
     this.wetGain.connect(this.gain);
@@ -44,16 +44,19 @@ export class Phaser {
       this.modInput.connect(this.filters[i].detune);
     }
     this.input.connect(this.filters[0]);
-    this.feedBack.connect(this.filters[0]);
-    this.filters[this.numberOfNodes - 1].connect(this.feedBack);
+    if(navigator.userAgent.indexOf("Firefox") == -1) {
+      // Feedback causes muting with Firefox
+      this.feedBack.connect(this.filters[0]);
+      this.filters[this.numberOfNodes - 1].connect(this.feedBack);
+    }
     this.filters[this.numberOfNodes - 1].connect(this.wetGain);
   }
 
   setFrequency(frequency: number) {
-    const twelfthRoot2 = Math.pow(2, 1/12);
+    const twelfthRoot2 = Math.pow(2, 1 / 12);
 
     this.filters.forEach((filter) => {
-      filter.frequency.value = Math.pow(twelfthRoot2, frequency *144) * 8;  // Range of 12 octaves in semitones
+      filter.frequency.value = Math.pow(twelfthRoot2, frequency * 144) * 8;  // Range of 12 octaves in semitones
     })
   }
   setQFactor(q: number) {
@@ -66,8 +69,8 @@ export class Phaser {
   }
 
   setWetDry(wetDry: number) {
-    this.wetGain.gain.value = 0.5-wetDry;
-    this.dryGain.gain.value = -0.5-wetDry;
+    this.wetGain.gain.value = 0.5 - wetDry;
+    this.dryGain.gain.value = -0.5 - wetDry;
   }
 
   setFeedback(feedback: number) {
@@ -79,7 +82,8 @@ export class Phaser {
     this.input.disconnect();
     this.wetGain.disconnect();
     this.dryGain.disconnect();
-    this.feedBack.disconnect(this.filters[0]);
+    if(navigator.userAgent.indexOf("Firefox") == -1)
+      this.feedBack.disconnect(this.filters[0]);
     this.filters[this.numberOfNodes - 1].disconnect();
     this.filters.forEach((filter) => {
       this.modInput.disconnect(filter.detune);

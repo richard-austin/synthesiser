@@ -19,7 +19,7 @@ export class PitchEnvelope {
   keyDown(frequency: number) {
     const ctx = this.device.context;
     const freq = this.freq = frequency;
-    this.device.frequency.cancelAndHoldAtTime(ctx.currentTime);
+    this.cancelAndHoldAtTime(ctx.currentTime);
     this.device.frequency.setValueAtTime(freq * Math.pow(this.freqBendBase, this.freqBendEnv.releaseLevel), ctx.currentTime);
     this.device.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * Math.pow(this.freqBendBase, this.freqBendEnv.attackLevel)), ctx.currentTime + this.freqBendEnv.attackTime);
     this.freqBendEnvTimerSub = timer(this.freqBendEnv.attackTime).subscribe(() => {
@@ -31,10 +31,9 @@ export class PitchEnvelope {
     const ctx = this.device.context;
 
     this.freqBendEnvTimerSub?.unsubscribe();
-    this.device.frequency.cancelAndHoldAtTime(ctx.currentTime);
+    this.cancelAndHoldAtTime(ctx.currentTime);
     this.device.frequency.setValueAtTime(this.device.frequency.value, ctx.currentTime); // Prevent step changes in freq
     this.device.frequency.exponentialRampToValueAtTime(this.clampFrequency(this.freq * Math.pow(this.freqBendBase, this.freqBendEnv.releaseLevel)), ctx.currentTime + this.freqBendEnv.releaseTime);
-
   }
 
   clampFrequency(freq: number): number {
@@ -47,5 +46,15 @@ export class PitchEnvelope {
   setFreqBendEnvelope(envelope: FreqBendValues) {
     this.freqBendEnv = envelope;
     this.device.frequency.setValueAtTime(this.clampFrequency(this.freq * envelope.releaseLevel), this.device.context.currentTime);
+  }
+
+  private cancelAndHoldAtTime(time: number) {
+    if(this.device.frequency.cancelAndHoldAtTime !== undefined)
+      this.device.frequency.cancelAndHoldAtTime(time);
+    else {  // Firefox
+      const freq = this.device.frequency.value;
+      this.device.frequency.cancelScheduledValues(time);
+      this.device.frequency.value = freq;
+    }
   }
 }

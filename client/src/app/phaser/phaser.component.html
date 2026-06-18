@@ -19,7 +19,7 @@
           <app-level-control #qFactor label="Q" [style]="dialStyle.yellow" [radius]="50" [plusMinus]="false"
                              [divisions]="10" [factor]="3" [calAngle]="300" (setLevel)="setQFactor($event)">
           </app-level-control>
-          <app-level-control #feedback label="Feedback" [style]="dialStyle.yellow" [radius]="50" [plusMinus]="true"
+          <app-level-control #feedback [ngClass]="{'not-visible': isFirefox, 'visible': !isFirefox}" label="Feedback" [style]="dialStyle.yellow" [radius]="50" [plusMinus]="true"
                              [divisions]="10" [factor]="2.0" [calAngle]="300" (setLevel)="setFeedback($event)">
           </app-level-control>
           <div class="stages-input">

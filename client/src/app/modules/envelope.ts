@@ -34,7 +34,7 @@ export class Envelope extends GainNode {
   public set legatoMode(legatoMode: boolean) {
     this._legatoMode = legatoMode;
     let gainToUse = this.clampLevel(OscFilterBase.minLevel);
-    this.gain.cancelAndHoldAtTime(this.context.currentTime);
+    this.cancelAndHoldAtTime(this.context.currentTime);
     this.gain.setValueAtTime(this.clampLevel(gainToUse), this.context.currentTime);
   }
   public get legatoMode(): boolean {
@@ -44,6 +44,16 @@ export class Envelope extends GainNode {
   // Calculate the minimum envelope time (2 cycles of the relevant frequency) to prevent clicks with fast attack/decay/release
   private minRampTime(frequency: number) {
     this._minRampTime = 1 / frequency;
+  }
+
+  private cancelAndHoldAtTime(time: number) {
+    if(this.gain.cancelAndHoldAtTime !== undefined) {
+      this.gain.cancelAndHoldAtTime(time);
+    } else {  // Firefox
+      const gain = this.gain.value;
+      this.gain.cancelScheduledValues(time);
+      this.gain.value = gain;
+    }
   }
 
   public releaseFinished: (() => void) | null = null;
@@ -58,7 +68,7 @@ export class Envelope extends GainNode {
     if (!this.legatoMode) {
       this.sub?.unsubscribe();
       this.velocity = Math.pow(velocity / 127, .75);
-      this.gain.cancelAndHoldAtTime(currentTime);
+      this.cancelAndHoldAtTime(currentTime);
       if (this.gain.value < this.justAudible)
         this.gain.value = this.justAudible;
       else
@@ -69,7 +79,7 @@ export class Envelope extends GainNode {
       });
     } else { // Legato mode
       this.sub?.unsubscribe();
-      this.gain.cancelAndHoldAtTime(currentTime);
+      this.cancelAndHoldAtTime(currentTime);
       this.gain.setValueAtTime(this.gain.value, currentTime);  // Prevent clicks
       this.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.maxLevel), currentTime + this.env.attackTime + this._minRampTime); // Ramp to attack level
     }
@@ -80,13 +90,13 @@ export class Envelope extends GainNode {
     this.minRampTime(frequency);
     if (!this.legatoMode) {
       this.sub?.unsubscribe();
-      this.gain.cancelAndHoldAtTime(0);
+      this.cancelAndHoldAtTime(0);
       this.gain.setValueAtTime(this.gain.value, currentTime);  // Prevent clicks
       this.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel), currentTime + this.env.releaseTime + this._minRampTime);  // Ramp to release level
     } else { // Legato mode
       this.sub = timer((this.env.decayTime + this._minRampTime) * 1000).subscribe(() => {
         this.sub.unsubscribe();
-        this.gain.cancelAndHoldAtTime(0);
+        this.cancelAndHoldAtTime(0);
         this.gain.setValueAtTime(this.gain.value, this.context.currentTime);  // Prevent clicks
         this.gain.exponentialRampToValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel), this.context.currentTime + this.env.releaseTime + this._minRampTime);  // Ramp to release level
       })
