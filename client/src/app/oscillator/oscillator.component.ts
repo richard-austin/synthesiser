@@ -353,6 +353,16 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     })
   }
 
+  cancelAndHoldAtTime(time: number, oscFx: AudioParam) {
+    if(oscFx.cancelAndHoldAtTime !== undefined) {
+      oscFx.cancelAndHoldAtTime(time);
+    } else {
+      const fx = oscFx.value;
+      oscFx.cancelScheduledValues(time);
+      oscFx.value = fx;
+    }
+  }
+
   keysDown: DeviceKeys[] = [];
 
   keyDown(keyIndex: number, velocity: number) {
@@ -371,7 +381,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     const freq = this.keyToFrequency(keyIndex);
 
     if (keys !== undefined && this.proxySettings.portamento > 0) {
-      this.oscillators[keys.deviceIndex].oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
+      this.cancelAndHoldAtTime(this.audioCtx.currentTime, this.oscillators[keys.deviceIndex].oscillator.frequency);
       const proxySettings = this.proxySettings;
       switch (proxySettings.portamentoType) {
         case 'chord':
@@ -419,9 +429,10 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   private chordProcessorKeyDownCallback: (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => void = (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => {
     const freq = this.keyToFrequency(prevKeys.keyIndex);
-    this.oscillators[theseKeys.deviceIndex].oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
-    this.oscillators[theseKeys.deviceIndex].oscillator.frequency.value = freq;
-    this.oscillators[theseKeys.deviceIndex].oscillator.frequency.exponentialRampToValueAtTime(this.keyToFrequency(theseKeys.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
+    const osc = this.oscillators[theseKeys.deviceIndex].oscillator;
+    this.cancelAndHoldAtTime(this.audioCtx.currentTime, osc.frequency);
+    osc.frequency.value = freq;
+    osc.frequency.exponentialRampToValueAtTime(this.keyToFrequency(theseKeys.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
     this.oscillators[theseKeys.deviceIndex].keyDown(0x7f, freq);  // TODO: Need to pass velocity through ChordProcessor
   }
 
