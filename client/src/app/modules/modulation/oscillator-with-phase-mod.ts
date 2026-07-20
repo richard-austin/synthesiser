@@ -1,7 +1,3 @@
-interface IDictionary {
-  [index: string]: Float32Array;
-}
-
 export class OscillatorWithPhaseMod {
   public node!: AudioWorkletNode;
   public port!: MessagePort;
@@ -168,12 +164,12 @@ export class OscillatorWithPhaseMod {
         private readonly twelfthRoot2 = Math.pow(2, 1 / 12);
         private readonly root2 = Math.pow(2, 1 / 2);
 
-        process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: IDictionary) {
+        process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: {mod: number[], frequency: number[], detune: number[]}): boolean {
           const output: Float32Array[] = outputs[0];
 
-          const modParam = parameters["mod"];
-          const frequencyParam = parameters["frequency"];
-          const detuneParam = parameters["detune"];
+          const modParam = parameters.mod;
+          const frequencyParam = parameters.frequency;
+          const detuneParam = parameters.detune;
           const nyquist = this.nyquist;
           if (this.periodicWave)
             this.currentPeriodicWave = this.periodicWave;  /* Update the periodic wave on a k-rate basis */

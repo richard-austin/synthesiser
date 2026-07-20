@@ -1,5 +1,5 @@
 plugins {
-    id "com.github.node-gradle.node" version "7.1.0"
+   id "com.github.node-gradle.node" version "7.1.0"
 }
 
 node {
@@ -9,48 +9,48 @@ node {
 }
 
 tasks.register('bootRun', NpmTask) {
-    dependsOn 'npmInstall'
-    group = 'application'
-    description = 'Start client side server'
-    args = ['run', 'startProxy']
+  dependsOn 'npmInstall'
+  group = 'application'
+  description = 'Start client side server'
+  args = ['run', 'startProxy']
 }
 // Same as bootRun but binds server to 0.0.0.0 instead of localhost
 tasks.register('bootRunOnNetwork', NpmTask) {
-    dependsOn 'npmInstall'
-    group = 'application'
-    description = 'Start client side server'
-    args = ['run', 'startProxyNetwork']
+  dependsOn 'npmInstall'
+  group = 'application'
+  description = 'Start client side server'
+  args = ['run', 'startProxyNetwork']
 }
 
 tasks.register('test', NpmTask) {
-    dependsOn 'npmInstall'
-    group = 'verification'
-    description = 'Execute unit tests'
-    args = ['run', 'test']
+  dependsOn 'npmInstall'
+  group = 'verification'
+  description = 'Execute unit tests'
+  args = ['run', 'test']
 }
 
 tasks.register('integrationTest', NpmTask) {
-    dependsOn 'npmInstall'
-    args = ['run', 'e2e']
+  dependsOn 'npmInstall'
+  args = ['run', 'e2e']
 }
 
 tasks.register('buildClientDev', NpmTask) {
-    dependsOn 'npmInstall'
-    group = 'build'
-    description = 'Compile client side assets for development'
-    args = ['run', 'buildDev']
+  dependsOn 'npmInstall'
+  group = 'build'
+  description = 'Compile client side assets for development'
+  args = ['run', 'buildDev']
 }
 
 tasks.register('buildClient', NpmTask) {
-    dependsOn 'npmInstall'
-    group = 'build'
-    description = 'Compile client side assets for production'
-    args = ['run', 'build']
+  dependsOn 'npmInstall'
+  group = 'build'
+  description = 'Compile client side assets for production'
+  args = ['run', 'build']
 }
 
 tasks.register('buildClientWatch', NpmTask) {
-    dependsOn 'npmInstall'
-    group = 'application'
-    description = 'Builds and watches the client side assets for rebuilding'
-    args = ['run', 'buildWatch']
+  dependsOn 'npmInstall'
+  group = 'application'
+  description = 'Builds and watches the client side assets for rebuilding'
+  args = ['run', 'buildWatch']
 }
