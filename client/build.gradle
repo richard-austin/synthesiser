@@ -42,7 +42,7 @@ tasks.register('buildClientDev', NpmTask) {
 }
 
 tasks.register('buildClient', NpmTask) {
-  dependsOn 'npmInstall'
+  dependsOn(['npmInstall', ':oscillator-wasm:tinygo'])
   group = 'build'
   description = 'Compile client side assets for production'
   args = ['run', 'build']

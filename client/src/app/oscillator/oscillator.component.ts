@@ -129,9 +129,18 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
 
+
+    // Reference the asset directly as a static path string
+    const wasmAssetPath = 'assets/wasm/processor.wasm';
+
+    // Fetch the binary buffer over the local development server or production host
+    const response = await fetch(wasmAssetPath);
+    const wasmBinary = await response.arrayBuffer();
+
+
     if (!this.started) {
       for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-        this.oscillators.push(new Oscillator(this.audioCtx));
+        this.oscillators.push(new Oscillator(this.audioCtx, wasmBinary));
       }
       this.oscillatorPoolMgr = new DevicePoolManager(this.oscillators, this.proxySettings);
     }
@@ -354,7 +363,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   cancelAndHoldAtTime(time: number, oscFx: AudioParam) {
-    if(oscFx.cancelAndHoldAtTime !== undefined) {
+    if (oscFx.cancelAndHoldAtTime !== undefined) {
       oscFx.cancelAndHoldAtTime(time);
     } else {
       const fx = oscFx.value;

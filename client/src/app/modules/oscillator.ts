@@ -221,11 +221,11 @@ export class Oscillator extends OscFilterBase {
   private pitchEnvelope: PitchEnvelope;
   readonly freqBendBase = 2;
 
-  constructor(protected override audioCtx: AudioContext) {
+  constructor(protected override audioCtx: AudioContext, wasmBinary: ArrayBuffer) {
     super(audioCtx);
     this.panner = audioCtx.createStereoPanner();
     this.legatoMode = true;
-    this.oscillator = new OscillatorWithPhaseMod(this.audioCtx);
+    this.oscillator = new OscillatorWithPhaseMod(this.audioCtx, wasmBinary);
     this.pitchEnvelope = new PitchEnvelope(this.oscillator, this.freqBendBase);
     this.phaseModOutputGain = audioCtx.createGain();
     this.phaseModOutputGain.gain.value = 1;

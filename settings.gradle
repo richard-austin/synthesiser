@@ -1,1 +1,12 @@
-include 'client', 'server'
+pluginManagement {
+    repositories {
+        mavenLocal()     // Looks here first for your local plugin
+        gradlePluginPortal() // Default portal for public plugins
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'synthesiser'
+
+include 'client', 'server', 'oscillator-wasm'
+
