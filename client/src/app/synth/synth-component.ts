@@ -162,9 +162,16 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.masterVolume().start(this.audioCtx, settings ? settings.generalSettings : settings);
     this.masterVolume().connect(this.analyser().node())
 
+    // Reference the asset directly as a static path string
+    const wasmAssetPath = 'assets/wasm/processor.wasm';
+
+    // Fetch the binary buffer over the local development server or production host
+    const response = await fetch(wasmAssetPath);
+    const wasmBinary = await response.arrayBuffer();
+
     // Connect the module component outputs
     for(const [i, oscillator] of this.oscillatorsGrp().entries()) {
-      await oscillator.start(this.audioCtx, settings ? settings.oscillatorSettings[i] : settings);
+      await oscillator.start(this.audioCtx, wasmBinary, settings ? settings.oscillatorSettings[i] : settings);
     }
 
     this.matrixComponent().start(this.audioCtx, settings ? settings.matrixSettings : settings);
