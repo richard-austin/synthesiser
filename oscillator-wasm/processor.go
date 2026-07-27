@@ -92,7 +92,7 @@ func getDetuneBufferPtr() *float32 { return &detuneBuffer[0] }
 
 //export processBlock
 func processBlock(modLen int32, freqLen int32, detuneLen int32, blockSize int32) {
-	for i := int32(0); i < blockSize; i++ {
+	for i := range blockSize {
 		// 1. Get Frequency
 		var f float32
 		if freqLen == 1 {

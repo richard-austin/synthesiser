@@ -1,0 +1,4 @@
+plugins {
+    id 'io.github.manriif.komple' version '0.0.10'
+    id 'io.github.manriif.komple-tool-emscripten' version '0.0.10'
+}

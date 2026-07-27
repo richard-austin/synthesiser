@@ -1,24 +1,72 @@
-import io.github.richard_austin.tasks.TinyGoTask
-plugins {
-    id "io.github.richard-austin.tinygo-plugin" version "0.0.1"
-}
 repositories {
     mavenCentral()
-    mavenLocal()
     maven {
         url = 'https://gradle.org'
     }
 }
 
-tinygo {
-    tinyGoVersion = "0.41.1"
+// 1. Safe configuration-time retrieval of the tool extension
+def emscriptenTool = rootProject.extensions.findByName('komple')?.tools?.emscripten
+if (emscriptenTool == null) {
+    throw new GradleException("The 'komple' extension or 'emscripten' toolchain is missing from your root build.gradle.")
 }
 
-tasks.register('tinygo', TinyGoTask) {
-    group='build'
-    workingDir="$projectDir"
+// 2. Reflectively capture the environment map fields
+Map<String, String> finalEnvMap = [:]
+def envProperty = emscriptenTool.properties['env'] ?: emscriptenTool.properties['environment']
+if (envProperty instanceof Provider) {
+    finalEnvMap = envProperty.get() as Map<String, String>
+} else if (envProperty instanceof Map) {
+    finalEnvMap = (Map<String, String>) envProperty
+} else {
+    finalEnvMap = emscriptenTool.getProperties().getOrDefault('env', [:]) as Map
+}
 
-    tinyGoTaskEnv= [GOOS:'linux', GOARCH:'amd64']
+// 3. Directly target the confirmed emcc executable relative to the root layout context
+File emccExecutable = rootProject.layout.projectDirectory.file(".komple/installs/emscripten/upstream/emscripten/emcc").asFile
+String absoluteEmccPath = emccExecutable.absolutePath
 
-    tinyGoTaskArgs= ['build', '-o', '../client/public/assets/wasm/processor.wasm', '-target', 'wasm', '-no-debug', './processor.go']
+// 4. Pre-compute primitive file layouts to satisfy the Configuration Cache completely
+File inputSourceFile = layout.projectDirectory.file('processor.c').asFile
+
+File outputDirectory = new File(rootDir, '/client/public/assets/wasm') //layout.buildDirectory.dir('wasm').get().asFile
+String outputJsPath = new File(outputDirectory, 'processor.wasm').absolutePath
+
+// 5. Register the final cache-compliant automated execution task
+tasks.register('compileWasm', Exec) {
+    group = 'build'
+    description = 'Compiles processor.c into WebAssembly using Emscripten.'
+
+    // Ensure the task automatically triggers if your C source modifications change
+    inputs.file(inputSourceFile)
+    outputs.dir(outputDirectory)
+
+    // Ensure the plugin installation executes before this compilation runs
+    dependsOn rootProject.tasks.named('emscriptenInstall')
+
+    // Inject the toolchain environment
+    environment finalEnvMap
+
+    doFirst {
+        // Ensure the output directory exists before compiling
+            if (!outputDirectory.exists()) {
+                outputDirectory.mkdirs()
+            }
+    }
+
+    // Call the verified absolute path direct from the .komple tracking home
+    commandLine(
+            absoluteEmccPath,
+            inputSourceFile.absolutePath,
+            "-O3",
+            "-flto",
+            "-msimd128",
+            "-ffast-math",
+            "-o",
+            outputJsPath,
+            "-s",
+            "STANDALONE_WASM",
+            "-s",
+            "EXPORTED_FUNCTIONS=['_initProcessor', '_calculateCoefficients', '_setWaveTableBand', '_setUsePeriodicWave', '_getInputBufferPtr', '_getOutputBufferPtr', '_getFreqBufferPtr', '_getDetuneBufferPtr', '_processBlock']",
+            "--no-entry")
 }

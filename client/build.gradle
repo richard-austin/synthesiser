@@ -9,14 +9,14 @@ node {
 }
 
 tasks.register('bootRun', NpmTask) {
-  dependsOn 'npmInstall'
+  dependsOn(['npmInstall', ':oscillator-wasm:compileWasm'])
   group = 'application'
   description = 'Start client side server'
   args = ['run', 'startProxy']
 }
 // Same as bootRun but binds server to 0.0.0.0 instead of localhost
 tasks.register('bootRunOnNetwork', NpmTask) {
-  dependsOn 'npmInstall'
+  dependsOn(['npmInstall', ':oscillator-wasm:compileWasm'])
   group = 'application'
   description = 'Start client side server'
   args = ['run', 'startProxyNetwork']
@@ -35,14 +35,14 @@ tasks.register('integrationTest', NpmTask) {
 }
 
 tasks.register('buildClientDev', NpmTask) {
-  dependsOn 'npmInstall'
+  dependsOn(['npmInstall', ':oscillator-wasm:compileWasm'])
   group = 'build'
   description = 'Compile client side assets for development'
   args = ['run', 'buildDev']
 }
 
 tasks.register('buildClient', NpmTask) {
-  dependsOn(['npmInstall', ':oscillator-wasm:tinygo'])
+  dependsOn(['npmInstall', ':oscillator-wasm:compileWasm'])
   group = 'build'
   description = 'Compile client side assets for production'
   args = ['run', 'build']
