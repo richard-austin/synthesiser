@@ -1,3 +1,7 @@
+/*
+*
+Not currently used. This has been replaced by processor.c
+*/
 package main
 
 import (
