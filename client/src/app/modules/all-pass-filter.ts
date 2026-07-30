@@ -26,7 +26,6 @@ export class AllPassFilter {
               this.running = false;
               // @ts-ignore
               this.port.close();
-              console.log("Closed");
             }
           };
         }

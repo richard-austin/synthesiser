@@ -48,6 +48,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   protected tuningDivisions = 6;
   private lfo!: OscillatorNode;
   private audioCtx!: AudioContext;
+  private wasmBinary!: ArrayBuffer;
   private proxySettings!: OscillatorSettings;
   private cookies!: Cookies;
   private velocitySensitive: boolean = true;
@@ -104,17 +105,18 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   clipboard: ClipboardService = inject(ClipboardService);
   cd: ChangeDetectorRef = inject(ChangeDetectorRef);
 
-  async start(audioCtx: AudioContext, settings: OscillatorSettings | null): Promise<void> {
+  async start(audioCtx: AudioContext, wasmBinary: ArrayBuffer, settings: OscillatorSettings | null): Promise<void> {
     this.audioCtx = audioCtx;
+    this.wasmBinary = wasmBinary;
     this.cookies = new Cookies();
     this.chordProcessor = new ChordProcessor();
     this.chordProcessor.setKeyDownCallback(this.chordProcessorKeyDownCallback);
     this.lfo = this.audioCtx.createOscillator();
     this.lfo.start();
-    await this.applySettings(settings);
+    await this.applySettings(wasmBinary, settings);
   }
 
-  async applySettings(settings: OscillatorSettings | null) {
+  async applySettings(wasmBinary: ArrayBuffer, settings: OscillatorSettings | null) {
     const cookieName = "oscillator" + this.params().settingsId;
     if (!settings) {  // If no settings supplied, create default and check if previously saved in cookie
       settings = new OscillatorSettings();
@@ -129,14 +131,23 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
 
+
+    // // Reference the asset directly as a static path string
+    // const wasmAssetPath = 'assets/wasm/processor.wasm';
+    //
+    // // Fetch the binary buffer over the local development server or production host
+    // const response = await fetch(wasmAssetPath);
+    // const wasmBinary = await response.arrayBuffer();
+    //
+
     if (!this.started) {
       for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-        this.oscillators.push(new Oscillator(this.audioCtx));
+        this.oscillators.push(new Oscillator(this.audioCtx, wasmBinary));
       }
       this.oscillatorPoolMgr = new DevicePoolManager(this.oscillators, this.proxySettings);
     }
 
-    for(const osc of this.oscillators) {
+    for (const osc of this.oscillators) {
       await osc.start(this.started);
       osc.applySettings(this.proxySettings);
     }
@@ -305,7 +316,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     if (ringMod()) {
       ok = true;
-      const oscNumber = this.oscNumber()+1;
+      const oscNumber = this.oscNumber() + 1;
       this.oscillators.forEach((osc, i) => {
         this.oscillators[i].connect(oscNumber === 2 ? ringMod().modInput() : ringMod().signalInput());
       });
@@ -353,6 +364,16 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     })
   }
 
+  cancelAndHoldAtTime(time: number, oscFx: AudioParam) {
+    if (oscFx.cancelAndHoldAtTime !== undefined) {
+      oscFx.cancelAndHoldAtTime(time);
+    } else {
+      const fx = oscFx.value;
+      oscFx.cancelScheduledValues(time);
+      oscFx.value = fx;
+    }
+  }
+
   keysDown: DeviceKeys[] = [];
 
   keyDown(keyIndex: number, velocity: number) {
@@ -371,7 +392,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     const freq = this.keyToFrequency(keyIndex);
 
     if (keys !== undefined && this.proxySettings.portamento > 0) {
-      this.oscillators[keys.deviceIndex].oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
+      this.cancelAndHoldAtTime(this.audioCtx.currentTime, this.oscillators[keys.deviceIndex].oscillator.frequency);
       const proxySettings = this.proxySettings;
       switch (proxySettings.portamentoType) {
         case 'chord':
@@ -419,9 +440,10 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   private chordProcessorKeyDownCallback: (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => void = (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => {
     const freq = this.keyToFrequency(prevKeys.keyIndex);
-    this.oscillators[theseKeys.deviceIndex].oscillator.frequency.cancelAndHoldAtTime(this.audioCtx.currentTime);
-    this.oscillators[theseKeys.deviceIndex].oscillator.frequency.value = freq;
-    this.oscillators[theseKeys.deviceIndex].oscillator.frequency.exponentialRampToValueAtTime(this.keyToFrequency(theseKeys.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
+    const osc = this.oscillators[theseKeys.deviceIndex].oscillator;
+    this.cancelAndHoldAtTime(this.audioCtx.currentTime, osc.frequency);
+    osc.frequency.value = freq;
+    osc.frequency.exponentialRampToValueAtTime(this.keyToFrequency(theseKeys.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
     this.oscillators[theseKeys.deviceIndex].keyDown(0x7f, freq);  // TODO: Need to pass velocity through ChordProcessor
   }
 
@@ -548,8 +570,8 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     }
     // @ts-ignore
     else if (target.value === 2) {
-        const settings: OscillatorSettings = JSON.parse(this.clipboard.config as string);
-        this.start(this.audioCtx, settings);
+      const settings: OscillatorSettings = JSON.parse(this.clipboard.config as string);
+      this.start(this.audioCtx, this.wasmBinary, settings).then();
     }
     const contextMenu = this.contextMenu().nativeElement;
     contextMenu.style.visibility = "hidden";
@@ -562,7 +584,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
         contextMenu.style.visibility = "hidden";
         const pasteElement = contextMenu.getElementsByTagName('li')[1];
         const style = pasteElement.style;
-        if (this.clipboard.source === this.params().settingsId || this.clipboard.config === undefined||this.clipboard.type !== "oscillator") {
+        if (this.clipboard.source === this.params().settingsId || this.clipboard.config === undefined || this.clipboard.type !== "oscillator") {
           style.fontWeight = "lighter";
           style.fontStyle = "italic";
           style.color = "#b5a8a8";

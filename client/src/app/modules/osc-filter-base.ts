@@ -14,11 +14,6 @@ export abstract class OscFilterBase extends GainEnvelopeBase{
 
   freq: number = 0;
 
-  setFreqBendEnvelope(envelope: FreqBendValues) {
-    this.freqBendEnv = envelope;
-    this._useFreqBendEnvelope = true;
-  }
-
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
     this._useFreqBendEnvelope = useFreqBendEnvelope;
   }

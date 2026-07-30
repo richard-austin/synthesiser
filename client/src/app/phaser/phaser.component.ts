@@ -7,12 +7,14 @@ import {modWaveforms, onOff, phasorOutputs} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {Cookies} from '../settings/cookies/cookies';
 import {FormsModule} from '@angular/forms';
+import {NgClass} from '@angular/common';
 
 @Component({
   selector: 'app-phaser',
   imports: [
     LevelControlComponent,
-    FormsModule
+    FormsModule,
+    NgClass
   ],
   templateUrl: './phaser.component.html',
   styleUrl: './phaser.component.scss',
@@ -37,6 +39,8 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
   private modGain2!: GainNode;
   protected readonly minStages: number = 1;
   protected readonly maxStages: number = 61;
+  protected readonly isFirefox: boolean;
+
   private started = false;
   readonly output = output<string>();
 
@@ -44,12 +48,16 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
   readonly modFreq = viewChild.required<LevelControlComponent>('modFreq');
   readonly modLevel = viewChild.required<LevelControlComponent>('modDepth');
   readonly frequency = viewChild.required<LevelControlComponent>('frequency');
-  readonly bandwidth = viewChild.required<LevelControlComponent>('bandwidth');
+  readonly bandwidth = viewChild.required<LevelControlComponent>('qFactor');
   readonly level = viewChild.required<LevelControlComponent>('level');
   readonly wetDryDial = viewChild.required<LevelControlComponent>('wetDry');
   readonly lfoWaveForm = viewChild.required<ElementRef<HTMLFormElement>>('lfoWaveForm');
   readonly modOnOff = viewChild.required<ElementRef<HTMLFormElement>>('modOnOffForm');
   readonly feedback = viewChild.required<LevelControlComponent>('feedback');
+
+  constructor() {
+    this.isFirefox = navigator.userAgent.indexOf('Firefox') != -1;
+  }
 
   async setUp(audioCtx: AudioContext, settings: PhasorSettings | null) {
     this.audioCtx = audioCtx;
@@ -136,10 +144,10 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
     this.phaser2.setFrequency(frequency);
   }
 
-  protected setBandwidth(bandwidth: number) {
-    this.proxySettings.bandwidth = bandwidth;
-    this.phaser.setBandWidth(bandwidth);
-    this.phaser2.setBandWidth(bandwidth);
+  protected setQFactor(q: number) {
+    this.proxySettings.bandwidth = q;
+    this.phaser.setQFactor(q+0.5);
+    this.phaser2.setQFactor(q+0.5);
   }
 
   protected setLevel($event: number) {
@@ -186,8 +194,8 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
       this.phaser.setFrequency(frequency);
       this.phaser2.setFrequency(frequency);
       const bandwidth = this.proxySettings.bandwidth;
-      this.phaser.setBandWidth(bandwidth);
-      this.phaser2.setBandWidth(bandwidth);
+      this.phaser.setQFactor(bandwidth);
+      this.phaser2.setQFactor(bandwidth);
 
       this.setOutputConnection();
       this.setWetDry(this.proxySettings.wetDry);

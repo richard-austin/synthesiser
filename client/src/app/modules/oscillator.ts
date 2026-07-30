@@ -1,11 +1,11 @@
-import {ADSRValues} from '../util-classes/adsrvalues';
 import {OscFilterBase} from './osc-filter-base';
 import {FreqBendValues} from '../util-classes/freq-bend-values';
 import {onOff, oscModOutput, oscModType} from '../enums/enums';
-import {Subscription, timer} from 'rxjs';
+import {Subscription} from 'rxjs';
 import {WaveTableDetails} from './WaveTableDetails';
 import {OscillatorSettings} from "../settings/oscillator";
 import {OscillatorWithPhaseMod} from './modulation/oscillator-with-phase-mod';
+import {PitchEnvelope} from './pitch-envelope';
 
 export class OscillatorParams {
   ringModOutput: "signal" | "mod";
@@ -218,21 +218,19 @@ export class Oscillator extends OscFilterBase {
       })
   ];
   public static readonly frequencyFactor = 7.717057388; // To give middle C at 261.63 Hz on key 60
-
+  private pitchEnvelope: PitchEnvelope;
   readonly freqBendBase = 2;
 
-  constructor(protected override audioCtx: AudioContext) {
+  constructor(protected override audioCtx: AudioContext, wasmBinary: ArrayBuffer) {
     super(audioCtx);
     this.panner = audioCtx.createStereoPanner();
     this.legatoMode = true;
-    this.oscillator = new OscillatorWithPhaseMod(this.audioCtx);
+    this.oscillator = new OscillatorWithPhaseMod(this.audioCtx, wasmBinary);
+    this.pitchEnvelope = new PitchEnvelope(this.oscillator, this.freqBendBase);
     this.phaseModOutputGain = audioCtx.createGain();
     this.phaseModOutputGain.gain.value = 1;
     this.type = "sine";
-    // Default ADSR values
-    this.env = new ADSRValues(0.0, 1.0, 0.1, 1.0);
     this.panner.connect(this.amplitudeMod);
-
   }
 
   async start(started: boolean) {
@@ -243,8 +241,6 @@ export class Oscillator extends OscFilterBase {
       this.oscillator.connect(this.phaseModOutputGain);
       this.phaseModExternal.connect(this.oscillator.modInput);
     }
-
-    //this.oscillator.type = this.type;
   }
 
   applySettings(proxySettings: OscillatorSettings) {
@@ -310,10 +306,9 @@ export class Oscillator extends OscFilterBase {
   }
 
 
-  override setFreqBendEnvelope(envelope: FreqBendValues) {
-    super.setFreqBendEnvelope(envelope);
-    //   this.initialFrequencyFactor = envelope.releaseLevel;  // Ensure frequency starts at the level it ends at in the frequency bend envelope.
-    this.oscillator.frequency.setValueAtTime(super.clampFrequency(this.freq * envelope.releaseLevel), this.audioCtx.currentTime);
+  setFreqBendEnvelope(envelope: FreqBendValues) {
+    this.pitchEnvelope.setFreqBendEnvelope(envelope);
+    this._useFreqBendEnvelope = true;
   }
 
   override useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
@@ -342,28 +337,16 @@ export class Oscillator extends OscFilterBase {
   override keyDown(velocity: number, frequency: number) {
     super.attack(velocity, frequency);
     this.frequencyModInternal.gain.value = this.modLevel * frequency * 3000 / 400;
-    //console.log("Oscillator keyDown = " + performance.now());
     if (this._useFreqBendEnvelope) {
-      const ctx = this.audioCtx;
-      const freq = this.freq;
-      this.oscillator.frequency.cancelAndHoldAtTime(ctx.currentTime);
-      this.oscillator.frequency.setValueAtTime(freq * Math.pow(this.freqBendBase, this.freqBendEnv.releaseLevel), ctx.currentTime);
-      this.oscillator.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * Math.pow(this.freqBendBase, this.freqBendEnv.attackLevel)), ctx.currentTime + this.freqBendEnv.attackTime);
-      this.freqBendEnvTimerSub = timer(this.freqBendEnv.attackTime).subscribe(() => {
-        this.oscillator.frequency.exponentialRampToValueAtTime(this.clampFrequency(freq * Math.pow(this.freqBendBase, this.freqBendEnv.sustainLevel)), ctx.currentTime + this.freqBendEnv.decayTime);
-      });
-    }
+      this.pitchEnvelope.keyDown(frequency);
+     }
   }
 
   // Key released for this oscillator
   keyUp() {
     super.release(this.oscillator.frequency.value);
-    const ctx = this.audioCtx;
     if (this._useFreqBendEnvelope) {
-      this.freqBendEnvTimerSub?.unsubscribe();
-      this.oscillator.frequency.cancelAndHoldAtTime(ctx.currentTime);
-      this.oscillator.frequency.setValueAtTime(this.oscillator.frequency.value, ctx.currentTime); // Prevent step changes in freq
-      this.oscillator.frequency.exponentialRampToValueAtTime(this.clampFrequency(this.freq * Math.pow(this.freqBendBase, this.freqBendEnv.releaseLevel)), ctx.currentTime + this.freqBendEnv.releaseTime);
+      this.pitchEnvelope.keyUp();
     }
   }
 
