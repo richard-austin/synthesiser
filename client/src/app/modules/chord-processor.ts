@@ -96,19 +96,19 @@ export class ChordProcessor {
 
   setStartNote(keys: DeviceKeys, device: Oscillator | Filter, keyToFrequency: (keyIndex: number) => number) {
     if (!this.continuity) {
-      if (device instanceof Oscillator)
-        device.oscillator.frequency.value = keyToFrequency(keys.keyIndex);
-      else
-        device.filter.frequency.value = device.filter2.frequency.value = keyToFrequency(keys.keyIndex);
-    } else {
-      const startChord = this.loggingChord1 ? this.chord2 : this.chord1;
-      const startKeys = startChord.notes.length > 0 ? startChord.notes.pop() : keys;
-      if (startChord.notes.length === 0)
-        startChord.notes.push(startKeys as DeviceKeys);
-      if (device instanceof Oscillator)
-        device.oscillator.frequency.value = keyToFrequency(startKeys?.keyIndex as number);
-      else
-        device.filter.frequency.value = device.filter2.frequency.value = keyToFrequency(startKeys?.keyIndex as number);
+    //   if (device instanceof Oscillator)
+    //     device.oscillator.frequency.value = keyToFrequency(keys.keyIndex);
+    //   else
+    //     device.filter.frequency.value = device.filter2.frequency.value = keyToFrequency(keys.keyIndex);
+    // } else {
+    //   const startChord = this.loggingChord1 ? this.chord2 : this.chord1;
+    //   const startKeys = startChord.notes.length > 0 ? startChord.notes.pop() : keys;
+    //   if (startChord.notes.length === 0)
+    //     startChord.notes.push(startKeys as DeviceKeys);
+    //   if (device instanceof Oscillator)
+    //     device.oscillator.frequency.value = keyToFrequency(startKeys?.keyIndex as number);
+    //   else
+    //     device.filter.frequency.value = device.filter2.frequency.value = keyToFrequency(startKeys?.keyIndex as number);
     }
   }
 

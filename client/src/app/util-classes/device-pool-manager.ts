@@ -29,7 +29,7 @@ class DeviceStatus {
 }
 
 class DevicePoolManager {
-  public static readonly numberOfDevices: number = 12; // Number of oscillators and filters in a pool
+  public static readonly numberOfDevices: number = 1; // Number of oscillators and filters in a pool
   private readonly devices: DeviceStatus[];
   private readonly settings: OscillatorSettings | NoiseSettings;
 
@@ -118,10 +118,10 @@ class DevicePoolManager {
       const freq = this.keyToFrequency(keyIndex);
       if (playNote && dev instanceof Oscillator || dev instanceof Filter) {
          dev.freq = freq;
-        if (dev instanceof Oscillator)
-          dev.oscillator.frequency.value = freq;
-        else
-          dev.filter.frequency.value = freq;
+        // if (dev instanceof Oscillator)
+        //   dev.oscillator.frequency.value = freq;
+        // else
+        //   dev.filter.frequency.value = freq;
 
         //   dev.keyDown(velocity);
       } else if (playNote) {

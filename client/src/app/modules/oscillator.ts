@@ -4,7 +4,7 @@ import {onOff, oscModOutput, oscModType} from '../enums/enums';
 import {Subscription} from 'rxjs';
 import {WaveTableDetails} from './WaveTableDetails';
 import {OscillatorSettings} from "../settings/oscillator";
-import {OscillatorWithPhaseMod} from './modulation/oscillator-with-phase-mod';
+import {FMSynthProcessor} from './modulation/fm-synth-processor';
 import {PitchEnvelope} from './pitch-envelope';
 
 export class OscillatorParams {
@@ -18,7 +18,6 @@ export class OscillatorParams {
 }
 
 export class Oscillator extends OscFilterBase {
-  public readonly oscillator: OscillatorWithPhaseMod;
   phaseModOutputGain: GainNode;
 
   type: OscillatorType;
@@ -218,15 +217,15 @@ export class Oscillator extends OscFilterBase {
       })
   ];
   public static readonly frequencyFactor = 7.717057388; // To give middle C at 261.63 Hz on key 60
-  private pitchEnvelope: PitchEnvelope;
+ // private pitchEnvelope: PitchEnvelope;
   readonly freqBendBase = 2;
 
   constructor(protected override audioCtx: AudioContext, wasmBinary: ArrayBuffer) {
     super(audioCtx);
     this.panner = audioCtx.createStereoPanner();
     this.legatoMode = true;
-    this.oscillator = new OscillatorWithPhaseMod(this.audioCtx, wasmBinary);
-    this.pitchEnvelope = new PitchEnvelope(this.oscillator, this.freqBendBase);
+//    this.oscillator = new FMSynthProcessor(this.audioCtx);
+  //  this.pitchEnvelope = new PitchEnvelope(this.oscillator, this.freqBendBase);
     this.phaseModOutputGain = audioCtx.createGain();
     this.phaseModOutputGain.gain.value = 1;
     this.type = "sine";
@@ -235,11 +234,12 @@ export class Oscillator extends OscFilterBase {
 
   async start(started: boolean) {
     if (!started) {
-      await this.oscillator.start();
-      this.oscillator.connect(this.panner);
-      this.frequencyModInternal.connect(this.oscillator.frequency);
-      this.oscillator.connect(this.phaseModOutputGain);
-      this.phaseModExternal.connect(this.oscillator.modInput);
+      // await this.oscillator.start();
+      // this.oscillator.connect(this.panner, 1, 0);
+      // this.oscillator.connect(this.panner, 0, 0);
+      // this.frequencyModInternal.connect(this.oscillator.frequency);
+      // this.oscillator.connect(this.phaseModOutputGain);
+      // this.phaseModExternal.connect(this.oscillator.modInput);
     }
   }
 
@@ -255,12 +255,12 @@ export class Oscillator extends OscFilterBase {
 
   setFrequency(freq: number) {
     let f = super.clampFrequency(freq);
-    this.oscillator.frequency.value = f;
+//    this.oscillator.frequency.value = f;
     this.freq = f;
   }
 
   setDetune(deTune: number) {
-    this.oscillator.detune.value = deTune;
+ //   this.oscillator.detune.value = deTune;
   }
 
   pan(pan: number) {
@@ -307,27 +307,27 @@ export class Oscillator extends OscFilterBase {
 
 
   setFreqBendEnvelope(envelope: FreqBendValues) {
-    this.pitchEnvelope.setFreqBendEnvelope(envelope);
+   // this.pitchEnvelope.setFreqBendEnvelope(envelope);
     this._useFreqBendEnvelope = true;
   }
 
   override useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
     super.useFreqBendEnvelope(useFreqBendEnvelope);
-    this.oscillator.frequency.setValueAtTime(super.clampFrequency(this.freq), this.audioCtx.currentTime);
+    //this.oscillator.frequency.setValueAtTime(super.clampFrequency(this.freq), this.audioCtx.currentTime);
   }
 
   setType(type: OscillatorType) {
     this.type = type;
     if (/^(sine)$/.test(type)) {
-      this.oscillator.type = type as OscillatorType;
+//      this.oscillator.type = type as OscillatorType;
     } else {
       const wtDetails = Oscillator.wavetables.find(el => el.value === type);
-      if (wtDetails)
-        this.oscillator.setPeriodicWave(OscillatorWithPhaseMod.createPeriodicWave(this.audioCtx, wtDetails?.waveTable.real, wtDetails?.waveTable.imag));
-      else {
-        console.error("Cannot find wave table for" + type)
-        this.type = this.oscillator.type = "sine";
-      }
+      // if (wtDetails)
+      //   this.oscillator.setPeriodicWave(OscillatorWithPhaseMod.createPeriodicWave(this.audioCtx, wtDetails?.waveTable.real, wtDetails?.waveTable.imag));
+      // else {
+      //   console.error("Cannot find wave table for" + type)
+      //   this.type = this.oscillator.type = "sine";
+      // }
     }
   }
 
@@ -338,21 +338,21 @@ export class Oscillator extends OscFilterBase {
     super.attack(velocity, frequency);
     this.frequencyModInternal.gain.value = this.modLevel * frequency * 3000 / 400;
     if (this._useFreqBendEnvelope) {
-      this.pitchEnvelope.keyDown(frequency);
+   //   this.pitchEnvelope.keyDown(frequency);
      }
   }
 
   // Key released for this oscillator
   keyUp() {
-    super.release(this.oscillator.frequency.value);
+ //   super.release(this.oscillator.frequency.value);
     if (this._useFreqBendEnvelope) {
-      this.pitchEnvelope.keyUp();
+   //   this.pitchEnvelope.keyUp();
     }
   }
 
   destroy() {
     super.disconnect();
-    this.oscillator.destroy();
+//    this.oscillator.destroy();
     this.frequencyModInternal.disconnect();
     this.phaseModExternal.disconnect();
     this.modOutput.disconnect();

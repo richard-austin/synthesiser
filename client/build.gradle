@@ -41,8 +41,16 @@ tasks.register('buildClientDev', NpmTask) {
   args = ['run', 'buildDev']
 }
 
+tasks.register('compileSingleTs', NpxTask) {
+  group = 'build'
+  dependsOn 'npmInstall'
+  command = 'tsc'
+  args = ['src/app/modules/modulation/fm-synth-processor.ts', '--outDir', 'public/assets/wasm/', '--ignoreConfig']
+}
+
 tasks.register('buildClient', NpmTask) {
-  dependsOn(['npmInstall', ':oscillator-wasm:compileWasm'])
+  // Add the new task to the dependsOn list
+  dependsOn(['npmInstall', ':oscillator-wasm:compileWasm', 'compileSingleTs'])
   group = 'build'
   description = 'Compile client side assets for production'
   args = ['run', 'build']

@@ -62,11 +62,10 @@ tasks.register('compileWasm', Exec) {
             "-flto",
             "-msimd128",
             "-ffast-math",
-            "-o",
-            outputJsPath,
-            "-s",
-            "STANDALONE_WASM",
-            "-s",
-            "EXPORTED_FUNCTIONS=['_initProcessor', '_calculateCoefficients', '_setWaveTableBand', '_setUsePeriodicWave', '_getInputBufferPtr', '_getOutputBufferPtr', '_getFreqBufferPtr', '_getDetuneBufferPtr', '_processBlock']",
-            "--no-entry")
+            "-o", outputJsPath,
+            "-s", "STANDALONE_WASM",
+            // Only export the functions present in our new unified architecture:
+            "-s", "EXPORTED_FUNCTIONS=['_initProcessor', '_setMatrixGain', '_setBankEnvelopeParams', '_triggerNoteOn', '_triggerNoteOff', '_getBankOutputBufferPtr', '_processBlock']",
+            "--no-entry"
+    )
 }
