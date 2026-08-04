@@ -318,7 +318,50 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     return ok;
   }
 
-  connectToRingMod(): boolean {
+  connectToRingMod(): boolean {    // if (keys !== undefined && this.proxySettings.portamento > 0) {
+    //   this.cancelAndHoldAtTime(this.audioCtx.currentTime, this.oscillators[keys.deviceIndex].oscillator.frequency);
+    //   const proxySettings = this.proxySettings;
+    //   switch (proxySettings.portamentoType) {
+    //     case 'chord':
+    //       if (!this.chordProcessor.addNote(structuredClone(keys)))
+    //         return;  // Less than the minimum time flor a chord
+    //       this.chordProcessor.setStartNote(keys, this.oscillators[keys.deviceIndex], this.keyToFrequency);
+    //       break;
+    //     case 'last':
+    //       if (lastKey)
+    //         this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(lastKey.keyIndex);
+    //       break;
+    //     case 'first':
+    //       const firstKeys = this.keysDown[0];
+    //       this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(firstKeys.keyIndex);
+    //       break;
+    //     case 'lowest':
+    //       const lowestKey = Math.min(...this.keysDown.map(keys => keys.keyIndex));
+    //       if (lowestKey !== undefined)
+    //         this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(lowestKey);
+    //       break;
+    //     case 'highest':
+    //       const highestKey = Math.max(...this.keysDown.map(keys => keys.keyIndex));
+    //       this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(highestKey);
+    //       break;
+    //     case 'plus12':
+    //       this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) * 2;
+    //       break;
+    //     case 'plus24':
+    //       this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) * 4;
+    //       break;
+    //     case 'minus12':
+    //       this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) / 2;
+    //       break;
+    //     case 'minus24':
+    //       this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) / 4;
+    //       break;
+    //   }
+    //
+    //   this.oscillators[keys.deviceIndex].oscillator.frequency.exponentialRampToValueAtTime(freq, this.audioCtx.currentTime + this.proxySettings.portamento);
+    // }
+
+
     const ringMod = this.ringMod;
     let ok = false;
     if (ringMod()) {
@@ -441,17 +484,15 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     //   this.oscillators[keys.deviceIndex].oscillator.frequency.exponentialRampToValueAtTime(freq, this.audioCtx.currentTime + this.proxySettings.portamento);
     // }
 
-    if (keys)
-      this.oscillators[keys.deviceIndex].keyDown(velocity, freq);
+    if(keys)
+      this.fmSynthService.triggerNoteOn(this.params().settingsId-1, keys.deviceIndex, freq);
+    // if (keys)
+    //   this.oscillators[keys.deviceIndex].keyDown(velocity, freq);
   }
 
   private chordProcessorKeyDownCallback: (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => void = (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => {
     const freq = this.keyToFrequency(prevKeys.keyIndex);
-//    const osc = this.oscillators[theseKeys.deviceIndex].oscillator;
-//     this.cancelAndHoldAtTime(this.audioCtx.currentTime, osc.frequency);
-//     osc.frequency.value = freq;
-//     osc.frequency.exponentialRampToValueAtTime(this.keyToFrequency(theseKeys.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
-    this.oscillators[theseKeys.deviceIndex].keyDown(0x7f, freq);  // TODO: Need to pass velocity through ChordProcessor
+    this.fmSynthService.triggerNoteOn(this.params().settingsId-1, theseKeys.deviceIndex, freq);
   }
 
   keyUp(keyIndex: number) {

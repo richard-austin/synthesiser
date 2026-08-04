@@ -44,7 +44,7 @@ export class FMSynthProcessor extends AudioWorkletProcessor {
 
   constructor() {
     super();
-    this.port.onmessage = (e: MessageEvent<SynthMessage>) => this.handleMessage(e.data);
+      this.port.onmessage = (e: MessageEvent<SynthMessage>) => this.handleMessage(e.data);
   }
 
   private async initWasm(wasmBytes: ArrayBuffer): Promise<void> {
@@ -76,6 +76,7 @@ export class FMSynthProcessor extends AudioWorkletProcessor {
 
   private async handleMessage(msg: SynthMessage): Promise<void> {
     if (msg.type === 'INIT_WASM') {
+      console.log("In handleMessage");
       await this.initWasm(msg.bytes);
       return;
     }
@@ -85,6 +86,7 @@ export class FMSynthProcessor extends AudioWorkletProcessor {
     // Type-safe control message routing straight to our C engine hooks
     switch (msg.type) {
       case 'NOTE_ON':
+        console.log("bank: ", msg.bank, "note: ", msg.note, "frequency", msg.frequency);
         this.wasm.triggerNoteOn(msg.bank, msg.note, msg.frequency);
         break;
       case 'NOTE_OFF':
@@ -106,7 +108,6 @@ export class FMSynthProcessor extends AudioWorkletProcessor {
     parameters: Record<string, Float32Array>
   ): boolean {
     if (!this.initialized) return true;
-
     // Execute the 128-sample C inner loop processing state machine
     this.wasm.processBlock();
 
@@ -129,5 +130,5 @@ export class FMSynthProcessor extends AudioWorkletProcessor {
     return true; // Keep the audio processor alive
   }
 }
-
+//console.log("registerProcessor")
 registerProcessor('fm-synth-processor', FMSynthProcessor);

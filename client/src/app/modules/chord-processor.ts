@@ -84,7 +84,49 @@ export class ChordProcessor {
         this.startChord2 = true;
       } else if (this.loggingChord2) {
         this.chord2Complete();
-      }
+      }    // if (keys !== undefined && this.proxySettings.portamento > 0) {
+    //   this.cancelAndHoldAtTime(this.audioCtx.currentTime, this.oscillators[keys.deviceIndex].oscillator.frequency);
+    //   const proxySettings = this.proxySettings;
+    //   switch (proxySettings.portamentoType) {
+    //     case 'chord':
+    //       if (!this.chordProcessor.addNote(structuredClone(keys)))
+    //         return;  // Less than the minimum time flor a chord
+    //       this.chordProcessor.setStartNote(keys, this.oscillators[keys.deviceIndex], this.keyToFrequency);
+    //       break;
+    //     case 'last':
+    //       if (lastKey)
+    //         this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(lastKey.keyIndex);
+    //       break;
+    //     case 'first':
+    //       const firstKeys = this.keysDown[0];
+    //       this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(firstKeys.keyIndex);
+    //       break;
+    //     case 'lowest':
+    //       const lowestKey = Math.min(...this.keysDown.map(keys => keys.keyIndex));
+    //       if (lowestKey !== undefined)
+    //         this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(lowestKey);
+    //       break;
+    //     case 'highest':
+    //       const highestKey = Math.max(...this.keysDown.map(keys => keys.keyIndex));
+    //       this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(highestKey);
+    //       break;
+    //     case 'plus12':
+    //       this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) * 2;
+    //       break;
+    //     case 'plus24':
+    //       this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) * 4;
+    //       break;
+    //     case 'minus12':
+    //       this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) / 2;
+    //       break;
+    //     case 'minus24':
+    //       this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) / 4;
+    //       break;
+    //   }
+    //
+    //   this.oscillators[keys.deviceIndex].oscillator.frequency.exponentialRampToValueAtTime(freq, this.audioCtx.currentTime + this.proxySettings.portamento);
+    // }
+
       if (this.releaseTimerSub)
         this.releaseTimerSub.unsubscribe();
       this.releaseTimerSub = timer(releaseTime * 1000).subscribe(() => {

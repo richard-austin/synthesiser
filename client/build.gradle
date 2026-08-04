@@ -9,7 +9,7 @@ node {
 }
 
 tasks.register('bootRun', NpmTask) {
-  dependsOn(['npmInstall', ':oscillator-wasm:compileWasm'])
+  dependsOn(['npmInstall', ':oscillator-wasm:compileWasm', 'compileSingleTs'])
   group = 'application'
   description = 'Start client side server'
   args = ['run', 'startProxy']

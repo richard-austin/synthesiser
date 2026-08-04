@@ -97,11 +97,11 @@ class DevicePoolManager {
           } else if (dev instanceof Oscillator || Filter) {
             dev.freq = frequency;
             if (dev instanceof Oscillator) {
-              dev.setFrequency(freq);
+            dev.setFrequency(freq);
             } else {
               dev.filter.frequency.value = dev.filter2.frequency.value = freq;
-            }
           }
+        }
         }
       });
     }
