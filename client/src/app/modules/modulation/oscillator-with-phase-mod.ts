@@ -1,14 +1,16 @@
 export class OscillatorWithPhaseMod {
-  static readonly oscillatorsPerBank = 12;
-  static readonly numberOfBanks = 4;
+  private readonly oscillatorsPerBank;
+  private readonly numberOfBanks;
 
   public node!: AudioWorkletNode;
   public port!: MessagePort;
   public readonly context: AudioContext;
   private static readonly waveTableSize = 2048;
 
-  constructor(audioCtx: AudioContext) {
+  constructor(audioCtx: AudioContext, numberOfBanks: number, oscillatorsPerBank: number) {
     this.context = audioCtx;
+    this.numberOfBanks = numberOfBanks;
+    this.oscillatorsPerBank = oscillatorsPerBank;
   }
 
   async start(): Promise<void> {
@@ -20,12 +22,11 @@ export class OscillatorWithPhaseMod {
         public decayRate: number = 0;
         public sustainLevel: number;
         public release: number;
-        public releaseRate: number = 0;
 
         constructor() {
           this.attack = 0;
           this.decay = 0.5;
-          this.sustainLevel = 0.5;
+          this.sustainLevel = 0.0;
           this.release = 0.5;
           this.calculateRates();
         }
@@ -35,8 +36,7 @@ export class OscillatorWithPhaseMod {
           const sr = sampleRate;
           const lowestLevel = 0.000001;
           this.attackRate = 1 / (sr * (this.attack + lowestLevel));
-          this.decayRate = 1 / (sr * (this.decay + lowestLevel));
-          this.releaseRate = 1 / (sr * (this.release + lowestLevel));
+          this.decayRate = (1-this.sustainLevel+lowestLevel) / (sr * (this.decay + lowestLevel));
         }
       }
 
@@ -53,6 +53,7 @@ export class OscillatorWithPhaseMod {
         public lastDetune: number = 1;
         public detuneFactor: number = 1;
         public phase: number = 0;
+        public releaseRate = 1;
 
         public advanceEnvelopeToSustain(env: Envelope) {
           if (this.keyDown) {
@@ -75,11 +76,16 @@ export class OscillatorWithPhaseMod {
           }
         }
 
-        public advanceEnvelopeToZero(env: Envelope) {
+        public advanceEnvelopeToZero(env: Envelope, os: OscillatorStatus) {
           if (!this.keyDown) {
             if (this.envelopePhase !== envelopePhase.inactive) {
+              if(this.envelopePhase !== envelopePhase.release) {
+                const lowestLevel = 0.000001;
+                // @ts-ignore
+                  this.releaseRate = (this.envelopeLevel) / (sampleRate * (env.release+lowestLevel));
+              }
               this.envelopePhase = envelopePhase.release;
-              this.envelopeLevel -= env.releaseRate;
+              this.envelopeLevel -= this.releaseRate;
               if (this.envelopeLevel <= 0) {
                 this.envelopePhase = envelopePhase.inactive;
                 this.envelopeLevel = 0;
@@ -153,30 +159,6 @@ export class OscillatorWithPhaseMod {
 
       /* @ts-ignore */
       registerProcessor('oscillator', class Processor extends AudioWorkletProcessor {
-        static get parameterDescriptors() {
-          return [{
-            name: 'mod',
-            defaultValue: 0,
-            minValue: -Math.PI * 4,
-            maxValue: Math.PI * 4,
-            automationRate: "a-rate"
-          },
-            {
-              name: 'frequency',
-              defaultValue: 263,
-              minValue: 0,
-              maxValue: 3.4028235e37,
-              automationRate: "a-rate"
-            },
-            {
-              name: 'detune',
-              defaultValue: 0,
-              minValue: -400000,
-              maxValue: 400000,
-              automationRate: "a-rate"
-            }];
-        }
-
         running: boolean = true;
         private periodicWave!: Float32Array[][];
         private type: OscillatorType = "sine";
@@ -301,7 +283,7 @@ export class OscillatorWithPhaseMod {
                 if (status.keyDown) {
                   status.advanceEnvelopeToSustain(env);
                 } else {
-                  status.advanceEnvelopeToZero(env);
+                  status.advanceEnvelopeToZero(env, status);
                 }
 
                 f *= status.detuneFactor;
@@ -323,21 +305,27 @@ export class OscillatorWithPhaseMod {
         }
 
         public keyDown(bank: number, key: number) {
-          const oc = this.getVacantOscillator(bank, key);
-          if (oc !== undefined) {
+          const i = this.getVacantOscillator(bank, key);
+          if (i !== -1) {
+            const oc = this.oscillatorStatus[bank][i];
             oc.frequency = this.keyToFrequency(key, bank);
             oc.key = key;
             oc.keyDown = true;
             oc.inUse = true;
+            // @ts-ignore
+            this.port.postMessage({type: "keyDown", bank: bank, oscillator: i, key: key});
           }
         }
 
         public keyUp(bank: number, key: number) {
           const bankStatus: OscillatorStatus[] = this.oscillatorStatus[bank];
-          const oc = bankStatus.find(s => s.key === key);
-          if (oc !== undefined) {
+          const i = bankStatus.findIndex(s => s.key === key);
+          if (i !== -1) {
+            const oc = this.oscillatorStatus[bank][i];
             oc.keyDown = false;
             oc.key = -1;
+            // @ts-ignore
+            this.port.postMessage({type: "keyUp", bank: bank, oscillator: i, key: key});
           }
         }
 
@@ -346,14 +334,14 @@ export class OscillatorWithPhaseMod {
           return frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * (this.tuning[bank] * 6 / 10));
         }
 
-        private getVacantOscillator(bank: number, key: number): OscillatorStatus | undefined {
+        private getVacantOscillator(bank: number, key: number): number {
           const bankStatus: OscillatorStatus[] = this.oscillatorStatus[bank];
-          let osc = bankStatus.find(s => s.inUse && s.key === key);
+          let i = bankStatus.findIndex(s => s.inUse && s.key === key);
 
-          if (!osc) {
-            osc = bankStatus.find(s => !s.inUse);  // TODO: Need a fallback to use the least recently used oscillator if none available
+          if (i === -1) {
+            i = bankStatus.findIndex(s => !s.inUse);  // TODO: Need a fallback to use the least recently used oscillator if none available
           }
-          return osc;
+          return i;
         }
       });
     }
@@ -361,12 +349,12 @@ export class OscillatorWithPhaseMod {
     await this.context.audioWorklet.addModule(`data:text/javascript,(${worklet.toString()})()`);
     // Create worklet node
     this.node = new AudioWorkletNode(this.context, 'oscillator', {
-      numberOfOutputs: 4,
-      outputChannelCount: [1, 1, 1, 1],
+      numberOfOutputs: this.numberOfBanks,
+      outputChannelCount: [] = Array(this.numberOfBanks).fill(1),
       channelInterpretation: 'speakers',
       processorOptions: {
-        numberOfBanks: OscillatorWithPhaseMod.numberOfBanks,
-        oscillatorsPerBank: OscillatorWithPhaseMod.oscillatorsPerBank,
+        numberOfBanks: this.numberOfBanks,
+        oscillatorsPerBank: this.oscillatorsPerBank,
         waveTableSize: OscillatorWithPhaseMod.waveTableSize,
         startFx: OscillatorWithPhaseMod.startFx
       }

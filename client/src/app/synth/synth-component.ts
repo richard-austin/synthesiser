@@ -29,14 +29,14 @@ import {MatrixComponent} from '../matrix/matrix-component';
   selector: 'app-synth-component',
   imports: [
     FilterComponent,
-    OscillatorComponent,
     NoiseComponent,
     RingModulatorComponent,
     ReverbComponent,
     PhaserComponent,
     AnalyserComponent,
     GeneralComponent,
-    MatrixComponent
+    MatrixComponent,
+    OscillatorComponent
   ],
   templateUrl: `./synth-component.html`,
   styleUrl: './synth-component.scss',
@@ -45,9 +45,9 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   audioCtx!: AudioContext;
   public static readonly oscillatorParams: OscillatorParams[] = [
     new OscillatorParams("signal", 1),
-    // new OscillatorParams("mod", 2),
-    // new OscillatorParams("signal", 3),
-    // new OscillatorParams("signal", 4),
+    new OscillatorParams("mod", 2),
+    new OscillatorParams("signal", 3),
+    new OscillatorParams("signal", 4),
   ];
   protected _oscillatorParams = SynthComponent.oscillatorParams;
   midiInputs: MIDIInput[] = [];

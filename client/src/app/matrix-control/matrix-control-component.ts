@@ -12,7 +12,7 @@ import {dialStyle} from '../level-control/levelControlParameters';
 import {oscModType} from '../enums/enums';
 import {MatrixControlSettings} from '../settings/matrix';
 import {OscillatorComponent} from '../oscillator/oscillator.component';
-import DevicePoolManager from '../util-classes/device-pool-manager';
+//import DevicePoolManager from '../util-classes/device-pool-manager';
 
 export interface ModSetting {modType:oscModType, carrier: number, modulator: number}
 export interface ModLevel {level: number, carrier: number, modulator: number}
@@ -47,10 +47,10 @@ export class MatrixControlComponent implements AfterViewInit{
   start(audioCtx:AudioContext, ctrlSettings: MatrixControlSettings, modulator: OscillatorComponent | undefined, carrier: OscillatorComponent | undefined) {
     if(!this.started) {
       this.modulationGain = [];
-      for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-        this.modulationGain.push(new GainNode(audioCtx));
-        this.modulationGain[i].gain.value = 1;
-      }
+      // for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
+      //   this.modulationGain.push(new GainNode(audioCtx));
+      //   this.modulationGain[i].gain.value = 1;
+      // }
       this.started = true;
     }
     this.ctlSettings = ctrlSettings;

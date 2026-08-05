@@ -17,7 +17,7 @@ export class OscillatorParams {
   }
 }
 
-export class Oscillator extends OscFilterBase {
+export class OscillatorX extends OscFilterBase {
   phaseModOutputGain: GainNode;
 
   type: OscillatorType;
@@ -321,7 +321,7 @@ export class Oscillator extends OscFilterBase {
     if (/^(sine)$/.test(type)) {
 //      this.oscillator.type = type as OscillatorType;
     } else {
-      const wtDetails = Oscillator.wavetables.find(el => el.value === type);
+      const wtDetails = OscillatorX.wavetables.find(el => el.value === type);
       // if (wtDetails)
       //   this.oscillator.setPeriodicWave(OscillatorWithPhaseMod.createPeriodicWave(this.audioCtx, wtDetails?.waveTable.real, wtDetails?.waveTable.imag));
       // else {

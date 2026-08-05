@@ -18,10 +18,10 @@ import {filterModType, filterTypes, modWaveforms, onOff} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {FilterSettings} from '../settings/filter';
 import {Cookies} from '../settings/cookies/cookies';
-import {Oscillator} from '../modules/oscillator';
+//import {Oscillator} from '../modules/oscillator';
 import {PortamentoType} from '../oscillator/oscillator.component';
 import {ChordProcessor} from '../modules/chord-processor';
-import DevicePoolManager from '../util-classes/device-pool-manager';
+//import DevicePoolManager from '../util-classes/device-pool-manager';
 import {DeviceKeys, DevicePoolManagerService} from '../services/device-pool-manager-service';
 import {timer} from 'rxjs';
 
@@ -49,7 +49,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   // One set for oscillator1, one set for oscillator2 and one for the noise source
-  private readonly numberOfFilters: number = DevicePoolManager.numberOfDevices;
+  private readonly numberOfFilters: number = 12; // DevicePoolManager.numberOfDevices;
 
   reverb: InputSignal<ReverbComponent> = input.required<ReverbComponent>();
   ringMod: InputSignal<RingModulatorComponent> = input.required<RingModulatorComponent>();
@@ -169,12 +169,12 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   protected setFrequency(freq: number) {
     this.proxySettings.frequency = freq;
     // Set frequency on the oscillators bank 1 and 2 related filters
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      const filter = this.filters[i];
-      if (filter.keyIndex > -1) {
-        filter.setFrequency(this.keyToFrequency(filter.keyIndex))
-      }
-    }
+    // for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
+    //   const filter = this.filters[i];
+    //   if (filter.keyIndex > -1) {
+    //     filter.setFrequency(this.keyToFrequency(filter.keyIndex))
+    //   }
+    // }
 
     // for (let i = 0; i < this.filters.length; i++) {
     //   this.filters[i].setFrequency(this.keyToFrequency(i));
@@ -223,8 +223,9 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     this.proxySettings.portamentoType = value as PortamentoType;
   }
 
-  keyToFrequency = (key: number) => {
-    return Oscillator.frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
+  keyToFrequency = (key: number): number => {
+    return 500;
+    //return Oscillator.frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
   }
 
   /**
@@ -297,56 +298,56 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
     if (this.proxySettings.portamento > 0) {
       const proxySettings = this.proxySettings;
-      switch (proxySettings.portamentoType) {
-        case 'chord':
-          const clonedKeys = structuredClone(keys);
-          if (clonedKeys.deviceIndex < DevicePoolManager.numberOfDevices) {
-            // Triggered by noise gen
-            if (!this.chordProcessorNoise.addNote(structuredClone(clonedKeys)))
-              return;  // Less than the minimum time for a chord
-            this.chordProcessorNoise.setStartNote(clonedKeys, this.filters[keys.deviceIndex], this.keyToFrequency);
-          } else if (clonedKeys.deviceIndex < 2 * DevicePoolManager.numberOfDevices) {
-            // Triggered by oscillator 1
-            if (!this.chordProcessorOscillator1.addNote(structuredClone(clonedKeys)))
-              return;  // Less than the minimum time for a chord
-            this.chordProcessorOscillator1.setStartNote(clonedKeys, this.filters[keys.deviceIndex], this.keyToFrequency);
-          } else {
-            // Triggered by oscillator 1
-            if (!this.chordProcessorOscillator2.addNote(structuredClone(clonedKeys)))
-              return;  // Less than the minimum time for a chord
-            this.chordProcessorOscillator2.setStartNote(clonedKeys, this.filters[keys.deviceIndex], this.keyToFrequency);
-          }
-          break;
-        case 'last':
-          if (lastKey)
-            dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(lastKey.keyIndex);
-          break;
-        case 'first':
-          const firstKeys = this.keysDown[0];
-          dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(firstKeys.keyIndex);
-          break;
-        case 'lowest':
-          const lowestKey = Math.min(...this.keysDown.map(keys => keys.keyIndex));
-          if (lowestKey !== undefined)
-            dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(lowestKey);
-          break;
-        case 'highest':
-          const highestKey = Math.max(...this.keysDown.map(keys => keys.keyIndex));
-          dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(highestKey);
-          break;
-        case 'plus12':
-          dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(keys.keyIndex) * 2;
-          break;
-        case 'plus24':
-          dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(keys.keyIndex) * 4;
-          break;
-        case 'minus12':
-          dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(keys.keyIndex) / 2;
-          break;
-        case 'minus24':
-          dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(keys.keyIndex) / 4;
-          break;
-      }
+      // switch (proxySettings.portamentoType) {
+      //   case 'chord':
+      //     const clonedKeys = structuredClone(keys);
+      //     if (clonedKeys.deviceIndex < DevicePoolManager.numberOfDevices) {
+      //       // Triggered by noise gen
+      //       if (!this.chordProcessorNoise.addNote(structuredClone(clonedKeys)))
+      //         return;  // Less than the minimum time for a chord
+      //       this.chordProcessorNoise.setStartNote(clonedKeys, this.filters[keys.deviceIndex], this.keyToFrequency);
+      //     } else if (clonedKeys.deviceIndex < 2 * DevicePoolManager.numberOfDevices) {
+      //       // Triggered by oscillator 1
+      //       if (!this.chordProcessorOscillator1.addNote(structuredClone(clonedKeys)))
+      //         return;  // Less than the minimum time for a chord
+      //       this.chordProcessorOscillator1.setStartNote(clonedKeys, this.filters[keys.deviceIndex], this.keyToFrequency);
+      //     } else {
+      //       // Triggered by oscillator 1
+      //       if (!this.chordProcessorOscillator2.addNote(structuredClone(clonedKeys)))
+      //         return;  // Less than the minimum time for a chord
+      //       this.chordProcessorOscillator2.setStartNote(clonedKeys, this.filters[keys.deviceIndex], this.keyToFrequency);
+      //     }
+      //     break;
+      //   case 'last':
+      //     if (lastKey)
+      //       dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(lastKey.keyIndex);
+      //     break;
+      //   case 'first':
+      //     const firstKeys = this.keysDown[0];
+      //     dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(firstKeys.keyIndex);
+      //     break;
+      //   case 'lowest':
+      //     const lowestKey = Math.min(...this.keysDown.map(keys => keys.keyIndex));
+      //     if (lowestKey !== undefined)
+      //       dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(lowestKey);
+      //     break;
+      //   case 'highest':
+      //     const highestKey = Math.max(...this.keysDown.map(keys => keys.keyIndex));
+      //     dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(highestKey);
+      //     break;
+      //   case 'plus12':
+      //     dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(keys.keyIndex) * 2;
+      //     break;
+      //   case 'plus24':
+      //     dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(keys.keyIndex) * 4;
+      //     break;
+      //   case 'minus12':
+      //     dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(keys.keyIndex) / 2;
+      //     break;
+      //   case 'minus24':
+      //     dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(keys.keyIndex) / 4;
+      //     break;
+      // }
 
       dev.filter.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keys.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
       dev.filter2.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keys.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
@@ -370,12 +371,12 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
         //    console.log("keysDown.length = ", this.keysDown.length, " idx = ", idx);
       });
 
-      if (keys.deviceIndex < DevicePoolManager.numberOfDevices)
-        this.chordProcessorNoise.release(keys.filterTimeout);
-      else if (keys.deviceIndex < 2 * DevicePoolManager.numberOfDevices)
-        this.chordProcessorOscillator1.release(keys.filterTimeout);
-      else
-        this.chordProcessorOscillator2.release(keys.filterTimeout);
+      // if (keys.deviceIndex < DevicePoolManager.numberOfDevices)
+      //   this.chordProcessorNoise.release(keys.filterTimeout);
+      // else if (keys.deviceIndex < 2 * DevicePoolManager.numberOfDevices)
+      //   this.chordProcessorOscillator1.release(keys.filterTimeout);
+      // else
+      //   this.chordProcessorOscillator2.release(keys.filterTimeout);
       dev.keyUp();
     }
   }

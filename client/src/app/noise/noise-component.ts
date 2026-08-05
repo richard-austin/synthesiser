@@ -17,7 +17,7 @@ import {NoiseSettings} from '../settings/noise';
 import {noiseOutputs, onOff} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {Cookies} from '../settings/cookies/cookies';
-import DevicePoolManager from '../util-classes/device-pool-manager';
+//import DevicePoolManager from '../util-classes/device-pool-manager';
 
 @Component({
   selector: 'app-noise',
@@ -34,7 +34,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   private proxySettings!: NoiseSettings;
   private cookies!: Cookies;
   private velocitySensitive: boolean = true;
-  private noisePoolMgr!: DevicePoolManager;
+ // private noisePoolMgr!: DevicePoolManager;
 
   readonly filters = input.required<FilterComponent | undefined>();
   readonly output = output<string>();
@@ -57,14 +57,14 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
 
   async start(audioCtx: AudioContext, settings: NoiseSettings | null) {
     if(!this.started) {
-      for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-        this.whiteNoise.push(new WhiteNoise(audioCtx));
-        this.pinkNoise.push(new PinkNoise(audioCtx));
-        this.brownNoise.push(new BrownNoise(audioCtx));
-        await this.whiteNoise[i].start();
-        await this.pinkNoise[i].start();
-        await this.brownNoise[i].start();
-      }
+      // for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
+      //   this.whiteNoise.push(new WhiteNoise(audioCtx));
+      //   this.pinkNoise.push(new PinkNoise(audioCtx));
+      //   this.brownNoise.push(new BrownNoise(audioCtx));
+      //   await this.whiteNoise[i].start();
+      //   await this.pinkNoise[i].start();
+      //   await this.brownNoise[i].start();
+      // }
       this.started = true;
     }
     this.cookies = new Cookies();
@@ -89,19 +89,19 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
       // else use default settings
     }
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      this.whiteNoise[i].setGain(settings.gain);
-      this.whiteNoise[i].setAmplitudeEnvelope(settings.adsr);
-      this.whiteNoise[i].legatoMode = settings.legatoMode === onOff.on;
-      this.pinkNoise[i].setGain(settings.gain);
-      this.pinkNoise[i].setAmplitudeEnvelope(settings.adsr);
-      this.pinkNoise[i].legatoMode = settings.legatoMode === onOff.on;
-      this.brownNoise[i].setGain(settings.gain);
-      this.brownNoise[i].setAmplitudeEnvelope(settings.adsr);
-      this.brownNoise[i].legatoMode = settings.legatoMode === onOff.on;
-    }
+    // for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
+    //   this.whiteNoise[i].setGain(settings.gain);
+    //   this.whiteNoise[i].setAmplitudeEnvelope(settings.adsr);
+    //   this.whiteNoise[i].legatoMode = settings.legatoMode === onOff.on;
+    //   this.pinkNoise[i].setGain(settings.gain);
+    //   this.pinkNoise[i].setAmplitudeEnvelope(settings.adsr);
+    //   this.pinkNoise[i].legatoMode = settings.legatoMode === onOff.on;
+    //   this.brownNoise[i].setGain(settings.gain);
+    //   this.brownNoise[i].setAmplitudeEnvelope(settings.adsr);
+    //   this.brownNoise[i].legatoMode = settings.legatoMode === onOff.on;
+    // }
     let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
-    this.noisePoolMgr = new DevicePoolManager(source, this.proxySettings);
+ //   this.noisePoolMgr = new DevicePoolManager(source, this.proxySettings);
 
     this.attack().setValue(this.proxySettings.adsr.attackTime);
     this.decay().setValue(this.proxySettings.adsr.decayTime);
@@ -123,36 +123,36 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     this.proxySettings.gain = gain;
     const noiseType = this.proxySettings.type;
 
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
-      switch (noiseType) {
-        case 'white':
-          this.whiteNoise[i].setGain(gain);
-          break;
-        case 'pink':
-          this.pinkNoise[i].setGain(gain);
-          break;
-        case 'brown':
-          this.brownNoise[i].setGain(gain);
-          break;
-      }
-    }
+    // for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
+    //   switch (noiseType) {
+    //     case 'white':
+    //       this.whiteNoise[i].setGain(gain);
+    //       break;
+    //     case 'pink':
+    //       this.pinkNoise[i].setGain(gain);
+    //       break;
+    //     case 'brown':
+    //       this.brownNoise[i].setGain(gain);
+    //       break;
+    //   }
+    // }
   }
 
   private setNoiseType(noiseType: any) {
     this.proxySettings.type = noiseType;
     const gain = this.proxySettings.gain;
 
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      this.whiteNoise[i].setGain(0);
-      this.pinkNoise[i].setGain(0);
-      this.brownNoise[i].setGain(0);
-    }
+    // for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
+    //   this.whiteNoise[i].setGain(0);
+    //   this.pinkNoise[i].setGain(0);
+    //   this.brownNoise[i].setGain(0);
+    // }
     const source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      source[i].setGain(gain);
-      source[i].legatoMode = this.proxySettings.legatoMode === onOff.on;
-    }
-    this.noisePoolMgr.updateDevices(this.noiseSource())
+    // for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
+    //   source[i].setGain(gain);
+    //   source[i].legatoMode = this.proxySettings.legatoMode === onOff.on;
+    // }
+    // this.noisePoolMgr.updateDevices(this.noiseSource())
   }
 
   connect(node: AudioNode) {
@@ -169,21 +169,21 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     this.proxySettings.output = noiseOutputs.filter;
     const filters = this.filters()?.filters;
     if(filters) {
-      for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
-        this.whiteNoise[i].connect(filters[i].filter);
-        this.pinkNoise[i].connect(filters[i].filter);
-        this.brownNoise[i].connect(filters[i].filter);
-      }
+      // for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
+      //   this.whiteNoise[i].connect(filters[i].filter);
+      //   this.pinkNoise[i].connect(filters[i].filter);
+      //   this.brownNoise[i].connect(filters[i].filter);
+      // }
     }
   }
 
   disconnect() {
     this.proxySettings.output = noiseOutputs.off;
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
-      this.whiteNoise[i].disconnect();
-      this.pinkNoise[i].disconnect();
-      this.brownNoise[i].disconnect();
-    }
+    // for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
+    //   this.whiteNoise[i].disconnect();
+    //   this.pinkNoise[i].disconnect();
+    //   this.brownNoise[i].disconnect();
+    // }
   }
 
   private noiseSource(): WhiteNoise[] | PinkNoise[] | BrownNoise[] {
@@ -205,9 +205,9 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   legatoMode(legatoMode: boolean) {
     this.proxySettings.legatoMode = legatoMode ? onOff.on : onOff.off;
     let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
-      source[i].legatoMode = legatoMode;
-    }
+    // for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
+    //   source[i].legatoMode = legatoMode;
+    // }
   }
 
   useVelocitySensitive(velocitySensitive: boolean) {
@@ -221,7 +221,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
         keyIndex = 0;  // Wired straight to the output, so we only use a single channel to avoid overload
       if (!this.velocitySensitive)
         velocity = 0x7f;
-      this.noisePoolMgr.keyDown(keyIndex, velocity);
+    //  this.noisePoolMgr.keyDown(keyIndex, velocity);
     }
   }
 
@@ -229,7 +229,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     if (keyIndex >= 0) {
       if (this.proxySettings.output === noiseOutputs.speaker)
         keyIndex = 0; // Wired straight to the output, so we only use a single channel to avoid overload
-      this.noisePoolMgr.keyUp(keyIndex);
+  //    this.noisePoolMgr.keyUp(keyIndex);
     }
   }
 

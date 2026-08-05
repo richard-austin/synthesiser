@@ -7,7 +7,7 @@ import {
   OnDestroy,
   OutputEmitterRef, viewChild, Signal
 } from '@angular/core';
-import {Oscillator, OscillatorParams} from '../modules/oscillator';
+import {/*Oscillator, */OscillatorParams} from '../modules/oscillator';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {FilterComponent} from '../filter/filter-component';
@@ -20,7 +20,7 @@ import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {timer} from 'rxjs';
 import {Cookies} from '../settings/cookies/cookies';
 import {ChordProcessor} from '../modules/chord-processor';
-import DevicePoolManager from '../util-classes/device-pool-manager';
+//import DevicePoolManager from '../util-classes/device-pool-manager';
 import {DeviceKeys, DevicePoolManagerService} from '../services/device-pool-manager-service';
 import {ClipboardService} from './clipboard-service';
 import {FmSynthService} from '../services/fm-synth-service';
@@ -46,7 +46,7 @@ export type PortamentoType =
   standalone: true
 })
 export class OscillatorComponent implements AfterViewInit, OnDestroy {
-  private oscillators: Oscillator[] = [];
+ // private oscillators: Oscillator[] = [];
   protected tuningDivisions = 6;
   private lfo!: OscillatorNode;
   private audioCtx!: AudioContext;
@@ -54,7 +54,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   private proxySettings!: OscillatorSettings;
   private cookies!: Cookies;
   private velocitySensitive: boolean = true;
-  private oscillatorPoolMgr!: DevicePoolManager;
+ // private oscillatorPoolMgr!: DevicePoolManager;
   private chordProcessor!: ChordProcessor;
 
   filters: InputSignal<FilterComponent> = input.required<FilterComponent>();
@@ -147,17 +147,17 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     // const wasmBinary = await response.arrayBuffer();
     //
 
-    if (!this.started) {
-      for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-        this.oscillators.push(new Oscillator(this.audioCtx, wasmBinary));
-      }
-      this.oscillatorPoolMgr = new DevicePoolManager(this.oscillators, this.proxySettings);
-    }
-
-    for (const osc of this.oscillators) {
-      await osc.start(this.started);
-      osc.applySettings(this.proxySettings);
-    }
+    // if (!this.started) {
+    //   for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
+    //     this.oscillators.push(new Oscillator(this.audioCtx, wasmBinary));
+    //   }
+    //   this.oscillatorPoolMgr = new DevicePoolManager(this.oscillators, this.proxySettings);
+    // }
+    //
+    // for (const osc of this.oscillators) {
+    //   await osc.start(this.started);
+    //   osc.applySettings(this.proxySettings);
+    // }
     this.started = true;
 
     this.frequency().setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
@@ -204,35 +204,35 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   protected setFrequency(freq: number) {
     this.proxySettings.frequency = freq;
-    this.oscillatorPoolMgr.setFrequency(freq);
+//    this.oscillatorPoolMgr.setFrequency(freq);
   }
 
   protected setGain(gain: number) {
     this.proxySettings.gain = gain;
-    this.oscillators.forEach((osc) => {
-      osc.setGain(gain);
-    });
+    // this.oscillators.forEach((osc) => {
+    //   osc.setGain(gain);
+    // });
   }
 
   protected pan(pan: number) {
     this.proxySettings.balance = pan;
-    this.oscillators.forEach(osc => {
-      osc.pan(pan);
-    });
+    // this.oscillators.forEach(osc => {
+    //   osc.pan(pan);
+    // });
   }
 
   protected setDetune(detune: number) {
     this.proxySettings.deTune = detune;
-    this.oscillators.forEach(osc => {
-      osc.setDetune(detune);
-    });
+    // this.oscillators.forEach(osc => {
+    //   osc.setDetune(detune);
+    // });
   }
 
   legatoMode(legatoMode: boolean) {
     this.proxySettings.legatoMode = legatoMode ? onOff.on : onOff.off;
-    this.oscillators.forEach(osc => {
-      osc.legatoMode = legatoMode;
-    });
+    // this.oscillators.forEach(osc => {
+    //   osc.legatoMode = legatoMode;
+    //});
   }
 
   useVelocitySensitive(velocitySensitive: boolean) {
@@ -245,61 +245,61 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       this.portamento().setValue(0); // Cannot use portamento with frequency envelope
 
     this.proxySettings.useFrequencyEnvelope = useFreqBendEnvelope ? onOff.on : onOff.off;
-    for (let i = 0; i < this.oscillators.length; i++) {
-      this.oscillators[i].useFreqBendEnvelope(useFreqBendEnvelope);
-    }
+    // for (let i = 0; i < this.oscillators.length; i++) {
+    //   this.oscillators[i].useFreqBendEnvelope(useFreqBendEnvelope);
+    // }
   }
 
   private setWaveForm(value: OscillatorType) {
     this.proxySettings.waveForm = value as oscWaveforms;
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      this.oscillators[i].setType(value);
-    }
+  //  for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
+  //    this.oscillators[i].setType(value);
+  //  }
   }
 
   private setPortamentoType(value: PortamentoType) {
     this.proxySettings.portamentoType = value as PortamentoType;
   }
 
-  keyToFrequency = (key: number) => {
-    return Oscillator.frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
-  }
+  // keyToFrequency = (key: number) => {
+  //   return Oscillator.frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
+  // }
 
   modulation(source: AudioNode | AudioNode[], type: oscModType) {
     if (source instanceof AudioNode) {
       this.proxySettings.modType = type;
-      this.oscillators.forEach((osc) => {
-        osc.modulation(source, type);
-      });
+      // this.oscillators.forEach((osc) => {
+      //   osc.modulation(source, type);
+      // });
     } else {
-      this.oscillators.forEach((osc, i) => {
-        osc.modulationExternal(source[i], type);
-      });
+      // this.oscillators.forEach((osc, i) => {
+      //   osc.modulationExternal(source[i], type);
+      // });
     }
   }
 
   connectModOut(modGainNodes: GainNode[]) {
-    if (modGainNodes.length === this.oscillators.length) {
-      this.oscillators.forEach((osc, i) => {
-        osc.connectModOut(modGainNodes[i])
-      });
-    } else {
-      throw new Error("Modulation gain nodes array size (" + modGainNodes.length + ") does not equal oscillators array size (" + this.oscillators.length + ")");
-    }
+    // if (modGainNodes.length === this.oscillators.length) {
+    //   this.oscillators.forEach((osc, i) => {
+    //     osc.connectModOut(modGainNodes[i])
+    //   });
+    // } else {
+    //   throw new Error("Modulation gain nodes array size (" + modGainNodes.length + ") does not equal oscillators array size (" + this.oscillators.length + ")");
+    // }
   }
 
   protected setModType(type: oscModType) {
     this.proxySettings.modType = type;
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      this.oscillators[i].modulation(this.lfo, type);
-    }
+  //  for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
+ //     this.oscillators[i].modulation(this.lfo, type);
+ //   }
   }
 
   protected setModOutput(modOutput: oscModOutput) {
     this.proxySettings.modOutput = modOutput;
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      this.oscillators[i].setModOutput(modOutput);
-    }
+   // for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
+  //    this.oscillators[i].setModOutput(modOutput);
+   // }
   }
 
   /**
@@ -310,9 +310,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     if (filters) {
       ok = true;
-      for (let i = 0; i < this.oscillators.length; i++) {
-        this.oscillators[i].connect(filters[i].filter);
-      }
+      // for (let i = 0; i < this.oscillators.length; i++) {
+      //   this.oscillators[i].connect(filters[i].filter);
+      // }
     } else
       console.log("Filter array is a different size to the oscillator array")
     return ok;
@@ -367,9 +367,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     if (ringMod()) {
       ok = true;
       const oscNumber = this.oscNumber() + 1;
-      this.oscillators.forEach((osc, i) => {
-        this.oscillators[i].connect(oscNumber === 2 ? ringMod().modInput() : ringMod().signalInput());
-      });
+      // this.oscillators.forEach((osc, i) => {
+      //   this.oscillators[i].connect(oscNumber === 2 ? ringMod().modInput() : ringMod().signalInput());
+      // });
     }
     return ok;
   }
@@ -379,9 +379,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     if (reverb) {
       ok = true;
-      this.oscillators.forEach((osc, i) => {
-        this.oscillators[i].connect(reverb.input);
-      });
+      // this.oscillators.forEach((osc, i) => {
+      //   this.oscillators[i].connect(reverb.input);
+      // });
     }
     return ok;
   }
@@ -391,9 +391,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     if (phaser) {
       ok = true;
-      this.oscillators.forEach((osc, i) => {
-        this.oscillators[i].connect(phaser.input);       // this.oscillators[i].connect(this.phaser.input);
-      });
+      // this.oscillators.forEach((osc, i) => {
+      //   this.oscillators[i].connect(phaser.input);       // this.oscillators[i].connect(this.phaser.input);
+      // });
     }
     return ok;
   }
@@ -403,15 +403,15 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
    * @param node
    */
   connect(node: AudioNode) {
-    this.oscillators.forEach((osc, i) => {
-      this.oscillators[i].connect(node);
-    });
+    // this.oscillators.forEach((osc, i) => {
+    //   this.oscillators[i].connect(node);
+    // });
   }
 
   disconnect() {
-    this.oscillators.forEach(osc => {
-      osc.disconnect();
-    })
+    // this.oscillators.forEach(osc => {
+    //   osc.disconnect();
+    // })
   }
 
   cancelAndHoldAtTime(time: number, oscFx: AudioParam) {
@@ -439,7 +439,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     //
     if (!this.velocitySensitive)
       velocity = 0x7f;
-    const freq = this.keyToFrequency(keyIndex);
+    //const freq = this.keyToFrequency(keyIndex);
 
     // if (keys !== undefined && this.proxySettings.portamento > 0) {
     //   this.cancelAndHoldAtTime(this.audioCtx.currentTime, this.oscillators[keys.deviceIndex].oscillator.frequency);
@@ -490,32 +490,32 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   private chordProcessorKeyDownCallback: (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => void = (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => {
-    const freq = this.keyToFrequency(prevKeys.keyIndex);
+    //const freq = this.keyToFrequency(prevKeys.keyIndex);
     this.fmSynthService.keyDown(this.params().settingsId-1, theseKeys.deviceIndex);
   }
 
   keyUp(keyIndex: number) {
     this.fmSynthService.keyUp(0, keyIndex);
-    const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyUp(keyIndex);
-    if (keys) {
-      const sub = timer(this.proxySettings.adsr.releaseTime * 1000).subscribe(() => {
-        sub.unsubscribe();
-        const idx = this.keysDown.findIndex(key => key.keyIndex === keyIndex);
-        if (idx > -1)
-          this.keysDown.splice(idx, 1);
-        //   console.log("keysDown.length = ", this.keysDown.length, " idx = ", idx);
-      });
-
-      this.devicePoolManagerService.keyUp(keys, this.oscNumber());  // Trigger appropriate filter bank
-
-      if (this.proxySettings.portamentoType === 'chord')
-        if (this.proxySettings.legatoMode === onOff.on)
-          this.chordProcessor.release(this.proxySettings.adsr.releaseTime);
-        else
-          this.chordProcessor.release(this.proxySettings.adsr.decayTime + this.proxySettings.adsr.releaseTime);
-    } else {
-      //console.error("keyIndex " + keyIndex + " not found");
-    }
+    // const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyUp(keyIndex);
+    // if (keys) {
+    //   const sub = timer(this.proxySettings.adsr.releaseTime * 1000).subscribe(() => {
+    //     sub.unsubscribe();
+    //     const idx = this.keysDown.findIndex(key => key.keyIndex === keyIndex);
+    //     if (idx > -1)
+    //       this.keysDown.splice(idx, 1);
+    //     //   console.log("keysDown.length = ", this.keysDown.length, " idx = ", idx);
+    //   });
+    //
+    //   this.devicePoolManagerService.keyUp(keys, this.oscNumber());  // Trigger appropriate filter bank
+    //
+    //   if (this.proxySettings.portamentoType === 'chord')
+    //     if (this.proxySettings.legatoMode === onOff.on)
+    //       this.chordProcessor.release(this.proxySettings.adsr.releaseTime);
+    //     else
+    //       this.chordProcessor.release(this.proxySettings.adsr.decayTime + this.proxySettings.adsr.releaseTime);
+    // } else {
+    //   //console.error("keyIndex " + keyIndex + " not found");
+    // }
   }
 
   protected setPortamento($event: number) {
@@ -528,9 +528,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   midiPitchBend(value: number) {
-    for (let i = 0; i < this.oscillators.length; i++) {
-      this.oscillators[i].setDetune((value - 0x40) * 5 + this.proxySettings.deTune);
-    }
+    // for (let i = 0; i < this.oscillators.length; i++) {
+    //   this.oscillators[i].setDetune((value - 0x40) * 5 + this.proxySettings.deTune);
+    // }
   }
 
   midiModLevel(value: number) {
@@ -591,9 +591,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   protected setModLevel($event: number) {
     this.proxySettings.modLevel = $event;
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      this.oscillators[i].setModLevel($event);
-    }
+ //   for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
+    //  this.oscillators[i].setModLevel($event);
+  //  }
   }
 
   private async ctxMenu(e: PointerEvent) {
@@ -735,9 +735,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.oscillators.forEach((osc) => {
-      osc.destroy();
-    });
+    // this.oscillators.forEach((osc) => {
+    //   osc.destroy();
+    // });
   }
 
   showWaveformSelector = false;
@@ -747,5 +747,5 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.showWaveformSelector = $event.target.checked;
   }
 
-  protected readonly Oscillator = Oscillator;
+ // protected readonly Oscillator = Oscillator;
 }

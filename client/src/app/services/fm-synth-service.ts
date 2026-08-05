@@ -14,7 +14,7 @@ export class FmSynthService {
 
     // 2. Load the compiled JavaScript asset file into the audio worklet thread space
     // 3. Create the multi-output AudioWorkletNode node wrapper
-    this.synthNode = new OscillatorWithPhaseMod(this.audioContext);
+    this.synthNode = new OscillatorWithPhaseMod(this.audioContext, 4, 12);
     await this.synthNode.start();
 
     // 4. Fetch your raw WASM binary from the assets folder and stream it across the port
@@ -28,6 +28,10 @@ export class FmSynthService {
     this.synthNode.node.connect(this.audioContext.destination, 1, 0);
     this.synthNode.node.connect(this.audioContext.destination, 2, 0);
     this.synthNode.node.connect(this.audioContext.destination, 3, 0);
+
+    this.synthNode.port.onmessage = (event: MessageEvent) => {
+     // console.log(String(event.data.type));
+    }
   }
 
   // Method to invoke clean triggers down into your background WebAssembly context
