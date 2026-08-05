@@ -112,7 +112,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   cd: ChangeDetectorRef = inject(ChangeDetectorRef);
 
   async start(audioCtx: AudioContext, wasmBinary: ArrayBuffer, settings: OscillatorSettings | null): Promise<void> {
-    await this.fmSynthService.initializeSynth();
     this.audioCtx = audioCtx;
     this.wasmBinary = wasmBinary;
     this.cookies = new Cookies();
@@ -204,14 +203,13 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   protected setFrequency(freq: number) {
     this.proxySettings.frequency = freq;
-//    this.oscillatorPoolMgr.setFrequency(freq);
+
+    this.fmSynthService.tuning(freq, this.oscNumber());
   }
 
   protected setGain(gain: number) {
     this.proxySettings.gain = gain;
-    // this.oscillators.forEach((osc) => {
-    //   osc.setGain(gain);
-    // });
+    this.fmSynthService.setGain(gain, this.oscNumber())
   }
 
   protected pan(pan: number) {
@@ -223,9 +221,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   protected setDetune(detune: number) {
     this.proxySettings.deTune = detune;
-    // this.oscillators.forEach(osc => {
-    //   osc.setDetune(detune);
-    // });
+    this.fmSynthService.detune(detune, this.oscNumber())
   }
 
   legatoMode(legatoMode: boolean) {
@@ -379,9 +375,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     if (reverb) {
       ok = true;
-      // this.oscillators.forEach((osc, i) => {
-      //   this.oscillators[i].connect(reverb.input);
-      // });
+      this.fmSynthService.connect(reverb.input, this.oscNumber())
     }
     return ok;
   }
@@ -391,9 +385,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     if (phaser) {
       ok = true;
-      // this.oscillators.forEach((osc, i) => {
-      //   this.oscillators[i].connect(phaser.input);       // this.oscillators[i].connect(this.phaser.input);
-      // });
+      this.fmSynthService.connect(phaser.input, this.oscNumber());
     }
     return ok;
   }
@@ -403,12 +395,14 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
    * @param node
    */
   connect(node: AudioNode) {
+    this.fmSynthService.connect(node, this.oscNumber(), 0);
     // this.oscillators.forEach((osc, i) => {
     //   this.oscillators[i].connect(node);
     // });
   }
 
-  disconnect() {
+  disconnect(output: number) {
+    this.fmSynthService.disconnect(output);
     // this.oscillators.forEach(osc => {
     //   osc.disconnect();
     // })
@@ -484,18 +478,18 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     //   this.oscillators[keys.deviceIndex].oscillator.frequency.exponentialRampToValueAtTime(freq, this.audioCtx.currentTime + this.proxySettings.portamento);
     // }
 
-    this.fmSynthService.keyDown(/*this.params().settingsId-1*/ 0, keyIndex);
+    this.fmSynthService.keyDown(/*this.params().settingsId-1*/ this.oscNumber(), keyIndex);
     // if (keys)
     //   this.oscillators[keys.deviceIndex].keyDown(velocity, freq);
   }
 
   private chordProcessorKeyDownCallback: (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => void = (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => {
     //const freq = this.keyToFrequency(prevKeys.keyIndex);
-    this.fmSynthService.keyDown(this.params().settingsId-1, theseKeys.deviceIndex);
+    this.fmSynthService.keyDown(this.oscNumber(), theseKeys.deviceIndex);
   }
 
   keyUp(keyIndex: number) {
-    this.fmSynthService.keyUp(0, keyIndex);
+    this.fmSynthService.keyUp(this.oscNumber(), keyIndex);
     // const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyUp(keyIndex);
     // if (keys) {
     //   const sub = timer(this.proxySettings.adsr.releaseTime * 1000).subscribe(() => {

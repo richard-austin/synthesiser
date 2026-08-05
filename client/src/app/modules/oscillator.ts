@@ -4,8 +4,6 @@ import {onOff, oscModOutput, oscModType} from '../enums/enums';
 import {Subscription} from 'rxjs';
 import {WaveTableDetails} from './WaveTableDetails';
 import {OscillatorSettings} from "../settings/oscillator";
-import {FMSynthProcessor} from './modulation/fm-synth-processor';
-import {PitchEnvelope} from './pitch-envelope';
 
 export class OscillatorParams {
   ringModOutput: "signal" | "mod";
@@ -323,7 +321,7 @@ export class OscillatorX extends OscFilterBase {
     } else {
       const wtDetails = OscillatorX.wavetables.find(el => el.value === type);
       // if (wtDetails)
-      //   this.oscillator.setPeriodicWave(OscillatorWithPhaseMod.createPeriodicWave(this.audioCtx, wtDetails?.waveTable.real, wtDetails?.waveTable.imag));
+      //   this.oscillator.setPeriodicWave(OscillatorArray.createPeriodicWave(this.audioCtx, wtDetails?.waveTable.real, wtDetails?.waveTable.imag));
       // else {
       //   console.error("Cannot find wave table for" + type)
       //   this.type = this.oscillator.type = "sine";

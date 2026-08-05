@@ -1,7 +1,7 @@
 import {
   AfterViewInit,
   Component, effect, EffectRef,
-  ElementRef, input,
+  ElementRef, inject, input,
   InputSignal,
   OnDestroy,
   Signal, signal, viewChild,
@@ -24,6 +24,7 @@ import {FilterSettings} from '../settings/filter';
 import {Cookies} from '../settings/cookies/cookies';
 import {SynthComponentSettings} from '../settings/synth-component-settings';
 import {MatrixComponent} from '../matrix/matrix-component';
+import {FmSynthService} from '../services/fm-synth-service';
 
 @Component({
   selector: 'app-synth-component',
@@ -97,9 +98,11 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   synth: Signal<ElementRef<HTMLDivElement>> = viewChild.required('synth');
 
   masterVolume: Signal<GeneralComponent> = viewChild.required('general');
+  fmSynthService: FmSynthService = inject(FmSynthService);
 
   constructor(private rest: RestfulApiService) {
     this.audioCtx = new AudioContext({sampleRate: 48000, latencyHint: "interactive"});
+    this.fmSynthService.initializeSynth(this.audioCtx);
     this.fileNameEffectRef = effect(() => {
       const fileName = this.filename()();
       if (fileName !== "") {
@@ -440,13 +443,12 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   protected setOscOutputTarget($event: string, oscNumber: number) {
     const osc = this.oscillatorsGrp()[oscNumber] as OscillatorComponent;
 
-    osc.disconnect();
+    osc.disconnect(oscNumber);
     switch ($event) {
       case 'speaker':
         osc.connect(this.masterVolume().node());
         break;
       case 'ringmod':
-        false
         osc.connectToRingMod();
         break;
       case 'filter':

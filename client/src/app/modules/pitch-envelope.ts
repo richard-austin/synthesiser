@@ -1,16 +1,16 @@
 import {Subscription, timer} from 'rxjs';
 import {FreqBendValues} from '../util-classes/freq-bend-values';
 import {OscFilterBase} from './osc-filter-base';
-//import {OscillatorWithPhaseMod} from './modulation/oscillator-with-phase-mod';
+//import {OscillatorArray} from './modulation/oscillator-with-phase-mod';
 
 export class PitchEnvelope {
-  device:/* OscillatorWithPhaseMod |*/ BiquadFilterNode;
+  device:/* OscillatorArray |*/ BiquadFilterNode;
   private freqBendEnv: FreqBendValues;
   readonly freqBendBase:number;
   freqBendEnvTimerSub!: Subscription;
   freq = 0;
 
-  constructor (device:/* OscillatorWithPhaseMod |*/ BiquadFilterNode, freqBendBase: number = 2) {
+  constructor (device:/* OscillatorArray |*/ BiquadFilterNode, freqBendBase: number = 2) {
     this.freqBendBase = freqBendBase;
     this.device = device;
     this.freqBendEnv = new FreqBendValues(0, 0, 0, 0, 0, 0);

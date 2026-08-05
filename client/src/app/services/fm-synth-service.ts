@@ -1,39 +1,49 @@
 import {Injectable} from '@angular/core';
-import {OscillatorWithPhaseMod} from '../modules/modulation/oscillator-with-phase-mod';
+import {OscillatorArray} from '../modules/modulation/oscillator-array';
 
 @Injectable({
   providedIn: 'root'
 })
 export class FmSynthService {
   private audioContext!: AudioContext;
-  private synthNode!: OscillatorWithPhaseMod;
+  private synthNode!: OscillatorArray;
+  private gainNodes: GainNode[] = [];
 
-  async initializeSynth(): Promise<void> {
-    // 1. Instantiate the AudioContext on the main thread
-    this.audioContext = new AudioContext();
+  async initializeSynth(audioCtx: AudioContext, numberOfBanks: number = 4, oscillatorsPerBank:number = 12): Promise<void> {
+    if(!this.audioContext) {
+      // 1. Instantiate the AudioContext on the main thread
+      this.audioContext = audioCtx;
+      this.gainNodes = Array.from({length: numberOfBanks}, () =>  audioCtx.createGain());
+      this.gainNodes.forEach(gainNode => {gainNode.gain.value = 1});
+      // 2. Load the compiled JavaScript asset file into the audio worklet thread space
+      // 3. Create the multi-output AudioWorkletNode node wrapper
+      this.synthNode = new OscillatorArray(this.audioContext, numberOfBanks, oscillatorsPerBank);
+      await this.synthNode.start();
 
-    // 2. Load the compiled JavaScript asset file into the audio worklet thread space
-    // 3. Create the multi-output AudioWorkletNode node wrapper
-    this.synthNode = new OscillatorWithPhaseMod(this.audioContext, 4, 12);
-    await this.synthNode.start();
-
-    // 4. Fetch your raw WASM binary from the assets folder and stream it across the port
-    // const response = await fetch('assets/wasm/processor.wasm');
-    // const wasmBytes = await response.arrayBuffer();
-    // console.log("Calling INIT_WASM");
-    //this.synthNode.port.postMessage({ type: 'INIT_WASM', bytes: wasmBytes });
-
-    // 5. Connect Bank 0 (Output 0) directly to speakers as a baseline test
-    this.synthNode.node.connect(this.audioContext.destination, 0, 0);
-    this.synthNode.node.connect(this.audioContext.destination, 1, 0);
-    this.synthNode.node.connect(this.audioContext.destination, 2, 0);
-    this.synthNode.node.connect(this.audioContext.destination, 3, 0);
-
-    this.synthNode.port.onmessage = (event: MessageEvent) => {
-     // console.log(String(event.data.type));
+      this.gainNodes.forEach((gainNode, i) => {
+        this.synthNode.node.connect(gainNode, i, 0);
+      });
+      this.synthNode.port.onmessage = (event: MessageEvent) => {
+        // console.log(String(event.data.type));
+      }
     }
   }
 
+  getAudioContext(): AudioContext {
+    return this.audioContext;
+  }
+
+  setGain(gain: number, bank: number) {
+    this.gainNodes[bank].gain.value = gain;
+  }
+
+  connect(dest: AudioNode, output: number, input?:number): AudioNode {
+    return this.gainNodes[output].connect(dest);
+  }
+
+  disconnect(output:number) {
+    this.gainNodes[output].disconnect();
+  }
   // Method to invoke clean triggers down into your background WebAssembly context
   keyDown(bank: number, key: number): void {
     this.synthNode.keyDown(bank, key);
@@ -41,5 +51,13 @@ export class FmSynthService {
 
   keyUp(bank: number, key: number): void {
     this.synthNode.keyUp(bank, key);
+  }
+
+  tuning(tuning: number, bank: number): void {
+    this.synthNode.tuning(tuning, bank);
+  }
+
+  detune(detune: number, bank: number): void {
+    this.synthNode.detune(detune, bank);
   }
 }
