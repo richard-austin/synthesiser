@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import {Injectable} from '@angular/core';
 import {OscillatorWithPhaseMod} from '../modules/modulation/oscillator-with-phase-mod';
 
 @Injectable({
@@ -26,16 +26,16 @@ export class FmSynthService {
     // 5. Connect Bank 0 (Output 0) directly to speakers as a baseline test
     this.synthNode.node.connect(this.audioContext.destination, 0, 0);
     this.synthNode.node.connect(this.audioContext.destination, 1, 0);
-   this.synthNode.node.connect(this.audioContext.destination, 2, 0);
-   this.synthNode.node.connect(this.audioContext.destination, 3, 0);
+    this.synthNode.node.connect(this.audioContext.destination, 2, 0);
+    this.synthNode.node.connect(this.audioContext.destination, 3, 0);
   }
 
   // Method to invoke clean triggers down into your background WebAssembly context
-  triggerNoteOn(bank: number, note: number, frequency: number): void {
-    this.synthNode.port.postMessage({ type: 'NOTE_ON', bank, note, frequency });
+  keyDown(bank: number, key: number): void {
+    this.synthNode.keyDown(bank, key);
   }
 
-  triggerNoteOff(bank: number, note: number): void {
-    this.synthNode.port.postMessage({ type: 'NOTE_OFF', bank, note });
+  keyUp(bank: number, key: number): void {
+    this.synthNode.keyUp(bank, key);
   }
 }

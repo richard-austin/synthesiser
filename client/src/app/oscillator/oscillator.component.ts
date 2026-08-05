@@ -427,16 +427,16 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   keysDown: DeviceKeys[] = [];
 
   keyDown(keyIndex: number, velocity: number) {
-    const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyDown(keyIndex, velocity, this.proxySettings.portamento === 0);
-    if (keys) {
-      this.devicePoolManagerService.keyDown(keys, this.oscNumber());
-    }
-
-    const lastKey = this.keysDown.length > 0 ? this.keysDown[this.keysDown.length - 1] : null;
-    if (-1 === this.keysDown.findIndex(key => key.keyIndex === keyIndex)) {
-      this.keysDown.push(keys as DeviceKeys);
-    }
-
+    // const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyDown(keyIndex, velocity, this.proxySettings.portamento === 0);
+    // if (keys) {
+    //   this.devicePoolManagerService.keyDown(keys, this.oscNumber());
+    // }
+    //
+    // const lastKey = this.keysDown.length > 0 ? this.keysDown[this.keysDown.length - 1] : null;
+    // if (-1 === this.keysDown.findIndex(key => key.keyIndex === keyIndex)) {
+    //   this.keysDown.push(keys as DeviceKeys);
+    // }
+    //
     if (!this.velocitySensitive)
       velocity = 0x7f;
     const freq = this.keyToFrequency(keyIndex);
@@ -484,18 +484,18 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     //   this.oscillators[keys.deviceIndex].oscillator.frequency.exponentialRampToValueAtTime(freq, this.audioCtx.currentTime + this.proxySettings.portamento);
     // }
 
-    if(keys)
-      this.fmSynthService.triggerNoteOn(this.params().settingsId-1, keys.deviceIndex, freq);
+    this.fmSynthService.keyDown(/*this.params().settingsId-1*/ 0, keyIndex);
     // if (keys)
     //   this.oscillators[keys.deviceIndex].keyDown(velocity, freq);
   }
 
   private chordProcessorKeyDownCallback: (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => void = (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => {
     const freq = this.keyToFrequency(prevKeys.keyIndex);
-    this.fmSynthService.triggerNoteOn(this.params().settingsId-1, theseKeys.deviceIndex, freq);
+    this.fmSynthService.keyDown(this.params().settingsId-1, theseKeys.deviceIndex);
   }
 
   keyUp(keyIndex: number) {
+    this.fmSynthService.keyUp(0, keyIndex);
     const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyUp(keyIndex);
     if (keys) {
       const sub = timer(this.proxySettings.adsr.releaseTime * 1000).subscribe(() => {
@@ -514,7 +514,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
         else
           this.chordProcessor.release(this.proxySettings.adsr.decayTime + this.proxySettings.adsr.releaseTime);
     } else {
-      console.error("keyIndex " + keyIndex + " not found");
+      //console.error("keyIndex " + keyIndex + " not found");
     }
   }
 

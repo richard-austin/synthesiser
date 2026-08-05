@@ -13,6 +13,82 @@ export class OscillatorWithPhaseMod {
 
   async start(): Promise<void> {
     function worklet() {
+      class Envelope {
+        public attack: number;
+        public attackRate: number = 0;
+        public decay: number;
+        public decayRate: number = 0;
+        public sustainLevel: number;
+        public release: number;
+        public releaseRate: number = 0;
+
+        constructor() {
+          this.attack = 0;
+          this.decay = 0.5;
+          this.sustainLevel = 0.5;
+          this.release = 0.5;
+          this.calculateRates();
+        }
+
+        public calculateRates(): void {
+          // @ts-ignore
+          const sr = sampleRate;
+          const lowestLevel = 0.000001;
+          this.attackRate = 1 / (sr * (this.attack + lowestLevel));
+          this.decayRate = 1 / (sr * (this.decay + lowestLevel));
+          this.releaseRate = 1 / (sr * (this.release + lowestLevel));
+        }
+      }
+
+      enum envelopePhase {inactive, attack, decay, sustain, release }
+
+      class OscillatorStatus {
+        public inUse: boolean = false;
+        public key = -1;
+        public keyDown: boolean = false;
+        public envelopeLevel: number = 0;
+        public envelopePhase: envelopePhase = envelopePhase.inactive;
+        public frequency: number = 1;
+        public detune: number = 0;
+        public lastDetune: number = 1;
+        public detuneFactor: number = 1;
+        public phase: number = 0;
+
+        public advanceEnvelopeToSustain(env: Envelope) {
+          if (this.keyDown) {
+            if (this.envelopePhase === envelopePhase.inactive || this.envelopePhase === envelopePhase.attack) {
+              this.inUse = true;
+              this.envelopePhase = envelopePhase.attack;
+              this.envelopeLevel += env.attackRate;
+
+              if (this.envelopeLevel >= 1) {
+                this.envelopePhase = envelopePhase.decay;
+                this.envelopeLevel = 1;
+              }
+            } else if (this.envelopePhase === envelopePhase.decay) {
+              this.envelopeLevel -= env.decayRate;
+              if (this.envelopeLevel <= env.sustainLevel) {
+                this.envelopePhase = envelopePhase.sustain;
+                this.envelopeLevel = env.sustainLevel;
+              }
+            }
+          }
+        }
+
+        public advanceEnvelopeToZero(env: Envelope) {
+          if (!this.keyDown) {
+            if (this.envelopePhase !== envelopePhase.inactive) {
+              this.envelopePhase = envelopePhase.release;
+              this.envelopeLevel -= env.releaseRate;
+              if (this.envelopeLevel <= 0) {
+                this.envelopePhase = envelopePhase.inactive;
+                this.envelopeLevel = 0;
+                this.inUse = false;
+              }
+            }
+          }
+        }
+      }
 
       class ButterworthFilter {
         private x1: number;
@@ -75,7 +151,6 @@ export class OscillatorWithPhaseMod {
         }
       }
 
-
       /* @ts-ignore */
       registerProcessor('oscillator', class Processor extends AudioWorkletProcessor {
         static get parameterDescriptors() {
@@ -108,10 +183,11 @@ export class OscillatorWithPhaseMod {
         private readonly waveTableSize = -1;
         private readonly startFx: number;
         private readonly modFilter: ButterworthFilter;
-        private readonly nyquist: number;
         private readonly numberOfBanks: number;
         private readonly oscillatorsPerBank: number;
-        private readonly phase: number[][];
+        private tuning: number[];
+        private readonly oscillatorStatus: OscillatorStatus[][];
+        private readonly envelopes: Envelope[];
 
         constructor(options: any) {
           super();
@@ -119,12 +195,11 @@ export class OscillatorWithPhaseMod {
           this.startFx = options?.processorOptions?.startFx;
           this.numberOfBanks = options?.processorOptions?.numberOfBanks;
           this.oscillatorsPerBank = options?.processorOptions?.oscillatorsPerBank;
-          this.phase = Array(this.numberOfBanks).fill(0).map(() => Array(this.oscillatorsPerBank).fill(0));
-          console.log(this.phase);
-          this.oscillatorsPerBank = options?.processorOptions?.oscillatorsPerBank;
+          this.tuning = Array(this.numberOfBanks).fill(0);  // Initialise with factor 1 for normal tuning
+          this.oscillatorStatus = Array.from({length: this.numberOfBanks}, () => Array.from({length: this.oscillatorsPerBank}, () => new OscillatorStatus()));
 
-          /* @ts-ignore */
-          this.nyquist = sampleRate / 2;
+          //Array(this.numberOfBanks).fill(new OscillatorStatus()).map(() => Array(this.oscillatorsPerBank).fill(new OscillatorStatus()))
+          this.envelopes = Array(this.numberOfBanks).fill(new Envelope());
           /* @ts-ignore */
           this.port.onmessage = (event) => {
             if (event.data.type === 'shutdown') {
@@ -143,6 +218,10 @@ export class OscillatorWithPhaseMod {
               } else if (this.type === "custom") {
                 this.render = this.periodicWaveFunction;
               }
+            } else if (event.data.type === 'keyDown') {
+              this.keyDown(event.data.bank, event.data.key);
+            } else if (event.data.type === 'keyUp') {
+              this.keyUp(event.data.bank, event.data.key);
             }
           }
 
@@ -170,22 +249,14 @@ export class OscillatorWithPhaseMod {
 
         private render: (x: number, band: number, bank: number) => number = this.sineFunction;
 
-        private lastDetune = 0;
-        private detuneFactor = 1;
         private readonly twelfthRoot2 = Math.pow(2, 1 / 12);
         private readonly root2 = Math.pow(2, 1 / 2);
 
-        process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: {
-          mod: number[],
-          frequency: number[],
-          detune: number[]
-        }): boolean {
+        process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
           const output: Float32Array[] = outputs[0]
 
-          const modParam = parameters.mod;
-          const frequencyParam = parameters.frequency;
-          const detuneParam = parameters.detune;
-          const nyquist = this.nyquist;
+          // @ts-ignore
+          const nyquist = sampleRate / 2;
           if (!output) return true;
           const op: Float32Array = output[0];
           for (let i = 0; i < op.length; ++i) {
@@ -196,14 +267,21 @@ export class OscillatorWithPhaseMod {
           }
 
           for (let i = 0; i < op.length; i++) {
-
             for (let b = 0; b < this.numberOfBanks; ++b) {
               const opb = outputs[b];
               const outputChannel: Float32Array = opb[0];
               if (this.periodicWave && this.periodicWave[b])
                 this.currentPeriodicWave[b] = this.periodicWave[b];  /* Update the periodic wave on a k-rate basis */
+              const env = this.envelopes[b];
+
               for (let osc = 0; osc < this.oscillatorsPerBank; osc++) {
-               let f = 261.63 * Math.pow(1.059463094, b * 12 +osc); // frequencyParam.length === 1 ? frequencyParam[0] : frequencyParam[i];
+                const status = this.oscillatorStatus[b][osc];
+                // if (!status.inUse)
+                //   continue;
+
+                let f = status.frequency;
+
+
                 if (f > nyquist)
                   f = nyquist;
 
@@ -214,28 +292,68 @@ export class OscillatorWithPhaseMod {
                   if (band < 0) band = 0;
                   else if (band > this.currentPeriodicWave.length - 1) band = this.currentPeriodicWave.length - 1;
                 }
-                const detune = detuneParam.length === 1 ? detuneParam[0] : detuneParam[i];
-                if (detune !== this.lastDetune) {
-                  this.lastDetune = detune;
-                  this.detuneFactor = Math.pow(this.twelfthRoot2, detune / 100);
+                const detune = status.detune;
+                if (detune !== status.lastDetune) {
+                  status.lastDetune = detune;
+                  status.detuneFactor = Math.pow(this.twelfthRoot2, detune / 100);
                 }
-                f *= this.detuneFactor;
+
+                if (status.keyDown) {
+                  status.advanceEnvelopeToSustain(env);
+                } else {
+                  status.advanceEnvelopeToZero(env);
+                }
+
+                f *= status.detuneFactor;
                 const x = 0;// (modParam.length === 1 ? modParam[0] : modParam[i] * 10);
                 const mod = this.modFilter.process(x);
                 /* @ts-ignore */
                 const inc = f / sampleRate;
-                let phase = this.phase[b][osc];
+                let phase = status.phase;
                 phase += inc
-
                 let currentPhase = phase + mod;
                 currentPhase = currentPhase - Math.floor(currentPhase);
-                this.phase[b][osc] = phase - Math.floor(phase);
-                //if (b === 0)
-                  outputChannel[i] += Math.sin(currentPhase * this.twoPi) * 0.01;// this.render(currentPhase, band, b) * 0.01;
+                status.phase = phase - Math.floor(phase);
+
+                outputChannel[i] += status.envelopeLevel * Math.sin(currentPhase * this.twoPi) * 0.1;// this.render(currentPhase, band, b) * 0.01;
               }
             }
           }
           return this.running;
+        }
+
+        public keyDown(bank: number, key: number) {
+          const oc = this.getVacantOscillator(bank, key);
+          if (oc !== undefined) {
+            oc.frequency = this.keyToFrequency(key, bank);
+            oc.key = key;
+            oc.keyDown = true;
+            oc.inUse = true;
+          }
+        }
+
+        public keyUp(bank: number, key: number) {
+          const bankStatus: OscillatorStatus[] = this.oscillatorStatus[bank];
+          const oc = bankStatus.find(s => s.key === key);
+          if (oc !== undefined) {
+            oc.keyDown = false;
+            oc.key = -1;
+          }
+        }
+
+        private keyToFrequency(key: number, bank: number) {
+          const frequencyFactor = 7.717057388; // To give middle C at 261.63 Hz on key 60
+          return frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * (this.tuning[bank] * 6 / 10));
+        }
+
+        private getVacantOscillator(bank: number, key: number): OscillatorStatus | undefined {
+          const bankStatus: OscillatorStatus[] = this.oscillatorStatus[bank];
+          let osc = bankStatus.find(s => s.inUse && s.key === key);
+
+          if (!osc) {
+            osc = bankStatus.find(s => !s.inUse);  // TODO: Need a fallback to use the least recently used oscillator if none available
+          }
+          return osc;
         }
       });
     }
@@ -322,6 +440,14 @@ export class OscillatorWithPhaseMod {
 
   public disconnect(node?: AudioNode) {
     node ? this.node?.disconnect(node) : this.node.disconnect();
+  }
+
+  public keyDown(bank: number, key: number) {
+    this.port.postMessage({type: 'keyDown', bank: bank, key: key});
+  }
+
+  public keyUp(bank: number, key: number) {
+    this.port.postMessage({type: 'keyUp', bank: bank, key: key});
   }
 
   public connect(node: AudioNode) {
