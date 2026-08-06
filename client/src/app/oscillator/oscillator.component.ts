@@ -7,7 +7,7 @@ import {
   OnDestroy,
   OutputEmitterRef, viewChild, Signal
 } from '@angular/core';
-import {/*Oscillator, */OscillatorParams} from '../modules/oscillator';
+import {OscillatorParams} from '../modules/oscillator';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {FilterComponent} from '../filter/filter-component';
@@ -20,8 +20,7 @@ import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {timer} from 'rxjs';
 import {Cookies} from '../settings/cookies/cookies';
 import {ChordProcessor} from '../modules/chord-processor';
-//import DevicePoolManager from '../util-classes/device-pool-manager';
-import {DeviceKeys, DevicePoolManagerService} from '../services/device-pool-manager-service';
+import {DeviceKeys} from '../services/device-pool-manager-service';
 import {ClipboardService} from './clipboard-service';
 import {FmSynthService} from '../services/fm-synth-service';
 import {envelopePhase} from '../modules/modulation/oscillator-array';
