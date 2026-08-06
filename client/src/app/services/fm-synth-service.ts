@@ -45,8 +45,8 @@ export class FmSynthService {
     this.gainNodes[output].disconnect();
   }
   // Method to invoke clean triggers down into your background WebAssembly context
-  public keyDown(bank: number, key: number): void {
-    this.synthNode.keyDown(bank, key);
+  public keyDown(bank: number, key: number, velocity: number): void {
+    this.synthNode.keyDown(bank, key, velocity);
   }
 
   public keyUp(bank: number, key: number): void {

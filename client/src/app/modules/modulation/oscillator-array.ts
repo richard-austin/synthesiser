@@ -34,7 +34,7 @@ export class OscillatorArray {
         }
 
         public calculateRates(): void {
-          // @ts-ignore
+          /* @ts-ignore */
           const sr = sampleRate;
           const lowestLevel = 0.000001;
           this.attackRate = 1 / (sr * (this.attack + lowestLevel));
@@ -48,7 +48,7 @@ export class OscillatorArray {
         public detune: number = 0;
         public lastDetune: number = 1;
         public detuneFactor: number = 1;
-        public tuning: number = 0; // Initialise with 0 for normal tuning
+        public tuning: number = 0; /* Initialise with 0 for normal tuning */
         public readonly envelope: Envelope = new Envelope();
       }
 
@@ -58,6 +58,7 @@ export class OscillatorArray {
         public keyDown: boolean = false;
         public envelopeLevel: number = 0;
         public envelopePhase: envelopePhase = envelopePhase.inactive;
+        public velocity: number = 0x0f;
         public frequency: number = 1;
         public phase: number = 0;
         public releaseRate = 1;
@@ -68,16 +69,15 @@ export class OscillatorArray {
               this.inUse = true;
               this.envelopePhase = envelopePhase.attack;
               this.envelopeLevel += env.attackRate;
-
-              if (this.envelopeLevel >= 1) {
+              if (this.envelopeLevel >= this.velocity / 0x7f) {
                 this.envelopePhase = envelopePhase.decay;
-                this.envelopeLevel = 1;
+                this.envelopeLevel = this.velocity / 0x7f;
               }
             } else if (this.envelopePhase === envelopePhase.decay) {
               this.envelopeLevel -= env.decayRate;
-              if (this.envelopeLevel <= env.sustainLevel) {
+              if (this.envelopeLevel <= env.sustainLevel * this.velocity / 0x7f) {
                 this.envelopePhase = envelopePhase.sustain;
-                this.envelopeLevel = env.sustainLevel;
+                this.envelopeLevel = env.sustainLevel * this.velocity / 0x7f;
               }
             }
           }
@@ -88,7 +88,7 @@ export class OscillatorArray {
             if (this.envelopePhase !== envelopePhase.inactive) {
               if (this.envelopePhase !== envelopePhase.release) {
                 const lowestLevel = 0.000001;
-                // @ts-ignore
+                /* @ts-ignore */
                 this.releaseRate = (this.envelopeLevel) / (sampleRate * (env.release + lowestLevel));
               }
               this.envelopePhase = envelopePhase.release;
@@ -206,7 +206,7 @@ export class OscillatorArray {
                 this.render = this.periodicWaveFunction;
               }
             } else if (event.data.type === 'keyDown') {
-              this.keyDown(event.data.bank, event.data.key);
+              this.keyDown(event.data.bank, event.data.key, event.data.velocity);
             } else if (event.data.type === 'keyUp') {
               this.keyUp(event.data.bank, event.data.key);
             } else if (event.data.type === 'tuning') {
@@ -257,7 +257,7 @@ export class OscillatorArray {
         process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
           const output: Float32Array[] = outputs[0]
 
-          // @ts-ignore
+          /* @ts-ignore */
           const nyquist = sampleRate / 2;
           if (!output) return true;
           const op: Float32Array = output[0];
@@ -326,7 +326,7 @@ export class OscillatorArray {
           return this.running;
         }
 
-        public keyDown(bank: number, key: number) {
+        public keyDown(bank: number, key: number, velocity: number) {
           const i = this.getVacantOscillator(bank, key);
           if (i !== -1) {
             const oc = this.oscData[bank][i];
@@ -334,9 +334,10 @@ export class OscillatorArray {
             oc.key = key;
             oc.keyDown = true;
             oc.inUse = true;
-            oc.phase = 0;  // Start from zero to prevent clicks
-            // @ts-ignore
-            this.port.postMessage({type: "keyDown", bank: bank, oscillator: i, key: key});
+            oc.velocity = velocity;
+            oc.phase = 0;  /* Start from zero to prevent clicks */
+            /* @ts-ignore */
+            this.port.postMessage({type: "keyDown", bank: bank, oscillator: i, key: key, velocity: velocity});
           }
         }
 
@@ -347,7 +348,7 @@ export class OscillatorArray {
             const oc = this.oscData[bank][i];
             oc.keyDown = false;
             oc.key = -1;
-            // @ts-ignore
+            /* @ts-ignore */
             this.port.postMessage({type: "keyUp", bank: bank, oscillator: i, key: key});
           }
         }
@@ -374,7 +375,6 @@ export class OscillatorArray {
         }
 
         private keyToFrequency(key: number, bank: number) {
-          console.log(this.bankData[bank].detuneFactor)
           const frequencyFactor = 7.717057388; // To give middle C at 261.63 Hz on key 60
           return frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * (this.bankData[bank].tuning * 6 / 10));
         }
@@ -455,7 +455,7 @@ export class OscillatorArray {
       aba.forEach(ab => {
         cd.push(ab.getChannelData(0));
       });
-      this.port.postMessage({type: 'periodicWave', periodicWave: cd, bank: bank});
+      this.port?.postMessage({type: 'periodicWave', periodicWave: cd, bank: bank});
     });
   }
 
@@ -464,23 +464,23 @@ export class OscillatorArray {
   }
 
   public tuning(tuning: number, bank: number) {
-    this.port.postMessage({type: 'tuning', tuning: tuning, bank: bank});
+    this.port?.postMessage({type: 'tuning', tuning: tuning, bank: bank});
   }
 
   public detune(detune: number, bank: number) {
-    this.port.postMessage({type: 'detune', detune: detune, bank: bank});
+    this.port?.postMessage({type: 'detune', detune: detune, bank: bank});
   }
 
   public envelope(bank: number, phase: envelopePhase, value: number) {
-    this.port.postMessage({type: "envelope", bank: bank, phase: phase, value: value})
+    this.port?.postMessage({type: "envelope", bank: bank, phase: phase, value: value})
   }
 
-  public keyDown(bank: number, key: number) {
-    this.port.postMessage({type: 'keyDown', bank: bank, key: key});
+  public keyDown(bank: number, key: number, velocity: number) {
+    this.port?.postMessage({type: 'keyDown', bank: bank, key: key, velocity: velocity});
   }
 
   public keyUp(bank: number, key: number) {
-    this.port.postMessage({type: 'keyUp', bank: bank, key: key});
+    this.port?.postMessage({type: 'keyUp', bank: bank, key: key});
   }
 
   public connect(node: AudioNode) {
