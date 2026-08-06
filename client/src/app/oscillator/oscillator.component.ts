@@ -103,7 +103,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   readonly modLevel = viewChild.required<LevelControlComponent>('modDepth');
   readonly lfoWaveForm = viewChild.required<ElementRef<HTMLFormElement>>('modWaveForm');
 
-  private devicePoolManagerService = inject(DevicePoolManagerService);
   readonly fmSynthService: FmSynthService = inject(FmSynthService);
 
 
