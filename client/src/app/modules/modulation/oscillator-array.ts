@@ -42,14 +42,15 @@ export class OscillatorArray {
 
       enum envelopePhase {inactive, attack, decay, sustain, release }
 
-      class BankStatus {
+      class BankData {
         public detune: number = 0;
         public lastDetune: number = 1;
         public detuneFactor: number = 1;
         public tuning: number = 0; // Initialise with 0 for normal tuning
+        public readonly envelope: Envelope = new Envelope();
       }
 
-      class OscillatorStatus {
+      class OscillatorData {
         public inUse: boolean = false;
         public key = -1;
         public keyDown: boolean = false;
@@ -171,9 +172,8 @@ export class OscillatorArray {
         private readonly modFilter: ButterworthFilter;
         private readonly numberOfBanks: number;
         private readonly oscillatorsPerBank: number;
-        private readonly bankStatus: BankStatus[];
-        private readonly oscillatorStatus: OscillatorStatus[][];
-        private readonly envelopes: Envelope[];
+        private readonly bankData: BankData[];
+        private readonly oscData: OscillatorData[][];
 
         constructor(options: any) {
           super();
@@ -181,11 +181,10 @@ export class OscillatorArray {
           this.startFx = options?.processorOptions?.startFx;
           this.numberOfBanks = options?.processorOptions?.numberOfBanks;
           this.oscillatorsPerBank = options?.processorOptions?.oscillatorsPerBank;
-          this.bankStatus = Array.from({length: this.numberOfBanks}, () => new BankStatus());
-          this.oscillatorStatus = Array.from({length: this.numberOfBanks}, () => Array.from({length: this.oscillatorsPerBank}, () => new OscillatorStatus()));
+          this.bankData = Array.from({length: this.numberOfBanks}, () => new BankData());
+          this.oscData = Array.from({length: this.numberOfBanks}, () => Array.from({length: this.oscillatorsPerBank}, () => new OscillatorData()));
 
           //Array(this.numberOfBanks).fill(new OscillatorStatus()).map(() => Array(this.oscillatorsPerBank).fill(new OscillatorStatus()))
-          this.envelopes = Array.from({length: this.numberOfBanks}, () => new Envelope());
           /* @ts-ignore */
           this.port.onmessage = (event) => {
             if (event.data.type === 'shutdown') {
@@ -210,8 +209,8 @@ export class OscillatorArray {
               this.keyUp(event.data.bank, event.data.key);
             } else if (event.data.type === 'tuning') {
               const bank = event.data.bank;
-              const os = this.oscillatorStatus[bank];
-              const bankStatus = this.bankStatus[bank];
+              const os = this.oscData[bank];
+              const bankStatus = this.bankData[bank];
               bankStatus.tuning = event.data.tuning;
               os.forEach((o) => {
                 o.frequency = this.keyToFrequency(o.key, bank);
@@ -219,7 +218,7 @@ export class OscillatorArray {
             } else if (event.data.type === 'detune') {
               const bank = event.data.bank;
               //  const os = this.oscillatorStatus[bank];
-              const bankStatus = this.bankStatus[bank];
+              const bankStatus = this.bankData[bank];
               bankStatus.detune = event.data.detune;
               // os.forEach((o) => {
               //   o.frequency = this.keyToFrequency(o.key, bank);
@@ -275,15 +274,16 @@ export class OscillatorArray {
               const outputChannel: Float32Array = opb[0];
               if (this.periodicWave && this.periodicWave[b])
                 this.currentPeriodicWave[b] = this.periodicWave[b];  /* Update the periodic wave on a k-rate basis */
-              const env = this.envelopes[b];
-              const bs = this.bankStatus[b];
+
+              const bd = this.bankData[b];
+              const env = bd.envelope;
 
               for (let osc = 0; osc < this.oscillatorsPerBank; osc++) {
-                const status = this.oscillatorStatus[b][osc];
-                if (!status.inUse)
+                const oscData = this.oscData[b][osc];
+                if (!oscData.inUse)
                   continue;
 
-                let f = status.frequency;
+                let f = oscData.frequency;
 
 
                 if (f > nyquist)
@@ -296,30 +296,30 @@ export class OscillatorArray {
                   if (band < 0) band = 0;
                   else if (band > this.currentPeriodicWave.length - 1) band = this.currentPeriodicWave.length - 1;
                 }
-                const detune = bs.detune;
-                if (detune !== bs.lastDetune) {
-                  bs.lastDetune = detune;
-                  bs.detuneFactor = Math.pow(this.twelfthRoot2, detune / 100);
+                const detune = bd.detune;
+                if (detune !== bd.lastDetune) {
+                  bd.lastDetune = detune;
+                  bd.detuneFactor = Math.pow(this.twelfthRoot2, detune / 100);
                 }
 
-                if (status.keyDown) {
-                  status.advanceEnvelopeToSustain(env);
+                if (oscData.keyDown) {
+                  oscData.advanceEnvelopeToSustain(env);
                 } else {
-                  status.advanceEnvelopeToZero(env);
+                  oscData.advanceEnvelopeToZero(env);
                 }
 
-                f *= bs.detuneFactor;
+                f *= bd.detuneFactor;
                 const x = 0;// (modParam.length === 1 ? modParam[0] : modParam[i] * 10);
                 const mod = this.modFilter.process(x);
                 /* @ts-ignore */
                 const inc = f / sampleRate;
-                let phase = status.phase;
+                let phase = oscData.phase;
                 phase += inc
                 let currentPhase = phase + mod;
                 currentPhase = currentPhase - Math.floor(currentPhase);
-                status.phase = phase - Math.floor(phase);
+                oscData.phase = phase - Math.floor(phase);
 
-                outputChannel[i] += status.envelopeLevel * Math.sin(currentPhase * this.twoPi) * 0.1;// this.render(currentPhase, band, b) * 0.01;
+                outputChannel[i] += oscData.envelopeLevel * Math.sin(currentPhase * this.twoPi) * 0.1;// this.render(currentPhase, band, b) * 0.01;
               }
             }
           }
@@ -329,7 +329,7 @@ export class OscillatorArray {
         public keyDown(bank: number, key: number) {
           const i = this.getVacantOscillator(bank, key);
           if (i !== -1) {
-            const oc = this.oscillatorStatus[bank][i];
+            const oc = this.oscData[bank][i];
             oc.frequency = this.keyToFrequency(key, bank);
             oc.key = key;
             oc.keyDown = true;
@@ -341,10 +341,10 @@ export class OscillatorArray {
         }
 
         public keyUp(bank: number, key: number) {
-          const bankStatus: OscillatorStatus[] = this.oscillatorStatus[bank];
+          const bankStatus: OscillatorData[] = this.oscData[bank];
           const i = bankStatus.findIndex(s => s.key === key);
           if (i !== -1) {
-            const oc = this.oscillatorStatus[bank][i];
+            const oc = this.oscData[bank][i];
             oc.keyDown = false;
             oc.key = -1;
             // @ts-ignore
@@ -353,13 +353,13 @@ export class OscillatorArray {
         }
 
         private keyToFrequency(key: number, bank: number) {
-          console.log(this.bankStatus[bank].detuneFactor)
+          console.log(this.bankData[bank].detuneFactor)
           const frequencyFactor = 7.717057388; // To give middle C at 261.63 Hz on key 60
-          return frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * (this.bankStatus[bank].tuning * 6 / 10));
+          return frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * (this.bankData[bank].tuning * 6 / 10));
         }
 
         private getVacantOscillator(bank: number, key: number): number {
-          const bankStatus: OscillatorStatus[] = this.oscillatorStatus[bank];
+          const bankStatus: OscillatorData[] = this.oscData[bank];
           let i = bankStatus.findIndex(s => s.inUse && s.key === key);
 
           if (i === -1) {
