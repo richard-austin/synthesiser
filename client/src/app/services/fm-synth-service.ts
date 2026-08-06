@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {OscillatorArray} from '../modules/modulation/oscillator-array';
+import {envelopePhase, OscillatorArray} from '../modules/modulation/oscillator-array';
 
 @Injectable({
   providedIn: 'root'
@@ -33,31 +33,35 @@ export class FmSynthService {
     return this.audioContext;
   }
 
-  setGain(gain: number, bank: number) {
+  public setGain(gain: number, bank: number) {
     this.gainNodes[bank].gain.value = gain;
   }
 
-  connect(dest: AudioNode, output: number, input?:number): AudioNode {
+  public connect(dest: AudioNode, output: number, input?:number): AudioNode {
     return this.gainNodes[output].connect(dest);
   }
 
-  disconnect(output:number) {
+  public disconnect(output:number) {
     this.gainNodes[output].disconnect();
   }
   // Method to invoke clean triggers down into your background WebAssembly context
-  keyDown(bank: number, key: number): void {
+  public keyDown(bank: number, key: number): void {
     this.synthNode.keyDown(bank, key);
   }
 
-  keyUp(bank: number, key: number): void {
+  public keyUp(bank: number, key: number): void {
     this.synthNode.keyUp(bank, key);
   }
 
-  tuning(tuning: number, bank: number): void {
+  public envelope(bank: number, phase: envelopePhase, value: number) {
+    this.synthNode.envelope(bank, phase, value);
+  }
+
+  public tuning(tuning: number, bank: number): void {
     this.synthNode.tuning(tuning, bank);
   }
 
-  detune(detune: number, bank: number): void {
+  public detune(detune: number, bank: number): void {
     this.synthNode.detune(detune, bank);
   }
 }

@@ -24,6 +24,7 @@ import {ChordProcessor} from '../modules/chord-processor';
 import {DeviceKeys, DevicePoolManagerService} from '../services/device-pool-manager-service';
 import {ClipboardService} from './clipboard-service';
 import {FmSynthService} from '../services/fm-synth-service';
+import {envelopePhase} from '../modules/modulation/oscillator-array';
 
 export type PortamentoType =
   'chord'
@@ -533,18 +534,22 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   protected setAttack($event: number) {
     this.proxySettings.adsr.attackTime = $event;
+    this.fmSynthService.envelope(this.oscNumber(), envelopePhase.attack, $event)
   }
 
   protected setDecayTime($event: number) {
     this.proxySettings.adsr.decayTime = $event;
+    this.fmSynthService.envelope(this.oscNumber(), envelopePhase.decay, $event)
   }
 
   protected setSustainLevel($event: number) {
     this.proxySettings.adsr.sustainLevel = $event;
+    this.fmSynthService.envelope(this.oscNumber(), envelopePhase.sustain, $event)
   }
 
   protected setReleaseTime($event: number) {
     this.proxySettings.adsr.releaseTime = $event;
+    this.fmSynthService.envelope(this.oscNumber(), envelopePhase.release, $event)
   }
 
   protected readonly dialStyle = dialStyle;

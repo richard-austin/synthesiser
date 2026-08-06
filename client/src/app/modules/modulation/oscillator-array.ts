@@ -1,3 +1,5 @@
+export enum envelopePhase {inactive, attack, decay, sustain, release }
+
 export class OscillatorArray {
   private readonly oscillatorsPerBank;
   private readonly numberOfBanks;
@@ -220,11 +222,9 @@ export class OscillatorArray {
               //  const os = this.oscillatorStatus[bank];
               const bankStatus = this.bankData[bank];
               bankStatus.detune = event.data.detune;
-              // os.forEach((o) => {
-              //   o.frequency = this.keyToFrequency(o.key, bank);
-              // });
+            } else if (event.data.type === 'envelope') {
+              this.setEnvelope(event.data.bank, event.data.phase, event.data.value);
             }
-
           }
 
           this.modFilter = new ButterworthFilter();
@@ -352,6 +352,27 @@ export class OscillatorArray {
           }
         }
 
+        private setEnvelope(bank: number, phase: envelopePhase, value: number) {
+          const env = this.bankData[bank].envelope;
+          switch (phase) {
+            case envelopePhase.attack:
+              env.attack = value;
+              break;
+            case envelopePhase.decay:
+              env.decay = value;
+              break;
+            case envelopePhase.sustain:
+              env.sustainLevel = value;
+              break;
+            case envelopePhase.release:
+              env.release = value;
+              break;
+            default:
+              break;
+          }
+          env.calculateRates();
+        }
+
         private keyToFrequency(key: number, bank: number) {
           console.log(this.bankData[bank].detuneFactor)
           const frequencyFactor = 7.717057388; // To give middle C at 261.63 Hz on key 60
@@ -448,6 +469,10 @@ export class OscillatorArray {
 
   public detune(detune: number, bank: number) {
     this.port.postMessage({type: 'detune', detune: detune, bank: bank});
+  }
+
+  public envelope(bank: number, phase: envelopePhase, value: number) {
+    this.port.postMessage({type: "envelope", bank: bank, phase: phase, value: value})
   }
 
   public keyDown(bank: number, key: number) {
