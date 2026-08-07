@@ -1,4 +1,4 @@
-export enum envelopePhase {inactive, attack, decay, sustain, release }
+export enum envelopePhase {inactive, attack, decay, sustain, release, retrigger, legato }
 
 export class OscillatorArray {
   private readonly oscillatorsPerBank;
@@ -24,25 +24,26 @@ export class OscillatorArray {
         public decayRate: number = 0;
         public sustainLevel: number;
         public release: number;
+        public legato: boolean;
 
         constructor() {
           this.attack = 0;
           this.decay = 0.5;
           this.sustainLevel = 0.0;
           this.release = 0.5;
+          this.legato = false;
           this.calculateRates();
         }
 
         public calculateRates(): void {
           /* @ts-ignore */
           const sr = sampleRate;
-          const lowestLevel = 0.000001;
-          this.attackRate = 1 / (sr * (this.attack + lowestLevel));
-          this.decayRate = (1 - this.sustainLevel + lowestLevel) / (sr * (this.decay + lowestLevel));
+          this.attackRate = 1 / (sr * this.attack);
+          this.decayRate = 1 / (sr * this.decay);
         }
       }
 
-      enum envelopePhase {inactive, attack, decay, sustain, release }
+      enum envelopePhase {inactive, attack, decay, sustain, release, retrigger, legato }
 
       class BankData {
         public detune: number = 0;
@@ -62,41 +63,70 @@ export class OscillatorArray {
         public frequency: number = 1;
         public phase: number = 0;
         public releaseRate = 1;
-
+        private legatoCountDown: number = 0;
         public advanceEnvelopeToSustain(env: Envelope) {
           if (this.keyDown) {
-            if (this.envelopePhase === envelopePhase.inactive || this.envelopePhase === envelopePhase.attack) {
-              this.inUse = true;
-              this.envelopePhase = envelopePhase.attack;
-              this.envelopeLevel += env.attackRate;
-              if (this.envelopeLevel >= this.velocity / 0x7f) {
-                this.envelopePhase = envelopePhase.decay;
-                this.envelopeLevel = this.velocity / 0x7f;
+            if (!env.legato) {
+              if (this.envelopePhase === envelopePhase.inactive || this.envelopePhase === envelopePhase.attack || this.envelopePhase === envelopePhase.retrigger) {
+                this.inUse = true;
+                this.envelopePhase = envelopePhase.attack;
+                this.envelopeLevel += env.attackRate;
+                if (this.envelopeLevel >= this.velocity / 0x7f) {
+                  this.envelopePhase = envelopePhase.decay;
+                  this.envelopeLevel = this.velocity / 0x7f;
+                }
+              } else if (this.envelopePhase === envelopePhase.decay) {
+                this.envelopeLevel -= env.decayRate;
+                if (this.envelopeLevel <= env.sustainLevel * this.velocity / 0x7f) {
+                  this.envelopePhase = envelopePhase.sustain;
+                  this.envelopeLevel = env.sustainLevel * this.velocity / 0x7f;
+                }
               }
-            } else if (this.envelopePhase === envelopePhase.decay) {
-              this.envelopeLevel -= env.decayRate;
-              if (this.envelopeLevel <= env.sustainLevel * this.velocity / 0x7f) {
+            } else {
+              if (this.envelopePhase === envelopePhase.inactive || this.envelopePhase === envelopePhase.sustain) {
+                /* @ts-ignore */
+                this.legatoCountDown = sampleRate * (env.attack + env.decay);
                 this.envelopePhase = envelopePhase.sustain;
-                this.envelopeLevel = env.sustainLevel * this.velocity / 0x7f;
+                this.envelopeLevel = this.velocity / 0x7f;
               }
             }
           }
         }
 
         public advanceEnvelopeToZero(env: Envelope) {
-          if (!this.keyDown) {
-            if (this.envelopePhase !== envelopePhase.inactive) {
-              if (this.envelopePhase !== envelopePhase.release) {
-                const lowestLevel = 0.000001;
-                /* @ts-ignore */
-                this.releaseRate = (this.envelopeLevel) / (sampleRate * (env.release + lowestLevel));
+          const lowestSustainLevel =0.1;  // Prevents indefinite release timeouts
+           if (!this.keyDown) {
+            if (!env.legato) {
+              if (this.envelopePhase !== envelopePhase.inactive) {
+                if (this.envelopePhase !== envelopePhase.release) {
+
+                  /* @ts-ignore */
+                  this.releaseRate = 1 / (sampleRate * env.release);
+                }
+                this.envelopePhase = envelopePhase.release;
+                this.envelopeLevel -= this.releaseRate;
+                if (this.envelopeLevel <= 0) {
+                  this.envelopePhase = envelopePhase.inactive;
+                  this.envelopeLevel = 0;
+                  this.inUse = false;
+                }
               }
-              this.envelopePhase = envelopePhase.release;
-              this.envelopeLevel -= this.releaseRate;
-              if (this.envelopeLevel <= 0) {
-                this.envelopePhase = envelopePhase.inactive;
-                this.envelopeLevel = 0;
-                this.inUse = false;
+            } else {
+              if (this.envelopePhase !== envelopePhase.inactive) {
+                if(this.envelopePhase === envelopePhase.sustain) {
+                  if (--this.legatoCountDown <= 0) {
+                    this.envelopePhase = envelopePhase.release;
+                    /* @ts-ignore */
+                    this.releaseRate = (this.envelopeLevel+lowestSustainLevel) / (sampleRate * env.release);
+                  }
+                } else if (this.envelopePhase === envelopePhase.release) {
+                  this.envelopeLevel -= this.releaseRate;
+                  if (this.envelopeLevel <= 0) {
+                    this.envelopeLevel = 0;
+                    this.envelopePhase = envelopePhase.inactive;
+                    this.inUse = false;
+                  }
+                }
               }
             }
           }
@@ -177,6 +207,11 @@ export class OscillatorArray {
         private readonly bankData: BankData[];
         private readonly oscData: OscillatorData[][];
 
+        private readonly  expBase: number;
+        private readonly inverseDenominator: number;
+
+        private readonly twoPi: number;
+
         constructor(options: any) {
           super();
           this.waveTableSize = options?.processorOptions?.waveTableSize;
@@ -185,6 +220,17 @@ export class OscillatorArray {
           this.oscillatorsPerBank = options?.processorOptions?.oscillatorsPerBank;
           this.bankData = Array.from({length: this.numberOfBanks}, () => new BankData());
           this.oscData = Array.from({length: this.numberOfBanks}, () => Array.from({length: this.oscillatorsPerBank}, () => new OscillatorData()));
+
+          this.process = this.process.bind(this); //
+          /* Parameters for exponential amplitude envelope */
+          // Your curve intensity factor (Try values between 2.0 and 5.0)
+          const b = 7.0;
+
+          // Pre-calculate the base and the scaling denominator
+          this.expBase = Math.exp(b);
+          this.inverseDenominator = 1.0 / (this.expBase - 1.0);
+          this.twoPi = 2 * Math.PI;
+
 
           //Array(this.numberOfBanks).fill(new OscillatorStatus()).map(() => Array(this.oscillatorsPerBank).fill(new OscillatorStatus()))
           /* @ts-ignore */
@@ -232,8 +278,6 @@ export class OscillatorArray {
           this.modFilter.calculateCoefficients(1000, sampleRate);
         }
 
-        private readonly twoPi = Math.PI * 2.0;
-
         private sineFunction(x: number): number {
           return Math.sin(x * this.twoPi);
         }
@@ -255,6 +299,7 @@ export class OscillatorArray {
         private readonly root2 = Math.pow(2, 1 / 2);
 
         process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
+          const { expBase, inverseDenominator, twoPi, bankData,  oscData } = this;
           const output: Float32Array[] = outputs[0]
 
           /* @ts-ignore */
@@ -275,15 +320,15 @@ export class OscillatorArray {
               if (this.periodicWave && this.periodicWave[b])
                 this.currentPeriodicWave[b] = this.periodicWave[b];  /* Update the periodic wave on a k-rate basis */
 
-              const bd = this.bankData[b];
+              const bd = bankData[b];
               const env = bd.envelope;
 
               for (let osc = 0; osc < this.oscillatorsPerBank; osc++) {
-                const oscData = this.oscData[b][osc];
-                if (!oscData.inUse)
+                const od = oscData[b][osc];
+                if (!od.inUse)
                   continue;
 
-                let f = oscData.frequency;
+                let f = od.frequency;
 
 
                 if (f > nyquist)
@@ -302,10 +347,10 @@ export class OscillatorArray {
                   bd.detuneFactor = Math.pow(this.twelfthRoot2, detune / 100);
                 }
 
-                if (oscData.keyDown) {
-                  oscData.advanceEnvelopeToSustain(env);
+                if (od.keyDown) {
+                  od.advanceEnvelopeToSustain(env);
                 } else {
-                  oscData.advanceEnvelopeToZero(env);
+                  od.advanceEnvelopeToZero(env);
                 }
 
                 f *= bd.detuneFactor;
@@ -313,13 +358,14 @@ export class OscillatorArray {
                 const mod = this.modFilter.process(x);
                 /* @ts-ignore */
                 const inc = f / sampleRate;
-                let phase = oscData.phase;
+                let phase = od.phase;
                 phase += inc
                 let currentPhase = phase + mod;
                 currentPhase = currentPhase - Math.floor(currentPhase);
-                oscData.phase = phase - Math.floor(phase);
+                od.phase = phase - Math.floor(phase);
 
-                outputChannel[i] += oscData.envelopeLevel * Math.sin(currentPhase * this.twoPi) * 0.1;// this.render(currentPhase, band, b) * 0.01;
+                const ampEnvelope = od.envelopePhase === envelopePhase.attack ? od.envelopeLevel : (Math.pow(expBase, od.envelopeLevel) - 1.0) * inverseDenominator;
+                outputChannel[i] += ampEnvelope * Math.sin(currentPhase * twoPi);// this.render(currentPhase, band, b) * 0.01;
               }
             }
           }
@@ -329,13 +375,14 @@ export class OscillatorArray {
         public keyDown(bank: number, key: number, velocity: number) {
           const i = this.getVacantOscillator(bank, key);
           if (i !== -1) {
-            const oc = this.oscData[bank][i];
-            oc.frequency = this.keyToFrequency(key, bank);
-            oc.key = key;
-            oc.keyDown = true;
-            oc.inUse = true;
-            oc.velocity = velocity;
-            oc.phase = 0;  /* Start from zero to prevent clicks */
+            const od = this.oscData[bank][i];
+            od.frequency = this.keyToFrequency(key, bank);
+            od.key = key;
+            od.keyDown = true;
+            od.inUse = true;
+            od.velocity = velocity;
+            if(od.envelopePhase !== envelopePhase.retrigger)
+              od.phase = 0;  /* Start from zero to prevent clicks */
             /* @ts-ignore */
             this.port.postMessage({type: "keyDown", bank: bank, oscillator: i, key: key, velocity: velocity});
           }
@@ -347,7 +394,6 @@ export class OscillatorArray {
           if (i !== -1) {
             const oc = this.oscData[bank][i];
             oc.keyDown = false;
-            oc.key = -1;
             /* @ts-ignore */
             this.port.postMessage({type: "keyUp", bank: bank, oscillator: i, key: key});
           }
@@ -368,6 +414,9 @@ export class OscillatorArray {
             case envelopePhase.release:
               env.release = value;
               break;
+            case envelopePhase.legato:
+              env.legato = value > 0;
+              break;
             default:
               break;
           }
@@ -380,11 +429,13 @@ export class OscillatorArray {
         }
 
         private getVacantOscillator(bank: number, key: number): number {
-          const bankStatus: OscillatorData[] = this.oscData[bank];
-          let i = bankStatus.findIndex(s => s.inUse && s.key === key);
-
+          const oscData: OscillatorData[] = this.oscData[bank];
+          let i = oscData.findIndex(s => s.inUse && (s.key === key));
           if (i === -1) {
-            i = bankStatus.findIndex(s => !s.inUse);  // TODO: Need a fallback to use the least recently used oscillator if none available
+            i = oscData.findIndex(s => !s.inUse);  // TODO: Need a fallback to use the least recently used oscillator if none available
+          } else {
+            const od = oscData[i];
+            od.envelopePhase = envelopePhase.retrigger;
           }
           return i;
         }

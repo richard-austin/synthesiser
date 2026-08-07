@@ -225,9 +225,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   legatoMode(legatoMode: boolean) {
     this.proxySettings.legatoMode = legatoMode ? onOff.on : onOff.off;
-    // this.oscillators.forEach(osc => {
-    //   osc.legatoMode = legatoMode;
-    //});
+    this.fmSynthService.envelope(this.oscNumber(), envelopePhase.legato, legatoMode ? 1 : 0)
   }
 
   useVelocitySensitive(velocitySensitive: boolean) {
