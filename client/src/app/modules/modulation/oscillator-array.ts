@@ -20,6 +20,7 @@ export class OscillatorArray {
       class Envelope {
         public attack: number;
         public attackRate: number = 0;
+        public retriggerRate: number = 0;
         public decay: number;
         public decayRate: number = 0;
         public sustainLevel: number;
@@ -65,29 +66,41 @@ export class OscillatorArray {
         public releaseRate = 1;
         private legatoCountDown: number = 0;
         public advanceEnvelopeToSustain(env: Envelope) {
+          const {velocity} = this;
+          const vel = velocity / 0x7f;
+
           if (this.keyDown) {
             if (!env.legato) {
               if (this.envelopePhase === envelopePhase.inactive || this.envelopePhase === envelopePhase.attack || this.envelopePhase === envelopePhase.retrigger) {
                 this.inUse = true;
-                this.envelopePhase = envelopePhase.attack;
-                this.envelopeLevel += env.attackRate;
-                if (this.envelopeLevel >= this.velocity / 0x7f) {
+                if(this.envelopePhase === envelopePhase.inactive)
+                  this.envelopePhase = envelopePhase.attack;
+                switch (this.envelopePhase) {
+                  case envelopePhase.retrigger:
+                    this.envelopeLevel += env.retriggerRate;
+                    break;
+                  default:
+                    this.envelopeLevel += env.attackRate;
+                    break
+                }
+
+                if (this.envelopeLevel >= vel) {
                   this.envelopePhase = envelopePhase.decay;
-                  this.envelopeLevel = this.velocity / 0x7f;
+                  this.envelopeLevel = vel;
                 }
               } else if (this.envelopePhase === envelopePhase.decay) {
                 this.envelopeLevel -= env.decayRate;
-                if (this.envelopeLevel <= env.sustainLevel * this.velocity / 0x7f) {
+                if (this.envelopeLevel <= env.sustainLevel * vel) {
                   this.envelopePhase = envelopePhase.sustain;
-                  this.envelopeLevel = env.sustainLevel * this.velocity / 0x7f;
+                  this.envelopeLevel = env.sustainLevel * vel;
                 }
               }
             } else {
-              if (this.envelopePhase === envelopePhase.inactive || this.envelopePhase === envelopePhase.sustain) {
+              if (this.envelopePhase === envelopePhase.inactive || this.envelopePhase === envelopePhase.sustain || this.envelopePhase === envelopePhase.retrigger) {
                 /* @ts-ignore */
                 this.legatoCountDown = sampleRate * (env.attack + env.decay);
                 this.envelopePhase = envelopePhase.sustain;
-                this.envelopeLevel = this.velocity / 0x7f;
+                this.envelopeLevel = vel;
               }
             }
           }
@@ -364,7 +377,7 @@ export class OscillatorArray {
                 currentPhase = currentPhase - Math.floor(currentPhase);
                 od.phase = phase - Math.floor(phase);
 
-                const ampEnvelope = od.envelopePhase === envelopePhase.attack ? od.envelopeLevel : (Math.pow(expBase, od.envelopeLevel) - 1.0) * inverseDenominator;
+                const ampEnvelope = (Math.pow(expBase, od.envelopeLevel) - 1.0) * inverseDenominator;
                 outputChannel[i] += ampEnvelope * Math.sin(currentPhase * twoPi);// this.render(currentPhase, band, b) * 0.01;
               }
             }
@@ -389,8 +402,8 @@ export class OscillatorArray {
         }
 
         public keyUp(bank: number, key: number) {
-          const bankStatus: OscillatorData[] = this.oscData[bank];
-          const i = bankStatus.findIndex(s => s.key === key);
+          const od: OscillatorData[] = this.oscData[bank];
+          const i = od.findIndex(s => s.key === key);
           if (i !== -1) {
             const oc = this.oscData[bank][i];
             oc.keyDown = false;
@@ -430,13 +443,23 @@ export class OscillatorArray {
 
         private getVacantOscillator(bank: number, key: number): number {
           const oscData: OscillatorData[] = this.oscData[bank];
+          const bd = this.bankData[bank];
+          const env = bd.envelope;
+
           let i = oscData.findIndex(s => s.inUse && (s.key === key));
           if (i === -1) {
             i = oscData.findIndex(s => !s.inUse);  // TODO: Need a fallback to use the least recently used oscillator if none available
           } else {
             const od = oscData[i];
             od.envelopePhase = envelopePhase.retrigger;
+            /* @ts-ignore */
+            env.retriggerRate = 1 / (sampleRate * (env.attack + 4/od.frequency)); /* Padded with 1/f to prevent clicks on retriggers with very short attack times */
           }
+          const od = oscData[i];
+          /* @ts-ignore */
+          env.decayRate = 1 / (sampleRate * (env.decay + 4/od.frequency));/* Padded with 1/f to prevent clicks on very short decay times */
+          /* @ts-ignore */
+          od.releaseRate = 1 / (sampleRate * (env.release + 4/od.frequency));  /* Padded with 1/f to prevent clicks on very short release times */
           return i;
         }
       });
