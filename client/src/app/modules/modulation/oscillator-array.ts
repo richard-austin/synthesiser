@@ -52,6 +52,7 @@ export class OscillatorArray {
         public detuneFactor: number = 1;
         public tuning: number = 0; /* Initialise with 0 for normal tuning */
         public readonly envelope: Envelope = new Envelope();
+        public periodicWave!: Float32Array[];
       }
 
       class OscillatorData {
@@ -210,7 +211,6 @@ export class OscillatorArray {
       /* @ts-ignore */
       registerProcessor('oscillator', class Processor extends AudioWorkletProcessor {
         running: boolean = true;
-        private periodicWave!: Float32Array[][];
         private type: OscillatorType = "sine";
         private readonly waveTableSize = -1;
         private readonly startFx: number;
@@ -237,7 +237,7 @@ export class OscillatorArray {
           this.process = this.process.bind(this); //
           /* Parameters for exponential amplitude envelope */
           // Your curve intensity factor (Try values between 2.0 and 5.0)
-          const b = 7.0;
+          const b = 4.0;
 
           // Pre-calculate the base and the scaling denominator
           this.expBase = Math.exp(b);
@@ -254,7 +254,7 @@ export class OscillatorArray {
               this.port.close();
               console.log("Phase modulator closed");
             } else if (event.data.type === 'periodicWave') {
-              this.periodicWave[event.data.bank] = event.data.periodicWave;
+              this.bankData[event.data.bank].periodicWave = event.data.periodicWave;
               this.type = "custom";
               this.render = this.periodicWaveFunction;
             } else if (event.data.type === 'type') {
@@ -295,24 +295,20 @@ export class OscillatorArray {
           return Math.sin(x * this.twoPi);
         }
 
-        currentPeriodicWave!: Float32Array[][];
+        currentPeriodicWave!: Float32Array[];
 
         /*        lastBand = -1; */
-        private periodicWaveFunction(x: number, band: number, bank: number): number {
-          /* if(band != this.lastBand) {
-             this.lastBand = band;
-             console.log("band = "+band);
-           } */
-          return this.currentPeriodicWave[band][Math.floor(x * this.waveTableSize)][bank];
+        private periodicWaveFunction(x: number, band: number): number {
+          return this.currentPeriodicWave[band][Math.floor(x * this.waveTableSize)];
         }
 
-        private render: (x: number, band: number, bank: number) => number = this.sineFunction;
+        private render: (x: number, band: number) => number = this.sineFunction;
 
         private readonly twelfthRoot2 = Math.pow(2, 1 / 12);
         private readonly root2 = Math.pow(2, 1 / 2);
 
         process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
-          const { expBase, inverseDenominator, twoPi, bankData,  oscData } = this;
+          const { expBase, inverseDenominator, bankData,  oscData } = this;
           const output: Float32Array[] = outputs[0]
 
           /* @ts-ignore */
@@ -330,11 +326,10 @@ export class OscillatorArray {
             for (let b = 0; b < this.numberOfBanks; ++b) {
               const opb = outputs[b];
               const outputChannel: Float32Array = opb[0];
-              if (this.periodicWave && this.periodicWave[b])
-                this.currentPeriodicWave[b] = this.periodicWave[b];  /* Update the periodic wave on a k-rate basis */
-
               const bd = bankData[b];
               const env = bd.envelope;
+              if (bd.periodicWave && bd.periodicWave[b])
+                this.currentPeriodicWave = bd.periodicWave;  /* Update the periodic wave on a k-rate basis */
 
               for (let osc = 0; osc < this.oscillatorsPerBank; osc++) {
                 const od = oscData[b][osc];
@@ -342,7 +337,6 @@ export class OscillatorArray {
                   continue;
 
                 let f = od.frequency;
-
 
                 if (f > nyquist)
                   f = nyquist;
@@ -378,7 +372,7 @@ export class OscillatorArray {
                 od.phase = phase - Math.floor(phase);
 
                 const ampEnvelope = (Math.pow(expBase, od.envelopeLevel) - 1.0) * inverseDenominator;
-                outputChannel[i] += ampEnvelope * Math.sin(currentPhase * twoPi);// this.render(currentPhase, band, b) * 0.01;
+                outputChannel[i] += ampEnvelope * this.render(currentPhase, band);
               }
             }
           }

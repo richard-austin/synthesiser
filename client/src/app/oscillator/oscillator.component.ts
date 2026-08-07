@@ -24,6 +24,7 @@ import {DeviceKeys} from '../services/device-pool-manager-service';
 import {ClipboardService} from './clipboard-service';
 import {FmSynthService} from '../services/fm-synth-service';
 import {envelopePhase} from '../modules/modulation/oscillator-array';
+import {WaveTables} from '../modules/wavetables';
 
 export type PortamentoType =
   'chord'
@@ -245,9 +246,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   private setWaveForm(value: OscillatorType) {
     this.proxySettings.waveForm = value as oscWaveforms;
-  //  for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-  //    this.oscillators[i].setType(value);
-  //  }
+    this.fmSynthService.setType(value, this.oscNumber());
   }
 
   private setPortamentoType(value: PortamentoType) {
@@ -743,4 +742,5 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
  // protected readonly Oscillator = Oscillator;
+  protected readonly WaveTables = WaveTables;
 }
