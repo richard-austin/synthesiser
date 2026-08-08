@@ -81,6 +81,8 @@ export class OscillatorArray {
         public phase: number = 0;
         public releaseRate = 1;
         private legatoCountDown: number = 0;
+        public butterworthFilter: ButterworthFilter = new ButterworthFilter()
+        ;
         public advanceEnvelopeToSustain(env: Envelope) {
           const {velocity} = this;
           const vel = velocity / 0x7f;
@@ -228,7 +230,6 @@ export class OscillatorArray {
         running: boolean = true;
         private readonly waveTableSize = -1;
         private readonly startFx: number;
-        private readonly modFilter: ButterworthFilter;
         private readonly numberOfBanks: number;
         private readonly oscillatorsPerBank: number;
         private readonly bankData: BankData[];
@@ -245,7 +246,12 @@ export class OscillatorArray {
           this.oscillatorsPerBank = options?.processorOptions?.oscillatorsPerBank;
           this.bankData = Array.from({length: this.numberOfBanks}, () => new BankData(this.waveTableSize));
           this.oscData = Array.from({length: this.numberOfBanks}, () => Array.from({length: this.oscillatorsPerBank}, () => new OscillatorData()));
-
+          this.oscData.forEach(o => {
+            o.forEach(osc => {
+              /* @ts-ignore */
+              osc.butterworthFilter.calculateCoefficients(1000, sampleRate);
+            })
+          })
           this.process = this.process.bind(this); //
           /* Parameters for exponential amplitude envelope */
           // Your curve intensity factor (Try values between 2.0 and 5.0)
@@ -297,10 +303,6 @@ export class OscillatorArray {
               this.setEnvelope(event.data.bank, event.data.phase, event.data.value);
             }
           }
-
-          this.modFilter = new ButterworthFilter();
-          /* @ts-ignore */
-          this.modFilter.calculateCoefficients(1000, sampleRate);
         }
 
         private readonly twelfthRoot2 = Math.pow(2, 1 / 12);
@@ -311,7 +313,7 @@ export class OscillatorArray {
         process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
           const { expBase, inverseDenominator, bankData,  oscData } = this;
           const output: Float32Array[] = outputs[0]
-   //       const start = Date.now();
+          const start = Date.now();
           /* @ts-ignore */
           const nyquist = sampleRate / 2;
           if (!output) return true;
@@ -363,7 +365,7 @@ export class OscillatorArray {
 
                 f *= bd.detuneFactor;
                 const x = 0;// (modParam.length === 1 ? modParam[0] : modParam[i] * 10);
-                const mod = this.modFilter.process(x);
+                const mod = od.butterworthFilter.process(x);
                 /* @ts-ignore */
                 const inc = f / sampleRate;
                 let phase = od.phase;
@@ -378,18 +380,18 @@ export class OscillatorArray {
             }
           }
 
-          // this.totalTime += (Date.now() - start);
-          // this.iterationCount++;
-          //
-          // // Send an average performance report every 500 blocks (~1.5 seconds)
-          // if (this.iterationCount >= 500) {
-          //   const averageMsPerBlock = this.totalTime / this.iterationCount;
-          //   console.log("averageMsPerBlock = "+averageMsPerBlock)
-          //   //this.port.postMessage({ type: 'perf-report', averageMsPerBlock });
-          //
-          //   this.totalTime = 0;
-          //   this.iterationCount = 0;
-          // }
+          this.totalTime += (Date.now() - start);
+          this.iterationCount++;
+
+          // Send an average performance report every 500 blocks (~1.5 seconds)
+          if (this.iterationCount >= 500) {
+            const averageMsPerBlock = this.totalTime / this.iterationCount;
+            console.log("averageMsPerBlock = "+averageMsPerBlock)
+            //this.port.postMessage({ type: 'perf-report', averageMsPerBlock });
+
+            this.totalTime = 0;
+            this.iterationCount = 0;
+          }
 
           return this.running;
         }
