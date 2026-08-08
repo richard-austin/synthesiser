@@ -1,6 +1,7 @@
 import {Injectable} from '@angular/core';
 import {envelopePhase, OscillatorArray} from '../modules/modulation/oscillator-array';
 import {WaveTables} from '../modules/wavetables';
+import {OscillatorSettings} from '../settings/oscillator';
 
 @Injectable({
   providedIn: 'root'
@@ -66,19 +67,32 @@ export class FmSynthService {
   }
 
   setType(type: OscillatorType, bank: number) {
-
+    console.log("type = "+type);
     if (/^(sine)$/.test(type)) {
-      this.synthNode.type = type;
+      this.synthNode.setType(type, bank);
     } else {
       const wtDetails = WaveTables.wavetables.find(el => el.value === type);
       if (wtDetails) {
         this.synthNode.setPeriodicWave(OscillatorArray.createPeriodicWave(this.audioContext, wtDetails?.waveTable.real, wtDetails?.waveTable.imag), bank);
-        this.synthNode.type = type;
+        this.synthNode.setType(type, bank);
       }
       else {
         console.error("Cannot find wave table for" + type)
-        this.synthNode.type = "sine";
+        this.synthNode.setType("sine", bank);
       }
     }
+  }
+
+  applySettings(proxySettings: OscillatorSettings, bank: number) {
+    this.tuning(100, bank);
+    this.envelope(bank, envelopePhase.attack, proxySettings.adsr.attackTime);
+    this.envelope(bank, envelopePhase.decay, proxySettings.adsr.decayTime);
+    this.envelope(bank, envelopePhase.sustain, proxySettings.adsr.sustainLevel);
+    this.envelope(bank, envelopePhase.release, proxySettings.adsr.releaseTime);
+    this.envelope(bank, envelopePhase.legato, proxySettings.legatoMode ? 1 : 0)
+  //  this.setFreqBendEnvelope(proxySettings.freqBend);
+  //  this.useFreqBendEnvelope(proxySettings.useFrequencyEnvelope === onOff.on);
+    this.setType(proxySettings.waveForm, bank);
+   // this.clearModulation();  // Remove any preexisting mod settings
   }
 }

@@ -136,7 +136,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     }
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
-
+    this.fmSynthService.applySettings(this.proxySettings, this.oscNumber());
 
     // // Reference the asset directly as a static path string
     // const wasmAssetPath = 'assets/wasm/processor.wasm';
@@ -153,10 +153,8 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     //   this.oscillatorPoolMgr = new DevicePoolManager(this.oscillators, this.proxySettings);
     // }
     //
-    // for (const osc of this.oscillators) {
-    //   await osc.start(this.started);
-    //   osc.applySettings(this.proxySettings);
-    // }
+
+
     this.started = true;
 
     this.frequency().setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
@@ -245,6 +243,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   private setWaveForm(value: OscillatorType) {
+    console.log("setWaveForm: "+value)
     this.proxySettings.waveForm = value as oscWaveforms;
     this.fmSynthService.setType(value, this.oscNumber());
   }
@@ -404,17 +403,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     // })
   }
 
-  cancelAndHoldAtTime(time: number, oscFx: AudioParam) {
-    if (oscFx.cancelAndHoldAtTime !== undefined) {
-      oscFx.cancelAndHoldAtTime(time);
-    } else {
-      const fx = oscFx.value;
-      oscFx.cancelScheduledValues(time);
-      oscFx.value = fx;
-    }
-  }
-
-  keysDown: DeviceKeys[] = [];
+   keysDown: DeviceKeys[] = [];
 
   keyDown(keyIndex: number, velocity: number) {
     // const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyDown(keyIndex, velocity, this.proxySettings.portamento === 0);
@@ -689,6 +678,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     waveform.addEventListener('change', ($event) => {
       // @ts-ignore
       const value = $event.target.value as OscillatorType;
+      console.log("Setting to "+value);
       this.setWaveForm(value as OscillatorType);
     });
 

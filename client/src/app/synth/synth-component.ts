@@ -102,7 +102,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
   constructor(private rest: RestfulApiService) {
     this.audioCtx = new AudioContext({sampleRate: 48000, latencyHint: "interactive"});
-    this.fmSynthService.initializeSynth(this.audioCtx);
     this.fileNameEffectRef = effect(() => {
       const fileName = this.filename()();
       if (fileName !== "") {
@@ -139,7 +138,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
   protected async start(settings: SynthSettings | null): Promise<void> {
     const cookieName = 'synthComponent';
-
+    await this.fmSynthService.initializeSynth(this.audioCtx);
     if (!settings) {
       let synthComponentSettings = new SynthComponentSettings();
       const savedSettings = this.cookies.getSettings(cookieName, synthComponentSettings);

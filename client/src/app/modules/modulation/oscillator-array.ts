@@ -12,6 +12,7 @@ export class OscillatorArray {
   constructor(audioCtx: AudioContext, numberOfBanks: number, oscillatorsPerBank: number) {
     this.context = audioCtx;
     this.numberOfBanks = numberOfBanks;
+    this.savedTypes = Array(numberOfBanks).fill("sine");
     this.oscillatorsPerBank = oscillatorsPerBank;
   }
 
@@ -47,12 +48,26 @@ export class OscillatorArray {
       enum envelopePhase {inactive, attack, decay, sustain, release, retrigger, legato }
 
       class BankData {
+        private readonly twoPi = Math.PI * 2;
         public detune: number = 0;
         public lastDetune: number = 1;
         public detuneFactor: number = 1;
         public tuning: number = 0; /* Initialise with 0 for normal tuning */
         public readonly envelope: Envelope = new Envelope();
+        public type: OscillatorType = "sine";
         public periodicWave!: Float32Array[];
+        currentPeriodicWave!: Float32Array[];
+        private readonly waveTableSize: number;
+        public periodicWaveFunction(x: number, band: number): number {
+          return this.currentPeriodicWave[band][Math.floor(x * this.waveTableSize)];
+        }
+        public sineFunction(x: number): number {
+          return Math.sin(x * this.twoPi);
+        }
+        public render: (x: number, band: number) => number = this.sineFunction;
+        constructor(waveTableSize: number) {
+          this.waveTableSize = waveTableSize;
+        }
       }
 
       class OscillatorData {
@@ -211,7 +226,6 @@ export class OscillatorArray {
       /* @ts-ignore */
       registerProcessor('oscillator', class Processor extends AudioWorkletProcessor {
         running: boolean = true;
-        private type: OscillatorType = "sine";
         private readonly waveTableSize = -1;
         private readonly startFx: number;
         private readonly modFilter: ButterworthFilter;
@@ -223,15 +237,13 @@ export class OscillatorArray {
         private readonly  expBase: number;
         private readonly inverseDenominator: number;
 
-        private readonly twoPi: number;
-
         constructor(options: any) {
           super();
           this.waveTableSize = options?.processorOptions?.waveTableSize;
           this.startFx = options?.processorOptions?.startFx;
           this.numberOfBanks = options?.processorOptions?.numberOfBanks;
           this.oscillatorsPerBank = options?.processorOptions?.oscillatorsPerBank;
-          this.bankData = Array.from({length: this.numberOfBanks}, () => new BankData());
+          this.bankData = Array.from({length: this.numberOfBanks}, () => new BankData(this.waveTableSize));
           this.oscData = Array.from({length: this.numberOfBanks}, () => Array.from({length: this.oscillatorsPerBank}, () => new OscillatorData()));
 
           this.process = this.process.bind(this); //
@@ -242,8 +254,6 @@ export class OscillatorArray {
           // Pre-calculate the base and the scaling denominator
           this.expBase = Math.exp(b);
           this.inverseDenominator = 1.0 / (this.expBase - 1.0);
-          this.twoPi = 2 * Math.PI;
-
 
           //Array(this.numberOfBanks).fill(new OscillatorStatus()).map(() => Array(this.oscillatorsPerBank).fill(new OscillatorStatus()))
           /* @ts-ignore */
@@ -254,15 +264,17 @@ export class OscillatorArray {
               this.port.close();
               console.log("Phase modulator closed");
             } else if (event.data.type === 'periodicWave') {
-              this.bankData[event.data.bank].periodicWave = event.data.periodicWave;
-              this.type = "custom";
-              this.render = this.periodicWaveFunction;
+              const bd = this.bankData[event.data.bank];
+              bd.periodicWave = event.data.periodicWave;
+              bd.type = "custom";
+              bd.render = bd.periodicWaveFunction;
             } else if (event.data.type === 'type') {
-              this.type = event.data.payload;
-              if (this.type === "sine") {
-                this.render = this.sineFunction;
-              } else if (this.type === "custom") {
-                this.render = this.periodicWaveFunction;
+              const bd = this.bankData[event.data.bank];
+              bd.type = event.data.payload;
+              if (bd.type === "sine") {
+                bd.render = bd.sineFunction;
+              } else if (bd.type === "custom") {
+                bd.render = bd.periodicWaveFunction;
               }
             } else if (event.data.type === 'keyDown') {
               this.keyDown(event.data.bank, event.data.key, event.data.velocity);
@@ -291,26 +303,15 @@ export class OscillatorArray {
           this.modFilter.calculateCoefficients(1000, sampleRate);
         }
 
-        private sineFunction(x: number): number {
-          return Math.sin(x * this.twoPi);
-        }
-
-        currentPeriodicWave!: Float32Array[];
-
-        /*        lastBand = -1; */
-        private periodicWaveFunction(x: number, band: number): number {
-          return this.currentPeriodicWave[band][Math.floor(x * this.waveTableSize)];
-        }
-
-        private render: (x: number, band: number) => number = this.sineFunction;
-
         private readonly twelfthRoot2 = Math.pow(2, 1 / 12);
         private readonly root2 = Math.pow(2, 1 / 2);
 
+        totalTime: number = 0
+        iterationCount = 0;
         process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
           const { expBase, inverseDenominator, bankData,  oscData } = this;
           const output: Float32Array[] = outputs[0]
-
+   //       const start = Date.now();
           /* @ts-ignore */
           const nyquist = sampleRate / 2;
           if (!output) return true;
@@ -329,7 +330,7 @@ export class OscillatorArray {
               const bd = bankData[b];
               const env = bd.envelope;
               if (bd.periodicWave && bd.periodicWave[b])
-                this.currentPeriodicWave = bd.periodicWave;  /* Update the periodic wave on a k-rate basis */
+                bd.currentPeriodicWave = bd.periodicWave;  /* Update the periodic wave on a k-rate basis */
 
               for (let osc = 0; osc < this.oscillatorsPerBank; osc++) {
                 const od = oscData[b][osc];
@@ -342,11 +343,11 @@ export class OscillatorArray {
                   f = nyquist;
 
                 let band = 0;
-                if (this.render === this.periodicWaveFunction) {
+                if (bd.render === bd.periodicWaveFunction) {
                   band = Math.floor(Math.log2(f / this.startFx) / Math.log2(this.root2));
 
                   if (band < 0) band = 0;
-                  else if (band > this.currentPeriodicWave.length - 1) band = this.currentPeriodicWave.length - 1;
+                  else if (band > bd.currentPeriodicWave.length - 1) band = bd.currentPeriodicWave.length - 1;
                 }
                 const detune = bd.detune;
                 if (detune !== bd.lastDetune) {
@@ -372,10 +373,24 @@ export class OscillatorArray {
                 od.phase = phase - Math.floor(phase);
 
                 const ampEnvelope = (Math.pow(expBase, od.envelopeLevel) - 1.0) * inverseDenominator;
-                outputChannel[i] += ampEnvelope * this.render(currentPhase, band);
+                outputChannel[i] += ampEnvelope * bd.render(currentPhase, band);
               }
             }
           }
+
+          // this.totalTime += (Date.now() - start);
+          // this.iterationCount++;
+          //
+          // // Send an average performance report every 500 blocks (~1.5 seconds)
+          // if (this.iterationCount >= 500) {
+          //   const averageMsPerBlock = this.totalTime / this.iterationCount;
+          //   console.log("averageMsPerBlock = "+averageMsPerBlock)
+          //   //this.port.postMessage({ type: 'perf-report', averageMsPerBlock });
+          //
+          //   this.totalTime = 0;
+          //   this.iterationCount = 0;
+          // }
+
           return this.running;
         }
 
@@ -475,15 +490,15 @@ export class OscillatorArray {
     this.port = this.node.port;
   }
 
-  savedType: OscillatorType = "sine";
+  savedTypes: OscillatorType[] = [];
 
-  set type(type: OscillatorType) {
-    this.savedType = type;
-    this.port.postMessage({type: 'type', payload: type});
+  setType(type: OscillatorType, bank: number) {
+    this.savedTypes[bank] = type;
+    this.port.postMessage({type: 'type', payload: type, bank: bank});
   }
 
-  get type(): OscillatorType {
-    return this.savedType;
+  getType(bank: number): OscillatorType {
+    return this.savedTypes[bank];
   }
 
   static lastReal: number[];
