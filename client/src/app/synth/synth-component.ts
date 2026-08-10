@@ -176,7 +176,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       await oscillator.start(this.audioCtx, wasmBinary, settings ? settings.oscillatorSettings[i] : settings);
     }
 
-    this.matrixComponent().start(this.audioCtx, settings ? settings.matrixSettings : settings);
+    this.matrixComponent().start(settings ? settings.matrixSettings : settings);
 
     this.ringModulator().setOutputConnection();
     this.noise().setOutputConnection();
@@ -306,7 +306,8 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   protected keydown(code: number, velocity: number) {
-    this.oscillatorsGrp().forEach(osc => osc.keyDown(code, velocity));
+    this.fmSynthService.keyDown(code, 0x7f);
+    //this.oscillatorsGrp().forEach(osc => osc.keyDown(code, velocity));
 
     // this.filtersGrp.keyDown(code, velocity);
     this.noise().keyDown(code, velocity);
@@ -323,7 +324,8 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   protected keyup(code: number) {
-    this.oscillatorsGrp().forEach(osc => osc.keyUp(code));
+    this.fmSynthService.keyUp(0, code);
+    //this.oscillatorsGrp().forEach(osc => osc.keyUp(code));
     //this.filtersGrp.keyUp(code);
     this.noise().keyUp(code);
   }

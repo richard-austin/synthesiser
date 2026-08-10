@@ -1,7 +1,7 @@
 import {
   AfterViewInit,
   Component,
-  ElementRef,
+  ElementRef, inject,
   input,
   InputSignal, output,
   OutputEmitterRef, Signal, viewChild,
@@ -11,8 +11,7 @@ import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {oscModType} from '../enums/enums';
 import {MatrixControlSettings} from '../settings/matrix';
-import {OscillatorComponent} from '../oscillator/oscillator.component';
-//import DevicePoolManager from '../util-classes/device-pool-manager';
+import {FmSynthService} from '../services/fm-synth-service';
 
 export interface ModSetting {modType:oscModType, carrier: number, modulator: number}
 export interface ModLevel {level: number, carrier: number, modulator: number}
@@ -37,32 +36,22 @@ export class MatrixControlComponent implements AfterViewInit{
 
   modSelect: Signal<ElementRef<HTMLFormElement>> = viewChild.required<ElementRef<HTMLFormElement>>('modSelect');
   levelControl: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('level');
-
-  modulator!: OscillatorComponent;
-  carrier!: OscillatorComponent;
-  modulationGain: GainNode[] = [];
+  fmSynthService: FmSynthService = inject(FmSynthService);
   started = false;
 
 
-  start(audioCtx:AudioContext, ctrlSettings: MatrixControlSettings, modulator: OscillatorComponent | undefined, carrier: OscillatorComponent | undefined) {
+  start(ctrlSettings: MatrixControlSettings, modIndex: number, carrierIndex: number) {
     if(!this.started) {
-      this.modulationGain = [];
-      // for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      //   this.modulationGain.push(new GainNode(audioCtx));
-      //   this.modulationGain[i].gain.value = 1;
-      // }
       this.started = true;
+      this.ctlSettings = ctrlSettings;
+      this.fmSynthService.setModLevel(modIndex, ctrlSettings.level);
+      this.fmSynthService.setModType(modIndex, carrierIndex, ctrlSettings.setting);
+      this.levelControl().setValue(ctrlSettings.level);
     }
-    this.ctlSettings = ctrlSettings;
-    this.modulator = modulator as OscillatorComponent;
-    this.modulator.connectModOut(this.modulationGain);
-    this.carrier = carrier as OscillatorComponent;
-    this.setModType(ctrlSettings.setting);
-    this.levelControl().setValue(ctrlSettings.level);
   }
 
-  protected setModLevel(level: number) {
-    this.modulationGain.forEach((gain) => gain.gain.value = level);
+  protected setModLevel(modBank: number, level: number) {
+   this.fmSynthService.setModLevel(modBank, level * 0.1);
     this.ctlSettings.level = level;
   }
 
@@ -85,8 +74,8 @@ export class MatrixControlComponent implements AfterViewInit{
     } else if (modType === oscModType.frequency) {
       this.dialStyle = dialStyle.red;
     }
-    this.levelControl().changeStyle(this.dialStyle)
- //   this.carrier.modulation(this.gainNode, modType);
+    this.levelControl().changeStyle(this.dialStyle);
+    this.fmSynthService.setModType(this.modulatorNum(), this.carrierNum(), modType)
     this.modSelection.emit({modType: modType, carrier: this.carrierNum(), modulator: this.modulatorNum()});
   }
 
@@ -105,7 +94,6 @@ export class MatrixControlComponent implements AfterViewInit{
         if(checked)
           (modSelect.elements[otherCheckBox] as HTMLInputElement).checked = false;
         this._setModType(value);
-        this.carrier.modulation(this.modulationGain, value);
       });
     }
   }

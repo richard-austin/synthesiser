@@ -463,14 +463,14 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     //   this.oscillators[keys.deviceIndex].oscillator.frequency.exponentialRampToValueAtTime(freq, this.audioCtx.currentTime + this.proxySettings.portamento);
     // }
 
-    this.fmSynthService.keyDown(this.oscNumber(), keyIndex, velocity);
+ //   this.fmSynthService.keyDown(this.oscNumber(), keyIndex, velocity);
     // if (keys)
     //   this.oscillators[keys.deviceIndex].keyDown(velocity, freq);
   }
 
   private chordProcessorKeyDownCallback: (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => void = (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => {
     //const freq = this.keyToFrequency(prevKeys.keyIndex);
-    this.fmSynthService.keyDown(this.oscNumber(), theseKeys.deviceIndex, 0x0f);
+  //  this.fmSynthService.keyDown(this.oscNumber(), theseKeys.deviceIndex, 0x0f);
   }
 
   keyUp(keyIndex: number) {

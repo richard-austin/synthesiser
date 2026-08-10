@@ -1,3 +1,5 @@
+import {oscModType} from '../../enums/enums';
+
 export enum envelopePhase {inactive, attack, decay, sustain, release, retrigger, legato }
 
 export class OscillatorArray {
@@ -58,13 +60,17 @@ export class OscillatorArray {
         public periodicWave!: Float32Array[];
         currentPeriodicWave!: Float32Array[];
         private readonly waveTableSize: number;
+
         public periodicWaveFunction(x: number, band: number): number {
           return this.currentPeriodicWave[band][Math.floor(x * this.waveTableSize)];
         }
+
         public sineFunction(x: number): number {
           return Math.sin(x * this.twoPi);
         }
+
         public render: (x: number, band: number) => number = this.sineFunction;
+
         constructor(waveTableSize: number) {
           this.waveTableSize = waveTableSize;
         }
@@ -83,6 +89,7 @@ export class OscillatorArray {
         private legatoCountDown: number = 0;
         public butterworthFilter: ButterworthFilter = new ButterworthFilter()
         ;
+
         public advanceEnvelopeToSustain(env: Envelope) {
           const {velocity} = this;
           const vel = velocity / 0x7f;
@@ -91,7 +98,7 @@ export class OscillatorArray {
             if (!env.legato) {
               if (this.envelopePhase === envelopePhase.inactive || this.envelopePhase === envelopePhase.attack || this.envelopePhase === envelopePhase.retrigger) {
                 this.inUse = true;
-                if(this.envelopePhase === envelopePhase.inactive)
+                if (this.envelopePhase === envelopePhase.inactive)
                   this.envelopePhase = envelopePhase.attack;
                 switch (this.envelopePhase) {
                   case envelopePhase.retrigger:
@@ -125,8 +132,8 @@ export class OscillatorArray {
         }
 
         public advanceEnvelopeToZero(env: Envelope) {
-          const lowestSustainLevel =0.1;  // Prevents indefinite release timeouts
-           if (!this.keyDown) {
+          const lowestSustainLevel = 0.1;  // Prevents indefinite release timeouts
+          if (!this.keyDown) {
             if (!env.legato) {
               if (this.envelopePhase !== envelopePhase.inactive) {
                 if (this.envelopePhase !== envelopePhase.release) {
@@ -144,11 +151,11 @@ export class OscillatorArray {
               }
             } else {
               if (this.envelopePhase !== envelopePhase.inactive) {
-                if(this.envelopePhase === envelopePhase.sustain) {
+                if (this.envelopePhase === envelopePhase.sustain) {
                   if (--this.legatoCountDown <= 0) {
                     this.envelopePhase = envelopePhase.release;
                     /* @ts-ignore */
-                    this.releaseRate = (this.envelopeLevel+lowestSustainLevel) / (sampleRate * env.release);
+                    this.releaseRate = (this.envelopeLevel + lowestSustainLevel) / (sampleRate * env.release);
                   }
                 } else if (this.envelopePhase === envelopePhase.release) {
                   this.envelopeLevel -= this.releaseRate;
@@ -161,6 +168,114 @@ export class OscillatorArray {
               }
             }
           }
+        }
+      }
+
+      /* Have to redefine this here as the global one is not visible in a worklet */
+      enum oscModType {amplitude = 'amplitude', frequency = 'frequency', off = 'off'}
+
+      class ModulatorBank {
+        public modulationType: oscModType = oscModType.frequency;
+        public carrierBank: number = 0;
+        public level: number = 0;
+      }
+
+      class CarrierBank {
+        private _hasFM: boolean = false;
+        private _hasAM: boolean = false;
+        private readonly fmSignals: number[];
+        private readonly amSignals: number[];
+
+        set hasAM(value: boolean) {
+          this._hasFM = value;
+          this.amSignals.fill(0);
+        }
+
+        set hasFM(value: boolean) {
+          this._hasFM = value;
+          this.fmSignals.fill(0);
+        }
+
+        setAmSignal(oscNumber: number, signal: number) {
+          this.amSignals[oscNumber] += signal; /*Additive because a carrier may have more than one modulator */
+        }
+
+        setFmSignal(oscNumber: number, signal: number) {
+          this.fmSignals[oscNumber] += signal;
+        }
+
+        fmSignal(oscNumber: number): number {
+          if (this._hasFM) {
+            return this.fmSignals[oscNumber];
+          } else
+            return 0;
+        }
+
+        amSignal(oscNumber: number): number {
+          if (this._hasAM)
+            return this.amSignals[oscNumber];
+          else
+            return 0;
+        }
+
+        constructor(oscillatorsPerBank: number) {
+          this.amSignals = Array.from({length: oscillatorsPerBank}, () => 0);
+          this.fmSignals = Array.from({length: oscillatorsPerBank}, () => 0);
+        }
+      }
+
+      class ModulationMatrix {
+        private readonly modBanks: ModulatorBank[]
+        private readonly carrierBanks: CarrierBank[];
+
+        constructor(numberOfBanks: number, oscillatorsPerBank: number) {
+          this.modBanks = Array.from({length: numberOfBanks}, () => new ModulatorBank());
+          this.carrierBanks = Array.from({length: numberOfBanks}, () => new CarrierBank(oscillatorsPerBank));
+        }
+
+        setModType(modBank: number, carrierBank: number, modType: oscModType) {
+          this.modBanks[modBank].modulationType = modType;
+          this.modBanks[modBank].carrierBank = carrierBank;
+          const cb = this.carrierBanks[carrierBank];
+          switch (modType) {
+            case oscModType.amplitude:
+              cb.hasAM = true;
+              cb.hasFM = false;
+              break;
+            case oscModType.frequency:
+              cb.hasAM = false;
+              cb.hasFM = true;
+              break;
+            default:
+              console.error('Unknown modulation type: ', modType);
+              break;
+          }
+        }
+
+        setModLevel(bank: number, level: number) {
+          this.modBanks[bank].level = level;
+        }
+
+        signalIn(bank: number, osc: number, signal: number) {
+          const mb = this.modBanks[bank];
+          switch (mb.modulationType) {
+            case oscModType.amplitude:
+              this.carrierBanks[mb.carrierBank].setAmSignal(osc, signal * this.modBanks[bank].level);
+              break;
+            case oscModType.frequency:
+              this.carrierBanks[mb.carrierBank].setFmSignal(osc, signal * this.modBanks[bank].level);
+              break;
+            default: /* No modulation */
+              break;
+          }
+        }
+
+        fmSignal(bank: number, osc: number) {
+          return this.carrierBanks[bank].fmSignal(osc);
+        }
+
+        amSignal(bank: number, osc: number) {
+          return this.carrierBanks[bank].amSignal(osc);
         }
       }
 
@@ -234,8 +349,8 @@ export class OscillatorArray {
         private readonly oscillatorsPerBank: number;
         private readonly bankData: BankData[];
         private readonly oscData: OscillatorData[][];
-
-        private readonly  expBase: number;
+        private readonly modMatrix: ModulationMatrix;
+        private readonly expBase: number;
         private readonly inverseDenominator: number;
 
         constructor(options: any) {
@@ -251,11 +366,13 @@ export class OscillatorArray {
               /* @ts-ignore */
               osc.butterworthFilter.calculateCoefficients(1000, sampleRate);
             })
-          })
+          });
+          this.modMatrix = new ModulationMatrix(this.numberOfBanks, this.oscillatorsPerBank);
+
           this.process = this.process.bind(this); //
           /* Parameters for exponential amplitude envelope */
           // Your curve intensity factor (Try values between 2.0 and 5.0)
-          const b = 4.0;
+          const b = 2.0;
 
           // Pre-calculate the base and the scaling denominator
           this.expBase = Math.exp(b);
@@ -283,9 +400,9 @@ export class OscillatorArray {
                 bd.render = bd.periodicWaveFunction;
               }
             } else if (event.data.type === 'keyDown') {
-              this.keyDown(event.data.bank, event.data.key, event.data.velocity);
+              this.keyDown(event.data.key, event.data.velocity);
             } else if (event.data.type === 'keyUp') {
-              this.keyUp(event.data.bank, event.data.key);
+              this.keyUp(event.data.key);
             } else if (event.data.type === 'tuning') {
               const bank = event.data.bank;
               const os = this.oscData[bank];
@@ -301,6 +418,10 @@ export class OscillatorArray {
               bankStatus.detune = event.data.detune;
             } else if (event.data.type === 'envelope') {
               this.setEnvelope(event.data.bank, event.data.phase, event.data.value);
+            } else if (event.data.type === 'setModType') {
+              this.modMatrix.setModType(event.data.modBank, event.data.carrierBank, event.data.modType);
+            } else if (event.data.type === 'setModLevel') {
+              this.modMatrix.setModLevel(event.data.modBank, event.data.modLevel);
             }
           }
         }
@@ -310,8 +431,9 @@ export class OscillatorArray {
 
         totalTime: number = 0
         iterationCount = 0;
+
         process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
-          const { expBase, inverseDenominator, bankData,  oscData } = this;
+          const {expBase, inverseDenominator, bankData, oscData} = this;
           const output: Float32Array[] = outputs[0]
           const start = Date.now();
           /* @ts-ignore */
@@ -336,8 +458,8 @@ export class OscillatorArray {
 
               for (let osc = 0; osc < this.oscillatorsPerBank; osc++) {
                 const od = oscData[b][osc];
-                if (!od.inUse)
-                  continue;
+                // if (!od.inUse)
+                //   continue;
 
                 let f = od.frequency;
 
@@ -364,7 +486,8 @@ export class OscillatorArray {
                 }
 
                 f *= bd.detuneFactor;
-                const x = 0;// (modParam.length === 1 ? modParam[0] : modParam[i] * 10);
+
+                const x = this.modMatrix.fmSignal(b, osc);
                 const mod = od.butterworthFilter.process(x);
                 /* @ts-ignore */
                 const inc = f / sampleRate;
@@ -375,7 +498,9 @@ export class OscillatorArray {
                 od.phase = phase - Math.floor(phase);
 
                 const ampEnvelope = (Math.pow(expBase, od.envelopeLevel) - 1.0) * inverseDenominator;
-                outputChannel[i] += ampEnvelope * bd.render(currentPhase, band);
+                const signal = bd.render(currentPhase, band);
+                this.modMatrix.signalIn(b, osc, signal);
+                outputChannel[i] += ampEnvelope * signal;
               }
             }
           }
@@ -386,7 +511,7 @@ export class OscillatorArray {
           // Send an average performance report every 500 blocks (~1.5 seconds)
           if (this.iterationCount >= 500) {
             const averageMsPerBlock = this.totalTime / this.iterationCount;
-            console.log("averageMsPerBlock = "+averageMsPerBlock)
+            console.log("averageMsPerBlock = " + averageMsPerBlock)
             //this.port.postMessage({ type: 'perf-report', averageMsPerBlock });
 
             this.totalTime = 0;
@@ -396,31 +521,35 @@ export class OscillatorArray {
           return this.running;
         }
 
-        public keyDown(bank: number, key: number, velocity: number) {
-          const i = this.getVacantOscillator(bank, key);
+        public keyDown(key: number, velocity: number) {
+          const i = this.getVacantOscillator( key);
           if (i !== -1) {
-            const od = this.oscData[bank][i];
-            od.frequency = this.keyToFrequency(key, bank);
-            od.key = key;
-            od.keyDown = true;
-            od.inUse = true;
-            od.velocity = velocity;
-            if(od.envelopePhase !== envelopePhase.retrigger)
-              od.phase = 0;  /* Start from zero to prevent clicks */
-            /* @ts-ignore */
-            this.port.postMessage({type: "keyDown", bank: bank, oscillator: i, key: key, velocity: velocity});
+            this.oscData.forEach((osc, bank) => {  /* forEach bank */
+              const od = osc[i];
+              od.frequency = this.keyToFrequency(key, bank);
+              od.key = key;
+              od.keyDown = true;
+              od.inUse = true;
+              od.velocity = velocity;
+              if (od.envelopePhase !== envelopePhase.retrigger)
+                od.phase = 0;  /* Start from zero to prevent clicks */
+            });
+             /* @ts-ignore */
+            this.port.postMessage({type: "keyDown", oscillator: i, key: key, velocity: velocity});
           }
         }
 
-        public keyUp(bank: number, key: number) {
-          const od: OscillatorData[] = this.oscData[bank];
-          const i = od.findIndex(s => s.key === key);
-          if (i !== -1) {
-            const oc = this.oscData[bank][i];
-            oc.keyDown = false;
-            /* @ts-ignore */
-            this.port.postMessage({type: "keyUp", bank: bank, oscillator: i, key: key});
-          }
+        public keyUp(key: number) {
+          this.oscData.forEach(osc => {
+            const i = osc.findIndex(s => s.inUse && s.key === key);
+            if (i !== -1) {
+              const oc = osc[i];
+              oc.keyDown = false;
+              /* @ts-ignore */
+              this.port.postMessage({type: "keyUp", oscillator: i, key: key});
+            }
+          })
+
         }
 
         private setEnvelope(bank: number, phase: envelopePhase, value: number) {
@@ -452,25 +581,35 @@ export class OscillatorArray {
           return frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * (this.bankData[bank].tuning * 6 / 10));
         }
 
-        private getVacantOscillator(bank: number, key: number): number {
-          const oscData: OscillatorData[] = this.oscData[bank];
-          const bd = this.bankData[bank];
-          const env = bd.envelope;
+        private roundRobinIndex = 0;
+        private getVacantOscillator(key: number): number {
+          let i: number = -1;
+          /* See if the key is still in an active envelope */
+          let od = this.oscData.find(s => s.findIndex(o => o.inUse && o.key === key) !== -1);
+          if(od) {
+            i = od.findIndex(o => o.inUse && o.key === key);
+            const bd = this.bankData;
+            bd.forEach((b, bankIndex) => {
+              const env = b.envelope;
+              this.oscData[bankIndex][i].envelopePhase = envelopePhase.retrigger;
+              // @ts-ignore
+              env.retriggerRate = 1 / (sampleRate * (env.attack + 4 / od[bankIndex].frequency)); /* Padded with 1/f to prevent clicks on retriggers with very short attack times */
+            });
+          } else {  /* Otherwise get the least recently  used oscillator */
+            i = this.roundRobinIndex++;
 
-          let i = oscData.findIndex(s => s.inUse && (s.key === key));
-          if (i === -1) {
-            i = oscData.findIndex(s => !s.inUse);  // TODO: Need a fallback to use the least recently used oscillator if none available
-          } else {
-            const od = oscData[i];
-            od.envelopePhase = envelopePhase.retrigger;
-            /* @ts-ignore */
-            env.retriggerRate = 1 / (sampleRate * (env.attack + 4/od.frequency)); /* Padded with 1/f to prevent clicks on retriggers with very short attack times */
+            if(this.roundRobinIndex >= this.oscillatorsPerBank)
+              this.roundRobinIndex = 0;
           }
-          const od = oscData[i];
-          /* @ts-ignore */
-          env.decayRate = 1 / (sampleRate * (env.decay + 4/od.frequency));/* Padded with 1/f to prevent clicks on very short decay times */
-          /* @ts-ignore */
-          od.releaseRate = 1 / (sampleRate * (env.release + 4/od.frequency));  /* Padded with 1/f to prevent clicks on very short release times */
+          this.oscData.forEach((osc, bankIndex) => { /* forEach bank */
+            const od = osc[i];
+            const bd = this.bankData[bankIndex];
+            const env = bd.envelope;
+            /* @ts-ignore */
+            env.decayRate = 1 / (sampleRate * (env.decay + 4 / od.frequency));/* Padded with 1/f to prevent clicks on very short decay times */
+            /* @ts-ignore */
+            od.releaseRate = 1 / (sampleRate * (env.release + 4 / od.frequency));  /* Padded with 1/f to prevent clicks on very short release times */
+          });
           return i;
         }
       });
@@ -560,8 +699,25 @@ export class OscillatorArray {
     this.port?.postMessage({type: "envelope", bank: bank, phase: phase, value: value})
   }
 
-  public keyDown(bank: number, key: number, velocity: number) {
-    this.port?.postMessage({type: 'keyDown', bank: bank, key: key, velocity: velocity});
+  public setModType(modBank: number, carrierBank: number, modType: oscModType) {
+    this.port?.postMessage({type: "setModType", modBank: modBank, carrierBank: carrierBank, modType: modType});
+  }
+
+  public setModLevel(modBank: number, modLevel: number) {
+    this.port?.postMessage({type: "setModLevel", modBank: modBank, modLevel: modLevel});
+  }
+
+  clearModulation() {
+    for(let modBank = 0; modBank < this.numberOfBanks; modBank++) {
+      this.setModLevel(modBank, 0);
+      for(let carrierBank = 0; carrierBank < this.oscillatorsPerBank; carrierBank++) {
+        this.setModType(modBank, carrierBank, oscModType.off);
+      }
+    }
+  }
+
+  public keyDown(key: number, velocity: number) {
+    this.port?.postMessage({type: 'keyDown', key: key, velocity: velocity});
   }
 
   public keyUp(bank: number, key: number) {

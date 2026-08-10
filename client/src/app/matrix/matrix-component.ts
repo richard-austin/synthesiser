@@ -28,16 +28,13 @@ export class MatrixComponent implements AfterViewInit {
   protected _oscillatorParams = SynthComponent.oscillatorParams;
   private cookies!: Cookies;
   private proxySettings!: MatrixSettings;
-  private audioCtx!: AudioContext;
 
 
   constructor() {
     this.cookies = new Cookies();
   }
 
-  public start(audioCtx: AudioContext, settings: MatrixSettings | null): void {
-    this.audioCtx = audioCtx;
-
+  public start(settings: MatrixSettings | null): void {
     const cookieName = 'matrix';
     if (!settings) {  // If no settings supplied, create default and check if previously saved in cookie
       settings = new MatrixSettings();
@@ -52,11 +49,11 @@ export class MatrixComponent implements AfterViewInit {
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
 
-  //   this.proxySettings.matrix.forEach((row, carrierIdx) =>
-  //   row.forEach((mtxCtl, modIdx) => {
-  //     const control = this.matrixControls()[carrierIdx*this.proxySettings.size + modIdx] as MatrixControlComponent;
-  //     control.start(this.audioCtx, mtxCtl,this.oscillators()[modIdx], this.oscillators()[carrierIdx]);
-  //   }));
+    this.proxySettings.matrix.forEach((row, carrierIdx) =>
+    row.forEach((mtxCtl, modIdx) => {
+      const control = this.matrixControls()[carrierIdx*this.proxySettings.size + modIdx] as MatrixControlComponent;
+      control.start(mtxCtl, modIdx, carrierIdx);
+    }));
   }
 
   public getSettings(): MatrixSettings {

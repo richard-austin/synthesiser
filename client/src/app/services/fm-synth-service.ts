@@ -2,6 +2,7 @@ import {Injectable} from '@angular/core';
 import {envelopePhase, OscillatorArray} from '../modules/modulation/oscillator-array';
 import {WaveTables} from '../modules/wavetables';
 import {OscillatorSettings} from '../settings/oscillator';
+import {oscModType} from '../enums/enums';
 
 @Injectable({
   providedIn: 'root'
@@ -46,8 +47,8 @@ export class FmSynthService {
     this.gainNodes[output].disconnect();
   }
   // Method to invoke clean triggers down into your background WebAssembly context
-  public keyDown(bank: number, key: number, velocity: number): void {
-    this.synthNode.keyDown(bank, key, velocity);
+  public keyDown(key: number, velocity: number): void {
+    this.synthNode.keyDown(key, velocity);
   }
 
   public keyUp(bank: number, key: number): void {
@@ -64,6 +65,18 @@ export class FmSynthService {
 
   public detune(detune: number, bank: number): void {
     this.synthNode.detune(detune, bank);
+  }
+
+  public setModType(modBank: number, carrierBank: number, modType: oscModType) {
+    this.synthNode.setModType(modBank, carrierBank, modType);
+  }
+
+  public setModLevel(modBank: number, modLevel: number) {
+    this.synthNode.setModLevel(modBank, modLevel);
+  }
+
+  private clearModulation() {
+    this.synthNode.clearModulation();
   }
 
   setType(type: OscillatorType, bank: number) {
@@ -93,6 +106,6 @@ export class FmSynthService {
   //  this.setFreqBendEnvelope(proxySettings.freqBend);
   //  this.useFreqBendEnvelope(proxySettings.useFrequencyEnvelope === onOff.on);
     this.setType(proxySettings.waveForm, bank);
-   // this.clearModulation();  // Remove any preexisting mod settings
+    this.clearModulation();  // Remove any preexisting mod settings
   }
 }
