@@ -44,14 +44,15 @@ export class MatrixControlComponent implements AfterViewInit{
     if(!this.started) {
       this.started = true;
       this.ctlSettings = ctrlSettings;
-      this.fmSynthService.setModLevel(modIndex, ctrlSettings.level);
+      this.fmSynthService.setModLevel(modIndex, carrierIndex, ctrlSettings.level * 0.1);
+     // console.log(modIndex, carrierIndex, ctrlSettings.setting)
       this.fmSynthService.setModType(modIndex, carrierIndex, ctrlSettings.setting);
-      this.levelControl().setValue(ctrlSettings.level);
+      //this.levelControl().setValue(ctrlSettings.level);
     }
   }
 
-  protected setModLevel(modBank: number, level: number) {
-   this.fmSynthService.setModLevel(modBank, level * 0.1);
+  protected setModLevel(modBank: number, carrierbank: number, level: number) {
+   this.fmSynthService.setModLevel(modBank, carrierbank, level * 0.1);
     this.ctlSettings.level = level;
   }
 

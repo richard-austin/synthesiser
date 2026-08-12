@@ -174,111 +174,6 @@ export class OscillatorArray {
       /* Have to redefine this here as the global one is not visible in a worklet */
       enum oscModType {amplitude = 'amplitude', frequency = 'frequency', off = 'off'}
 
-      class ModulatorBank {
-        public modulationType: oscModType = oscModType.frequency;
-        public carrierBank: number = 0;
-        public level: number = 0;
-      }
-
-      class CarrierBank {
-        private _hasFM: boolean = false;
-        private _hasAM: boolean = false;
-        private readonly fmSignals: number[];
-        private readonly amSignals: number[];
-
-        set hasAM(value: boolean) {
-          this._hasFM = value;
-          this.amSignals.fill(0);
-        }
-
-        set hasFM(value: boolean) {
-          this._hasFM = value;
-          this.fmSignals.fill(0);
-        }
-
-        setAmSignal(oscNumber: number, signal: number) {
-          this.amSignals[oscNumber] += signal; /*Additive because a carrier may have more than one modulator */
-        }
-
-        setFmSignal(oscNumber: number, signal: number) {
-          this.fmSignals[oscNumber] += signal;
-        }
-
-        fmSignal(oscNumber: number): number {
-          if (this._hasFM) {
-            return this.fmSignals[oscNumber];
-          } else
-            return 0;
-        }
-
-        amSignal(oscNumber: number): number {
-          if (this._hasAM)
-            return this.amSignals[oscNumber];
-          else
-            return 0;
-        }
-
-        constructor(oscillatorsPerBank: number) {
-          this.amSignals = Array.from({length: oscillatorsPerBank}, () => 0);
-          this.fmSignals = Array.from({length: oscillatorsPerBank}, () => 0);
-        }
-      }
-
-      class ModulationMatrix {
-        private readonly modBanks: ModulatorBank[]
-        private readonly carrierBanks: CarrierBank[];
-
-        constructor(numberOfBanks: number, oscillatorsPerBank: number) {
-          this.modBanks = Array.from({length: numberOfBanks}, () => new ModulatorBank());
-          this.carrierBanks = Array.from({length: numberOfBanks}, () => new CarrierBank(oscillatorsPerBank));
-        }
-
-        setModType(modBank: number, carrierBank: number, modType: oscModType) {
-          this.modBanks[modBank].modulationType = modType;
-          this.modBanks[modBank].carrierBank = carrierBank;
-          const cb = this.carrierBanks[carrierBank];
-          switch (modType) {
-            case oscModType.amplitude:
-              cb.hasAM = true;
-              cb.hasFM = false;
-              break;
-            case oscModType.frequency:
-              cb.hasAM = false;
-              cb.hasFM = true;
-              break;
-            default:
-              console.error('Unknown modulation type: ', modType);
-              break;
-          }
-        }
-
-        setModLevel(bank: number, level: number) {
-          this.modBanks[bank].level = level;
-        }
-
-        signalIn(bank: number, osc: number, signal: number) {
-          const mb = this.modBanks[bank];
-          switch (mb.modulationType) {
-            case oscModType.amplitude:
-              this.carrierBanks[mb.carrierBank].setAmSignal(osc, signal * this.modBanks[bank].level);
-              break;
-            case oscModType.frequency:
-              this.carrierBanks[mb.carrierBank].setFmSignal(osc, signal * this.modBanks[bank].level);
-              break;
-            default: /* No modulation */
-              break;
-          }
-        }
-
-        fmSignal(bank: number, osc: number) {
-          return this.carrierBanks[bank].fmSignal(osc);
-        }
-
-        amSignal(bank: number, osc: number) {
-          return this.carrierBanks[bank].amSignal(osc);
-        }
-      }
-
       class ButterworthFilter {
         private x1: number;
         private x2: number;
@@ -337,6 +232,102 @@ export class OscillatorArray {
           this.y1 = output;
 
           return output;
+        }
+      }
+
+      class ModSettings {
+        public carrierIdx: number = 0;
+        public level: number = 0;
+        public modType: oscModType = oscModType.off;
+      }
+
+      class Modulator {
+        modSettings: ModSettings[] = [];
+        carriers: Carrier[];
+
+        constructor(numberOfBanks: number, carriers: Carrier[]) {
+          this.modSettings = Array.from({length: numberOfBanks}, () => new ModSettings());
+          this.carriers = carriers;
+        }
+
+        setModType(carrierIdx: number, modType: oscModType) {
+          const s = this.modSettings[carrierIdx];
+          s.modType = modType;
+          s.carrierIdx = carrierIdx;
+          const c = this.carriers[carrierIdx];
+          c.amAccumulators.fill(0);
+          c.fmAccumulators.fill(0);
+        }
+
+        setModLevel(carrierIdx: number, level: number) {
+          this.modSettings[carrierIdx].level = level;
+        }
+
+        input(osc: number, signal: number) {
+          this.modSettings.forEach(s => {
+            switch (s.modType) {
+              case oscModType.off:
+                break;
+              case oscModType.frequency:
+                this.carriers[s.carrierIdx].fmAccumulators[osc] += signal * s.level;
+                break;
+              case oscModType.amplitude:
+                this.carriers[s.carrierIdx].amAccumulators[osc] += signal * s.level;
+                break;
+              default:
+                console.error("Unknown mod type ", s.modType);
+                break;
+            }
+          })
+        }
+      }
+
+      class Carrier {
+        public fmAccumulators: number[];
+        public amAccumulators: number[];
+
+        constructor(oscillatorsPerBank: number) {
+          // this.hasAm = this.hasFm = false;
+          this.amAccumulators = Array.from({length: oscillatorsPerBank}, () => 0);
+          this.fmAccumulators = Array.from({length: oscillatorsPerBank}, () => 0);
+        }
+      }
+
+      class ModulationMatrix {
+        modulators: Modulator[];
+        carriers: Carrier[];
+
+        constructor(numberOfBanks: number, oscillatorsPerBank: number) {
+          this.carriers = Array.from({length: numberOfBanks}, () => new Carrier(oscillatorsPerBank));
+          this.modulators = Array.from({length: numberOfBanks}, () => new Modulator(numberOfBanks, this.carriers));
+        }
+
+        setModType(modIdx: number, carrierIdx: number, modType: oscModType) {
+          this.modulators[modIdx].setModType(carrierIdx, modType);
+        }
+
+        setModLevel(modIdx: number, carrierIdx: number, level: number) {
+          this.modulators[modIdx].setModLevel(carrierIdx, level);
+        }
+
+        input(modIdx: number, osc: number, signal: number) {
+          this.modulators[modIdx].input(osc, signal);
+        }
+
+        output(carrierIdx: number, osc: number, modType: oscModType) {
+          const carrier: Carrier = this.carriers[carrierIdx];
+
+          switch (modType) {
+            case oscModType.off:
+              break;
+            case oscModType.frequency:
+              return carrier.fmAccumulators[osc];
+            case oscModType.amplitude:
+              return carrier.amAccumulators[osc];
+            default:
+              console.error("Unknown mod type ", modType);
+          }
+          return 0;
         }
       }
 
@@ -421,7 +412,7 @@ export class OscillatorArray {
             } else if (event.data.type === 'setModType') {
               this.modMatrix.setModType(event.data.modBank, event.data.carrierBank, event.data.modType);
             } else if (event.data.type === 'setModLevel') {
-              this.modMatrix.setModLevel(event.data.modBank, event.data.modLevel);
+              this.modMatrix.setModLevel(event.data.modBank, event.data.carrierBank, event.data.modLevel);
             }
           }
         }
@@ -431,6 +422,8 @@ export class OscillatorArray {
 
         totalTime: number = 0
         iterationCount = 0;
+        maxTime = 0;
+        minTime = 100;
 
         process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
           const {expBase, inverseDenominator, bankData, oscData} = this;
@@ -487,7 +480,7 @@ export class OscillatorArray {
 
                 f *= bd.detuneFactor;
 
-                const x = this.modMatrix.fmSignal(b, osc);
+                const x = this.modMatrix.output(b, osc, oscModType.frequency);
                 const mod = od.butterworthFilter.process(x);
                 /* @ts-ignore */
                 const inc = f / sampleRate;
@@ -499,30 +492,36 @@ export class OscillatorArray {
 
                 const ampEnvelope = (Math.pow(expBase, od.envelopeLevel) - 1.0) * inverseDenominator;
                 const signal = bd.render(currentPhase, band);
-                this.modMatrix.signalIn(b, osc, signal);
+                this.modMatrix.input(b, osc, signal);
                 outputChannel[i] += ampEnvelope * signal;
               }
             }
           }
 
-          this.totalTime += (Date.now() - start);
+          const time = (Date.now() - start);
+          this.totalTime += time
           this.iterationCount++;
-
+          if (time > this.maxTime)
+            this.maxTime = time;
+          if (time < this.minTime)
+            this.minTime = time;
           // Send an average performance report every 500 blocks (~1.5 seconds)
-          if (this.iterationCount >= 500) {
-            const averageMsPerBlock = this.totalTime / this.iterationCount;
-            console.log("averageMsPerBlock = " + averageMsPerBlock)
-            //this.port.postMessage({ type: 'perf-report', averageMsPerBlock });
+           if (this.iterationCount >= 500) {
+             const averageMsPerBlock = this.totalTime / this.iterationCount;
+             console.log("averageMsPerBlock = " + averageMsPerBlock + " maxTime = " + this.maxTime + " minTime = "+ this.minTime);
+             //this.port.postMessage({ type: 'perf-report', averageMsPerBlock });
 
-            this.totalTime = 0;
-            this.iterationCount = 0;
-          }
+             this.totalTime = 0;
+             this.iterationCount = 0;
+             this.maxTime = 0;
+             this.minTime = 100;
+           }
 
           return this.running;
         }
 
         public keyDown(key: number, velocity: number) {
-          const i = this.getVacantOscillator( key);
+          const i = this.getVacantOscillator(key);
           if (i !== -1) {
             this.oscData.forEach((osc, bank) => {  /* forEach bank */
               const od = osc[i];
@@ -534,7 +533,7 @@ export class OscillatorArray {
               if (od.envelopePhase !== envelopePhase.retrigger)
                 od.phase = 0;  /* Start from zero to prevent clicks */
             });
-             /* @ts-ignore */
+            /* @ts-ignore */
             this.port.postMessage({type: "keyDown", oscillator: i, key: key, velocity: velocity});
           }
         }
@@ -582,11 +581,12 @@ export class OscillatorArray {
         }
 
         private roundRobinIndex = 0;
+
         private getVacantOscillator(key: number): number {
           let i: number = -1;
           /* See if the key is still in an active envelope */
           let od = this.oscData.find(s => s.findIndex(o => o.inUse && o.key === key) !== -1);
-          if(od) {
+          if (od) {
             i = od.findIndex(o => o.inUse && o.key === key);
             const bd = this.bankData;
             bd.forEach((b, bankIndex) => {
@@ -598,7 +598,7 @@ export class OscillatorArray {
           } else {  /* Otherwise get the least recently  used oscillator */
             i = this.roundRobinIndex++;
 
-            if(this.roundRobinIndex >= this.oscillatorsPerBank)
+            if (this.roundRobinIndex >= this.oscillatorsPerBank)
               this.roundRobinIndex = 0;
           }
           this.oscData.forEach((osc, bankIndex) => { /* forEach bank */
@@ -703,14 +703,14 @@ export class OscillatorArray {
     this.port?.postMessage({type: "setModType", modBank: modBank, carrierBank: carrierBank, modType: modType});
   }
 
-  public setModLevel(modBank: number, modLevel: number) {
-    this.port?.postMessage({type: "setModLevel", modBank: modBank, modLevel: modLevel});
+  public setModLevel(modBank: number, carrierBank: number, modLevel: number) {
+    this.port?.postMessage({type: "setModLevel", modBank: modBank, carrierBank: carrierBank, modLevel: modLevel});
   }
 
   clearModulation() {
-    for(let modBank = 0; modBank < this.numberOfBanks; modBank++) {
-      this.setModLevel(modBank, 0);
-      for(let carrierBank = 0; carrierBank < this.oscillatorsPerBank; carrierBank++) {
+    for (let modBank = 0; modBank < this.numberOfBanks; modBank++) {
+      for (let carrierBank = 0; carrierBank < this.numberOfBanks; carrierBank++) {
+        this.setModLevel(modBank, carrierBank, 0);
         this.setModType(modBank, carrierBank, oscModType.off);
       }
     }

@@ -117,20 +117,20 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     // else use default settings
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
-    if(!this.started) {
+    if(false && !this.started) {
       for (let i = 0; i < this.numberOfFilters; ++i) {
         this.filters.push(new Filter(this.audioCtx));
       }
       this.started = true;
     }
-    this.filters.forEach((filter, i) => {
-      filter.setFrequency(this.keyToFrequency(i));
-      filter.setDetune(this.proxySettings.deTune);
-      filter.setFreqBendEnvelope(this.proxySettings.freqBend);
-      filter.useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.off);
-      filter.setType(this.proxySettings.filterType);
-      filter.clearModulation();  // Remove any preexisting mod settings
-    });
+    // this.filters.forEach((filter, i) => {
+    //   filter.setFrequency(this.keyToFrequency(i));
+    //   filter.setDetune(this.proxySettings.deTune);
+    //   filter.setFreqBendEnvelope(this.proxySettings.freqBend);
+    //   filter.useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.off);
+    //   filter.setType(this.proxySettings.filterType);
+    //   filter.clearModulation();  // Remove any preexisting mod settings
+    // });
 
     this.frequency().setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
     this.deTune().setValue(this.proxySettings.deTune);
@@ -184,22 +184,22 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   protected setGain(gain: number) {
     this.proxySettings.gain = gain;
     for (let i = 0; i < this.filters.length; i++) {
-      this.filters[i].setGain(gain);
+   //   this.filters[i].setGain(gain);
     }
   }
 
   protected setDetune(deTune: number) {
     this.proxySettings.deTune = deTune;
-    for (let i = 0; i < this.filters.length; i++) {
-      this.filters[i].setDetune(deTune);
-    }
+    // for (let i = 0; i < this.filters.length; i++) {
+    //   this.filters[i].setDetune(deTune);
+    // }
   }
 
   protected setQFactor(qfactor: number) {
     this.proxySettings.qFactor = qfactor;
-    for (let i = 0; i < this.filters.length; i++) {
-      this.filters[i].setQ(qfactor);
-    }
+    // for (let i = 0; i < this.filters.length; i++) {
+    //   this.filters[i].setQ(qfactor);
+    // }
   }
 
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
@@ -207,16 +207,16 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
       this.portamento().setValue(0); // Cannot use portamento with frequency envelope
 
     this.proxySettings.useFrequencyEnvelope = useFreqBendEnvelope ? onOff.on : onOff.off;
-    for (let i = 0; i < this.filters.length; i++) {
-      this.filters[i].useFreqBendEnvelope(useFreqBendEnvelope);
-    }
+    // for (let i = 0; i < this.filters.length; i++) {
+    //   this.filters[i].useFreqBendEnvelope(useFreqBendEnvelope);
+    // }
   }
 
   private setFilterType(value: BiquadFilterType) {
     this.proxySettings.filterType = value as filterTypes;
-    for (let i = 0; i < this.numberOfFilters; ++i) {
-      this.filters[i].setType(value);
-    }
+    // for (let i = 0; i < this.numberOfFilters; ++i) {
+    //   this.filters[i].setType(value);
+    // }
   }
 
   private setPortamentoType(value: PortamentoType) {
@@ -233,9 +233,9 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
    * @param node
    */
   connect(node: AudioNode) {
-    for (let i = 0; i < this.filters.length; i++) {
-      this.filters[i].connect(node);
-    }
+    // for (let i = 0; i < this.filters.length; i++) {
+    //   this.filters[i].connect(node);
+    // }
   }
 
   connectToRingMod(): boolean {
@@ -243,9 +243,9 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     if (ringMod) {
       ok = true;
-      for (let i = 0; i < this.filters.length; i++) {
-        this.filters[i].connect(ringMod.signalInput());
-      }
+      // for (let i = 0; i < this.filters.length; i++) {
+      //   this.filters[i].connect(ringMod.signalInput());
+      // }
     }
     return ok;
   }
@@ -253,11 +253,11 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   connectToPhasor(): boolean {
     const phaser = this.phaser;
     let ok = false;
-    if (phaser) {
+    if (phaser()) {
       ok = true;
-      for (let i = 0; i < this.filters.length; i++) {
-        this.filters[i].connect(phaser().input);
-      }
+      // for (let i = 0; i < this.filters.length; i++) {
+      //   this.filters[i].connect(phaser().input);
+      // }
     }
     return ok;
   }
@@ -267,17 +267,17 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     if (reverb) {
       ok = true;
-      for (let i = 0; i < this.filters.length; i++) {
-        this.filters[i].connect(reverb.input);
-      }
+      // for (let i = 0; i < this.filters.length; i++) {
+      //   this.filters[i].connect(reverb.input);
+      // }
     }
     return ok;
   }
 
   disconnect() {
-    for (let i = 0; i < this.filters.length; i++) {
-      this.filters[i].disconnect();
-    }
+    // for (let i = 0; i < this.filters.length; i++) {
+    //   this.filters[i].disconnect();
+    // }
   }
 
   keysDown: DeviceKeys[] = [];
@@ -440,16 +440,16 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   protected setModLevel($event: number) {
     this.proxySettings.modLevel = $event;
-    for (let i = 0; i < this.numberOfFilters; ++i) {
-      this.filters[i].setModLevel($event);
-    }
+    // for (let i = 0; i < this.numberOfFilters; ++i) {
+    //   this.filters[i].setModLevel($event);
+    // }
   }
 
   protected setModType(type: filterModType) {
     this.proxySettings.modType = type;
-    for (let i = 0; i < this.numberOfFilters; ++i) {
-      this.filters[i].modulation(this.lfo, type);
-    }
+    // for (let i = 0; i < this.numberOfFilters; ++i) {
+    //   this.filters[i].modulation(this.lfo, type);
+    // }
   }
 
   ngAfterViewInit(): void {

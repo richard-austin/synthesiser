@@ -51,7 +51,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   protected tuningDivisions = 6;
   private lfo!: OscillatorNode;
   private audioCtx!: AudioContext;
-  private wasmBinary!: ArrayBuffer;
+ // private wasmBinary!: ArrayBuffer;
   private proxySettings!: OscillatorSettings;
   private cookies!: Cookies;
   private velocitySensitive: boolean = true;
@@ -111,18 +111,18 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   clipboard: ClipboardService = inject(ClipboardService);
   cd: ChangeDetectorRef = inject(ChangeDetectorRef);
 
-  async start(audioCtx: AudioContext, wasmBinary: ArrayBuffer, settings: OscillatorSettings | null): Promise<void> {
+  async start(audioCtx: AudioContext, settings: OscillatorSettings | null): Promise<void> {
     this.audioCtx = audioCtx;
-    this.wasmBinary = wasmBinary;
+   // this.wasmBinary = wasmBinary;
     this.cookies = new Cookies();
     this.chordProcessor = new ChordProcessor();
     this.chordProcessor.setKeyDownCallback(this.chordProcessorKeyDownCallback);
     this.lfo = this.audioCtx.createOscillator();
     this.lfo.start();
-    await this.applySettings(wasmBinary, settings);
+    await this.applySettings(settings);
   }
 
-  async applySettings(wasmBinary: ArrayBuffer, settings: OscillatorSettings | null) {
+  async applySettings(settings: OscillatorSettings | null) {
     const cookieName = "oscillator" + this.params().settingsId;
     if (!settings) {  // If no settings supplied, create default and check if previously saved in cookie
       settings = new OscillatorSettings();
@@ -243,7 +243,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   private setWaveForm(value: OscillatorType) {
-    console.log("setWaveForm: "+value)
     this.proxySettings.waveForm = value as oscWaveforms;
     this.fmSynthService.setType(value, this.oscNumber());
   }
@@ -602,7 +601,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     // @ts-ignore
     else if (target.value === 2) {
       const settings: OscillatorSettings = JSON.parse(this.clipboard.config as string);
-      this.start(this.audioCtx, this.wasmBinary, settings).then();
+      this.start(this.audioCtx, settings).then();
     }
     const contextMenu = this.contextMenu().nativeElement;
     contextMenu.style.visibility = "hidden";
@@ -678,7 +677,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     waveform.addEventListener('change', ($event) => {
       // @ts-ignore
       const value = $event.target.value as OscillatorType;
-      console.log("Setting to "+value);
       this.setWaveForm(value as OscillatorType);
     });
 

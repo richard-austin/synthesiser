@@ -173,7 +173,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
     // Connect the module component outputs
     for(const [i, oscillator] of this.oscillatorsGrp().entries()) {
-      await oscillator.start(this.audioCtx, wasmBinary, settings ? settings.oscillatorSettings[i] : settings);
+      await oscillator.start(this.audioCtx, settings ? settings.oscillatorSettings[i] : settings);
     }
 
     this.matrixComponent().start(settings ? settings.matrixSettings : settings);

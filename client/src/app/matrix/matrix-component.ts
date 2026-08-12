@@ -49,11 +49,11 @@ export class MatrixComponent implements AfterViewInit {
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
 
-    this.proxySettings.matrix.forEach((row, carrierIdx) =>
+    this.proxySettings.matrix.forEach((row, carrierIdx) => {
     row.forEach((mtxCtl, modIdx) => {
       const control = this.matrixControls()[carrierIdx*this.proxySettings.size + modIdx] as MatrixControlComponent;
       control.start(mtxCtl, modIdx, carrierIdx);
-    }));
+    })});
   }
 
   public getSettings(): MatrixSettings {

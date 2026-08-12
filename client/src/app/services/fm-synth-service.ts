@@ -71,8 +71,8 @@ export class FmSynthService {
     this.synthNode.setModType(modBank, carrierBank, modType);
   }
 
-  public setModLevel(modBank: number, modLevel: number) {
-    this.synthNode.setModLevel(modBank, modLevel);
+  public setModLevel(modBank: number, carrierBank: number, modLevel: number) {
+    this.synthNode.setModLevel(modBank, carrierBank, modLevel);
   }
 
   private clearModulation() {
@@ -80,7 +80,6 @@ export class FmSynthService {
   }
 
   setType(type: OscillatorType, bank: number) {
-    console.log("type = "+type);
     if (/^(sine)$/.test(type)) {
       this.synthNode.setType(type, bank);
     } else {
@@ -106,6 +105,6 @@ export class FmSynthService {
   //  this.setFreqBendEnvelope(proxySettings.freqBend);
   //  this.useFreqBendEnvelope(proxySettings.useFrequencyEnvelope === onOff.on);
     this.setType(proxySettings.waveForm, bank);
-    this.clearModulation();  // Remove any preexisting mod settings
+   // this.clearModulation();  // Remove any preexisting mod settings
   }
 }
