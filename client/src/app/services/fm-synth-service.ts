@@ -51,8 +51,8 @@ export class FmSynthService {
     this.synthNode.keyDown(key, velocity);
   }
 
-  public keyUp(bank: number, key: number): void {
-    this.synthNode.keyUp(bank, key);
+  public keyUp(key: number): void {
+    this.synthNode.keyUp(key);
   }
 
   public envelope(bank: number, phase: envelopePhase, value: number) {

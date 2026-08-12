@@ -324,9 +324,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   protected keyup(code: number) {
-    this.fmSynthService.keyUp(0, code);
-    //this.oscillatorsGrp().forEach(osc => osc.keyUp(code));
-    //this.filtersGrp.keyUp(code);
+    this.fmSynthService.keyUp(code);
     this.noise().keyUp(code);
   }
 

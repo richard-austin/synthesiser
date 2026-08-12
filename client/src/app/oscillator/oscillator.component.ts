@@ -402,98 +402,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     // })
   }
 
-   keysDown: DeviceKeys[] = [];
-
-  keyDown(keyIndex: number, velocity: number) {
-    // const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyDown(keyIndex, velocity, this.proxySettings.portamento === 0);
-    // if (keys) {
-    //   this.devicePoolManagerService.keyDown(keys, this.oscNumber());
-    // }
-    //
-    // const lastKey = this.keysDown.length > 0 ? this.keysDown[this.keysDown.length - 1] : null;
-    // if (-1 === this.keysDown.findIndex(key => key.keyIndex === keyIndex)) {
-    //   this.keysDown.push(keys as DeviceKeys);
-    // }
-    //
-    if (!this.velocitySensitive)
-      velocity = 0x7f;
-    //const freq = this.keyToFrequency(keyIndex);
-
-    // if (keys !== undefined && this.proxySettings.portamento > 0) {
-    //   this.cancelAndHoldAtTime(this.audioCtx.currentTime, this.oscillators[keys.deviceIndex].oscillator.frequency);
-    //   const proxySettings = this.proxySettings;
-    //   switch (proxySettings.portamentoType) {
-    //     case 'chord':
-    //       if (!this.chordProcessor.addNote(structuredClone(keys)))
-    //         return;  // Less than the minimum time flor a chord
-    //       this.chordProcessor.setStartNote(keys, this.oscillators[keys.deviceIndex], this.keyToFrequency);
-    //       break;
-    //     case 'last':
-    //       if (lastKey)
-    //         this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(lastKey.keyIndex);
-    //       break;
-    //     case 'first':
-    //       const firstKeys = this.keysDown[0];
-    //       this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(firstKeys.keyIndex);
-    //       break;
-    //     case 'lowest':
-    //       const lowestKey = Math.min(...this.keysDown.map(keys => keys.keyIndex));
-    //       if (lowestKey !== undefined)
-    //         this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(lowestKey);
-    //       break;
-    //     case 'highest':
-    //       const highestKey = Math.max(...this.keysDown.map(keys => keys.keyIndex));
-    //       this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(highestKey);
-    //       break;
-    //     case 'plus12':
-    //       this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) * 2;
-    //       break;
-    //     case 'plus24':
-    //       this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) * 4;
-    //       break;
-    //     case 'minus12':
-    //       this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) / 2;
-    //       break;
-    //     case 'minus24':
-    //       this.oscillators[keys.deviceIndex].oscillator.frequency.value = this.keyToFrequency(keyIndex) / 4;
-    //       break;
-    //   }
-    //
-    //   this.oscillators[keys.deviceIndex].oscillator.frequency.exponentialRampToValueAtTime(freq, this.audioCtx.currentTime + this.proxySettings.portamento);
-    // }
-
- //   this.fmSynthService.keyDown(this.oscNumber(), keyIndex, velocity);
-    // if (keys)
-    //   this.oscillators[keys.deviceIndex].keyDown(velocity, freq);
-  }
-
   private chordProcessorKeyDownCallback: (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => void = (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => {
     //const freq = this.keyToFrequency(prevKeys.keyIndex);
   //  this.fmSynthService.keyDown(this.oscNumber(), theseKeys.deviceIndex, 0x0f);
-  }
-
-  keyUp(keyIndex: number) {
-    this.fmSynthService.keyUp(this.oscNumber(), keyIndex);
-    // const keys: DeviceKeys | undefined = this.oscillatorPoolMgr.keyUp(keyIndex);
-    // if (keys) {
-    //   const sub = timer(this.proxySettings.adsr.releaseTime * 1000).subscribe(() => {
-    //     sub.unsubscribe();
-    //     const idx = this.keysDown.findIndex(key => key.keyIndex === keyIndex);
-    //     if (idx > -1)
-    //       this.keysDown.splice(idx, 1);
-    //     //   console.log("keysDown.length = ", this.keysDown.length, " idx = ", idx);
-    //   });
-    //
-    //   this.devicePoolManagerService.keyUp(keys, this.oscNumber());  // Trigger appropriate filter bank
-    //
-    //   if (this.proxySettings.portamentoType === 'chord')
-    //     if (this.proxySettings.legatoMode === onOff.on)
-    //       this.chordProcessor.release(this.proxySettings.adsr.releaseTime);
-    //     else
-    //       this.chordProcessor.release(this.proxySettings.adsr.decayTime + this.proxySettings.adsr.releaseTime);
-    // } else {
-    //   //console.error("keyIndex " + keyIndex + " not found");
-    // }
   }
 
   protected setPortamento($event: number) {

@@ -720,8 +720,8 @@ export class OscillatorArray {
     this.port?.postMessage({type: 'keyDown', key: key, velocity: velocity});
   }
 
-  public keyUp(bank: number, key: number) {
-    this.port?.postMessage({type: 'keyUp', bank: bank, key: key});
+  public keyUp(key: number) {
+    this.port?.postMessage({type: 'keyUp', key: key});
   }
 
   public connect(node: AudioNode) {
