@@ -54,8 +54,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
  // private wasmBinary!: ArrayBuffer;
   private proxySettings!: OscillatorSettings;
   private cookies!: Cookies;
-  private velocitySensitive: boolean = true;
- // private oscillatorPoolMgr!: DevicePoolManager;
   private chordProcessor!: ChordProcessor;
 
   filters: InputSignal<FilterComponent> = input.required<FilterComponent>();
@@ -229,7 +227,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   useVelocitySensitive(velocitySensitive: boolean) {
     this.proxySettings.velocitySensitive = velocitySensitive ? onOff.on : onOff.off;
-    this.velocitySensitive = velocitySensitive;
+    this.fmSynthService.useVelocitySensitive(this.oscNumber(), velocitySensitive);
   }
 
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
@@ -287,9 +285,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   protected setModOutput(modOutput: oscModOutput) {
     this.proxySettings.modOutput = modOutput;
-   // for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-  //    this.oscillators[i].setModOutput(modOutput);
-   // }
+    this.fmSynthService.setModOutput(this.oscNumber(), modOutput);
   }
 
   /**
@@ -611,7 +607,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     for (let j = 0; j < oscModOutputForm.elements.length; ++j) {
       oscModOutputForm.elements[j].addEventListener('change', ($event) => {
         // @ts-ignore
-        const value = $event.target.value as modulationType;
+        const value = $event.target.value as oscModOutput;
         this.setModOutput(value);
       });
     }

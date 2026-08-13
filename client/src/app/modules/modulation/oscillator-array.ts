@@ -1,4 +1,4 @@
-import {oscModType} from '../../enums/enums';
+import {oscModOutput, oscModType} from '../../enums/enums';
 
 export enum envelopePhase {inactive, attack, decay, sustain, release, retrigger, legato }
 
@@ -26,6 +26,8 @@ export class OscillatorArray {
         public sustainLevel: number;
         public release: number;
         public legato: boolean;
+        public velocitySensitive: boolean;
+        public velocity: number;
 
         constructor() {
           this.attack = 0;
@@ -33,6 +35,8 @@ export class OscillatorArray {
           this.sustainLevel = 0.0;
           this.release = 0.5;
           this.legato = false;
+          this.velocity = 0x7f;
+          this.velocitySensitive = false;
         }
       }
 
@@ -50,7 +54,6 @@ export class OscillatorArray {
         public inUse: boolean = false;
         public keyDown: boolean = false;
         private legatoCountDown: number = 0;
-        public velocity: number = 0x0f;
 
         constructor(envelopeData: EnvelopeData) {
           this.envelopeData = envelopeData;
@@ -82,14 +85,15 @@ export class OscillatorArray {
 
 
         public advanceToSustain() {
-          const {velocity} = this;
+          const {velocity} = this.envelopeData;
           const vel = velocity / 0x7f;
           const envData = this.envelopeData;
           if (this.keyDown) {
             if (!envData.legato) {
               if (this.envelopePhase === envelopePhase.inactive || (this.envelopePhase !== envelopePhase.sustain && this.envelopePhase !== envelopePhase.attack && this.envelopePhase !== envelopePhase.decay)) {
                 this.inUse = true;
-                this.exponentialRampToValueAtTime(1, envData.attack);
+                const attackTarget = envData.velocitySensitive ? vel : 1;
+                this.exponentialRampToValueAtTime(attackTarget, envData.attack);
                 this.envelopePhase = envelopePhase.attack;
               } else if (this.envelopePhase === envelopePhase.attack) {
                 this.level = this.getEnvelopeValue();
@@ -164,6 +168,7 @@ export class OscillatorArray {
         public periodicWave!: Float32Array[];
         currentPeriodicWave!: Float32Array[];
         private readonly waveTableSize: number;
+        modOutput = 'direct';
 
         public periodicWaveFunction(x: number, band: number): number {
           return this.currentPeriodicWave[band][Math.floor(x * this.waveTableSize)];
@@ -363,8 +368,6 @@ export class OscillatorArray {
         private readonly bankData: BankData[];
         private readonly oscData: OscillatorData[][];
         private readonly modMatrix: ModulationMatrix;
-        private readonly expBase: number;
-        private readonly inverseDenominator: number;
 
         constructor(options: any) {
           super();
@@ -383,15 +386,7 @@ export class OscillatorArray {
           this.modMatrix = new ModulationMatrix(this.numberOfBanks, this.oscillatorsPerBank);
 
           this.process = this.process.bind(this); //
-          /* Parameters for exponential amplitude envelope */
-          // Your curve intensity factor (Try values between 2.0 and 5.0)
-          const b = 2.0;
-
-          // Pre-calculate the base and the scaling denominator
-          this.expBase = Math.exp(b);
-          this.inverseDenominator = 1.0 / (this.expBase - 1.0);
-
-          //Array(this.numberOfBanks).fill(new OscillatorStatus()).map(() => Array(this.oscillatorsPerBank).fill(new OscillatorStatus()))
+           //Array(this.numberOfBanks).fill(new OscillatorStatus()).map(() => Array(this.oscillatorsPerBank).fill(new OscillatorStatus()))
           /* @ts-ignore */
           this.port.onmessage = (event) => {
             if (event.data.type === 'shutdown') {
@@ -435,6 +430,12 @@ export class OscillatorArray {
               this.modMatrix.setModType(event.data.modBank, event.data.carrierBank, event.data.modType);
             } else if (event.data.type === 'setModLevel') {
               this.modMatrix.setModLevel(event.data.modBank, event.data.carrierBank, event.data.modLevel);
+            } else if (event.data.type === 'setModOutput') {
+              const bd = this.bankData[event.data.bank];
+              bd.modOutput = event.data.modOutput;
+            } else if (event.data.type === 'useVelocitySensitive') {
+              const bd = this.bankData[event.data.bank];
+              bd.envelopeData.velocitySensitive = event.data.velocitySensitive;
             }
           }
         }
@@ -448,7 +449,7 @@ export class OscillatorArray {
         minTime = 100;
 
         process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
-          const {expBase, inverseDenominator, bankData, oscData} = this;
+          const {bankData, oscData} = this;
           const output: Float32Array[] = outputs[0]
           const start = Date.now();
           /* @ts-ignore */
@@ -513,9 +514,12 @@ export class OscillatorArray {
                 currentPhase = currentPhase - Math.floor(currentPhase);
                 od.phase = phase - Math.floor(phase);
 
-                const ampEnvelope = (Math.pow(expBase, env.level) - 1.0) * inverseDenominator;
+                const ampEnvelope = env.level;
                 const signal = bd.render(currentPhase, band);
-                this.modMatrix.input(b, osc, signal);
+                let modSignal = signal;
+                if(bd.modOutput === 'envelope')
+                  modSignal *= ampEnvelope;
+                this.modMatrix.input(b, osc, modSignal);
                 outputChannel[i] += ampEnvelope * signal;
               }
             }
@@ -552,7 +556,7 @@ export class OscillatorArray {
               od.key = key;
               od.env.keyDown = true;
               od.env.inUse = true;
-              od.env.velocity = velocity;
+              od.env.envelopeData.velocity = velocity;
               if (od.env.envelopePhase !== envelopePhase.retrigger)
                 od.phase = 0;  /* Start from zero to prevent clicks */
             });
@@ -736,6 +740,14 @@ export class OscillatorArray {
         this.setModType(modBank, carrierBank, oscModType.off);
       }
     }
+  }
+
+  setModOutput(bank: number, modOutput: oscModOutput) {
+    this.port?.postMessage({type: 'setModOutput', bank: bank, modOutput: modOutput});
+  }
+
+  useVelocitySensitive(bank: number, velocitySensitive: boolean) {
+    this.port?.postMessage({type: 'useVelocitySensitive', bank: bank, velocitySensitive: velocitySensitive});
   }
 
   public keyDown(key: number, velocity: number) {

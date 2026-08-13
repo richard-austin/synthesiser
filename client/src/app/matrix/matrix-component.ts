@@ -29,7 +29,6 @@ export class MatrixComponent implements AfterViewInit {
   private cookies!: Cookies;
   private proxySettings!: MatrixSettings;
 
-
   constructor() {
     this.cookies = new Cookies();
   }

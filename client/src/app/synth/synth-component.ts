@@ -306,10 +306,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   protected keydown(code: number, velocity: number) {
-    this.fmSynthService.keyDown(code, 0x7f);
-    //this.oscillatorsGrp().forEach(osc => osc.keyDown(code, velocity));
-
-    // this.filtersGrp.keyDown(code, velocity);
+    this.fmSynthService.keyDown(code, velocity);
     this.noise().keyDown(code, velocity);
   }
 

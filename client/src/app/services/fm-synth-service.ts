@@ -2,7 +2,7 @@ import {Injectable} from '@angular/core';
 import {envelopePhase, OscillatorArray} from '../modules/modulation/oscillator-array';
 import {WaveTables} from '../modules/wavetables';
 import {OscillatorSettings} from '../settings/oscillator';
-import {oscModType} from '../enums/enums';
+import {oscModOutput, oscModType} from '../enums/enums';
 
 @Injectable({
   providedIn: 'root'
@@ -93,6 +93,12 @@ export class FmSynthService {
         this.synthNode.setType("sine", bank);
       }
     }
+  }
+  setModOutput(bank: number, modOutput: oscModOutput) {
+      this.synthNode.setModOutput(bank, modOutput);
+  }
+  useVelocitySensitive(bank: number, velocitySensitive: boolean) {
+    this.synthNode.useVelocitySensitive(bank, velocitySensitive);
   }
 
   applySettings(proxySettings: OscillatorSettings, bank: number) {
