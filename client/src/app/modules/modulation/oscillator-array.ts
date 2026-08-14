@@ -334,7 +334,7 @@ export class OscillatorArray {
         }
 
         setModLevel(modIdx: number, carrierIdx: number, level: number) {
-          this.modulators[modIdx].setModLevel(carrierIdx, level);
+          this.modulators[modIdx].setModLevel(carrierIdx, level * 7);
         }
 
         input(modIdx: number, osc: number, signal: number) {
@@ -343,18 +343,24 @@ export class OscillatorArray {
 
         output(carrierIdx: number, osc: number, modType: oscModType) {
           const carrier: Carrier = this.carriers[carrierIdx];
-
+          let retVal = 0
           switch (modType) {
             case oscModType.off:
               break;
             case oscModType.frequency:
-              return carrier.fmAccumulators[osc];
+              const fmAccumulators = carrier.fmAccumulators;
+              retVal = fmAccumulators[osc];
+              fmAccumulators[osc] = 0;
+              break;
             case oscModType.amplitude:
-              return carrier.amAccumulators[osc];
+              const amAccumulators = carrier.amAccumulators;
+              retVal =  amAccumulators[osc];
+              amAccumulators[osc] = 0;
+              break;
             default:
               console.error("Unknown mod type ", modType);
           }
-          return 0;
+          return retVal;
         }
       }
 
@@ -386,7 +392,6 @@ export class OscillatorArray {
           this.modMatrix = new ModulationMatrix(this.numberOfBanks, this.oscillatorsPerBank);
 
           this.process = this.process.bind(this); //
-           //Array(this.numberOfBanks).fill(new OscillatorStatus()).map(() => Array(this.oscillatorsPerBank).fill(new OscillatorStatus()))
           /* @ts-ignore */
           this.port.onmessage = (event) => {
             if (event.data.type === 'shutdown') {
@@ -532,7 +537,7 @@ export class OscillatorArray {
             this.maxTime = time;
           if (time < this.minTime)
             this.minTime = time;
-          // Send an average performance report every 500 blocks (~1.5 seconds)
+       //   Send an average performance report every 500 blocks (~1.5 seconds)
           //  if (this.iterationCount >= 500) {
           //    const averageMsPerBlock = this.totalTime / this.iterationCount;
           //    console.log("averageMsPerBlock = " + averageMsPerBlock + " maxTime = " + this.maxTime + " minTime = "+ this.minTime);
