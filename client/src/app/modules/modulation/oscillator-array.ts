@@ -53,7 +53,6 @@ export class OscillatorArray {
         public envelopePhase: envelopePhase = envelopePhase.inactive;
         public inUse: boolean = false;
         public keyDown: boolean = false;
-        private legatoCountDown: number = 0;
 
         constructor(envelopeData: EnvelopeData) {
           this.envelopeData = envelopeData;
@@ -63,7 +62,7 @@ export class OscillatorArray {
           this.level = this.lowestValue;
         }
 
-        exponentialRampToValueAtTime(value: number, time: number) {
+        setEnvelopePhaseTiming(value: number, time: number) {
           this.v0 = this.level;
           this.v1 = value + this.lowestValue;
           this.t0 = this.t;
@@ -71,21 +70,26 @@ export class OscillatorArray {
           this.targetReached = false;
         }
 
-        getEnvelopeValue(): number {
-
+        exponentialRampToValueAtTime(): number {
           // @ts-ignore
           this.t += 1 / sampleRate;
           this.level = this.v0 * Math.pow(this.v1 / this.v0, (this.t - this.t0) / (this.t1 - this.t0));
           if (this.t >= this.t1) {
             this.targetReached = true;
           }
-
           return this.level;
         }
 
+        sustainAtCurrentLevelForTime() {
+          // @ts-ignore
+          this.t += 1 / sampleRate;
+          if (this.t >= this.t1) {
+            this.targetReached = true;
+          }
+        }
 
         public advanceToSustain() {
-          const {velocity} = this.envelopeData;
+          const velocity: number = this.envelopeData.velocity;
           const vel = velocity / 0x7f;
           const envData = this.envelopeData;
           if (this.keyDown) {
@@ -93,68 +97,68 @@ export class OscillatorArray {
               if (this.envelopePhase === envelopePhase.inactive || (this.envelopePhase !== envelopePhase.sustain && this.envelopePhase !== envelopePhase.attack && this.envelopePhase !== envelopePhase.decay)) {
                 this.inUse = true;
                 const attackTarget = envData.velocitySensitive ? vel : 1;
-                this.exponentialRampToValueAtTime(attackTarget, envData.attack);
+                this.setEnvelopePhaseTiming(attackTarget, envData.attack);
                 this.envelopePhase = envelopePhase.attack;
               } else if (this.envelopePhase === envelopePhase.attack) {
-                this.level = this.getEnvelopeValue();
+                this.level = this.exponentialRampToValueAtTime();
                 if (this.targetReached) {
                   this.envelopePhase = envelopePhase.decay;
-                  this.exponentialRampToValueAtTime(envData.sustainLevel, envData.decay);
+                  this.setEnvelopePhaseTiming(envData.sustainLevel, envData.decay);
                 }
               } else if (this.envelopePhase === envelopePhase.decay) {
-                this.level = this.getEnvelopeValue();
+                this.level = this.exponentialRampToValueAtTime();
                 if (this.targetReached) {
                   this.envelopePhase = envelopePhase.sustain;
                 }
               }
             } else {
-              if (this.envelopePhase === envelopePhase.inactive || this.envelopePhase === envelopePhase.sustain || this.envelopePhase === envelopePhase.retrigger) {
-                /* @ts-ignore */
-                this.legatoCountDown = sampleRate * (env.attack + env.decay);
-                this.envelopePhase = envelopePhase.sustain;
-                this.level = vel;
+              if (this.envelopePhase === envelopePhase.inactive || (this.envelopePhase !== envelopePhase.sustain && this.envelopePhase !== envelopePhase.attack && this.envelopePhase !== envelopePhase.decay)) {
+                this.inUse = true;
+                const attackTarget = envData.velocitySensitive ? vel : 1;
+                this.setEnvelopePhaseTiming(attackTarget, envData.attack);
+                this.envelopePhase = envelopePhase.attack;
+              } else if (this.envelopePhase === envelopePhase.attack) {
+                this.level = this.exponentialRampToValueAtTime();
+                if (this.targetReached) {
+                  this.envelopePhase = envelopePhase.decay;
+                }
               }
             }
           }
         }
 
         public advanceToZero() {
-          const lowestSustainLevel = 0.1;  // Prevents indefinite release timeouts
           const envData = this.envelopeData;
           if (!this.keyDown) {
             if (!envData.legato) {
               if (this.envelopePhase !== envelopePhase.inactive && this.envelopePhase !== envelopePhase.release) {
                 this.envelopePhase = envelopePhase.release;
-                this.exponentialRampToValueAtTime(this.lowestValue, envData.release);
+                this.setEnvelopePhaseTiming(this.lowestValue, envData.release);
               } else if (this.envelopePhase === envelopePhase.release) {
-                this.level = this.getEnvelopeValue();
+                this.level = this.exponentialRampToValueAtTime();
                 if (this.targetReached) {
                   this.envelopePhase = envelopePhase.inactive;
                 }
               }
             } else {
-              if (this.envelopePhase !== envelopePhase.inactive) {
-                if (this.envelopePhase === envelopePhase.sustain) {
-                  if (--this.legatoCountDown <= 0) {
-                    this.envelopePhase = envelopePhase.release;
-                    /* @ts-ignore */
-                    this.releaseRate = (this.envelopeLevel + lowestSustainLevel) / (sampleRate * this.release);
-                  }
-                } else if (this.envelopePhase === envelopePhase.release) {
-                  //        this.envelopeLevel -= this.releaseRate;
-                  if (this.level <= 0) {
-                    this.level = 0;
-                    this.envelopePhase = envelopePhase.inactive;
-                    this.inUse = false;
-                  }
+              if(this.envelopePhase === envelopePhase.decay) {
+                this.setEnvelopePhaseTiming(0, envData.decay); /* Value doesn't matter here */
+                this.envelopePhase = envelopePhase.sustain;
+              } else if(this.envelopePhase === envelopePhase.sustain) {
+                this.sustainAtCurrentLevelForTime();
+                if(this.targetReached) {
+                  this.envelopePhase = envelopePhase.release;
+                  this.setEnvelopePhaseTiming(this.lowestValue, envData.release);
                 }
+              } else if (this.envelopePhase === envelopePhase.release) {
+                this.exponentialRampToValueAtTime();
+                if(this.targetReached)
+                  this.envelopePhase = envelopePhase.inactive;
               }
             }
           }
         }
-
       }
-
       enum envelopePhase {inactive, attack, decay, sustain, release, retrigger, legato }
 
       class BankData {
