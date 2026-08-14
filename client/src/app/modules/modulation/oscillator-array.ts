@@ -141,24 +141,25 @@ export class OscillatorArray {
                 }
               }
             } else {
-              if(this.envelopePhase === envelopePhase.decay) {
+              if (this.envelopePhase === envelopePhase.decay) {
                 this.setEnvelopePhaseTiming(0, envData.decay); /* Value doesn't matter here */
                 this.envelopePhase = envelopePhase.sustain;
-              } else if(this.envelopePhase === envelopePhase.sustain) {
+              } else if (this.envelopePhase === envelopePhase.sustain) {
                 this.sustainAtCurrentLevelForTime();
-                if(this.targetReached) {
+                if (this.targetReached) {
                   this.envelopePhase = envelopePhase.release;
                   this.setEnvelopePhaseTiming(this.lowestValue, envData.release);
                 }
               } else if (this.envelopePhase === envelopePhase.release) {
                 this.exponentialRampToValueAtTime();
-                if(this.targetReached)
+                if (this.targetReached)
                   this.envelopePhase = envelopePhase.inactive;
               }
             }
           }
         }
       }
+
       enum envelopePhase {inactive, attack, decay, sustain, release, retrigger, legato }
 
       class BankData {
@@ -358,7 +359,7 @@ export class OscillatorArray {
               break;
             case oscModType.amplitude:
               const amAccumulators = carrier.amAccumulators;
-              retVal =  amAccumulators[osc];
+              retVal = amAccumulators[osc];
               amAccumulators[osc] = 0;
               break;
             default:
@@ -398,53 +399,74 @@ export class OscillatorArray {
           this.process = this.process.bind(this); //
           /* @ts-ignore */
           this.port.onmessage = (event) => {
-            if (event.data.type === 'shutdown') {
-              this.running = false;
-              /* @ts-ignore */
-              this.port.close();
-              console.log("Phase modulator closed");
-            } else if (event.data.type === 'periodicWave') {
-              const bd = this.bankData[event.data.bank];
-              bd.periodicWave = event.data.periodicWave;
-              bd.type = "custom";
-              bd.render = bd.periodicWaveFunction;
-            } else if (event.data.type === 'type') {
-              const bd = this.bankData[event.data.bank];
-              bd.type = event.data.payload;
-              if (bd.type === "sine") {
-                bd.render = bd.sineFunction;
-              } else if (bd.type === "custom") {
+            switch (event.data.type) {
+              case 'shutDown':
+                this.running = false;
+                /* @ts-ignore */
+                this.port.close();
+                console.log("Oscillators  closed");
+                break;
+              case 'periodicWave': {
+                const bd = this.bankData[event.data.bank];
+                bd.periodicWave = event.data.periodicWave;
+                bd.type = "custom";
                 bd.render = bd.periodicWaveFunction;
+                break;
               }
-            } else if (event.data.type === 'keyDown') {
-              this.keyDown(event.data.key, event.data.velocity);
-            } else if (event.data.type === 'keyUp') {
-              this.keyUp(event.data.key);
-            } else if (event.data.type === 'tuning') {
-              const bank = event.data.bank;
-              const os = this.oscData[bank];
-              const bankStatus = this.bankData[bank];
-              bankStatus.tuning = event.data.tuning;
-              os.forEach((o) => {
-                o.frequency = this.keyToFrequency(o.key, bank);
-              });
-            } else if (event.data.type === 'detune') {
-              const bank = event.data.bank;
-              //  const os = this.oscillatorStatus[bank];
-              const bankStatus = this.bankData[bank];
-              bankStatus.detune = event.data.detune;
-            } else if (event.data.type === 'envelope') {
-              this.setEnvelope(event.data.bank, event.data.phase, event.data.value);
-            } else if (event.data.type === 'setModType') {
-              this.modMatrix.setModType(event.data.modBank, event.data.carrierBank, event.data.modType);
-            } else if (event.data.type === 'setModLevel') {
-              this.modMatrix.setModLevel(event.data.modBank, event.data.carrierBank, event.data.modLevel);
-            } else if (event.data.type === 'setModOutput') {
-              const bd = this.bankData[event.data.bank];
-              bd.modOutput = event.data.modOutput;
-            } else if (event.data.type === 'useVelocitySensitive') {
-              const bd = this.bankData[event.data.bank];
-              bd.envelopeData.velocitySensitive = event.data.velocitySensitive;
+              case 'type': {
+                const bd = this.bankData[event.data.bank];
+                bd.type = event.data.payload;
+                if (bd.type === "sine") {
+                  bd.render = bd.sineFunction;
+                } else if (bd.type === "custom") {
+                  bd.render = bd.periodicWaveFunction;
+                }
+              }
+                break;
+              case 'keyDown':
+                this.keyDown(event.data.key, event.data.velocity);
+                break;
+              case 'keyUp':
+                this.keyUp(event.data.key);
+                break;
+              case 'tuning': {
+                const bank = event.data.bank;
+                const os = this.oscData[bank];
+                const bankStatus = this.bankData[bank];
+                bankStatus.tuning = event.data.tuning;
+                os.forEach((o) => {
+                  o.frequency = this.keyToFrequency(o.key, bank);
+                });
+                break;
+              }
+              case 'detune': {
+                const bank = event.data.bank;
+                const bankStatus = this.bankData[bank];
+                bankStatus.detune = event.data.detune;
+                break;
+              }
+              case 'envelope':
+                this.setEnvelope(event.data.bank, event.data.phase, event.data.value);
+                break;
+              case 'setModType':
+                this.modMatrix.setModType(event.data.modBank, event.data.carrierBank, event.data.modType);
+                break;
+              case 'setModLevel':
+                this.modMatrix.setModLevel(event.data.modBank, event.data.carrierBank, event.data.modLevel);
+                break;
+              case 'setModOutput': {
+                const bd = this.bankData[event.data.bank];
+                bd.modOutput = event.data.modOutput;
+                break;
+              }
+              case 'useVelocitySensitive': {
+                const bd = this.bankData[event.data.bank];
+                bd.envelopeData.velocitySensitive = event.data.velocitySensitive;
+                break;
+              }
+              default:
+                console.error("Unknown event type ", event.data.type);
+                break;
             }
           }
         }
@@ -497,7 +519,7 @@ export class OscillatorArray {
                   band = Math.floor(Math.log2(f / this.startFx) / Math.log2(this.root2));
 
                   if (band < 0) band = 0;
-                  else if (band > bd.currentPeriodicWave.length - 1) band = bd.currentPeriodicWave.length - 1;
+                  else if (bd.currentPeriodicWave && band > bd.currentPeriodicWave.length - 1) band = bd.currentPeriodicWave.length - 1;
                 }
                 const detune = bd.detune;
                 if (detune !== bd.lastDetune) {
@@ -526,7 +548,7 @@ export class OscillatorArray {
                 const ampEnvelope = env.level;
                 const signal = bd.render(currentPhase, band);
                 let modSignal = signal;
-                if(bd.modOutput === 'envelope')
+                if (bd.modOutput === 'envelope')
                   modSignal *= ampEnvelope;
                 this.modMatrix.input(b, osc, modSignal);
                 outputChannel[i] += ampEnvelope * signal;
@@ -541,7 +563,7 @@ export class OscillatorArray {
             this.maxTime = time;
           if (time < this.minTime)
             this.minTime = time;
-       //   Send an average performance report every 500 blocks (~1.5 seconds)
+          //   Send an average performance report every 500 blocks (~1.5 seconds)
           //  if (this.iterationCount >= 500) {
           //    const averageMsPerBlock = this.totalTime / this.iterationCount;
           //    console.log("averageMsPerBlock = " + averageMsPerBlock + " maxTime = " + this.maxTime + " minTime = "+ this.minTime);
@@ -668,15 +690,6 @@ export class OscillatorArray {
 
   savedTypes: OscillatorType[] = [];
 
-  setType(type: OscillatorType, bank: number) {
-    this.savedTypes[bank] = type;
-    this.port.postMessage({type: 'type', payload: type, bank: bank});
-  }
-
-  getType(bank: number): OscillatorType {
-    return this.savedTypes[bank];
-  }
-
   static lastReal: number[];
   static lastImag: number[];
   static lastTable: Promise<AudioBuffer[]>;
@@ -716,6 +729,11 @@ export class OscillatorArray {
       });
       this.port?.postMessage({type: 'periodicWave', periodicWave: cd, bank: bank});
     });
+  }
+
+  setType(type: OscillatorType, bank: number) {
+    this.savedTypes[bank] = type;
+    this.port.postMessage({type: 'type', payload: type, bank: bank});
   }
 
   public disconnect(node?: AudioNode) {
