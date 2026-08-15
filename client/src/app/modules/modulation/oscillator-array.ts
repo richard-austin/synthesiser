@@ -137,6 +137,7 @@ export class OscillatorArray {
               } else if (this.envelopePhase === envelopePhase.release) {
                 this.level = this.exponentialRampToValueAtTime();
                 if (this.targetReached) {
+                  this.inUse = false;
                   this.envelopePhase = envelopePhase.inactive;
                 }
               }
@@ -152,8 +153,10 @@ export class OscillatorArray {
                 }
               } else if (this.envelopePhase === envelopePhase.release) {
                 this.exponentialRampToValueAtTime();
-                if (this.targetReached)
+                if (this.targetReached) {
+                  this.inUse = false;
                   this.envelopePhase = envelopePhase.inactive;
+                }
               }
             }
           }
@@ -590,20 +593,20 @@ export class OscillatorArray {
               od.env.envelopeData.velocity = velocity;
               if (od.env.envelopePhase !== envelopePhase.retrigger)
                 od.phase = 0;  /* Start from zero to prevent clicks */
+              /* @ts-ignore */
+              this.port.postMessage({type: "keyDown", bank: bank, device: i, key: key, velocity: velocity});
             });
-            /* @ts-ignore */
-            this.port.postMessage({type: "keyDown", oscillator: i, key: key, velocity: velocity});
           }
         }
 
         public keyUp(key: number) {
-          this.oscData.forEach(osc => {
-            const i = osc.findIndex(s => s.env.inUse && s.key === key);
+          this.oscData.forEach((osc, bank) => {
+            const i = osc.findIndex((s) => s.env.inUse && s.key === key);
             if (i !== -1) {
               const oc = osc[i];
               oc.env.keyDown = false;
               /* @ts-ignore */
-              this.port.postMessage({type: "keyUp", oscillator: i, key: key});
+              this.port.postMessage({type: "keyUp", bank: bank, device: i, key: key});
             }
           })
 
@@ -788,6 +791,8 @@ export class OscillatorArray {
   public connect(node: AudioNode) {
     this.node.connect(node)
   }
+
+
 
   public destroy() {
     this.port.postMessage({type: 'shutdown'});

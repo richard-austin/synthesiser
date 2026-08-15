@@ -34,7 +34,7 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
 
   readonly filters = input.required<FilterComponent | undefined>();
   readonly reverb = input.required<ReverbComponent>();
- // numberOfDevices: number = DevicePoolManager.numberOfDevices;
+  numberOfDevices: number = 12; // TODO: DevicePoolManager.numberOfDevices;
   readonly output: OutputEmitterRef<string> = output<string>();
 
   readonly modFreq = viewChild.required<LevelControlComponent>('modFreq');
@@ -112,13 +112,13 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
   connectToFilters() {
     const filters = this.filters()?.filters;
     let ok = false;
-    // if (filters && filters.length >= this.numberOfDevices) {
-    //   ok = true;
-    //   for (let i = 0; i < this.numberOfDevices; i++) {
-    //     this.ringMod.connect(filters[i].filter);
-    //   }
-    // } else
-    //   console.log("Filter array is a different size to numberOfChannels")
+    if (filters && filters.length >= this.numberOfDevices) {
+      ok = true;
+      for (let i = 0; i < this.numberOfDevices; i++) {
+        this.ringMod.connect(filters[i].filter);
+      }
+    } else
+      console.log("Filter array is a different size to numberOfChannels")
     return ok;
   }
 

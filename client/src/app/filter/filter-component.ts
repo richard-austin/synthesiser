@@ -18,12 +18,11 @@ import {filterModType, filterTypes, modWaveforms, onOff} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {FilterSettings} from '../settings/filter';
 import {Cookies} from '../settings/cookies/cookies';
-//import {Oscillator} from '../modules/oscillator';
 import {PortamentoType} from '../oscillator/oscillator.component';
 import {ChordProcessor} from '../modules/chord-processor';
-//import DevicePoolManager from '../util-classes/device-pool-manager';
 import {DeviceKeys, DevicePoolManagerService} from '../services/device-pool-manager-service';
 import {timer} from 'rxjs';
+import {FmSynthService} from '../services/fm-synth-service';
 
 @Component({
   selector: 'app-filters',
@@ -82,6 +81,8 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   readonly lfoWaveForm = viewChild.required<ElementRef<HTMLFormElement>>('lfoWaveForm');
 
   private devicePoolManagerService: DevicePoolManagerService = inject(DevicePoolManagerService);
+  private fmSynthService: FmSynthService = inject(FmSynthService);
+
   private started = false;
 
   start(audioCtx: AudioContext, settings: FilterSettings | null): boolean {
@@ -117,20 +118,20 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     // else use default settings
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
-    if(false && !this.started) {
+    if(!this.started) {
       for (let i = 0; i < this.numberOfFilters; ++i) {
         this.filters.push(new Filter(this.audioCtx));
       }
       this.started = true;
     }
-    // this.filters.forEach((filter, i) => {
-    //   filter.setFrequency(this.keyToFrequency(i));
-    //   filter.setDetune(this.proxySettings.deTune);
-    //   filter.setFreqBendEnvelope(this.proxySettings.freqBend);
-    //   filter.useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.off);
-    //   filter.setType(this.proxySettings.filterType);
-    //   filter.clearModulation();  // Remove any preexisting mod settings
-    // });
+    this.filters.forEach((filter, i) => {
+      filter.setFrequency(this.keyToFrequency(i));
+      filter.setDetune(this.proxySettings.deTune);
+      filter.setFreqBendEnvelope(this.proxySettings.freqBend);
+      filter.useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.off);
+      filter.setType(this.proxySettings.filterType);
+      filter.clearModulation();  // Remove any preexisting mod settings
+    });
 
     this.frequency().setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
     this.deTune().setValue(this.proxySettings.deTune);
@@ -155,7 +156,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     this.modLevel().setValue(this.proxySettings.modLevel);  // Set dial
 
     // Set up the buttons
-    //   SetRadioButtons.set(this.filterOutputTo, this.settings.output);
+//    SetRadioButtons.set(this.filterOutputTo, this.settings.output);
     SetRadioButtons.set(this.filterType(), this.proxySettings.filterType);
     SetRadioButtons.set(this.freqEnveOnOff(), this.proxySettings.useFrequencyEnvelope);
     SetRadioButtons.set(this.modSettingsForm(), this.proxySettings.modType);
@@ -168,38 +169,38 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   protected setFrequency(freq: number) {
     this.proxySettings.frequency = freq;
-    // Set frequency on the oscillators bank 1 and 2 related filters
-    // for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-    //   const filter = this.filters[i];
-    //   if (filter.keyIndex > -1) {
-    //     filter.setFrequency(this.keyToFrequency(filter.keyIndex))
-    //   }
-    // }
+   // Set frequency on the oscillators bank 1 and 2 related filters
+    for (let i = 0; i < 12 /*  TODO: DevicePoolManager.numberOfDevices*/; ++i) {
+      const filter = this.filters[i];
+      if (filter.keyIndex > -1) {
+        filter.setFrequency(this.keyToFrequency(filter.keyIndex))
+      }
+    }
 
-    // for (let i = 0; i < this.filters.length; i++) {
-    //   this.filters[i].setFrequency(this.keyToFrequency(i));
-    // }
+    for (let i = 0; i < this.filters.length; i++) {
+      this.filters[i].setFrequency(this.keyToFrequency(i));
+    }
   }
 
   protected setGain(gain: number) {
     this.proxySettings.gain = gain;
     for (let i = 0; i < this.filters.length; i++) {
-   //   this.filters[i].setGain(gain);
+      this.filters[i].setGain(gain);
     }
   }
 
   protected setDetune(deTune: number) {
     this.proxySettings.deTune = deTune;
-    // for (let i = 0; i < this.filters.length; i++) {
-    //   this.filters[i].setDetune(deTune);
-    // }
+    for (let i = 0; i < this.filters.length; i++) {
+      this.filters[i].setDetune(deTune);
+    }
   }
 
   protected setQFactor(qfactor: number) {
     this.proxySettings.qFactor = qfactor;
-    // for (let i = 0; i < this.filters.length; i++) {
-    //   this.filters[i].setQ(qfactor);
-    // }
+    for (let i = 0; i < this.filters.length; i++) {
+      this.filters[i].setQ(qfactor);
+    }
   }
 
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
@@ -207,25 +208,24 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
       this.portamento().setValue(0); // Cannot use portamento with frequency envelope
 
     this.proxySettings.useFrequencyEnvelope = useFreqBendEnvelope ? onOff.on : onOff.off;
-    // for (let i = 0; i < this.filters.length; i++) {
-    //   this.filters[i].useFreqBendEnvelope(useFreqBendEnvelope);
-    // }
+    for (let i = 0; i < this.filters.length; i++) {
+      this.filters[i].useFreqBendEnvelope(useFreqBendEnvelope);
+    }
   }
 
   private setFilterType(value: BiquadFilterType) {
     this.proxySettings.filterType = value as filterTypes;
-    // for (let i = 0; i < this.numberOfFilters; ++i) {
-    //   this.filters[i].setType(value);
-    // }
+    for (let i = 0; i < this.numberOfFilters; ++i) {
+      this.filters[i].setType(value);
+    }
   }
 
   private setPortamentoType(value: PortamentoType) {
     this.proxySettings.portamentoType = value as PortamentoType;
   }
-
+  readonly frequencyFactor = 7.717057388; // To give middle C at 261.63 Hz on key 60
   keyToFrequency = (key: number): number => {
-    return 500;
-    //return Oscillator.frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
+    return this.frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
   }
 
   /**
@@ -233,9 +233,9 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
    * @param node
    */
   connect(node: AudioNode) {
-    // for (let i = 0; i < this.filters.length; i++) {
-    //   this.filters[i].connect(node);
-    // }
+    for (let i = 0; i < this.filters.length; i++) {
+      this.filters[i].connect(node);
+    }
   }
 
   connectToRingMod(): boolean {
@@ -243,9 +243,9 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     if (ringMod) {
       ok = true;
-      // for (let i = 0; i < this.filters.length; i++) {
-      //   this.filters[i].connect(ringMod.signalInput());
-      // }
+      for (let i = 0; i < this.filters.length; i++) {
+        this.filters[i].connect(ringMod.signalInput());
+      }
     }
     return ok;
   }
@@ -255,9 +255,9 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     if (phaser()) {
       ok = true;
-      // for (let i = 0; i < this.filters.length; i++) {
-      //   this.filters[i].connect(phaser().input);
-      // }
+      for (let i = 0; i < this.filters.length; i++) {
+        this.filters[i].connect(phaser().input);
+      }
     }
     return ok;
   }
@@ -267,17 +267,17 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     if (reverb) {
       ok = true;
-      // for (let i = 0; i < this.filters.length; i++) {
-      //   this.filters[i].connect(reverb.input);
-      // }
+      for (let i = 0; i < this.filters.length; i++) {
+        this.filters[i].connect(reverb.input);
+      }
     }
     return ok;
   }
 
   disconnect() {
-    // for (let i = 0; i < this.filters.length; i++) {
-    //   this.filters[i].disconnect();
-    // }
+    for (let i = 0; i < this.filters.length; i++) {
+      this.filters[i].disconnect();
+    }
   }
 
   keysDown: DeviceKeys[] = [];
@@ -440,26 +440,42 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   protected setModLevel($event: number) {
     this.proxySettings.modLevel = $event;
-    // for (let i = 0; i < this.numberOfFilters; ++i) {
-    //   this.filters[i].setModLevel($event);
-    // }
+    for (let i = 0; i < this.numberOfFilters; ++i) {
+      this.filters[i].setModLevel($event);
+    }
   }
 
   protected setModType(type: filterModType) {
     this.proxySettings.modType = type;
-    // for (let i = 0; i < this.numberOfFilters; ++i) {
-    //   this.filters[i].modulation(this.lfo, type);
-    // }
+    for (let i = 0; i < this.numberOfFilters; ++i) {
+      this.filters[i].modulation(this.lfo, type);
+    }
   }
 
-  ngAfterViewInit(): void {
-    this.devicePoolManagerService.notifyKeydown[this.filterNumber()] = (keys: DeviceKeys) => {
-      this.deviceKeyDown(keys);
-    }
 
-    this.devicePoolManagerService.notifyKeyup[this.filterNumber()] = (keys: DeviceKeys) => {
-      this.deviceKeyUp(keys);
-    }
+
+  ngAfterViewInit(): void {
+    // this.devicePoolManagerService.notifyKeydown[this.filterNumber()] = (keys: DeviceKeys) => {
+    //   this.deviceKeyDown(keys);
+    // }
+    //
+    // this.devicePoolManagerService.notifyKeyup[this.filterNumber()] = (keys: DeviceKeys) => {
+    //   this.deviceKeyUp(keys);
+    // }
+
+    this.fmSynthService.addKeyDownHandler((bank:number, device: number, key: number, velocity: number): void => {
+      if(bank == this.filterNumber()) {
+        const dk: DeviceKeys = new DeviceKeys(key, device, 1000);
+        this.deviceKeyDown(dk);
+      }
+    });
+
+    this.fmSynthService.addKeyUpHandler((bank: number, device: number, key: number): void => {
+      if(bank == this.filterNumber()) {
+        const dk: DeviceKeys = new DeviceKeys(key, device, 1000);
+        this.deviceKeyUp(dk);
+      }
+    });
 
     this.chordProcessorNoise = new ChordProcessor();
     this.chordProcessorNoise.setKeyDownCallback(this.chordProcessorKeyDownCallback);

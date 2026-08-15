@@ -47,7 +47,6 @@ export type PortamentoType =
   standalone: true
 })
 export class OscillatorComponent implements AfterViewInit, OnDestroy {
- // private oscillators: Oscillator[] = [];
   protected tuningDivisions = 6;
   private lfo!: OscillatorNode;
   private audioCtx!: AudioContext;
@@ -266,16 +265,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  connectModOut(modGainNodes: GainNode[]) {
-    // if (modGainNodes.length === this.oscillators.length) {
-    //   this.oscillators.forEach((osc, i) => {
-    //     osc.connectModOut(modGainNodes[i])
-    //   });
-    // } else {
-    //   throw new Error("Modulation gain nodes array size (" + modGainNodes.length + ") does not equal oscillators array size (" + this.oscillators.length + ")");
-    // }
-  }
-
   protected setModType(type: oscModType) {
     this.proxySettings.modType = type;
   //  for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
@@ -296,6 +285,10 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     if (filters) {
       ok = true;
+      filters.forEach(filter => {
+        this.fmSynthService.connect(filter.filter, this.oscNumber());
+      });
+
       // for (let i = 0; i < this.oscillators.length; i++) {
       //   this.oscillators[i].connect(filters[i].filter);
       // }
