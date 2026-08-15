@@ -4,7 +4,7 @@
       @for (osc of _oscillatorParams; let i = $index; track osc) {
         <app-oscillators [oscNumber]="i"
                          [params]="_oscillatorParams[i]"
-                         [filters]="filtersGrp()[0]"
+                         [filters]="filtersGrp()[i]"
                          [ringMod]="ringMod"
                          [reverb]="reverb"
                          [phaser]="phaser"

@@ -464,14 +464,14 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     // }
 
     this.fmSynthService.addKeyDownHandler((bank:number, device: number, key: number, velocity: number): void => {
-      if(bank == this.filterNumber()) {
+      if(bank === this.filterNumber()) {
         const dk: DeviceKeys = new DeviceKeys(key, device, 1000);
         this.deviceKeyDown(dk);
       }
     });
 
     this.fmSynthService.addKeyUpHandler((bank: number, device: number, key: number): void => {
-      if(bank == this.filterNumber()) {
+      if(bank === this.filterNumber()) {
         const dk: DeviceKeys = new DeviceKeys(key, device, 1000);
         this.deviceKeyUp(dk);
       }

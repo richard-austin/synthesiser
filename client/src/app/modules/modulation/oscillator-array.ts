@@ -41,7 +41,8 @@ export class OscillatorArray {
       }
 
       class Envelope {
-        private readonly lowestValue: number;
+        private readonly lowestTime: number;
+        private readonly lowestLevel: number;
         envelopeData: EnvelopeData;
         private t0: number = 0;
         private t1: number = 0;
@@ -56,17 +57,19 @@ export class OscillatorArray {
 
         constructor(envelopeData: EnvelopeData) {
           this.envelopeData = envelopeData;
-          this.lowestValue = 0.0001;
-          this.v0 = this.lowestValue;
-          this.v1 = this.lowestValue;
-          this.level = this.lowestValue;
+          this.lowestTime = 0.0001;
+          this.lowestLevel = 0.0000001
+
+          this.v0 = this.lowestLevel;
+          this.v1 = this.lowestLevel;
+          this.level = this.lowestLevel;
         }
 
         setEnvelopePhaseTiming(value: number, time: number) {
           this.v0 = this.level;
-          this.v1 = value + this.lowestValue;
+          this.v1 = value + this.lowestLevel;
           this.t0 = this.t;
-          this.t1 = this.t0 + time + this.lowestValue;
+          this.t1 = this.t0 + time + this.lowestTime;
           this.targetReached = false;
         }
 
@@ -133,10 +136,12 @@ export class OscillatorArray {
             if (!envData.legato) {
               if (this.envelopePhase !== envelopePhase.inactive && this.envelopePhase !== envelopePhase.release) {
                 this.envelopePhase = envelopePhase.release;
-                this.setEnvelopePhaseTiming(this.lowestValue, envData.release);
+                this.setEnvelopePhaseTiming(this.lowestLevel, envData.release);
               } else if (this.envelopePhase === envelopePhase.release) {
                 this.level = this.exponentialRampToValueAtTime();
                 if (this.targetReached) {
+                  this.level = this.lowestLevel;
+                  console.log("this.level = ", this.level)
                   this.inUse = false;
                   this.envelopePhase = envelopePhase.inactive;
                 }
@@ -149,11 +154,12 @@ export class OscillatorArray {
                 this.sustainAtCurrentLevelForTime();
                 if (this.targetReached) {
                   this.envelopePhase = envelopePhase.release;
-                  this.setEnvelopePhaseTiming(this.lowestValue, envData.release);
+                  this.setEnvelopePhaseTiming(this.lowestLevel, envData.release);
                 }
               } else if (this.envelopePhase === envelopePhase.release) {
-                this.exponentialRampToValueAtTime();
+                this.level = this.exponentialRampToValueAtTime();
                 if (this.targetReached) {
+                  this.level = this.lowestLevel;
                   this.inUse = false;
                   this.envelopePhase = envelopePhase.inactive;
                 }
