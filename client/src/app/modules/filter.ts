@@ -48,9 +48,9 @@ export class Filter extends OscFilterBase {
   }
 
   setQ(q: number) {
-    const sqrtQ = q /5;
-    this.filter.Q.value =  sqrtQ;
-    this.filter2.Q.value = sqrtQ;
+    const qDiv5 = q /5;
+    this.filter.Q.value =  qDiv5;
+    this.filter2.Q.value = qDiv5;
   }
 
   setType(type: BiquadFilterType) {

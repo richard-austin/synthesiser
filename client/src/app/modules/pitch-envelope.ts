@@ -16,7 +16,10 @@ export class PitchEnvelope {
     this.freqBendEnv = new FreqBendValues(0, 0, 0, 0, 0, 0);
   }
 
+  sub!: Subscription;
+
   keyDown(frequency: number) {
+    this.sub?.unsubscribe();
     const ctx = this.device.context;
     const freq = this.freq = frequency;
     this.cancelAndHoldAtTime(ctx.currentTime);
@@ -34,6 +37,12 @@ export class PitchEnvelope {
     this.cancelAndHoldAtTime(ctx.currentTime);
     this.device.frequency.setValueAtTime(this.device.frequency.value, ctx.currentTime); // Prevent step changes in freq
     this.device.frequency.exponentialRampToValueAtTime(this.clampFrequency(this.freq * Math.pow(this.freqBendBase, this.freqBendEnv.releaseLevel)), ctx.currentTime + this.freqBendEnv.releaseTime);
+    // Bring the frequency down to a very low level at the end of envelope as all oscillators  in the bank feed into each filter in the bank since the use of the OscillatorArray
+    // TODO: See if this actually improves anything
+    this.sub = timer(this.freqBendEnv.releaseTime * 1000).subscribe(() => {
+      this.sub.unsubscribe();
+      this.device.frequency.exponentialRampToValueAtTime(0.001, ctx.currentTime+2);
+    })
   }
 
   clampFrequency(freq: number): number {

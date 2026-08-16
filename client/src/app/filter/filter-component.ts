@@ -48,7 +48,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   // One set for oscillator1, one set for oscillator2 and one for the noise source
-  private readonly numberOfFilters: number = 12; // DevicePoolManager.numberOfDevices;
+  private readonly numberOfFilters: number = 1; // TODO: Should be 12 DevicePoolManager.numberOfDevices;
 
   reverb: InputSignal<ReverbComponent> = input.required<ReverbComponent>();
   ringMod: InputSignal<RingModulatorComponent> = input.required<RingModulatorComponent>();
@@ -286,7 +286,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     if(keys === undefined || keys.keyIndex === -1)
       return;
     const freq = this.keyToFrequency(keys.keyIndex);
-    const dev = this.filters[keys.deviceIndex]
+    const dev = this.filters[0 /* TODO keys.deviceIndex*/]
     dev.freq = freq;
     if (this.proxySettings.portamento === 0)
       dev.filter.frequency.value = dev.filter2.frequency.value = freq;
@@ -349,11 +349,11 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
       //     break;
       // }
 
-      dev.filter.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keys.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
-      dev.filter2.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keys.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
+      // dev.filter.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keys.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
+      // dev.filter2.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keys.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
     }
 
-    dev.keyIndex = keys.keyIndex;
+    dev.keyIndex = 0; // TODO keys.keyIndex;
     dev.keyDown(0x7f);
   }
 
@@ -361,7 +361,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     if (keys) {
       if(keys.deviceIndex === -1)
         return;
-      const dev = this.filters[keys.deviceIndex]
+      const dev = this.filters[0/*keys.deviceIndex*/]  // TODO: While limiting to 1 filter
 
       const sub = timer((keys.filterTimeout) * 1000).subscribe(() => {
         sub.unsubscribe();
