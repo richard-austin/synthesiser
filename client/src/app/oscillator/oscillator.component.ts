@@ -23,8 +23,8 @@ import {ChordProcessor} from '../modules/chord-processor';
 import {DeviceKeys} from '../services/device-pool-manager-service';
 import {ClipboardService} from './clipboard-service';
 import {FmSynthService} from '../services/fm-synth-service';
-import {envelopePhase} from '../modules/modulation/oscillator-array';
 import {WaveTables} from '../modules/wavetables';
+import {envelopePhase} from '../modules/modulation/oscillator-array';
 
 export type PortamentoType =
   'chord'

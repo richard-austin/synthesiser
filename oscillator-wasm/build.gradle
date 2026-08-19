@@ -30,7 +30,34 @@ String absoluteEmccPath = emccExecutable.absolutePath
 File inputSourceFile = layout.projectDirectory.file('processor.c').asFile
 
 File outputDirectory = new File(rootDir, '/client/public/assets/wasm') //layout.buildDirectory.dir('wasm').get().asFile
-String outputJsPath = new File(outputDirectory, 'processor.wasm').absolutePath
+String outputJsPath = new File(outputDirectory, 'engine-module.js').absolutePath
+
+// 1. The Diagnostic Version Check Task
+tasks.register('checkWasmVersion', Exec) {
+    def kompleExtension = rootProject.extensions.findByName('komple')
+    def emccPath = kompleExtension?.tools?.emscripten
+
+    doFirst {
+        println "========================================="
+        println "   EMSCRIPTEN COMPILER DIAGNOSTICS"
+        println "========================================="
+        println "Gradle toolchain path: ${emccPath}"
+        println "========================================="
+    }
+
+    println(commandLine(
+            absoluteEmccPath,
+            "--version"
+    ).toString())
+
+//    if (emccPath) {
+//        commandLine emccPath.toString(), "--version"
+//    } else {
+//        // Fallback placeholder to prevent task initialization errors if config is missing
+//        commandLine "echo", "ERROR: Could not find the 'komple' Emscripten tool configuration!"
+//    }
+}
+
 
 // 5. Register the final cache-compliant automated execution task
 tasks.register('compileWasm', Exec) {
@@ -54,6 +81,7 @@ tasks.register('compileWasm', Exec) {
             }
     }
 
+   // emcc processor.c -O3 -flto -msimd128 -ffast-math -o processor.js -s WASM=1 -s AUDIO_WORKLET=1 -s WASM_WORKERS=1 -s STANDALONE_WASM -s EXPORTED_FUNCTIONS=['_initProcessor','_setMatrixGain','_setBankEnvelopeParams','_triggerNoteOn','_triggerNoteOff','_getBankOutputBufferPtr','_processBlock'] --no-entry
     // Call the verified absolute path direct from the .komple tracking home
     commandLine(
             absoluteEmccPath,
@@ -62,10 +90,16 @@ tasks.register('compileWasm', Exec) {
             "-flto",
             "-msimd128",
             "-ffast-math",
-            "-o", outputJsPath,
-            "-s", "STANDALONE_WASM",
-            // Only export the functions present in our new unified architecture:
-            "-s", "EXPORTED_FUNCTIONS=['_initProcessor', '_setMatrixGain', '_setBankEnvelopeParams', '_triggerNoteOn', '_triggerNoteOff', '_getBankOutputBufferPtr', '_processBlock']",
+            "-o", "${rootDir}/client/public/assets/wasm/engine-module.js",
+            "-s", "WASM=1",
+            "-s", "ENVIRONMENT=worklet",
+            "-s", "SINGLE_FILE=1",
+            "-s", "ALLOW_MEMORY_GROWTH=1",
+            "-s", "EXPORTED_RUNTIME_METHODS=['HEAP32','HEAPF32']",
+            // MANDATORY: Forces Emscripten to check and execute our custom callback hook
+            "-s", "INCOMING_MODULE_JS_API=['onRuntimeInitialized']",
+            "--post-js", "${rootDir}/client/public/assets/wasm/audio-hooks.js",
+            "-s", 'EXPORTED_FUNCTIONS=["_initProcessor","_setMatrixGain","_setBankEnvelopeParams","_triggerNoteOn","_triggerNoteOff","_getBankOutputBufferPtr","_processBlock","_malloc","_free"]',
             "--no-entry"
     )
 }

@@ -1,316 +1,605 @@
 #include <emscripten.h>
-#include <stdbool.h>
 #include <math.h>
-#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
 
-#define NUM_BANKS 4
-#define OSC_PER_BANK 12
-#define BLOCK_SIZE 128
-#define TWO_PI 6.28318530717958647692f
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
-// Envelope Stages
-typedef enum {
-    ENV_OFF = 0,
+// --- Enumerations ---
+typedef enum
+{
+    ENV_INACTIVE = 0,
     ENV_ATTACK,
     ENV_DECAY,
     ENV_SUSTAIN,
-    ENV_RELEASE
-} EnvStage;
+    ENV_RELEASE,
+    ENV_RETRIGGER,
+    ENV_LEGATO
+} envelopePhase;
 
-// Waveform Types
-typedef enum {
-    WAVE_SINE = 0,
-    WAVE_SQUARE,
-    WAVE_TRIANGLE,
-    WAVE_SAW
-} WaveType;
+typedef enum
+{
+    MOD_OFF = 0,
+    MOD_FREQUENCY,
+    MOD_AMPLITUDE
+} oscModType;
 
-typedef struct {
-    float attack_rate;   // Delta change per sample
-    float decay_rate;    // Delta change per sample
-    float sustain_level; // Target multiplier [0.0, 1.0]
-    float release_rate;  // Delta change per sample
-    float current_level; // Current scalar
-    EnvStage stage;      // State-machine selector
+// --- Struct Definitions ---
+typedef struct
+{
+    float attack;
+    float decay;
+    float sustainLevel;
+    float release;
+    bool legato;
+    bool velocitySensitive;
+    int velocity;
+} EnvelopeData;
+
+typedef struct
+{
+    EnvelopeData *envelopeData;
+    float lowestTime;
+    float lowestLevel;
+    float t0, t1, t;
+    float v0, v1;
+    float level;
+    bool targetReached;
+    envelopePhase phase;
+    bool inUse;
+    bool keyDown;
 } Envelope;
 
-typedef struct {
+typedef struct
+{
+    float x1, x2, y1, y2;
+    float b0, b1, b2, a1, a2;
+} ButterworthFilter;
+
+typedef struct
+{
+    float sampleRate;
+    float cutoffHz;
+    float resonance;
+    float drive;
+    float s1, s2, s3, s4;
+    float output;
+    float g;
+    float resonanceGain;
+    int iterations;
+} LadderFilter4Pole;
+
+typedef struct
+{
+    int key;
+    Envelope env;
+    float frequency;
     float phase;
-    float base_freq;
-    float detune;        // Frequency offset in Hz
-    int midi_note;       // Associated note tracking binding
-    bool is_active;
-    Envelope amp_env;
-} Oscillator;
+    float releaseRate;
+    ButterworthFilter butterworthFilter;
+    LadderFilter4Pole lpf;
+} OscillatorData;
 
-typedef struct {
-    Oscillator oscs[OSC_PER_BANK];
-    Envelope freq_env;
-    WaveType wave_type;
-    float tuning_coarse; // Pitch shift offset
-    float detune_cents;  // Bank level detuning multiplier
-    float bank_output_buffer[BLOCK_SIZE];
-} Bank;
+typedef struct
+{
+    float detune;
+    float lastDetune;
+    float detuneFactor;
+    float tuning;
+    EnvelopeData envelopeData;
+    int type; // 0=sine, 1=custom
+    float *periodicWaveData;
+    int numBands;
+    int waveTableSize;
+    int modOutput; // 0=direct, 1=envelope
+} BankData;
 
-typedef struct {
-    Bank banks[NUM_BANKS];
-    float mod_matrix[NUM_BANKS][NUM_BANKS]; // [Modulator][Carrier]
-    bool is_am[NUM_BANKS][NUM_BANKS];       // True = AM, False = FM
-    bool mod_post_env[NUM_BANKS];           // Carrier feeds post/pre amplitude gating
-    float sample_rate;
-} FMSynthEngine;
+typedef struct
+{
+    int carrierIdx;
+    float level;
+    oscModType modType;
+} ModSettings;
 
-// Static global instance allocated in linear WASM memory space
-static FMSynthEngine synth;
+// --- Global Engine Core Context Variables ---
+static int g_numberOfBanks = 0;
+static int g_oscillatorsPerBank = 0;
+static int g_waveTableSize = 2048;
+static float g_startFx = 20.0f;
+static float g_sampleRate = 44100.0f;
+static int g_roundRobinIndex = 0;
 
-// --- INTERNAL HELPERS ---
+static BankData *g_banks = NULL;
+static OscillatorData **g_oscData = NULL;
 
-static void init_envelope(Envelope* env) {
-    env->attack_rate = 0.01f;
-    env->decay_rate = 0.005f;
-    env->sustain_level = 0.7f;
-    env->release_rate = 0.001f;
-    env->current_level = 0.0f;
-    env->stage = ENV_OFF;
+static float *g_fmAccumulators = NULL;
+static float *g_amAccumulators = NULL;
+static ModSettings *g_modMatrix = NULL;
+
+// --- Filter Architecture Logic ---
+void butterworth_calculate_coefficients(ButterworthFilter *f, float cutoff, float sampleRate)
+{
+    float omega = M_PI * cutoff / sampleRate;
+    float tanVal = tanf(omega);
+    float sqrt2 = 1.41421356f;
+    float c2 = tanVal * tanVal;
+    float a0 = 1.0f + sqrt2 * tanVal + c2;
+    f->b0 = c2 / a0;
+    f->b1 = 2.0f * c2 / a0;
+    f->b2 = c2 / a0;
+    f->a1 = 2.0f * (c2 - 1.0f) / a0;
+    f->a2 = (1.0f - sqrt2 * tanVal + c2) / a0;
 }
 
-static inline float update_envelope(Envelope* env) {
-    switch (env->stage) {
-        case ENV_ATTACK:
-            env->current_level += env->attack_rate;
-            if (env->current_level >= 1.0f) {
-                env->current_level = 1.0f;
-                env->stage = ENV_DECAY;
+float butterworth_process(ButterworthFilter *f, float input)
+{
+    float output = f->b0 * input + f->b1 * f->x1 + f->b2 * f->x2 - f->a1 * f->y1 - f->a2 * f->y2;
+    f->x2 = f->x1;
+    f->x1 = input;
+    f->y2 = f->y1;
+    f->y1 = output;
+    return output;
+}
+
+void ladder_update_coefficient(LadderFilter4Pole *f)
+{
+    f->g = tanf(M_PI * f->cutoffHz / f->sampleRate);
+}
+
+void ladder_set_cutoff(LadderFilter4Pole *f, float cutoffHz)
+{
+    float maxF = f->sampleRate * 0.45f;
+    f->cutoffHz = cutoffHz < 5.0f ? 5.0f : (cutoffHz > maxF ? maxF : cutoffHz);
+    ladder_update_coefficient(f);
+}
+
+void ladder_set_resonance(LadderFilter4Pole *f, float resonance)
+{
+    f->resonance = resonance < 0.0f ? 0.0f : (resonance > 1.0f ? 1.0f : resonance);
+    float r = f->resonance;
+    f->resonanceGain = 4.0f * r * (0.85f + 0.15f * r);
+}
+
+void ladder_set_drive(LadderFilter4Pole *f, float drive)
+{
+    f->drive = drive < 0.1f ? 0.1f : drive;
+}
+
+void ladder_init(LadderFilter4Pole *f, float sampleRate)
+{
+    f->sampleRate = sampleRate;
+    f->iterations = 3;
+    f->s1 = f->s2 = f->s3 = f->s4 = 0.0f;
+    f->output = 0.0f;
+    ladder_set_cutoff(f, 1000.0f);
+    ladder_set_resonance(f, 0.0f);
+    ladder_set_drive(f, 1.0f);
+}
+
+float ladder_tpt(LadderFilter4Pole *f, float input, float state)
+{
+    return (f->g * input + state) / (1.0f + f->g);
+}
+
+float ladder_process(LadderFilter4Pole *f, float input)
+{
+    float x = tanhf(input * f->drive);
+    float y4 = f->s4, y1 = f->s1, y2 = f->s2, y3 = f->s3;
+    for (int i = 0; i < f->iterations; i++)
+    {
+        float feedback = f->resonanceGain * tanhf(y4);
+        float u = x - feedback;
+        y1 = ladder_tpt(f, u, f->s1);
+        y2 = ladder_tpt(f, y1, f->s2); // Fixed missing 'f' parameter context
+        y3 = ladder_tpt(f, y2, f->s3); // Fixed missing 'f' parameter context
+        y4 = ladder_tpt(f, y3, f->s4); // Fixed missing 'f' parameter context
+    }
+    f->s1 = 2.0f * y1 - f->s1;
+    f->s2 = 2.0f * y2 - f->s2;
+    f->s3 = 2.0f * y3 - f->s3;
+    f->s4 = 2.0f * y4 - f->s4;
+    f->output = tanhf(y4);
+    return f->output;
+}
+
+// --- Envelope Phase Traversal Mathematics ---
+void envelope_init(Envelope *env, EnvelopeData *data)
+{
+    env->envelopeData = data;
+    env->lowestTime = 0.0001f;
+    env->lowestLevel = 0.0000001f;
+    env->v0 = env->lowestLevel;
+    env->v1 = env->lowestLevel;
+    env->level = env->lowestLevel;
+    env->targetReached = false;
+    env->phase = ENV_INACTIVE;
+    env->inUse = false;
+    env->keyDown = false;
+}
+
+void envelope_set_timing(Envelope *env, float value, float time)
+{
+    env->v0 = env->level;
+    env->v1 = value + env->lowestLevel;
+    env->t0 = env->t;
+    env->t1 = env->t0 + time + env->lowestTime;
+    env->targetReached = false;
+}
+
+float envelope_ramp(Envelope *env)
+{
+    env->t += 1.0f / g_sampleRate;
+    if ((env->t1 - env->t0) == 0)
+    {
+        env->level = env->v1;
+        env->targetReached = true;
+    }
+    else
+    {
+        env->level = env->v0 * powf(env->v1 / env->v0, (env->t - env->t0) / (env->t1 - env->t0));
+        if (env->t >= env->t1)
+            env->targetReached = true;
+    }
+    return env->level;
+}
+
+void envelope_sustain_time(Envelope *env)
+{
+    env->t += 1.0f / g_sampleRate;
+    if (env->t >= env->t1)
+        env->targetReached = true;
+}
+
+void envelope_advance_to_sustain(Envelope *env)
+{
+    float vel = (float)env->envelopeData->velocity / 127.0f;
+    EnvelopeData *envData = env->envelopeData;
+    if (env->keyDown)
+    {
+        if (!envData->legato)
+        {
+            if (env->phase != ENV_ATTACK)
+            {
+                env->inUse = true;
+                float attackTarget = envData->velocitySensitive ? vel : 1.0f;
+                envelope_set_timing(env, attackTarget, envData->attack);
+                env->phase = ENV_ATTACK;
             }
-            break;
-        case ENV_DECAY:
-            env->current_level -= env->decay_rate;
-            if (env->current_level <= env->sustain_level) {
-                env->current_level = env->sustain_level;
-                env->stage = ENV_SUSTAIN;
+            else if (env->phase == ENV_ATTACK)
+            {
+                env->level = envelope_ramp(env);
+                if (env->targetReached)
+                {
+                    env->phase = ENV_DECAY;
+                    envelope_set_timing(env, envData->sustainLevel, envData->decay);
+                }
             }
-            break;
-        case ENV_SUSTAIN:
-            // Holds constant value until triggerNoteOff explicitly updates status
-            break;
-        case ENV_RELEASE:
-            env->current_level -= env->release_rate;
-            if (env->current_level <= 0.0f) {
-                env->current_level = 0.0f;
-                env->stage = ENV_OFF;
+            else if (env->phase == ENV_DECAY)
+            {
+                env->level = envelope_ramp(env);
+                if (env->targetReached)
+                {
+                    env->phase = ENV_SUSTAIN;
+                }
             }
+        }
+        else
+        {
+            if (env->phase != ENV_ATTACK)
+            {
+                env->inUse = true;
+                float attackTarget = envData->velocitySensitive ? vel : 1.0f;
+                envelope_set_timing(env, attackTarget, envData->attack);
+                env->phase = ENV_ATTACK;
+            }
+            else if (env->phase == ENV_ATTACK)
+            {
+                env->level = envelope_ramp(env);
+                if (env->targetReached)
+                    env->phase = ENV_DECAY;
+            }
+        }
+    }
+}
+
+void envelope_advance_to_zero(Envelope *env)
+{
+    EnvelopeData *envData = env->envelopeData;
+    if (!env->keyDown)
+    {
+        if (!envData->legato)
+        {
+            if (env->phase != ENV_RELEASE)
+            {
+                env->phase = ENV_RELEASE;
+                envelope_set_timing(env, env->lowestLevel, envData->release);
+            }
+            else if (env->phase == ENV_RELEASE)
+            {
+                env->level = envelope_ramp(env);
+                if (env->targetReached)
+                {
+                    env->level = env->lowestLevel;
+                    env->inUse = false;
+                    env->phase = ENV_INACTIVE;
+                }
+            }
+        }
+        else
+        {
+            if (env->phase == ENV_ATTACK || env->phase == ENV_DECAY)
+            {
+                envelope_set_timing(env, 0, envData->decay);
+                env->phase = ENV_SUSTAIN;
+            }
+            else if (env->phase == ENV_SUSTAIN)
+            {
+                envelope_sustain_time(env);
+                if (env->targetReached)
+                {
+                    env->phase = ENV_RELEASE;
+                    envelope_set_timing(env, env->lowestLevel, envData->release);
+                }
+            }
+            else if (env->phase == ENV_RELEASE)
+            {
+                env->level = envelope_ramp(env);
+                if (env->targetReached)
+                {
+                    env->level = env->lowestLevel;
+                    env->inUse = false;
+                    env->phase = ENV_INACTIVE;
+                }
+            }
+        }
+    }
+}
+
+float key_to_frequency(int key, int bank)
+{
+    float freqFactor = 7.717057388f;
+    return freqFactor * powf(powf(2.0f, 1.0f / 12.0f), ((float)key + 1.0f) + 120.0f * (g_banks[bank].tuning * 6.0f / 10.0f));
+}
+
+EMSCRIPTEN_KEEPALIVE
+void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, float startFx, float sampleRate)
+{
+    g_numberOfBanks = numBanks;
+    g_oscillatorsPerBank = oscsPerBank;
+    g_waveTableSize = waveTableSize;
+    g_startFx = startFx;
+    g_sampleRate = sampleRate;
+    g_roundRobinIndex = 0;
+
+    g_banks = (BankData *)malloc(sizeof(BankData) * numBanks);
+    g_oscData = (OscillatorData **)malloc(sizeof(OscillatorData *) * numBanks);
+
+    g_fmAccumulators = (float *)calloc(numBanks * oscsPerBank, sizeof(float));
+    g_amAccumulators = (float *)calloc(numBanks * oscsPerBank, sizeof(float));
+    g_modMatrix = (ModSettings *)calloc(numBanks * numBanks, sizeof(ModSettings));
+
+    for (int b = 0; b < numBanks; b++)
+    {
+        g_banks[b].detune = 0.0f;
+        g_banks[b].lastDetune = 1.0f;
+        g_banks[b].detuneFactor = 1.0f;
+        g_banks[b].tuning = 0.0f;
+        g_banks[b].type = 0;
+        g_banks[b].periodicWaveData = NULL;
+        g_banks[b].numBands = 0;
+        g_banks[b].waveTableSize = waveTableSize;
+        g_banks[b].modOutput = 0;
+        g_banks[b].envelopeData.attack = 0.0f;
+        g_banks[b].envelopeData.decay = 0.5f;
+        g_banks[b].envelopeData.sustainLevel = 0.0f;
+        g_banks[b].envelopeData.release = 0.5f;
+        g_banks[b].envelopeData.legato = false;
+        g_banks[b].envelopeData.velocity = 0x7f;
+        g_banks[b].envelopeData.velocitySensitive = false;
+        g_oscData[b] = (OscillatorData *)malloc(sizeof(OscillatorData) * oscsPerBank);
+        for (int o = 0; o < oscsPerBank; o++)
+        {
+            g_oscData[b][o].key = -1;
+            g_oscData[b][o].frequency = 1.0f;
+            g_oscData[b][o].phase = 0.0f;
+            g_oscData[b][o].releaseRate = 1.0f;
+            envelope_init(&g_oscData[b][o].env, &g_banks[b].envelopeData);
+            butterworth_calculate_coefficients(&g_oscData[b][o].butterworthFilter, 1000.0f, sampleRate);
+            ladder_init(&g_oscData[b][o].lpf, sampleRate);
+        }
+    }
+}
+EMSCRIPTEN_KEEPALIVE
+void setMatrixGain(int modBank, int carrierBank, int type, float level)
+{
+    int idx = modBank * g_numberOfBanks + carrierBank;
+    g_modMatrix[idx].carrierIdx = carrierBank;
+    g_modMatrix[idx].modType = (oscModType)type;
+    g_modMatrix[idx].level = level * 7.0f;
+}
+EMSCRIPTEN_KEEPALIVE
+void setBankEnvelopeParams(int bank, int phase, float value)
+{
+    EnvelopeData *env = &g_banks[bank].envelopeData;
+    switch (phase)
+    {
+    case 1:
+        env->attack = value;
+        break;
+    case 2:
+        env->decay = value;
+        break;
+    case 3:
+        env->sustainLevel = value;
+        break;
+    case 4:
+        env->release = value;
+        break;
+    case 6:
+        env->legato = (value > 0.0f);
+        break;
+    }
+}
+EMSCRIPTEN_KEEPALIVE
+void triggerNoteOn(int key, int velocity)
+{
+    int foundIdx = -1;
+    for (int b = 0; b < g_numberOfBanks; b++)
+    {
+        for (int o = 0; o < g_oscillatorsPerBank; o++)
+        {
+            if (g_oscData[b][o].env.inUse && g_oscData[b][o].key == key)
+            {
+                foundIdx = o;
+                break;
+            }
+        }
+        if (foundIdx != -1)
             break;
-        case ENV_OFF:
-        default:
-            env->current_level = 0.0f;
-            break;
     }
-    return env->current_level;
-}
-
-static inline float generate_wave_sample(WaveType type, float phase) {
-    // Normalise phase window boundary to [0.0, 1.0]
-    float normalized = phase / TWO_PI;
-    normalized -= (int)normalized;
-    if (normalized < 0.0f) normalized += 1.0f;
-
-    switch (type) {
-        case WAVE_SINE:
-            return sinf(phase);
-        case WAVE_SQUARE:
-            return (normalized < 0.5f) ? 1.0f : -1.0f;
-        case WAVE_TRIANGLE:
-            if (normalized < 0.25f) return normalized * 4.0f;
-            if (normalized < 0.75f) return 2.0f - (normalized * 4.0f);
-            return (normalized * 4.0f) - 4.0f;
-        case WAVE_SAW:
-            return (normalized * 2.0f) - 1.0f;
-        default:
-            return 0.0f;
-    }
-}
-
-// --- PUBLIC ENGINE API INTERFACES ---
-
-EMSCRIPTEN_KEEPALIVE
-void initProcessor(float sampleRate) {
-    synth.sample_rate = sampleRate;
-
-    for (int b = 0; b < NUM_BANKS; b++) {
-        synth.banks[b].wave_type = WAVE_SINE;
-        synth.banks[b].tuning_coarse = 0.0f;
-        synth.banks[b].detune_cents = 0.0f;
-        synth.mod_post_env[b] = true;
-        init_envelope(&synth.banks[b].freq_env);
-
-        for (int i = 0; i < OSC_PER_BANK; i++) {
-            synth.banks[b].oscs[i].phase = 0.0f;
-            synth.banks[b].oscs[i].base_freq = 440.0f;
-            synth.banks[b].oscs[i].detune = 0.0f;
-            synth.banks[b].oscs[i].midi_note = -1;
-            synth.banks[b].oscs[i].is_active = false;
-            init_envelope(&synth.banks[b].oscs[i].amp_env);
+    if (foundIdx != -1)
+    {
+        for (int b = 0; b < g_numberOfBanks; b++)
+        {
+            g_oscData[b][foundIdx].env.phase = ENV_RETRIGGER;
         }
-
-        for (int dst = 0; dst < NUM_BANKS; dst++) {
-            synth.mod_matrix[b][dst] = 0.0f;
-            synth.is_am[b][dst] = false;
+    }
+    else
+    {
+        foundIdx = g_roundRobinIndex++;
+        if (g_roundRobinIndex >= g_oscillatorsPerBank)
+            g_roundRobinIndex = 0;
+    }
+    for (int b = 0; b < g_numberOfBanks; b++)
+    {
+        OscillatorData *od = &g_oscData[b][foundIdx];
+        od->frequency = key_to_frequency(key, b);
+        od->key = key;
+        od->env.keyDown = true;
+        od->env.inUse = true;
+        od->env.envelopeData->velocity = velocity;
+        if (od->env.phase != ENV_RETRIGGER)
+            od->phase = 0.0f;
+    }
+}
+EMSCRIPTEN_KEEPALIVE
+void triggerNoteOff(int key)
+{
+    for (int b = 0; b < g_numberOfBanks; b++)
+    {
+        for (int o = 0; o < g_oscillatorsPerBank; o++)
+        {
+            if (g_oscData[b][o].env.inUse && g_oscData[b][o].key == key)
+            {
+                g_oscData[b][o].env.keyDown = false;
+            }
         }
     }
 }
-
 EMSCRIPTEN_KEEPALIVE
-void setMatrixGain(int sourceBank, int targetBank, float gain, bool isAM) {
-    if (sourceBank >= 0 && sourceBank < NUM_BANKS && targetBank >= 0 && targetBank < NUM_BANKS) {
-        synth.mod_matrix[sourceBank][targetBank] = gain;
-        synth.is_am[sourceBank][targetBank] = isAM;
-    }
-}
-
-EMSCRIPTEN_KEEPALIVE
-void setBankEnvelopeParams(int bank, bool isFrequencyEnv, float a, float d, float s, float r) {
-    if (bank < 0 || bank >= NUM_BANKS) return;
-
-    if (isFrequencyEnv) {
-        Envelope* env = &synth.banks[bank].freq_env;
-        env->attack_rate = 1.0f / (a * synth.sample_rate + 1.0f);
-        env->decay_rate = 1.0f / (d * synth.sample_rate + 1.0f);
-        env->sustain_level = s;
-        env->release_rate = 1.0f / (r * synth.sample_rate + 1.0f);
-    } else {
-        for(int i = 0; i < OSC_PER_BANK; i++) {
-            Envelope* a_env = &synth.banks[bank].oscs[i].amp_env;
-            a_env->attack_rate = 1.0f / (a * synth.sample_rate + 1.0f);
-            a_env->decay_rate = 1.0f / (d * synth.sample_rate + 1.0f);
-            a_env->sustain_level = s;
-            a_env->release_rate = 1.0f / (r * synth.sample_rate + 1.0f);
-        }
-    }
-}
-
-EMSCRIPTEN_KEEPALIVE
-void triggerNoteOn(int bank, int noteNumber, float frequency) {
-    if (bank < 0 || bank >= NUM_BANKS) return;
-
-    int targetIdx = -1;
-    for (int i = 0; i < OSC_PER_BANK; i++) {
-        if (!synth.banks[bank].oscs[i].is_active || synth.banks[bank].oscs[i].amp_env.stage == ENV_OFF) {
-            targetIdx = i;
-            break;
-        }
-    }
-
-    if (targetIdx == -1) targetIdx = 0; // Simple voice stealing fallback
-
-    Oscillator* o = &synth.banks[bank].oscs[targetIdx];
-    o->base_freq = frequency;
-    o->midi_note = noteNumber;
-    o->is_active = true;
-    o->amp_env.current_level = 0.0f;
-    o->amp_env.stage = ENV_ATTACK;
-
-    if (synth.banks[bank].freq_env.stage == ENV_OFF) {
-        synth.banks[bank].freq_env.current_level = 0.0f;
-        synth.banks[bank].freq_env.stage = ENV_ATTACK;
-    }
-}
-
-EMSCRIPTEN_KEEPALIVE
-void triggerNoteOff(int bank, int noteNumber) {
-    if (bank < 0 || bank >= NUM_BANKS) return;
-
-    bool remainingActive = false;
-    for (int i = 0; i < OSC_PER_BANK; i++) {
-        Oscillator* o = &synth.banks[bank].oscs[i];
-        if (o->is_active && o->midi_note == noteNumber) {
-            o->amp_env.stage = ENV_RELEASE;
-        }
-        if (o->is_active && o->amp_env.stage != ENV_OFF) {
-            remainingActive = true;
-        }
-    }
-
-    if (!remainingActive) {
-        synth.banks[bank].freq_env.stage = ENV_RELEASE;
-    }
-}
-
-EMSCRIPTEN_KEEPALIVE
-float* getBankOutputBufferPtr(int bank) {
-    if (bank >= 0 && bank < NUM_BANKS) {
-        return synth.banks[bank].bank_output_buffer;
-    }
+float *getBankOutputBufferPtr(int bank)
+{
     return NULL;
 }
-
 EMSCRIPTEN_KEEPALIVE
-void processBlock() {
-    for (int b = 0; b < NUM_BANKS; b++) {
-        for (int s = 0; s < BLOCK_SIZE; s++) {
-            synth.banks[b].bank_output_buffer[s] = 0.0f;
-        }
+void processBlock(float **outputBuffers, int numSamples)
+{
+    float nyquist = g_sampleRate / 2.0f;
+    float twelfthRoot2 = 1.05946309436f;
+    float root2 = 1.41421356237f;
+    for (int b = 0; b < g_numberOfBanks; b++)
+    {
+        memset(outputBuffers[b], 0, sizeof(float) * numSamples);
     }
-
-    float sample_mod_outputs[NUM_BANKS];
-
-    for (int s = 0; s < BLOCK_SIZE; s++) {
-        for (int b = 0; b < NUM_BANKS; b++) {
-            sample_mod_outputs[b] = 0.0f;
-        }
-
-        // 1. PHASE MODULATION (FM) MATRIX EVALUATION LOOP
-        for (int b = 0; b < NUM_BANKS; b++) {
-            float freq_env_delta = update_envelope(&synth.banks[b].freq_env);
-
-            float fm_modulation_input = 0.0f;
-            for (int src = 0; src < NUM_BANKS; src++) {
-                if (synth.mod_matrix[src][b] != 0.0f && !synth.is_am[src][b]) {
-                    fm_modulation_input += sample_mod_outputs[src] * synth.mod_matrix[src][b];
-                }
+    for (int i = 0; i < numSamples; i++)
+    {
+        for (int b = 0; b < g_numberOfBanks; b++)
+        {
+            float *outputChannel = outputBuffers[b];
+            BankData *bd = &g_banks[b];
+            if (bd->detune != bd->lastDetune)
+            {
+                bd->lastDetune = bd->detune;
+                bd->detuneFactor = powf(twelfthRoot2, bd->detune / 100.0f);
             }
-
-            float bank_sample_accumulator = 0.0f;
-            float bank_raw_mod_accumulator = 0.0f;
-
-            for (int i = 0; i < OSC_PER_BANK; i++) {
-                Oscillator* o = &synth.banks[b].oscs[i];
-                if (!o->is_active) continue;
-
-                float amp_env_scaler = update_envelope(&o->amp_env);
-                if (o->amp_env.stage == ENV_OFF) {
-                    o->is_active = false;
-                    continue;
+            for (int osc = 0; osc < g_oscillatorsPerBank; osc++)
+            {
+                OscillatorData *od = &g_oscData[b][osc];
+                Envelope *env = &od->env;
+                float f = od->frequency;
+                if (env->inUse)
+                {
+                    ladder_set_cutoff(&od->lpf, od->frequency * env->level * 15.0f);
                 }
-
-                // Envelope scales frequency directly (e.g. 100Hz max depth multiplier)
-                float applied_freq = o->base_freq + (freq_env_delta * 100.0f);
-
-                float phase_increment = (applied_freq / synth.sample_rate) * TWO_PI;
-                o->phase += phase_increment;
-                if (o->phase >= TWO_PI) o->phase -= TWO_PI;
-
-                float target_phase = o->phase + fm_modulation_input;
-                float raw_sample = generate_wave_sample(synth.banks[b].wave_type, target_phase);
-
-                float active_gated_sample = raw_sample * amp_env_scaler;
-                bank_sample_accumulator += active_gated_sample;
-
-                bank_raw_mod_accumulator += synth.mod_post_env[b] ? active_gated_sample : raw_sample;
-            }
-
-            synth.banks[b].bank_output_buffer[s] = bank_sample_accumulator;
-            sample_mod_outputs[b] = bank_raw_mod_accumulator;
-        }
-
-        // 2. AMPLITUDE MODULATION (AM) EVALUATION PASSTHROUGH
-        for (int b = 0; b < NUM_BANKS; b++) {
-            float am_scalar = 1.0f;
-            for (int src = 0; src < NUM_BANKS; src++) {
-                if (synth.mod_matrix[src][b] != 0.0f && synth.is_am[src][b]) {
-                    am_scalar *= (1.0f + (sample_mod_outputs[src] * synth.mod_matrix[src][b]));
+                if (f > nyquist)
+                    f = nyquist;
+                int band = 0;
+                if (bd->type == 1 && bd->periodicWaveData != NULL)
+                {
+                    band = (int)floorf(log2f(f / g_startFx) / log2f(root2));
+                    if (band < 0)
+                        band = 0;
+                    else if (band > bd->numBands - 1)
+                        band = bd->numBands - 1;
+                }
+                if (env->keyDown)
+                {
+                    envelope_advance_to_sustain(env);
+                }
+                else
+                {
+                    envelope_advance_to_zero(env);
+                }
+                f *= bd->detuneFactor;
+                float matrixX = 0.0f;
+                int fmIdx = b * g_oscillatorsPerBank + osc;
+                if (g_modMatrix[b * g_numberOfBanks + b].modType == MOD_FREQUENCY)
+                {
+                    matrixX = g_fmAccumulators[fmIdx];
+                    g_fmAccumulators[fmIdx] = 0.0f;
+                }
+                float mod = butterworth_process(&od->butterworthFilter, matrixX);
+                float inc = f / g_sampleRate;
+                od->phase += inc;
+                float currentPhase = od->phase + mod;
+                currentPhase = currentPhase - floorf(currentPhase);
+                od->phase = od->phase - floorf(od->phase);
+                float ampEnvelope = env->level;
+                float signal = 0.0f;
+                if (bd->type == 0)
+                {
+                    signal = sinf(currentPhase * 2.0f * M_PI);
+                }
+                else if (bd->type == 1 && bd->periodicWaveData != NULL)
+                {
+                    int sampleIdx = (int)floorf(currentPhase * bd->waveTableSize);
+                    signal = bd->periodicWaveData[band * bd->waveTableSize + sampleIdx];
+                }
+                float modSignal = signal;
+                if (bd->modOutput == 1)
+                {
+                    modSignal *= ampEnvelope;
+                }
+                for (int mB = 0; mB < g_numberOfBanks; mB++)
+                {
+                    ModSettings *ms = &g_modMatrix[mB * g_numberOfBanks + b];
+                    if (ms->modType == MOD_FREQUENCY)
+                    {
+                        g_fmAccumulators[mB * g_oscillatorsPerBank + osc] += modSignal * ms->level;
+                    }
+                    else if (ms->modType == MOD_AMPLITUDE)
+                    {
+                        g_amAccumulators[mB * g_oscillatorsPerBank + osc] += modSignal * ms->level;
                     }
                 }
-            synth.banks[b].bank_output_buffer[s] *= am_scalar;
+                if (env->inUse)
+                {
+                    outputChannel[i] += ampEnvelope * ladder_process(&od->lpf, signal);
+                }
             }
         }
     }
+}

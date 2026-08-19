@@ -59,6 +59,10 @@
         },
         "serve": {
           "options": {
+            "headers": {
+              "Cross-Origin-Opener-Policy": "same-origin",
+              "Cross-Origin-Embedder-Policy": "require-corp"
+            },
             "proxyConfig": "src/proxy.conf.js"
           },
           "builder": "@angular/build:dev-server",
@@ -83,7 +87,8 @@
             "assets": [
               {
                 "glob": "**/*",
-                "input": "public"
+                "input": "client/public/assets/wasm",
+                "output": "/assets/wasm/"
               }
             ],
             "styles": [

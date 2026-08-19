@@ -170,7 +170,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   protected setFrequency(freq: number) {
     this.proxySettings.frequency = freq;
    // Set frequency on the oscillators bank 1 and 2 related filters
-    for (let i = 0; i < 12 /*  TODO: DevicePoolManager.numberOfDevices*/; ++i) {
+    for (let i = 0; i < 1 /*  TODO: DevicePoolManager.numberOfDevices*/; ++i) {
       const filter = this.filters[i];
       if (filter.keyIndex > -1) {
         filter.setFrequency(this.keyToFrequency(filter.keyIndex))
