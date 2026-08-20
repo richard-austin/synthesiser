@@ -90,7 +90,7 @@ tasks.register('compileWasm', Exec) {
             "-flto",
             "-msimd128",
             "-ffast-math",
-            "-o", "${rootDir}/client/public/assets/wasm/engine-module.js",
+            "-o", "${outputJsPath}",
             "-s", "WASM=1",
             "-s", "ENVIRONMENT=worklet",
             "-s", "SINGLE_FILE=1",
