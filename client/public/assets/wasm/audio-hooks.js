@@ -1,7 +1,6 @@
 // client/public/assets/wasm/audio-hooks.js
 
 if (typeof globalThis.registerProcessor === 'function') {
-
   class WasmSynthesiserProcessor extends AudioWorkletProcessor {
     constructor(options) {
       super();
@@ -11,32 +10,45 @@ if (typeof globalThis.registerProcessor === 'function') {
       const opts = options.processorOptions;
       this.numberOfBanks = opts.numberOfBanks;
       this.oscillatorsPerBank = opts.oscillatorsPerBank;
-
       this.wasmOutputPtrArray = 0;
       this.channelPtrs = [];
 
-      // Direct assignment onto the message port ensures the loop activates instantly
       this.port.onmessage = (e) => {
         this.handleIncomingMessage(e.data);
       };
 
-      // Capture the runtime initialization status hook
-      if (typeof Module !== 'undefined') {
+      // Fix: Check if WASM is already loaded or wait for it
+      this.initializeWasmConnection();
+    }
+
+    initializeWasmConnection() {
+      if (typeof Module === 'undefined') return;
+
+      // Scenario A: Runtime is already fully loaded and active
+      if (Module.calledRun || (typeof Module._malloc === 'function' && Module.HEAPF32)) {
+        this.bindEngine();
+      } else {
+        // Scenario B: Runtime is still booting up asynchronously
+        const existingCallback = Module.onRuntimeInitialized;
         Module.onRuntimeInitialized = () => {
-          console.log("WASM Runtime initialized inside AudioWorklet scope. Configuring buffers...");
-          this.allocateWasmBuffers();
-          this.isWasmBound = true;
+          if (typeof existingCallback === 'function') existingCallback();
+          this.bindEngine();
         };
       }
     }
 
+    bindEngine() {
+      console.log("WASM Runtime verified inside AudioWorklet scope. Configuring buffers...");
+      this.allocateWasmBuffers();
+      this.isWasmBound = true;
+    }
+
     allocateWasmBuffers() {
       if (this.wasmOutputPtrArray !== 0) return;
-
       const samplesPerBlock = 128;
       const bytesPerFloat = 4;
-
       this.channelPtrs = [];
+
       for (let b = 0; b < this.numberOfBanks; b++) {
         const ptr = Module._malloc(samplesPerBlock * bytesPerFloat);
         Module.HEAPF32.fill(0, ptr / bytesPerFloat, (ptr / bytesPerFloat) + samplesPerBlock);
@@ -52,7 +64,7 @@ if (typeof globalThis.registerProcessor === 'function') {
 
     handleIncomingMessage(data) {
       if (!data) return;
-      console.log("AudioWorklet received control type:", data.type); // Diagnoses execution paths
+      console.log("AudioWorklet received control type:", data.type);
 
       switch (data.type) {
         case 'init':
@@ -61,7 +73,6 @@ if (typeof globalThis.registerProcessor === 'function') {
             console.log("C-Memory maps allocated successfully.");
           }
           break;
-
         case 'shutDown':
           this.isEngineRunning = false;
           this.port.close();
@@ -70,7 +81,6 @@ if (typeof globalThis.registerProcessor === 'function') {
             Module._free(this.wasmOutputPtrArray);
           }
           break;
-
         case 'keyDown':
           if (this.isWasmBound) {
             Module._triggerNoteOn(data.key, data.velocity);
@@ -97,29 +107,23 @@ if (typeof globalThis.registerProcessor === 'function') {
     }
 
     process(inputs, outputs, parameters) {
-      // Ensure the processing loop stays alive and renders frames continuously
       if (!this.isEngineRunning) return false;
-      if (!this.isWasmBound) return true; // Keep thread warm while waiting for WASM to mount
-console.log("x");
-      const samplesPerBlock = 128;
+      if (!this.isWasmBound) return true;
 
-      // 1. Process samples inside the optimized C engine block
+      const samplesPerBlock = 128;
       Module._processBlock(this.wasmOutputPtrArray, samplesPerBlock);
 
-      // 2. Marshal float data views directly back into Web Audio output tracks
       for (let b = 0; b < this.numberOfBanks; b++) {
-        const outputChannelData = outputs[b][0]; // Extract Bank B, Channel 0 (Mono standard track mapping)
+        const outputChannelData = outputs[b][0];
         if (!outputChannelData) continue;
-
         const startFloatIdx = this.channelPtrs[b] / 4;
         const wasmFloatView = Module.HEAPF32.subarray(startFloatIdx, startFloatIdx + samplesPerBlock);
-
         outputChannelData.set(wasmFloatView);
       }
-
       return true;
     }
   }
 
+  // Clean up global scope registration by leaving it strictly to the class instance lifecycle
   globalThis.registerProcessor('oscillator', WasmSynthesiserProcessor);
 }

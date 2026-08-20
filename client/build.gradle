@@ -9,7 +9,7 @@ node {
 }
 
 tasks.register('bootRun', NpmTask) {
-  dependsOn(['npmInstall', ':oscillator-wasm:compileWasm', 'compileSingleTs'])
+  dependsOn(['npmInstall', ':oscillator-wasm:compileWasm'])
   group = 'application'
   description = 'Start client side server'
   args = ['run', 'startProxy']
@@ -50,7 +50,7 @@ tasks.register('compileSingleTs', NpxTask) {
 
 tasks.register('buildClient', NpmTask) {
   // Add the new task to the dependsOn list
-  dependsOn(['npmInstall', ':oscillator-wasm:compileWasm', 'compileSingleTs'])
+  dependsOn(['npmInstall', ':oscillator-wasm:compileWasm'])
   group = 'build'
   description = 'Compile client side assets for production'
   args = ['run', 'build']

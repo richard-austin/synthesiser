@@ -15,7 +15,7 @@ export class FmSynthService {
   private keyUpHandlers: ((bank: number, device: number, key: number,) => void)[] = [];
   private port!: MessagePort;
 
-  async initializeSynth(audioCtx: AudioContext, numberOfBanks: number = 4, oscillatorsPerBank: number =4): Promise<void> {
+  async initializeSynth(audioCtx: AudioContext, numberOfBanks: number = 4, oscillatorsPerBank: number =12): Promise<void> {
     if (!this.audioContext) {
       // 1. Instantiate the AudioContext on the main thread
       this.audioContext = audioCtx;
@@ -24,6 +24,7 @@ export class FmSynthService {
         gainNode.gain.value = 1
       });
       await this.start(numberOfBanks, oscillatorsPerBank);
+      this.synthNode.connect(this.audioContext.destination);
        this.synthNode.port.onmessage = (event: MessageEvent) => {
         switch (event.data.type) {
           case 'keyDown':
