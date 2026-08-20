@@ -1,8 +1,7 @@
 import {Injectable} from '@angular/core';
-import {WaveTables} from '../modules/wavetables';
 import {OscillatorSettings} from '../settings/oscillator';
 import {oscModOutput, oscModType} from '../enums/enums';
-import {envelopePhase, OscillatorArray} from '../modules/modulation/oscillator-array';
+import {envelopePhase} from '../oscillator/oscillator.component';
 
 @Injectable({
   providedIn: 'root'
@@ -24,7 +23,6 @@ export class FmSynthService {
         gainNode.gain.value = 1
       });
       await this.start(numberOfBanks, oscillatorsPerBank);
-      this.synthNode.connect(this.audioContext.destination);
        this.synthNode.port.onmessage = (event: MessageEvent) => {
         switch (event.data.type) {
           case 'keyDown':
@@ -70,7 +68,11 @@ export class FmSynthService {
       oscillatorsPerBank: oscillatorsPerBank
     });
 
-    this.synthNode.connect(this.audioContext.destination);
+    this.synthNode.connect(this.audioContext.destination, 0);
+    this.synthNode.connect(this.audioContext.destination, 1);
+    this.synthNode.connect(this.audioContext.destination, 2);
+    this.synthNode.connect(this.audioContext.destination, 3);
+
   }
 
    public keyDown(key: number, velocity: number): void {
@@ -116,11 +118,11 @@ getAudioContext(): AudioContext {
  //  }
 
   public tuning(tuning: number, bank: number): void {
- //   this.synthNode.tuning(tuning, bank);
+    this.port.postMessage({type: 'tuning', bank: bank, tuning: tuning});
   }
 
   public detune(detune: number, bank: number): void {
- //   this.synthNode.detune(detune, bank);
+    this.port.postMessage({type: 'detune', bank: bank, detune: detune});
   }
 
   public setModType(modBank: number, carrierBank: number, modType: oscModType) {

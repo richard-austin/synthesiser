@@ -499,6 +499,22 @@ void triggerNoteOff(int key)
         }
     }
 }
+
+EMSCRIPTEN_KEEPALIVE
+void setBankTuning(int bank, float tuning) {
+    g_banks[bank].tuning = tuning;
+    for(int o  = 0; o < g_oscillatorsPerBank; ++o)
+    {
+        OscillatorData* od = &g_oscData[bank][o];
+        g_oscData[bank][o].frequency = key_to_frequency(od->key, bank);
+    }
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setBankDetune(int bank, float detune) {
+    g_banks[bank].detune = detune;
+}
+
 EMSCRIPTEN_KEEPALIVE
 float *getBankOutputBufferPtr(int bank)
 {

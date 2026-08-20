@@ -24,7 +24,8 @@ import {DeviceKeys} from '../services/device-pool-manager-service';
 import {ClipboardService} from './clipboard-service';
 import {FmSynthService} from '../services/fm-synth-service';
 import {WaveTables} from '../modules/wavetables';
-import {envelopePhase} from '../modules/modulation/oscillator-array';
+//import {envelopePhase} from '../modules/modulation/oscillator-array';
+export enum envelopePhase {inactive, attack, decay, sustain, release, retrigger, legato }
 
 export type PortamentoType =
   'chord'

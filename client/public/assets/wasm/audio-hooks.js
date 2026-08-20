@@ -90,6 +90,12 @@ if (typeof globalThis.registerProcessor === 'function') {
         case 'keyUp':
           if (this.isWasmBound) Module._triggerNoteOff(data.key);
           break;
+        case 'tuning':
+          if(this.isWasmBound) Module._setBankTuning(data.bank, data.tuning);
+          break;
+        case 'detune':
+          if(this.isWasmBound) Module._setBankDetune(data.bank, data.detune);
+          break;
         case 'envelope':
           if (this.isWasmBound) Module._setBankEnvelopeParams(data.bank, data.phase, data.value);
           break;
