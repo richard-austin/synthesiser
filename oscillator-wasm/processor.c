@@ -261,7 +261,7 @@ void envelope_advance_to_sustain(Envelope *env)
     {
         if (!envData->legato)
         {
-            if (env->phase != ENV_ATTACK)
+            if (env->phase != ENV_ATTACK && env->phase != ENV_DECAY && env->phase != ENV_SUSTAIN )
             {
                 env->inUse = true;
                 float attackTarget = envData->velocitySensitive ? vel : 1.0f;
@@ -637,7 +637,7 @@ void processBlock(float **outputBuffers, int numSamples)
                         g_amAccumulators[cB * g_oscillatorsPerBank + osc] += modSignal * ms->level;
                     }
                 }
-                if (true || env->inUse)
+                if (env->inUse)
                 {
                     outputChannel[i] += ampEnvelope * signal; // ladder_process(&od->lpf, signal);
                 }
