@@ -102,12 +102,12 @@ if (typeof globalThis.registerProcessor === 'function') {
         case 'setModType': {
           if (this.isWasmBound) {
             const typeVal = data.modType === 'frequency' ? 1 : (data.modType === 'amplitude' ? 2 : 0);
-            Module._setMatrixGain(data.modBank, data.carrierBank, typeVal, 1.0);
+            Module._setModType(data.modBank, data.carrierBank, typeVal);
           }
           break;
         }
         case 'setModLevel':
-          if (this.isWasmBound) Module._setMatrixGain(data.modBank, data.carrierBank, 1, data.modLevel);
+          if (this.isWasmBound) Module._setModLevel(data.modBank, data.carrierBank, data.modLevel);
           break;
       }
     }

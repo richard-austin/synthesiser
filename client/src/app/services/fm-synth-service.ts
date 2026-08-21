@@ -36,6 +36,10 @@ export class FmSynthService {
             break;
         }
       }
+
+      this.gainNodes.forEach((gainNode, b) => {
+        this.synthNode.connect(gainNode, b);
+      })
     }
   }
 
@@ -67,12 +71,6 @@ export class FmSynthService {
       numberOfBanks: numberOfBanks,
       oscillatorsPerBank: oscillatorsPerBank
     });
-
-    this.synthNode.connect(this.audioContext.destination, 0);
-    this.synthNode.connect(this.audioContext.destination, 1);
-    this.synthNode.connect(this.audioContext.destination, 2);
-    this.synthNode.connect(this.audioContext.destination, 3);
-
   }
 
    public keyDown(key: number, velocity: number): void {
@@ -126,11 +124,11 @@ getAudioContext(): AudioContext {
   }
 
   public setModType(modBank: number, carrierBank: number, modType: oscModType) {
-  //  this.synthNode.setModType(modBank, carrierBank, modType);
+     this.port.postMessage({type: "setModType", modBank: modBank, carrierBank: carrierBank, modType: modType});
   }
 
   public setModLevel(modBank: number, carrierBank: number, modLevel: number) {
-  //  this.synthNode.setModLevel(modBank, carrierBank, modLevel);
+    this.port.postMessage({type: "setModLevel", modBank: modBank, carrierBank: carrierBank, modLevel: modLevel});
   }
 
   private clearModulation() {

@@ -420,6 +420,23 @@ void setMatrixGain(int modBank, int carrierBank, int type, float level)
     g_modMatrix[idx].modType = (oscModType)type;
     g_modMatrix[idx].level = level * 7.0f;
 }
+
+EMSCRIPTEN_KEEPALIVE
+void setModType(int modBank, int carrierBank, int type)
+{
+    int idx = modBank * g_numberOfBanks + carrierBank;
+    g_modMatrix[idx].carrierIdx = carrierBank;
+    g_modMatrix[idx].modType = (oscModType)type;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setModLevel(int modBank, int carrierBank, float level)
+{
+    int idx = modBank * g_numberOfBanks + carrierBank;
+    g_modMatrix[idx].carrierIdx = carrierBank;
+    g_modMatrix[idx].level = level * 7.0f;
+}
+
 EMSCRIPTEN_KEEPALIVE
 void setBankEnvelopeParams(int bank, int phase, float value)
 {
@@ -501,17 +518,19 @@ void triggerNoteOff(int key)
 }
 
 EMSCRIPTEN_KEEPALIVE
-void setBankTuning(int bank, float tuning) {
+void setBankTuning(int bank, float tuning)
+{
     g_banks[bank].tuning = tuning;
-    for(int o  = 0; o < g_oscillatorsPerBank; ++o)
+    for (int o = 0; o < g_oscillatorsPerBank; ++o)
     {
-        OscillatorData* od = &g_oscData[bank][o];
+        OscillatorData *od = &g_oscData[bank][o];
         g_oscData[bank][o].frequency = key_to_frequency(od->key, bank);
     }
 }
 
 EMSCRIPTEN_KEEPALIVE
-void setBankDetune(int bank, float detune) {
+void setBankDetune(int bank, float detune)
+{
     g_banks[bank].detune = detune;
 }
 
@@ -570,12 +589,18 @@ void processBlock(float **outputBuffers, int numSamples)
                     envelope_advance_to_zero(env);
                 }
                 f *= bd->detuneFactor;
+                // Mod output from accumulators
                 float matrixX = 0.0f;
-                int fmIdx = b * g_oscillatorsPerBank + osc;
-                if (g_modMatrix[b * g_numberOfBanks + b].modType == MOD_FREQUENCY)
+                for (int mB = 0; mB < g_numberOfBanks; ++mB)
                 {
-                    matrixX = g_fmAccumulators[fmIdx];
-                    g_fmAccumulators[fmIdx] = 0.0f;
+                    // Check if any bank is modulating this carrier
+                    if (g_modMatrix[mB * g_numberOfBanks + b].modType == MOD_FREQUENCY)
+                    {
+                        int fmIdx = b * g_oscillatorsPerBank + osc;
+                        matrixX = g_fmAccumulators[fmIdx];
+                        g_fmAccumulators[fmIdx] = 0.0f;
+                        break;  // Don't need to find any more modulating banks as they will all add into the accumulators for this carrier bank
+                    }
                 }
                 float mod = butterworth_process(&od->butterworthFilter, matrixX);
                 float inc = f / g_sampleRate;
@@ -599,21 +624,22 @@ void processBlock(float **outputBuffers, int numSamples)
                 {
                     modSignal *= ampEnvelope;
                 }
-                for (int mB = 0; mB < g_numberOfBanks; mB++)
+                // Mod input to accumulators
+                for (int cB = 0; cB < g_numberOfBanks; cB++)
                 {
-                    ModSettings *ms = &g_modMatrix[mB * g_numberOfBanks + b];
-                    if (ms->modType == MOD_FREQUENCY)
+                    ModSettings *ms = &g_modMatrix[b * g_numberOfBanks + cB];
+                    if (ms->modType == MOD_FREQUENCY && ms->carrierIdx == cB)
                     {
-                        g_fmAccumulators[mB * g_oscillatorsPerBank + osc] += modSignal * ms->level;
+                        g_fmAccumulators[cB * g_oscillatorsPerBank + osc] += modSignal * ms->level;
                     }
-                    else if (ms->modType == MOD_AMPLITUDE)
+                    else if (ms->modType == MOD_AMPLITUDE && ms->carrierIdx == cB)
                     {
-                        g_amAccumulators[mB * g_oscillatorsPerBank + osc] += modSignal * ms->level;
+                        g_amAccumulators[cB * g_oscillatorsPerBank + osc] += modSignal * ms->level;
                     }
                 }
-                if (env->inUse)
+                if (true || env->inUse)
                 {
-                    outputChannel[i] += ampEnvelope * ladder_process(&od->lpf, signal);
+                    outputChannel[i] += ampEnvelope * signal; // ladder_process(&od->lpf, signal);
                 }
             }
         }
