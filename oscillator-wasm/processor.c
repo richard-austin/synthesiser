@@ -251,8 +251,13 @@ float envelope_ramp(Envelope *env)
     else
     {
         env->level = env->v0 * powf(env->v1 / env->v0, (env->t - env->t0) / (env->t1 - env->t0));
+        if(isnanf(env->level))
+            emscripten_console_errorf("NaN returned by powf(env->v1 / env->v0, (env->t - env->t0) / (env->t1 - env->t0)");
         if (env->t >= env->t1)
+        {
             env->targetReached = true;
+            env->level = env->v1;
+        }
     }
     return env->level;
 }
@@ -270,12 +275,12 @@ void envelope_advance_to_sustain(Envelope *env)
     EnvelopeData *envData = env->envelopeData;
     if (env->keyDown)
     {
+        float attackTarget = envData->velocitySensitive ? vel : 1.0f;
         if (!envData->legato)
         {
             if (env->phase != ENV_ATTACK && env->phase != ENV_DECAY && env->phase != ENV_SUSTAIN )
             {
                 env->inUse = true;
-                float attackTarget = envData->velocitySensitive ? vel : 1.0f;
                 envelope_set_timing(env, attackTarget, envData->attack);
                 env->phase = ENV_ATTACK;
             }
@@ -292,9 +297,7 @@ void envelope_advance_to_sustain(Envelope *env)
             {
                 env->level = envelope_ramp(env);
                 if (env->targetReached)
-                {
                     env->phase = ENV_SUSTAIN;
-                }
             }
         }
         else
@@ -302,7 +305,6 @@ void envelope_advance_to_sustain(Envelope *env)
             if (env->phase != ENV_ATTACK)
             {
                 env->inUse = true;
-                float attackTarget = envData->velocitySensitive ? vel : 1.0f;
                 envelope_set_timing(env, attackTarget, envData->attack);
                 env->phase = ENV_ATTACK;
             }
@@ -343,7 +345,7 @@ void envelope_advance_to_zero(Envelope *env)
         {
             if (env->phase == ENV_ATTACK || env->phase == ENV_DECAY)
             {
-                envelope_set_timing(env, 0, envData->decay);
+                envelope_set_timing(env, env->lowestLevel, envData->decay);
                 env->phase = ENV_SUSTAIN;
             }
             else if (env->phase == ENV_SUSTAIN)
@@ -360,7 +362,6 @@ void envelope_advance_to_zero(Envelope *env)
                 env->level = envelope_ramp(env);
                 if (env->targetReached)
                 {
-                    env->level = env->lowestLevel;
                     env->inUse = false;
                     env->phase = ENV_INACTIVE;
                 }
@@ -622,7 +623,7 @@ void processBlock(float **outputBuffers, int numSamples)
                 float currentPhase = od->phase + mod;
                 currentPhase = currentPhase - floorf(currentPhase);
                 od->phase = od->phase - floorf(od->phase);
-                float ampEnvelope = env->level;
+                const float ampEnvelope = env->level;
                 float signal = 0.0f;
                 if (bd->type == 0)
                 {

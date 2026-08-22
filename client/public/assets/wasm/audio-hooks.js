@@ -129,8 +129,10 @@ if (typeof globalThis.registerProcessor === 'function') {
 
       if (!this.isEngineRunning) return false;
       if (!this.isWasmBound) return true;
+      const output = outputs[0];
+      const op = output[0];
+      const samplesPerBlock = op.length;
 
-      const samplesPerBlock = 128;
       Module._processBlock(this.wasmOutputPtrArray, samplesPerBlock);
 
       for (let b = 0; b < this.numberOfBanks; b++) {
