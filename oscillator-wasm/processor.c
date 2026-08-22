@@ -8,6 +8,10 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+#ifndef TWO_M_PI
+#define TWO_M_PI M_PI * 2.0f
+#endif
+
 // --- Enumerations ---
 typedef enum
 {
@@ -26,6 +30,12 @@ typedef enum
     MOD_FREQUENCY,
     MOD_AMPLITUDE
 } oscModType;
+
+typedef enum
+{
+    MOD_OUT_DIRECT=1,
+    MOD_OUT_ENVELOPE=2
+} oscModOutput;
 
 // --- Struct Definitions ---
 typedef struct
@@ -94,7 +104,7 @@ typedef struct
     float *periodicWaveData;
     int numBands;
     int waveTableSize;
-    int modOutput; // 0=direct, 1=envelope
+    oscModOutput modOutput; // 1=direct, 2=envelope
 } BankData;
 
 typedef struct
@@ -438,6 +448,12 @@ void setModLevel(int modBank, int carrierBank, float level)
 }
 
 EMSCRIPTEN_KEEPALIVE
+void setModOutput(int modBank, oscModOutput modOutput)
+{
+    g_banks[modBank].modOutput = modOutput;
+}
+
+EMSCRIPTEN_KEEPALIVE
 void setBankEnvelopeParams(int bank, int phase, float value)
 {
     EnvelopeData *env = &g_banks[bank].envelopeData;
@@ -589,20 +605,15 @@ void processBlock(float **outputBuffers, int numSamples)
                     envelope_advance_to_zero(env);
                 }
                 f *= bd->detuneFactor;
-                // Mod output from accumulators
-                float matrixX = 0.0f;
-                for (int mB = 0; mB < g_numberOfBanks; ++mB)
-                {
-                    // Check if any bank is modulating this carrier
-                    if (g_modMatrix[mB * g_numberOfBanks + b].modType == MOD_FREQUENCY)
-                    {
-                        int fmIdx = b * g_oscillatorsPerBank + osc;
-                        matrixX = g_fmAccumulators[fmIdx];
-                        g_fmAccumulators[fmIdx] = 0.0f;
-                        break;  // Don't need to find any more modulating banks as they will all add into the accumulators for this carrier bank
-                    }
-                }
-                float mod = butterworth_process(&od->butterworthFilter, matrixX);
+
+                // AM and FM Mod output from accumulators
+                int idx = b * g_oscillatorsPerBank + osc;
+                const float matrixF = g_fmAccumulators[idx];
+                g_fmAccumulators[idx] = 0.0f;
+                const float matrixA = 1.0f + g_amAccumulators[idx];
+                g_amAccumulators[idx] = 0.0f;
+
+                float mod = butterworth_process(&od->butterworthFilter, matrixF);
                 float inc = f / g_sampleRate;
                 od->phase += inc;
                 float currentPhase = od->phase + mod;
@@ -612,7 +623,7 @@ void processBlock(float **outputBuffers, int numSamples)
                 float signal = 0.0f;
                 if (bd->type == 0)
                 {
-                    signal = sinf(currentPhase * 2.0f * M_PI);
+                    signal = sinf(currentPhase * TWO_M_PI) * matrixA;
                 }
                 else if (bd->type == 1 && bd->periodicWaveData != NULL)
                 {
@@ -620,7 +631,7 @@ void processBlock(float **outputBuffers, int numSamples)
                     signal = bd->periodicWaveData[band * bd->waveTableSize + sampleIdx];
                 }
                 float modSignal = signal;
-                if (bd->modOutput == 1)
+                if (bd->modOutput == 2)
                 {
                     modSignal *= ampEnvelope;
                 }

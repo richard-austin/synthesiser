@@ -151,7 +151,7 @@ getAudioContext(): AudioContext {
   }
 
   setModOutput(bank: number, modOutput: oscModOutput) {
- //   this.synthNode.setModOutput(bank, modOutput);
+     this.port.postMessage({type: "setModOutput", modBank: bank, modOutput: modOutput});
   }
 
   useVelocitySensitive(bank: number, velocitySensitive: boolean) {

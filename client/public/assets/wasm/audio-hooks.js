@@ -109,6 +109,13 @@ if (typeof globalThis.registerProcessor === 'function') {
         case 'setModLevel':
           if (this.isWasmBound) Module._setModLevel(data.modBank, data.carrierBank, data.modLevel);
           break;
+        case 'setModOutput':
+          if (this.isWasmBound)
+          {
+            const typeVal = data.modOutput === 'direct' ? 1 : (data.modOutput === 'envelope' ? 2 : 0);
+            Module._setModOutput(data.modBank, typeVal);
+          }
+          break;
       }
     }
 
