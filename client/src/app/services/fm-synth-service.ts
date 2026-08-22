@@ -102,19 +102,6 @@ getAudioContext(): AudioContext {
     this.gainNodes[output].disconnect();
   }
 
- //  // Method to invoke clean triggers down into your background WebAssembly context
- //  public keyDown(key: number, velocity: number): void {
- // //   this.synthNode.keyDown(key, velocity);
- //  }
- //
- //  public keyUp(key: number): void {
- //  //  this.synthNode.keyUp(key);
- //  }
- //
- //  public envelope(bank: number, phase: envelopePhase, value: number) {
- // //   this.synthNode.envelope(bank, phase, value);
- //  }
-
   public tuning(tuning: number, bank: number): void {
     this.port.postMessage({type: 'tuning', bank: bank, tuning: tuning});
   }

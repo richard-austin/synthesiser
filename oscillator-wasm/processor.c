@@ -1,4 +1,5 @@
 #include <emscripten.h>
+#include <emscripten/console.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -558,6 +559,8 @@ float *getBankOutputBufferPtr(int bank)
 EMSCRIPTEN_KEEPALIVE
 void processBlock(float **outputBuffers, int numSamples)
 {
+//    emscripten_console_logf("Value from audio thread %d", numSamples);
+
     float nyquist = g_sampleRate / 2.0f;
     float twelfthRoot2 = 1.05946309436f;
     float root2 = 1.41421356237f;
