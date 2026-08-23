@@ -542,7 +542,7 @@ void setBankTuning(int bank, float tuning)
     for (int o = 0; o < g_oscillatorsPerBank; ++o)
     {
         OscillatorData *od = &g_oscData[bank][o];
-        g_oscData[bank][o].frequency = key_to_frequency(od->key, bank);
+        od->frequency = key_to_frequency(od->key, bank);
     }
 }
 
@@ -550,6 +550,16 @@ EMSCRIPTEN_KEEPALIVE
 void setBankDetune(int bank, float detune)
 {
     g_banks[bank].detune = detune;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setVelocitySensitive(int bank, bool isVelocitySensitive)
+{
+    for(int o = 0; o < g_oscillatorsPerBank; ++o)
+    {
+        OscillatorData *od = &g_oscData[bank][o];
+        od->env.envelopeData->velocitySensitive = isVelocitySensitive;
+    }
 }
 
 EMSCRIPTEN_KEEPALIVE

@@ -99,7 +99,7 @@ tasks.register('compileWasm', Exec) {
             // MANDATORY: Forces Emscripten to check and execute our custom callback hook
             "-s", "INCOMING_MODULE_JS_API=['onRuntimeInitialized']",
             "--post-js", "${rootDir}/client/public/assets/wasm/audio-hooks.js",
-            "-s", 'EXPORTED_FUNCTIONS=["_initProcessor","_setBankTuning","_setBankDetune", "_setMatrixGain","_setModType", "_setModLevel", "_setModOutput", "_setBankEnvelopeParams","_triggerNoteOn","_triggerNoteOff","_getBankOutputBufferPtr","_processBlock","_malloc","_free"]',
+            "-s", 'EXPORTED_FUNCTIONS=["_initProcessor","_setBankTuning","_setBankDetune","_setVelocitySensitive","_setMatrixGain","_setModType", "_setModLevel", "_setModOutput", "_setBankEnvelopeParams","_triggerNoteOn","_triggerNoteOff","_getBankOutputBufferPtr","_processBlock","_malloc","_free"]',
             "--no-entry"
     )
 }

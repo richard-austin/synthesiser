@@ -96,6 +96,9 @@ if (typeof globalThis.registerProcessor === 'function') {
         case 'detune':
           if(this.isWasmBound) Module._setBankDetune(data.bank, data.detune);
           break;
+        case "setVelocitySensitive":
+          if(this.isWasmBound) Module._setVelocitySensitive(data.bank, data.velocitySensitive);
+          break;
         case 'envelope':
           if (this.isWasmBound) Module._setBankEnvelopeParams(data.bank, data.phase, data.value);
           break;

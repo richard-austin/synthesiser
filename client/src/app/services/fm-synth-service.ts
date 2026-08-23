@@ -141,8 +141,8 @@ getAudioContext(): AudioContext {
      this.port.postMessage({type: "setModOutput", modBank: bank, modOutput: modOutput});
   }
 
-  useVelocitySensitive(bank: number, velocitySensitive: boolean) {
- //   this.synthNode.useVelocitySensitive(bank, velocitySensitive);
+  setVelocitySensitive(bank: number, velocitySensitive: boolean) {
+    this.port.postMessage({type: "setVelocitySensitive", bank: bank, velocitySensitive: velocitySensitive});
   }
 
   applySettings(proxySettings: OscillatorSettings, bank: number) {

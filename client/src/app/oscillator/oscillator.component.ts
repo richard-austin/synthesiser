@@ -225,9 +225,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.fmSynthService.envelope(this.oscNumber(), envelopePhase.legato, legatoMode ? 1 : 0)
   }
 
-  useVelocitySensitive(velocitySensitive: boolean) {
+  setVelocitySensitive(velocitySensitive: boolean) {
     this.proxySettings.velocitySensitive = velocitySensitive ? onOff.on : onOff.off;
-    this.fmSynthService.useVelocitySensitive(this.oscNumber(), velocitySensitive);
+    this.fmSynthService.setVelocitySensitive(this.oscNumber(), velocitySensitive);
   }
 
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
@@ -532,7 +532,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       velocityOnOffForm.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value;
-        this.useVelocitySensitive(value === 'on');
+        this.setVelocitySensitive(value === 'on');
       });
     }
     const waveform = this.oscWaveForm().nativeElement;
