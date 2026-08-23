@@ -2,6 +2,7 @@ import {Injectable} from '@angular/core';
 import {OscillatorSettings} from '../settings/oscillator';
 import {oscModOutput, oscModType} from '../enums/enums';
 import {envelopePhase} from '../oscillator/oscillator.component';
+import {lastValueFrom, timer} from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -47,6 +48,13 @@ export class FmSynthService {
     if (this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
     }
+
+    // FIX: Explicitly monitor and guard against background context pausing
+    this.audioContext.onstatechange = () => {
+      if (this.audioContext.state === 'suspended') {
+        this.audioContext.resume();
+      }
+    };
     // 1. Load the standalone self-contained script file directly into the background scope
     await this.audioContext.audioWorklet.addModule('assets/wasm/engine-module.js');
 
@@ -65,12 +73,14 @@ export class FmSynthService {
 
     this.port = this.synthNode.port;
 
+    await lastValueFrom(timer(500));
     // 5. Trigger the layout allocations inside your background C loop
     this.port.postMessage({
       type: 'init',
       numberOfBanks: numberOfBanks,
       oscillatorsPerBank: oscillatorsPerBank
     });
+    await lastValueFrom(timer(500));
   }
 
    public keyDown(key: number, velocity: number): void {

@@ -233,7 +233,13 @@ void envelope_init(Envelope *env, EnvelopeData *data)
 
 void envelope_set_timing(Envelope *env, float value, float time)
 {
-    env->v0 = env->level;
+  // FIX: Prevent env->v0 from being 0 or lower than env->lowestLevel
+  float currentLevel = env->level;
+  if (currentLevel < env->lowestLevel) {
+    currentLevel = env->lowestLevel;
+  }
+
+  env->v0 = currentLevel;
     env->v1 = value + env->lowestLevel;
     env->t0 = env->t;
     env->t1 = env->t0 + time + env->lowestTime;
@@ -575,10 +581,34 @@ void processBlock(float **outputBuffers, int numSamples)
     float nyquist = g_sampleRate / 2.0f;
     float twelfthRoot2 = 1.05946309436f;
     float root2 = 1.41421356237f;
+    // 1. Instantly wipe the channel buffers to absolute zero
     for (int b = 0; b < g_numberOfBanks; b++)
     {
         memset(outputBuffers[b], 0, sizeof(float) * numSamples);
     }
+
+    // 2. Check if ANY envelope is currently active
+    bool activeAudioEngine = false;
+    for (int b = 0; b < g_numberOfBanks; b++)
+    {
+        for (int osc = 0; osc < g_oscillatorsPerBank; osc++)
+        {
+            if (g_oscData[b][osc].env.inUse)
+            {
+                activeAudioEngine = true;
+                break;
+            }
+        }
+        if (activeAudioEngine) break;
+    }
+
+    // FIX: Early exit! If no notes are playing or decaying, do zero math.
+    // This stops powf() denormal generation completely.
+    if (!activeAudioEngine)
+    {
+        return;
+    }
+
     for (int i = 0; i < numSamples; i++)
     {
         for (int b = 0; b < g_numberOfBanks; b++)
