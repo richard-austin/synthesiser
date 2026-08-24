@@ -1,5 +1,4 @@
 // client/public/assets/wasm/audio-hooks.js
-
 if (typeof globalThis.registerProcessor === 'function') {
   class WasmSynthesiserProcessor extends AudioWorkletProcessor {
     constructor(options) {
@@ -84,20 +83,20 @@ if (typeof globalThis.registerProcessor === 'function') {
         case 'keyDown':
           if (this.isWasmBound) {
             Module._triggerNoteOn(data.key, data.velocity);
-       //     console.log("C-Engine Note On executed for key:", data.key);
+            //     console.log("C-Engine Note On executed for key:", data.key);
           }
           break;
         case 'keyUp':
           if (this.isWasmBound) Module._triggerNoteOff(data.key);
           break;
         case 'tuning':
-          if(this.isWasmBound) Module._setBankTuning(data.bank, data.tuning);
+          if (this.isWasmBound) Module._setBankTuning(data.bank, data.tuning);
           break;
         case 'detune':
-          if(this.isWasmBound) Module._setBankDetune(data.bank, data.detune);
+          if (this.isWasmBound) Module._setBankDetune(data.bank, data.detune);
           break;
         case "setVelocitySensitive":
-          if(this.isWasmBound) Module._setVelocitySensitive(data.bank, data.velocitySensitive);
+          if (this.isWasmBound) Module._setVelocitySensitive(data.bank, data.velocitySensitive);
           break;
         case 'envelope':
           if (this.isWasmBound) Module._setBankEnvelopeParams(data.bank, data.phase, data.value);
@@ -113,11 +112,39 @@ if (typeof globalThis.registerProcessor === 'function') {
           if (this.isWasmBound) Module._setModLevel(data.modBank, data.carrierBank, data.modLevel);
           break;
         case 'setModOutput':
-          if (this.isWasmBound)
-          {
+          if (this.isWasmBound) {
             const typeVal = data.modOutput === 'direct' ? 1 : (data.modOutput === 'envelope' ? 2 : 0);
             Module._setModOutput(data.modBank, typeVal);
           }
+          break;
+        case 'setLFOModType':
+          if (this.isWasmBound) {
+            const modType = data.modType;
+            const typeVal = modType === 'amplitude' ? 1 : modType === 'frequency' ? 2 : 3;
+            Module._setLFOModType(data.bank, typeVal);
+          }
+          break;
+        case 'setLFOWaveform':
+          if (this.isWasmBound) {
+            const waveform = data.waveform;
+            const typeVal = waveform === 'sine' ? 1 : waveform === 'trangle' ? 2 : waveform === 'square' ? 3 : waveform === 'sawtooth' ? 4 : 0;
+            Module._setLFOWaveform(data.bank, typeVal);
+          }
+          break;
+        case 'setLFOLevel':
+          if (this.isWasmBound) {
+            const levelVal = data.level;
+            Module._setLFOLevel(data.bank, levelVal);
+          }
+          break;
+        case 'setLFOFrequency':
+          if (this.isWasmBound) {
+            const frequency = data.frequency;
+            Module._setLFOFrequency(data.bank, frequency);
+          }
+          break;
+        default:
+          console.error("Unknown control type " + type);
           break;
       }
     }

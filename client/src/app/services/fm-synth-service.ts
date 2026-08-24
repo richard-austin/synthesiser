@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {OscillatorSettings} from '../settings/oscillator';
-import {oscModOutput, oscModType} from '../enums/enums';
+import {modWaveforms, oscModOutput, oscModType} from '../enums/enums';
 import {envelopePhase} from '../oscillator/oscillator.component';
 import {lastValueFrom, timer} from 'rxjs';
 
@@ -166,6 +166,22 @@ getAudioContext(): AudioContext {
     //  this.useFreqBendEnvelope(proxySettings.useFrequencyEnvelope === onOff.on);
     this.setType(proxySettings.waveForm, bank);
     // this.clearModulation();  // Remove any preexisting mod settings
+  }
+
+  setLFOModType(bank: number, modType: oscModType) {
+    this.port.postMessage({type: 'setLFOModType', bank: bank, modType: modType});
+  }
+
+  setLFOWaveform(bank: number, waveform: modWaveforms) {
+    this.port.postMessage({type: 'setLFOWaveform', bank: bank, waveform: waveform});
+  }
+
+  setLFOFrequency(bank: number, frequency: number) {
+    this.port.postMessage({type: 'setLFOFrequency', bank: bank, frequency});
+  }
+
+  setLFOLevel(bank: number, level: number) {
+    this.port.postMessage({type: 'setLFOLevel', bank: bank, level});
   }
 
   addKeyDownHandler(handler: (bank: number, device: number, key: number, velocity: number) => void) {

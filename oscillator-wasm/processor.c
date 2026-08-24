@@ -34,9 +34,24 @@ typedef enum
 
 typedef enum
 {
-    MOD_OUT_DIRECT=1,
-    MOD_OUT_ENVELOPE=2
+    MOD_OUT_DIRECT = 1,
+    MOD_OUT_ENVELOPE = 2
 } oscModOutput;
+
+typedef enum
+{
+    LFO_AMPLITUDE = 1,
+    LFO_FREQUENCY = 2,
+    LFO_OFF = 3
+} lfoModType;
+
+typedef enum
+{
+    LFO_SIN = 1,
+    LFO_TRI = 2,
+    LFO_SQUARE = 3,
+    LFO_SAW = 4
+} lfoWaveform;
 
 // --- Struct Definitions ---
 typedef struct
@@ -85,6 +100,15 @@ typedef struct
 
 typedef struct
 {
+    float frequency;
+    float phase;
+    float level;
+    lfoModType modType;
+    lfoWaveform lfoWaveform;
+} LfoData;
+
+typedef struct
+{
     int key;
     Envelope env;
     float frequency;
@@ -106,6 +130,7 @@ typedef struct
     int numBands;
     int waveTableSize;
     oscModOutput modOutput; // 1=direct, 2=envelope
+    LfoData lfoData;
 } BankData;
 
 typedef struct
@@ -129,6 +154,32 @@ static OscillatorData **g_oscData = NULL;
 static float *g_fmAccumulators = NULL;
 static float *g_amAccumulators = NULL;
 static ModSettings *g_modMatrix = NULL;
+
+void lfo_init(LfoData *data)
+{
+    data->frequency = 0.0f;
+    data->phase = 0.0f;
+    data->level = 0.0f;
+    data->modType = LFO_OFF;
+    data->lfoWaveform = LFO_SIN;
+}
+
+void lfo_advance(BankData* bank)
+{
+    LfoData *ld = &bank->lfoData;
+    if (ld->modType != LFO_OFF)
+    {
+        ld->phase += (ld->frequency / g_sampleRate);
+        if(ld->phase >= 1)
+            ld->phase -= 1;
+    }
+}
+
+float lfo_output(BankData *bank)
+{
+    const LfoData *ld = &bank->lfoData;
+    return sinf(ld->phase * TWO_M_PI) * ld->level;
+}
 
 // --- Filter Architecture Logic ---
 void butterworth_calculate_coefficients(ButterworthFilter *f, float cutoff, float sampleRate)
@@ -233,13 +284,14 @@ void envelope_init(Envelope *env, EnvelopeData *data)
 
 void envelope_set_timing(Envelope *env, float value, float time)
 {
-  // FIX: Prevent env->v0 from being 0 or lower than env->lowestLevel
-  float currentLevel = env->level;
-  if (currentLevel < env->lowestLevel) {
-    currentLevel = env->lowestLevel;
-  }
+    // FIX: Prevent env->v0 from being 0 or lower than env->lowestLevel
+    float currentLevel = env->level;
+    if (currentLevel < env->lowestLevel)
+    {
+        currentLevel = env->lowestLevel;
+    }
 
-  env->v0 = currentLevel;
+    env->v0 = currentLevel;
     env->v1 = value + env->lowestLevel;
     env->t0 = env->t;
     env->t1 = env->t0 + time + env->lowestTime;
@@ -257,7 +309,7 @@ float envelope_ramp(Envelope *env)
     else
     {
         env->level = env->v0 * powf(env->v1 / env->v0, (env->t - env->t0) / (env->t1 - env->t0));
-        if(isnanf(env->level))
+        if (isnanf(env->level))
             emscripten_console_errorf("NaN returned by powf(env->v1 / env->v0, (env->t - env->t0) / (env->t1 - env->t0)");
         if (env->t >= env->t1)
         {
@@ -284,7 +336,7 @@ void envelope_advance_to_sustain(Envelope *env)
         float attackTarget = envData->velocitySensitive ? vel : 1.0f;
         if (!envData->legato)
         {
-            if (env->phase != ENV_ATTACK && env->phase != ENV_DECAY && env->phase != ENV_SUSTAIN )
+            if (env->phase != ENV_ATTACK && env->phase != ENV_DECAY && env->phase != ENV_SUSTAIN)
             {
                 env->inUse = true;
                 envelope_set_timing(env, attackTarget, envData->attack);
@@ -417,6 +469,7 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, float start
         g_banks[b].envelopeData.legato = false;
         g_banks[b].envelopeData.velocity = 0x7f;
         g_banks[b].envelopeData.velocitySensitive = false;
+        lfo_init(&g_banks[b].lfoData);
         g_oscData[b] = (OscillatorData *)malloc(sizeof(OscillatorData) * oscsPerBank);
         for (int o = 0; o < oscsPerBank; o++)
         {
@@ -561,11 +614,51 @@ void setBankDetune(int bank, float detune)
 EMSCRIPTEN_KEEPALIVE
 void setVelocitySensitive(int bank, bool isVelocitySensitive)
 {
-    for(int o = 0; o < g_oscillatorsPerBank; ++o)
+    for (int o = 0; o < g_oscillatorsPerBank; ++o)
     {
         OscillatorData *od = &g_oscData[bank][o];
         od->env.envelopeData->velocitySensitive = isVelocitySensitive;
     }
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setLFOModType(int bank, lfoModType modType)
+{
+    BankData* bd = &g_banks[bank];
+    LfoData *ld = &bd->lfoData;
+    ld->modType = modType;
+    emscripten_console_logf("lfoModType = %d", modType);
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setLFOWaveform(int bank, lfoWaveform waveform)
+{
+    BankData* bd = &g_banks[bank];
+    LfoData *ld = &bd->lfoData;
+    ld->lfoWaveform = waveform;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setLFOLevel(int bank, float level)
+{
+    BankData* bd = &g_banks[bank];
+    LfoData *ld = &bd->lfoData;
+    ld->level = level;
+}
+
+const float g_modFreqBase = 30.0f;
+const float g_modFreqMax = 4000.0f;
+const float g_modFreqMaxInput = 2.0f;
+float g_modFreqFactor = -1.0f;
+
+EMSCRIPTEN_KEEPALIVE
+void setLFOFrequency(int bank, float frequency)
+{
+    BankData* bd = &g_banks[bank];
+    if (g_modFreqFactor == -1)
+        g_modFreqFactor = g_modFreqMax / (pow(g_modFreqBase, g_modFreqMaxInput) - 1);
+    LfoData *ld = &bd->lfoData;
+    ld->frequency = g_modFreqFactor * (powf(g_modFreqBase, frequency) - 1);
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -576,7 +669,7 @@ float *getBankOutputBufferPtr(int bank)
 EMSCRIPTEN_KEEPALIVE
 void processBlock(float **outputBuffers, int numSamples)
 {
-//    emscripten_console_logf("Value from audio thread %d", numSamples);
+    //    emscripten_console_logf("Value from audio thread %d", numSamples);
 
     float nyquist = g_sampleRate / 2.0f;
     float twelfthRoot2 = 1.05946309436f;
@@ -599,7 +692,8 @@ void processBlock(float **outputBuffers, int numSamples)
                 break;
             }
         }
-        if (activeAudioEngine) break;
+        if (activeAudioEngine)
+            break;
     }
 
     // FIX: Early exit! If no notes are playing or decaying, do zero math.
@@ -620,6 +714,7 @@ void processBlock(float **outputBuffers, int numSamples)
                 bd->lastDetune = bd->detune;
                 bd->detuneFactor = powf(twelfthRoot2, bd->detune / 100.0f);
             }
+            lfo_advance(bd);
             for (int osc = 0; osc < g_oscillatorsPerBank; osc++)
             {
                 OscillatorData *od = &g_oscData[b][osc];
@@ -659,6 +754,10 @@ void processBlock(float **outputBuffers, int numSamples)
 
                 float mod = butterworth_process(&od->butterworthFilter, matrixF);
                 float inc = f / g_sampleRate;
+                if(bd->lfoData.modType == LFO_FREQUENCY)
+                {
+                    inc *= (1+lfo_output(bd));
+                }
                 od->phase += inc;
                 float currentPhase = od->phase + mod;
                 currentPhase = currentPhase - floorf(currentPhase);
@@ -692,6 +791,11 @@ void processBlock(float **outputBuffers, int numSamples)
                         g_amAccumulators[cB * g_oscillatorsPerBank + osc] += modSignal * ms->level;
                     }
                 }
+                if(bd->lfoData.modType == LFO_AMPLITUDE)
+                {
+                    signal *= (1+lfo_output(bd));
+                }
+
                 if (env->inUse)
                 {
                     outputChannel[i] += ampEnvelope * signal; // ladder_process(&od->lpf, signal);
