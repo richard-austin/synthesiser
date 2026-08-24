@@ -15,7 +15,7 @@ import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component
 import {ReverbComponent} from '../reverb-component/reverb-component';
 import {PhaserComponent} from '../phaser/phaser.component';
 import {OscillatorSettings} from '../settings/oscillator';
-import {modWaveforms, onOff, oscModOutput, oscModType, oscWaveforms} from '../enums/enums';
+import {modWaveforms, onOff, oscModOutput, oscWaveforms} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {timer} from 'rxjs';
 import {Cookies} from '../settings/cookies/cookies';
@@ -249,7 +249,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     if (ringMod()) {
       this.fmSynthService.disconnect(this.oscNumber());
       ok = true;
-      const oscNumber = this.oscNumber() + 1;
       this.fmSynthService.connect(ringMod().signalInput(), this.oscNumber())
     }
     return ok;
@@ -364,11 +363,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   protected setFreqReleaseLevel($event: number) {
     this.proxySettings.freqBend.releaseLevel = $event;
   }
-
-  private readonly modFreqBase = 30;
-  private readonly modFreqMaxInput = 2;
-  private readonly modFreqMax = 4000;
-  private readonly modFreqFactor = this.modFreqMax / (Math.pow(this.modFreqBase, this.modFreqMaxInput) - 1);
 
   protected setModFrequency(freq: number) {
     this.proxySettings.modFreq = freq;

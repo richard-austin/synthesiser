@@ -128,10 +128,6 @@ getAudioContext(): AudioContext {
     this.port.postMessage({type: "setModLevel", modBank: modBank, carrierBank: carrierBank, modLevel: modLevel});
   }
 
-  private clearModulation() {
- //   this.synthNode.clearModulation();
-  }
-
   setType(type: OscillatorType, bank: number) {
     // if (/^(sine)$/.test(type)) {
     //   this.synthNode.setType(type, bank);
