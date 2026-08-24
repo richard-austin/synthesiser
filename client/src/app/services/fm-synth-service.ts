@@ -203,4 +203,8 @@ getAudioContext(): AudioContext {
     if (i !== -1)
       this.keyUpHandlers.splice(i, 1);
   }
+
+  shutDown() {
+    this.port.postMessage({type: "shutDown"});
+  }
 }

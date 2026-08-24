@@ -515,9 +515,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // this.oscillators.forEach((osc) => {
-    //   osc.destroy();
-    // });
+    this.fmSynthService.shutDown();
   }
 
   showWaveformSelector = false;
