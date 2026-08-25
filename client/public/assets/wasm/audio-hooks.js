@@ -101,6 +101,12 @@ if (typeof globalThis.registerProcessor === 'function') {
         case 'envelope':
           if (this.isWasmBound) Module._setBankEnvelopeParams(data.bank, data.phase, data.value);
           break;
+        case 'pitchEnvelope':
+          if (this.isWasmBound) Module._setBankPitchEnvelopeParams(data.bank, data.phase, data.value);
+          break;
+        case 'setPitchEnvelope':
+          if(this.isWasmBound) Module._setPitchEnvelope(data.bank, data.value);
+          break;
         case 'setModType': {
           if (this.isWasmBound) {
             const typeVal = data.modType === 'frequency' ? 1 : (data.modType === 'amplitude' ? 2 : 0);

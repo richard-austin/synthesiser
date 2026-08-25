@@ -15,7 +15,7 @@ export class FmSynthService {
   private keyUpHandlers: ((bank: number, device: number, key: number,) => void)[] = [];
   private port!: MessagePort;
 
-  async initializeSynth(audioCtx: AudioContext, numberOfBanks: number = 4, oscillatorsPerBank: number =12): Promise<void> {
+  async initializeSynth(audioCtx: AudioContext, numberOfBanks: number = 4, oscillatorsPerBank: number = 12): Promise<void> {
     if (!this.audioContext) {
       // 1. Instantiate the AudioContext on the main thread
       this.audioContext = audioCtx;
@@ -24,7 +24,7 @@ export class FmSynthService {
         gainNode.gain.value = 1
       });
       await this.start(numberOfBanks, oscillatorsPerBank);
-       this.synthNode.port.onmessage = (event: MessageEvent) => {
+      this.synthNode.port.onmessage = (event: MessageEvent) => {
         switch (event.data.type) {
           case 'keyDown':
             this.keyDownHandlers.forEach(handler => handler(event.data.bank, event.data.device, event.data.key, event.data.velocity));
@@ -83,20 +83,27 @@ export class FmSynthService {
     await lastValueFrom(timer(500));
   }
 
-   public keyDown(key: number, velocity: number): void {
-    this.port?.postMessage({ type: 'keyDown', key, velocity });
+  public keyDown(key: number, velocity: number): void {
+    this.port?.postMessage({type: 'keyDown', key, velocity});
   }
 
   public keyUp(key: number): void {
-    this.port?.postMessage({ type: 'keyUp', key });
+    this.port?.postMessage({type: 'keyUp', key});
   }
 
   public envelope(bank: number, phase: number, value: number): void {
-    this.port?.postMessage({ type: 'envelope', bank, phase, value });
+    this.port?.postMessage({type: 'envelope', bank: bank, phase: phase, value: value});
   }
 
+  public pitchEnvelope(bank: number, phase: number, value: number): void {
+    this.port?.postMessage({type: 'pitchEnvelope', bank: bank, phase: phase, value: value});
+  }
 
-getAudioContext(): AudioContext {
+  public setPitchEnvelope(bank: number, value: boolean): void {
+    this.port?.postMessage({type: 'setPitchEnvelope', bank: bank, value: value});
+  }
+
+  getAudioContext(): AudioContext {
     return this.audioContext;
   }
 
@@ -121,7 +128,7 @@ getAudioContext(): AudioContext {
   }
 
   public setModType(modBank: number, carrierBank: number, modType: oscModType) {
-     this.port.postMessage({type: "setModType", modBank: modBank, carrierBank: carrierBank, modType: modType});
+    this.port.postMessage({type: "setModType", modBank: modBank, carrierBank: carrierBank, modType: modType});
   }
 
   public setModLevel(modBank: number, carrierBank: number, modLevel: number) {
@@ -144,7 +151,7 @@ getAudioContext(): AudioContext {
   }
 
   setModOutput(bank: number, modOutput: oscModOutput) {
-     this.port.postMessage({type: "setModOutput", modBank: bank, modOutput: modOutput});
+    this.port.postMessage({type: "setModOutput", modBank: bank, modOutput: modOutput});
   }
 
   setVelocitySensitive(bank: number, velocitySensitive: boolean) {
@@ -186,7 +193,7 @@ getAudioContext(): AudioContext {
     }
   }
 
-  removeKeyDownHandler(handler: (bank:number, device: number, key: number, velocity: number) => void) {
+  removeKeyDownHandler(handler: (bank: number, device: number, key: number, velocity: number) => void) {
     const i = this.keyDownHandlers.findIndex(h => h === handler);
     if (i !== -1)
       this.keyDownHandlers.splice(i, 1);

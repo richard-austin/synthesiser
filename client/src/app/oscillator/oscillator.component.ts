@@ -25,6 +25,7 @@ import {ClipboardService} from './clipboard-service';
 import {FmSynthService} from '../services/fm-synth-service';
 import {WaveTables} from '../modules/wavetables';
 export enum envelopePhase {inactive, attack, decay, sustain, release, retrigger, legato }
+export enum pitchEnvelopePhase {inactive, attack, attackLevel, decay, sustainLevel, release, releaseLevel, retrigger}
 
 export type PortamentoType =
   'chord'
@@ -209,9 +210,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       this.portamento().setValue(0); // Cannot use portamento with frequency envelope
 
     this.proxySettings.useFrequencyEnvelope = useFreqBendEnvelope ? onOff.on : onOff.off;
-    // for (let i = 0; i < this.oscillators.length; i++) {
-    //   this.oscillators[i].useFreqBendEnvelope(useFreqBendEnvelope);
-    // }
+    this.fmSynthService.setPitchEnvelope(this.oscNumber(), useFreqBendEnvelope)
   }
 
   private setWaveForm(value: OscillatorType) {
@@ -342,26 +341,32 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   protected setFreqAttack($event: number) {
     this.proxySettings.freqBend.attackTime = $event;
+    this.fmSynthService.pitchEnvelope(this.oscNumber(), pitchEnvelopePhase.attack, $event);
   }
 
   protected setFreqAttackLevel($event: number) {
     this.proxySettings.freqBend.attackLevel = $event;
+    this.fmSynthService.pitchEnvelope(this.oscNumber(), pitchEnvelopePhase.attackLevel, $event);
   }
 
   protected setFreqDecayTime($event: number) {
     this.proxySettings.freqBend.decayTime = $event;
+    this.fmSynthService.pitchEnvelope(this.oscNumber(), pitchEnvelopePhase.decay, $event);
   }
 
   protected setFreqSustainLevel($event: number) {
     this.proxySettings.freqBend.sustainLevel = $event;
+    this.fmSynthService.pitchEnvelope(this.oscNumber(), pitchEnvelopePhase.sustainLevel, $event);
   }
 
   protected setFreqReleaseTime($event: number) {
     this.proxySettings.freqBend.releaseTime = $event;
+    this.fmSynthService.pitchEnvelope(this.oscNumber(), pitchEnvelopePhase.release, $event);
   }
 
   protected setFreqReleaseLevel($event: number) {
     this.proxySettings.freqBend.releaseLevel = $event;
+    this.fmSynthService.pitchEnvelope(this.oscNumber(), pitchEnvelopePhase.releaseLevel, $event);
   }
 
   protected setModFrequency(freq: number) {

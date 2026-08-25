@@ -81,6 +81,30 @@ typedef struct
 
 typedef struct
 {
+    float attack;
+    float attackLevel;
+    float decay;
+    float sustainLevel;
+    float release;
+    float releaseLevel;
+} PitchEnvelopeData;
+
+typedef struct
+{
+    PitchEnvelopeData *envelopeData;
+    float lowestTime;
+    float lowestLevel;
+    float t0, t1, t;
+    float v0, v1;
+    float level;
+    bool targetReached;
+    envelopePhase phase;
+    bool inUse;
+    bool keyDown;
+} PitchEnvelope;
+
+typedef struct
+{
     float x1, x2, y1, y2;
     float b0, b1, b2, a1, a2;
 } ButterworthFilter;
@@ -111,6 +135,7 @@ typedef struct
 {
     int key;
     Envelope env;
+    PitchEnvelope pitchEnv;
     float frequency;
     float phase;
     float releaseRate;
@@ -125,6 +150,8 @@ typedef struct
     float detuneFactor;
     float tuning;
     EnvelopeData envelopeData;
+    PitchEnvelopeData pitchEnvelopeData;
+    bool usePitchEnvelope;
     int type; // 0=sine, 1=custom
     float *periodicWaveData;
     int numBands;
@@ -298,6 +325,7 @@ void envelope_set_timing(Envelope *env, float value, float time)
     env->targetReached = false;
 }
 
+static long count = 0;
 float envelope_ramp(Envelope *env)
 {
     env->t += 1.0f / g_sampleRate;
@@ -310,7 +338,7 @@ float envelope_ramp(Envelope *env)
     {
         env->level = env->v0 * powf(env->v1 / env->v0, (env->t - env->t0) / (env->t1 - env->t0));
         if (isnanf(env->level))
-            emscripten_console_errorf("NaN returned by powf(env->v1 / env->v0, (env->t - env->t0) / (env->t1 - env->t0)");
+            emscripten_console_errorf("NaN returned by powf(env->v1 / env->v0, (env->t - env->t0) / (env->t1 - env->t0) in pitch envelope");
         if (env->t >= env->t1)
         {
             env->targetReached = true;
@@ -355,7 +383,10 @@ void envelope_advance_to_sustain(Envelope *env)
             {
                 env->level = envelope_ramp(env);
                 if (env->targetReached)
+                {
                     env->phase = ENV_SUSTAIN;
+                    env->level = envData->sustainLevel;
+               }
             }
         }
         else
@@ -370,7 +401,10 @@ void envelope_advance_to_sustain(Envelope *env)
             {
                 env->level = envelope_ramp(env);
                 if (env->targetReached)
+                {
                     env->phase = ENV_DECAY;
+                    env->level = attackTarget;
+                }
             }
         }
     }
@@ -428,6 +462,127 @@ void envelope_advance_to_zero(Envelope *env)
     }
 }
 
+// --- Envelope Phase Traversal Mathematics ---
+void pitch_envelope_init(PitchEnvelope *env, PitchEnvelopeData *data)
+{
+    env->envelopeData = data;
+    env->lowestTime = 0.0001f;
+    env->lowestLevel = 0.0000001f;
+    env->v0 = env->lowestLevel;
+    env->v1 = env->lowestLevel;
+    env->level = env->lowestLevel;
+    env->targetReached = false;
+    env->phase = ENV_INACTIVE;
+    env->inUse = false;
+    env->keyDown = false;
+}
+
+void pitch_envelope_set_timing(PitchEnvelope *env, float value, float time)
+{
+    // FIX: Prevent env->v0 from being 0 or lower than env->lowestLevel
+    float currentLevel = env->level;
+    if(fabs(currentLevel) < env->lowestLevel)
+        currentLevel = env->lowestLevel;
+
+    env->v0 = currentLevel;
+    env->v1 = value + env->lowestLevel;
+    env->t0 = env->t;
+    env->t1 = env->t0 + time + env->lowestTime;
+    env->targetReached = false;
+
+}
+
+float safe_powf(float base, float exponent) {
+    float sign = (base < 0) ? -1.0f : 1.0f;
+    return sign * powf(fabsf(base), exponent);
+}
+
+float pitch_envelope_ramp(PitchEnvelope *env)
+{
+    env->t += 1.0f / g_sampleRate;
+    if ((env->t1 - env->t0) == 0)
+    {
+        env->level = env->v1;
+        env->targetReached = true;
+    }
+    else
+    {
+        if((count++ % 300000)== 0)
+        {
+            env->level = env->v0 * safe_powf(env->v1 / env->v0, (env->t - env->t0) / (env->t1 - env->t0));
+            if (isnanf(env->level))
+            {
+                emscripten_console_logf("v0 %f v1 %f t %f t0 %f t1 %f",env->v0, env->v1, env->t, env->t0, env->t1);
+                emscripten_console_errorf("NaN returned by powf(env->v1 / env->v0, (env->t - env->t0) / (env->t1 - env->t0) in pitch envelope");
+            }
+            else
+                count = 0;
+        }
+        if (env->t >= env->t1)
+        {
+            env->targetReached = true;
+            env->level = env->v1;
+        }
+    }
+    return env->level;
+}
+
+void pitch_envelope_sustain_time(PitchEnvelope *env)
+{
+    env->t += 1.0f / g_sampleRate;
+    if (env->t >= env->t1)
+        env->targetReached = true;
+}
+
+void pitch_envelope_advance_to_sustain(PitchEnvelope *env)
+{
+    PitchEnvelopeData *envData = env->envelopeData;
+    if (env->phase != ENV_ATTACK && env->phase != ENV_DECAY && env->phase != ENV_SUSTAIN)
+    {
+        env->inUse = true;
+        pitch_envelope_set_timing(env, envData->attackLevel, envData->attack);
+        env->phase = ENV_ATTACK;
+    }
+    else if (env->phase == ENV_ATTACK)
+    {
+        env->level = pitch_envelope_ramp(env);
+        if (env->targetReached)
+        {
+            env->phase = ENV_DECAY;
+            pitch_envelope_set_timing(env, envData->sustainLevel, envData->decay);
+        }
+    }
+    else if (env->phase == ENV_DECAY)
+    {
+        env->level = pitch_envelope_ramp(env);
+        if (env->targetReached)
+        {
+            env->level = envData->sustainLevel;
+            env->phase = ENV_SUSTAIN;
+       }
+    }
+}
+
+void pitch_envelope_advance_to_release_level(PitchEnvelope *env)
+{
+    PitchEnvelopeData *envData = env->envelopeData;
+    if (env->phase != ENV_RELEASE)
+    {
+        env->phase = ENV_RELEASE;
+        pitch_envelope_set_timing(env, envData->releaseLevel, envData->release);
+    }
+    else if (env->phase == ENV_RELEASE)
+    {
+        env->level = pitch_envelope_ramp(env);
+        if (env->targetReached)
+        {
+            env->level = envData->releaseLevel;
+            env->inUse = false;
+            env->phase = ENV_INACTIVE;
+        }
+    }
+}
+
 float key_to_frequency(int key, int bank)
 {
     float freqFactor = 7.717057388f;
@@ -469,6 +624,13 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, float start
         g_banks[b].envelopeData.legato = false;
         g_banks[b].envelopeData.velocity = 0x7f;
         g_banks[b].envelopeData.velocitySensitive = false;
+        g_banks[b].pitchEnvelopeData.attack = 0.0f;
+        g_banks[b].pitchEnvelopeData.attackLevel = 0.0f;
+        g_banks[b].pitchEnvelopeData.decay = 0.5f;
+        g_banks[b].pitchEnvelopeData.sustainLevel = 0.0f;
+        g_banks[b].pitchEnvelopeData.release = 0.5f;
+        g_banks[b].pitchEnvelopeData.releaseLevel = 0.0f;
+        g_banks[b].usePitchEnvelope = false;
         lfo_init(&g_banks[b].lfoData);
         g_oscData[b] = (OscillatorData *)malloc(sizeof(OscillatorData) * oscsPerBank);
         for (int o = 0; o < oscsPerBank; o++)
@@ -478,6 +640,7 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, float start
             g_oscData[b][o].phase = 0.0f;
             g_oscData[b][o].releaseRate = 1.0f;
             envelope_init(&g_oscData[b][o].env, &g_banks[b].envelopeData);
+            pitch_envelope_init(&g_oscData[b][o].pitchEnv, &g_banks[b].pitchEnvelopeData);
             butterworth_calculate_coefficients(&g_oscData[b][o].butterworthFilter, 1000.0f, sampleRate);
             ladder_init(&g_oscData[b][o].lpf, sampleRate);
         }
@@ -537,6 +700,40 @@ void setBankEnvelopeParams(int bank, int phase, float value)
         break;
     }
 }
+
+EMSCRIPTEN_KEEPALIVE
+void setBankPitchEnvelopeParams(int bank, int phase, float value)
+{
+    PitchEnvelopeData *env = &g_banks[bank].pitchEnvelopeData;
+    switch (phase)
+    {
+    case 1:
+        env->attack = value;
+        break;
+    case 2:
+        env->attackLevel = value;
+        break;
+    case 3:
+        env->decay = value;
+        break;
+    case 4:
+        env->sustainLevel = value;
+        break;
+    case 5:
+        env->release = value;
+        break;
+    case 6:
+        env->releaseLevel = value;
+        break;
+    }
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setPitchEnvelope(int bank, bool enabled)
+{
+    g_banks[bank].usePitchEnvelope = enabled;
+}
+
 EMSCRIPTEN_KEEPALIVE
 void triggerNoteOn(int key, int velocity)
 {
@@ -737,11 +934,28 @@ void processBlock(float **outputBuffers, int numSamples)
                 }
                 if (env->keyDown)
                 {
+                    if(bd->usePitchEnvelope)
+                    {
+                        PitchEnvelope* pitchEnv = &od->pitchEnv;
+                        pitch_envelope_advance_to_sustain(pitchEnv);
+                    }
                     envelope_advance_to_sustain(env);
                 }
                 else
                 {
+                    if(bd->usePitchEnvelope)
+                    {
+                        PitchEnvelope *pitchEnv = &od->pitchEnv;
+                        pitch_envelope_advance_to_release_level(pitchEnv);
+                    }
                     envelope_advance_to_zero(env);
+                }
+
+
+                if(bd->usePitchEnvelope)
+                {
+                  //  emscripten_console_logf("level %f", od->pitchEnv.level);
+                    f *= (1+od->pitchEnv.level);
                 }
                 f *= bd->detuneFactor;
 
