@@ -263,7 +263,7 @@ void ladder_init(LadderFilter4Pole *f, float sampleRate)
     f->s1 = f->s2 = f->s3 = f->s4 = 0.0f;
     f->output = 0.0f;
     ladder_set_cutoff(f, 1000.0f);
-    ladder_set_resonance(f, 0.0f);
+    ladder_set_resonance(f, 3.0f);
     ladder_set_drive(f, 1.0f);
 }
 
@@ -292,6 +292,17 @@ float ladder_process(LadderFilter4Pole *f, float input)
     f->output = tanhf(y4);
     return f->output;
 }
+
+ void envelope_data_init(EnvelopeData* ed)
+ {
+        ed->attack = 0.0f;
+        ed->decay = 0.5f;
+        ed->sustainLevel = 0.0f;
+        ed->release = 0.5f;
+        ed->legato = false;
+        ed->velocity = 0x7f;
+        ed->velocitySensitive = false;
+ }
 
 // --- Envelope Phase Traversal Mathematics ---
 void envelope_init(Envelope *env, EnvelopeData *data)
@@ -494,6 +505,15 @@ float safe_powf(float base, float exponent) {
     float sign = (base < 0) ? -1.0f : 1.0f;
     return sign * powf(fabsf(base), exponent);
 }
+void pitch_envelope_data_init(PitchEnvelopeData* ped)
+{
+     ped->attack = 0.0f;
+     ped->attackLevel = 0.0f;
+     ped->decay = 0.5f;
+     ped->sustainLevel = 0.0f;
+     ped->release = 0.5f;
+     ped->releaseLevel = 0.0f;
+}
 
 float pitch_envelope_ramp(PitchEnvelope *env)
 {
@@ -615,20 +635,9 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, float start
         g_banks[b].numBands = 0;
         g_banks[b].waveTableSize = waveTableSize;
         g_banks[b].modOutput = 0;
-        g_banks[b].envelopeData.attack = 0.0f;
-        g_banks[b].envelopeData.decay = 0.5f;
-        g_banks[b].envelopeData.sustainLevel = 0.0f;
-        g_banks[b].envelopeData.release = 0.5f;
-        g_banks[b].envelopeData.legato = false;
-        g_banks[b].envelopeData.velocity = 0x7f;
-        g_banks[b].envelopeData.velocitySensitive = false;
-        g_banks[b].pitchEnvelopeData.attack = 0.0f;
-        g_banks[b].pitchEnvelopeData.attackLevel = 0.0f;
-        g_banks[b].pitchEnvelopeData.decay = 0.5f;
-        g_banks[b].pitchEnvelopeData.sustainLevel = 0.0f;
-        g_banks[b].pitchEnvelopeData.release = 0.5f;
-        g_banks[b].pitchEnvelopeData.releaseLevel = 0.0f;
         g_banks[b].usePitchEnvelope = false;
+        envelope_data_init(&g_banks[b].envelopeData);
+        pitch_envelope_data_init(&g_banks[b].pitchEnvelopeData);
         lfo_init(&g_banks[b].lfoData);
         g_oscData[b] = (OscillatorData *)malloc(sizeof(OscillatorData) * oscsPerBank);
         for (int o = 0; o < oscsPerBank; o++)
@@ -1006,7 +1015,7 @@ void processBlock(float **outputBuffers, int numSamples)
 
                 if (env->inUse)
                 {
-                    outputChannel[i] += ampEnvelope * signal; // ladder_process(&od->lpf, signal);
+                    outputChannel[i] += ampEnvelope * ladder_process(&od->lpf, signal);
                 }
             }
         }
