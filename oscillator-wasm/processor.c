@@ -100,7 +100,6 @@ typedef struct
     bool targetReached;
     envelopePhase phase;
     bool inUse;
-    bool keyDown;
 } PitchEnvelope;
 
 typedef struct
@@ -474,7 +473,6 @@ void pitch_envelope_init(PitchEnvelope *env, PitchEnvelopeData *data)
     env->targetReached = false;
     env->phase = ENV_INACTIVE;
     env->inUse = false;
-    env->keyDown = false;
 }
 
 void pitch_envelope_set_timing(PitchEnvelope *env, float value, float time)
@@ -824,7 +822,6 @@ void setLFOModType(int bank, lfoModType modType)
     BankData* bd = &g_banks[bank];
     LfoData *ld = &bd->lfoData;
     ld->modType = modType;
-    emscripten_console_logf("lfoModType = %d", modType);
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -866,8 +863,6 @@ float *getBankOutputBufferPtr(int bank)
 EMSCRIPTEN_KEEPALIVE
 void processBlock(float **outputBuffers, int numSamples)
 {
-    //    emscripten_console_logf("Value from audio thread %d", numSamples);
-
     float nyquist = g_sampleRate / 2.0f;
     float twelfthRoot2 = 1.05946309436f;
     float root2 = 1.41421356237f;
@@ -954,8 +949,7 @@ void processBlock(float **outputBuffers, int numSamples)
 
                 if(bd->usePitchEnvelope)
                 {
-                  //  emscripten_console_logf("level %f", od->pitchEnv.level);
-                    f *= (1+od->pitchEnv.level);
+                    f *= od->pitchEnv.level;
                 }
                 f *= bd->detuneFactor;
 

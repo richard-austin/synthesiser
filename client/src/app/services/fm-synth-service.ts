@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {OscillatorSettings} from '../settings/oscillator';
 import {modWaveforms, oscModOutput, oscModType} from '../enums/enums';
-import {envelopePhase} from '../oscillator/oscillator.component';
+import {envelopePhase, pitchEnvelopePhase} from '../oscillator/oscillator.component';
 import {lastValueFrom, timer} from 'rxjs';
 
 @Injectable({
@@ -95,7 +95,13 @@ export class FmSynthService {
     this.port?.postMessage({type: 'envelope', bank: bank, phase: phase, value: value});
   }
 
+  private readonly sixthRoot2: number = 1.122462048;
+
   public pitchEnvelope(bank: number, phase: number, value: number): void {
+    if(phase === pitchEnvelopePhase.attackLevel || phase === pitchEnvelopePhase.sustainLevel || phase === pitchEnvelopePhase.releaseLevel) {
+      value = Math.pow(this.sixthRoot2, value * 48);
+    }
+
     this.port?.postMessage({type: 'pitchEnvelope', bank: bank, phase: phase, value: value});
   }
 
