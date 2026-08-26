@@ -137,7 +137,6 @@ typedef struct
     PitchEnvelope pitchEnv;
     float frequency;
     float phase;
-    float releaseRate;
     ButterworthFilter butterworthFilter;
     LadderFilter4Pole lpf;
 } OscillatorData;
@@ -181,7 +180,7 @@ static float *g_fmAccumulators = NULL;
 static float *g_amAccumulators = NULL;
 static ModSettings *g_modMatrix = NULL;
 
-void bank_init(BankData* bd, int waveTableSize)
+void bank_data_init(BankData* bd, int waveTableSize)
 {
     bd->detune = 0.0f;
     bd->lastDetune = 1.0f;
@@ -193,6 +192,13 @@ void bank_init(BankData* bd, int waveTableSize)
     bd->waveTableSize = waveTableSize;
     bd->modOutput = 0;
     bd->usePitchEnvelope = false;
+}
+
+void oscillator_data_init(OscillatorData* od)
+{
+    od->key = -1;
+    od->frequency = 1.0f;
+    od->phase = 0.0f;
 }
 
 void lfo_init(LfoData *data)
@@ -640,17 +646,14 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, float start
 
     for (int b = 0; b < numBanks; b++)
     {
-        bank_init(&g_banks[b], waveTableSize);
+        bank_data_init(&g_banks[b], waveTableSize);
         envelope_data_init(&g_banks[b].envelopeData);
         pitch_envelope_data_init(&g_banks[b].pitchEnvelopeData);
         lfo_init(&g_banks[b].lfoData);
         g_oscData[b] = (OscillatorData *)malloc(sizeof(OscillatorData) * oscsPerBank);
         for (int o = 0; o < oscsPerBank; o++)
         {
-            g_oscData[b][o].key = -1;
-            g_oscData[b][o].frequency = 1.0f;
-            g_oscData[b][o].phase = 0.0f;
-            g_oscData[b][o].releaseRate = 1.0f;
+            oscillator_data_init(&g_oscData[b][o]);
             envelope_init(&g_oscData[b][o].env, &g_banks[b].envelopeData);
             pitch_envelope_init(&g_oscData[b][o].pitchEnv, &g_banks[b].pitchEnvelopeData);
             butterworth_calculate_coefficients(&g_oscData[b][o].butterworthFilter, 1000.0f, sampleRate);
