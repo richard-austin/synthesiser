@@ -181,6 +181,20 @@ static float *g_fmAccumulators = NULL;
 static float *g_amAccumulators = NULL;
 static ModSettings *g_modMatrix = NULL;
 
+void bank_init(BankData* bd, int waveTableSize)
+{
+    bd->detune = 0.0f;
+    bd->lastDetune = 1.0f;
+    bd->detuneFactor = 1.0f;
+    bd->tuning = 0.0f;
+    bd->type = 0;
+    bd->periodicWaveData = NULL;
+    bd->numBands = 0;
+    bd->waveTableSize = waveTableSize;
+    bd->modOutput = 0;
+    bd->usePitchEnvelope = false;
+}
+
 void lfo_init(LfoData *data)
 {
     data->frequency = 0.0f;
@@ -626,16 +640,7 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, float start
 
     for (int b = 0; b < numBanks; b++)
     {
-        g_banks[b].detune = 0.0f;
-        g_banks[b].lastDetune = 1.0f;
-        g_banks[b].detuneFactor = 1.0f;
-        g_banks[b].tuning = 0.0f;
-        g_banks[b].type = 0;
-        g_banks[b].periodicWaveData = NULL;
-        g_banks[b].numBands = 0;
-        g_banks[b].waveTableSize = waveTableSize;
-        g_banks[b].modOutput = 0;
-        g_banks[b].usePitchEnvelope = false;
+        bank_init(&g_banks[b], waveTableSize);
         envelope_data_init(&g_banks[b].envelopeData);
         pitch_envelope_data_init(&g_banks[b].pitchEnvelopeData);
         lfo_init(&g_banks[b].lfoData);
