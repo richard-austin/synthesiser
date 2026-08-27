@@ -105,8 +105,39 @@ export class FmSynthService {
     this.port?.postMessage({type: 'pitchEnvelope', bank: bank, phase: phase, value: value});
   }
 
-  public setPitchEnvelope(bank: number, value: boolean): void {
-    this.port?.postMessage({type: 'setPitchEnvelope', bank: bank, value: value});
+  public filterPitchEnvelope(bank: number, phase: number, value: number): void {
+    if(phase === pitchEnvelopePhase.attackLevel || phase === pitchEnvelopePhase.sustainLevel || phase === pitchEnvelopePhase.releaseLevel) {
+      value = Math.pow(this.sixthRoot2, value * 48);
+    }
+
+    this.port?.postMessage({type: 'filterPitchEnvelope', bank: bank, phase: phase, value: value});
+  }
+
+  public usePitchEnvelope(bank: number, value: boolean): void {
+    this.port?.postMessage({type: 'usePitchEnvelope', bank: bank, value: value});
+  }
+
+  public filterTuning(bank: number, filterTuning: number): void {
+    this.port?.postMessage({type: 'filterTuning', bank, filterTuning});
+  }
+
+  public filterDetune(bank: number, filterDetune: number): void {
+    this.port?.postMessage({type: 'filterDetune', bank, filterDetune});
+  }
+
+  public filterQFactor(bank: number, filterQFactor: number): void {
+    this.port?.postMessage({type: 'filterQFactor', bank, filterQFactor});
+  }
+
+  public useFilterPitchEnvelope(bank: number, value: boolean): void {
+    this.port?.postMessage({type: 'useFilterPitchEnvelope', bank: bank, value: value});
+  }
+  public oscillatorOutputToFilter(bank: number, outputToFilter: boolean): void {
+    this.port?.postMessage({type: 'outputToFilter', bank, outputToFilter});
+  }
+
+  public useFilter(bank: number, useFilter: boolean): void {
+    this.port?.postMessage({type: 'useFilter', bank, useFilter});
   }
 
   getAudioContext(): AudioContext {

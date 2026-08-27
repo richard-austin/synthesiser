@@ -1,7 +1,5 @@
 import {Chord} from './chord';
 import {Subscription, timer} from 'rxjs';
-//import {Oscillator} from './oscillator';
-import {Filter} from './filter';
 import {DeviceKeys} from '../services/device-pool-manager-service';
 
 export class ChordProcessor {

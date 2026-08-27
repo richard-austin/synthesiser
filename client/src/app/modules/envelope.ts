@@ -1,7 +1,6 @@
 import {Subscription, timer} from 'rxjs';
 import {GainEnvelopeBase} from './gain-envelope-base';
 import {ADSRValues} from '../util-classes/adsrvalues';
-import {OscFilterBase} from './osc-filter-base';
 
 export class Envelope extends GainNode {
   frequency: number = 0;
@@ -22,7 +21,7 @@ export class Envelope extends GainNode {
 
   setAmplitudeEnvelope(env: ADSRValues) {
     this.env = env;
-    this.gain.setValueAtTime(this.clampLevel(OscFilterBase.minLevel), this.context.currentTime);
+    this.gain.setValueAtTime(this.clampLevel(GainEnvelopeBase.minLevel), this.context.currentTime);
   }
 
   clampLevel(level: number) {
@@ -33,7 +32,7 @@ export class Envelope extends GainNode {
 
   public set legatoMode(legatoMode: boolean) {
     this._legatoMode = legatoMode;
-    let gainToUse = this.clampLevel(OscFilterBase.minLevel);
+    let gainToUse = this.clampLevel(GainEnvelopeBase.minLevel);
     this.cancelAndHoldAtTime(this.context.currentTime);
     this.gain.setValueAtTime(this.clampLevel(gainToUse), this.context.currentTime);
   }

@@ -167,14 +167,14 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
    */
   connectToFilters(): void {
     this.proxySettings.output = noiseOutputs.filter;
-    const filters = this.filters()?.filters;
-    if(filters) {
-      // for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
-      //   this.whiteNoise[i].connect(filters[i].filter);
-      //   this.pinkNoise[i].connect(filters[i].filter);
-      //   this.brownNoise[i].connect(filters[i].filter);
-      // }
-    }
+    // const filters = this.filters()?.filters;
+    // if(filters) {
+    //   for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
+    //     this.whiteNoise[i].connect(filters[i].filter);
+    //     this.pinkNoise[i].connect(filters[i].filter);
+    //     this.brownNoise[i].connect(filters[i].filter);
+    //   }
+    // }
   }
 
   disconnect() {

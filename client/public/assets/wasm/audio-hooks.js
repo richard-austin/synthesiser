@@ -104,8 +104,29 @@ if (typeof globalThis.registerProcessor === 'function') {
         case 'pitchEnvelope':
           if (this.isWasmBound) Module._setBankPitchEnvelopeParams(data.bank, data.phase, data.value);
           break;
-        case 'setPitchEnvelope':
-          if(this.isWasmBound) Module._setPitchEnvelope(data.bank, data.value);
+        case 'filterTuning':
+          if(this.isWasmBound) Module._setFilterTuning(data.bank, data.filterTuning);
+          break;
+        case 'filterDetune':
+          if(this.isWasmBound) Module._setFilterDetune(data.bank, data.filterDetune);
+          break;
+        case 'filterQFactor':
+          if(this.isWasmBound) Module._setFilterQFactor(data.bank, data.filterQFactor);
+          break;
+        case 'filterPitchEnvelope':
+          if (this.isWasmBound) Module._setBankPitchEnvelopeParams(data.bank, data.phase, data.value);
+          break;
+        case 'usePitchEnvelope':
+          if(this.isWasmBound) Module._usePitchEnvelope(data.bank, data.value);
+          break;
+        case 'useFilterPitchEnvelope':
+          if(this.isWasmBound) Module._useFilterPitchEnvelope(data.bank, data.value);
+          break;
+        case 'outputToFilter':
+          if(this.isWasmBound) Module._outputToFilter(data.bank, data.outputToFilter);
+          break;
+        case 'useFilter':
+          if(this.isWasmBound) Module._useFilter(data.bank, data.useFilter);
           break;
         case 'setModType': {
           if (this.isWasmBound) {

@@ -441,6 +441,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
         osc.connectToRingMod();
         break;
       case 'filter':
+        osc.connect(this.masterVolume().node());
         osc.connectToFilters();
         break;
       case 'reverb':

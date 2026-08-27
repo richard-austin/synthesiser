@@ -205,12 +205,12 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.fmSynthService.setVelocitySensitive(this.oscNumber(), velocitySensitive);
   }
 
-  useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
+  usePitchEnvelope(useFreqBendEnvelope: boolean) {
     if (useFreqBendEnvelope)
       this.portamento().setValue(0); // Cannot use portamento with frequency envelope
 
     this.proxySettings.useFrequencyEnvelope = useFreqBendEnvelope ? onOff.on : onOff.off;
-    this.fmSynthService.setPitchEnvelope(this.oscNumber(), useFreqBendEnvelope)
+    this.fmSynthService.usePitchEnvelope(this.oscNumber(), useFreqBendEnvelope)
   }
 
   private setWaveForm(value: OscillatorType) {
@@ -229,20 +229,12 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   /**
    * connectToFilters: Connect to a group of filters
    */
-  connectToFilters(): boolean {
-    const filters = this.filters().filters;
-    let ok = false;
-    if (filters) {
-      ok = true;
-      filters.forEach(filter => {
-        this.fmSynthService.connect(filter.filter, this.oscNumber());
-      });
-    } else
-      console.log("Filter array is a different size to the oscillator array")
-    return ok;
+  connectToFilters(): void {
+    this.fmSynthService.oscillatorOutputToFilter(this.oscNumber(), true);
   }
 
   connectToRingMod(): boolean {
+    this.fmSynthService.oscillatorOutputToFilter(this.oscNumber(), false);
     const ringMod = this.ringMod;
     let ok = false;
     if (ringMod()) {
@@ -254,6 +246,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   connectToReverb(): boolean {
+    this.fmSynthService.oscillatorOutputToFilter(this.oscNumber(), false);
     const reverb = this.reverb();
     let ok = false;
     if (reverb) {
@@ -265,6 +258,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   connectToPhaser(): boolean {
+    this.fmSynthService.oscillatorOutputToFilter(this.oscNumber(), false);
     const phaser = this.phaser();
     let ok = false;
     if (phaser) {
@@ -280,6 +274,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
    * @param node
    */
   connect(node: AudioNode) {
+    this.fmSynthService.oscillatorOutputToFilter(this.oscNumber(), false);
     this.fmSynthService.connect(node, this.oscNumber(), 0);
     // this.oscillators.forEach((osc, i) => {
     //   this.oscillators[i].connect(node);
@@ -287,6 +282,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   disconnect(output: number) {
+//    this.fmSynthService.oscillatorOutputToFilter(this.oscNumber(), false);
     this.fmSynthService.disconnect(output);
     // this.oscillators.forEach(osc => {
     //   osc.disconnect();
@@ -455,7 +451,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       freqEnveOnOffForm.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value;
-        this.useFreqBendEnvelope(value === 'on')
+        this.usePitchEnvelope(value === 'on')
       })
     }
     const legatoOnOffForm = this.legatoOnOffForm().nativeElement;

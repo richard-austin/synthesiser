@@ -9,10 +9,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#ifndef TWO_M_PI
-#define TWO_M_PI M_PI * 2.0f
-#endif
-
 // --- Enumerations ---
 typedef enum
 {
@@ -135,21 +131,27 @@ typedef struct
     int key;
     Envelope env;
     PitchEnvelope pitchEnv;
+    PitchEnvelope filterPitchEnv;
     float frequency;
     float phase;
     ButterworthFilter butterworthFilter;
+    float filterFrequency;
     LadderFilter4Pole lpf;
 } OscillatorData;
 
 typedef struct
 {
-    float detune;
-    float lastDetune;
     float detuneFactor;
     float tuning;
+    float filterTuning;
+    float filterDetuneFactor;
     EnvelopeData envelopeData;
     PitchEnvelopeData pitchEnvelopeData;
+    PitchEnvelopeData filterPitchEnvelopeData;
     bool usePitchEnvelope;
+    bool useFilterPitchEnvelope;
+    bool useFilter;
+    bool outputToFilter;
     int type; // 0=sine, 1=custom
     float *periodicWaveData;
     int numBands;
@@ -165,6 +167,10 @@ typedef struct
     oscModType modType;
 } ModSettings;
 
+static float m_pi = M_PI;
+static float two_m_pi = M_PI * 2.0f;
+
+
 // --- Global Engine Core Context Variables ---
 static int g_numberOfBanks = 0;
 static int g_oscillatorsPerBank = 0;
@@ -179,19 +185,23 @@ static OscillatorData **g_oscData = NULL;
 static float *g_fmAccumulators = NULL;
 static float *g_amAccumulators = NULL;
 static ModSettings *g_modMatrix = NULL;
+static float twelfthRoot2 = 1.05946309436f;
 
 void bank_data_init(BankData* bd, int waveTableSize)
 {
-    bd->detune = 0.0f;
-    bd->lastDetune = 1.0f;
     bd->detuneFactor = 1.0f;
     bd->tuning = 0.0f;
+    bd->filterDetuneFactor = 1.0f;
+    bd->filterTuning = 0.0f;
     bd->type = 0;
     bd->periodicWaveData = NULL;
     bd->numBands = 0;
     bd->waveTableSize = waveTableSize;
     bd->modOutput = 0;
     bd->usePitchEnvelope = false;
+    bd->useFilterPitchEnvelope = false;
+    bd->useFilter = false;
+    bd->outputToFilter = false;
 }
 
 void oscillator_data_init(OscillatorData* od)
@@ -224,13 +234,13 @@ void lfo_advance(BankData* bank)
 float lfo_output(BankData *bank)
 {
     const LfoData *ld = &bank->lfoData;
-    return sinf(ld->phase * TWO_M_PI) * ld->level;
+    return sinf(ld->phase * two_m_pi) * ld->level;
 }
 
 // --- Filter Architecture Logic ---
 void butterworth_calculate_coefficients(ButterworthFilter *f, float cutoff, float sampleRate)
 {
-    float omega = M_PI * cutoff / sampleRate;
+    float omega = m_pi * cutoff / sampleRate;
     float tanVal = tanf(omega);
     float sqrt2 = 1.41421356f;
     float c2 = tanVal * tanVal;
@@ -254,7 +264,7 @@ float butterworth_process(ButterworthFilter *f, float input)
 
 void ladder_update_coefficient(LadderFilter4Pole *f)
 {
-    f->g = tanf(M_PI * f->cutoffHz / f->sampleRate);
+    f->g = tanf(m_pi * f->cutoffHz / f->sampleRate);
 }
 
 void ladder_set_cutoff(LadderFilter4Pole *f, float cutoffHz)
@@ -586,6 +596,7 @@ void pitch_envelope_advance_to_sustain(PitchEnvelope *env)
         env->level = pitch_envelope_ramp(env);
         if (env->targetReached)
         {
+            emscripten_console_logf("attack level reached %f", env->level);
             env->phase = ENV_DECAY;
             pitch_envelope_set_timing(env, envData->sustainLevel, envData->decay);
         }
@@ -595,6 +606,8 @@ void pitch_envelope_advance_to_sustain(PitchEnvelope *env)
         env->level = pitch_envelope_ramp(env);
         if (env->targetReached)
         {
+            emscripten_console_logf("sustain level %f", envData->sustainLevel);
+            emscripten_console_logf("sustain level reached %f", env->level);
             env->level = envData->sustainLevel;
             env->phase = ENV_SUSTAIN;
        }
@@ -614,6 +627,7 @@ void pitch_envelope_advance_to_release_level(PitchEnvelope *env)
         env->level = pitch_envelope_ramp(env);
         if (env->targetReached)
         {
+                                    emscripten_console_logf("release level reached %f", env->level);
             env->level = envData->releaseLevel;
             env->inUse = false;
             env->phase = ENV_INACTIVE;
@@ -625,6 +639,12 @@ float key_to_frequency(int key, int bank)
 {
     float freqFactor = 7.717057388f;
     return freqFactor * powf(powf(2.0f, 1.0f / 12.0f), ((float)key + 1.0f) + 120.0f * (g_banks[bank].tuning * 6.0f / 10.0f));
+}
+
+float filter_key_to_frequency(int key, int bank)
+{
+    float freqFactor = 7.717057388f;
+    return freqFactor * powf(powf(2.0f, 1.0f / 12.0f), ((float)key + 1.0f) + 120.0f * (g_banks[bank].filterTuning * 6.0f / 10.0f));
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -649,6 +669,7 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, float start
         bank_data_init(&g_banks[b], waveTableSize);
         envelope_data_init(&g_banks[b].envelopeData);
         pitch_envelope_data_init(&g_banks[b].pitchEnvelopeData);
+        pitch_envelope_data_init(&g_banks[b].filterPitchEnvelopeData);
         lfo_init(&g_banks[b].lfoData);
         g_oscData[b] = (OscillatorData *)malloc(sizeof(OscillatorData) * oscsPerBank);
         for (int o = 0; o < oscsPerBank; o++)
@@ -656,6 +677,7 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, float start
             oscillator_data_init(&g_oscData[b][o]);
             envelope_init(&g_oscData[b][o].env, &g_banks[b].envelopeData);
             pitch_envelope_init(&g_oscData[b][o].pitchEnv, &g_banks[b].pitchEnvelopeData);
+            pitch_envelope_init(&g_oscData[b][o].filterPitchEnv, &g_banks[b].filterPitchEnvelopeData);
             butterworth_calculate_coefficients(&g_oscData[b][o].butterworthFilter, 1000.0f, sampleRate);
             ladder_init(&g_oscData[b][o].lpf, sampleRate);
         }
@@ -744,9 +766,56 @@ void setBankPitchEnvelopeParams(int bank, int phase, float value)
 }
 
 EMSCRIPTEN_KEEPALIVE
-void setPitchEnvelope(int bank, bool enabled)
+void setBankFilterPitchEnvelopeParams(int bank, int phase, float value)
+{
+    PitchEnvelopeData *env = &g_banks[bank].filterPitchEnvelopeData;
+    switch (phase)
+    {
+    case 1:
+        env->attack = value;
+        break;
+    case 2:
+        env->attackLevel = value;
+        break;
+    case 3:
+        env->decay = value;
+        break;
+    case 4:
+        env->sustainLevel = value;
+        break;
+    case 5:
+        env->release = value;
+        break;
+    case 6:
+        env->releaseLevel = value;
+        break;
+    }
+}
+
+EMSCRIPTEN_KEEPALIVE
+void usePitchEnvelope(int bank, bool enabled)
 {
     g_banks[bank].usePitchEnvelope = enabled;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void useFilterPitchEnvelope(int bank, bool enabled)
+{
+    g_banks[bank].useFilterPitchEnvelope = enabled;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void useFilter(int bank, bool useFilter)
+{
+    g_banks[bank].useFilter = useFilter;
+        emscripten_console_logf("useFilter %d", useFilter);
+}
+
+EMSCRIPTEN_KEEPALIVE
+void outputToFilter(int bank, bool outputToFilter)
+{
+    g_banks[bank].outputToFilter = outputToFilter;
+    useFilter(bank, outputToFilter);
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -783,6 +852,7 @@ void triggerNoteOn(int key, int velocity)
     {
         OscillatorData *od = &g_oscData[b][foundIdx];
         od->frequency = key_to_frequency(key, b);
+        od->filterFrequency = filter_key_to_frequency(key, b);
         od->key = key;
         od->env.keyDown = true;
         od->env.inUse = true;
@@ -813,14 +883,45 @@ void setBankTuning(int bank, float tuning)
     for (int o = 0; o < g_oscillatorsPerBank; ++o)
     {
         OscillatorData *od = &g_oscData[bank][o];
+        if(!od->env.inUse)
+            continue;
         od->frequency = key_to_frequency(od->key, bank);
+    }
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setFilterTuning(int bank, float tuning)
+{
+    g_banks[bank].filterTuning = tuning;
+    for (int o = 0; o < g_oscillatorsPerBank; ++o)
+    {
+        OscillatorData *od = &g_oscData[bank][o];
+        if(!od->env.inUse)
+            continue;
+        od->filterFrequency = filter_key_to_frequency(od->key, bank);
     }
 }
 
 EMSCRIPTEN_KEEPALIVE
 void setBankDetune(int bank, float detune)
 {
-    g_banks[bank].detune = detune;
+    g_banks[bank].detuneFactor = powf(twelfthRoot2, detune / 100.0f);
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setFilterDetune(int bank, float detune)
+{
+    g_banks[bank].filterDetuneFactor = powf(twelfthRoot2, detune / 100.0f);
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setFilterQFactor(int bank, float qFactor)
+{
+    for(int o = 0; o < g_oscillatorsPerBank; ++o)
+    {
+        OscillatorData *od = &g_oscData[bank][o];
+        ladder_set_resonance(&od->lpf, qFactor);
+    }
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -881,7 +982,6 @@ EMSCRIPTEN_KEEPALIVE
 void processBlock(float **outputBuffers, int numSamples)
 {
     float nyquist = g_sampleRate / 2.0f;
-    float twelfthRoot2 = 1.05946309436f;
     float root2 = 1.41421356237f;
     // 1. Instantly wipe the channel buffers to absolute zero
     for (int b = 0; b < g_numberOfBanks; b++)
@@ -918,21 +1018,12 @@ void processBlock(float **outputBuffers, int numSamples)
         {
             float *outputChannel = outputBuffers[b];
             BankData *bd = &g_banks[b];
-            if (bd->detune != bd->lastDetune)
-            {
-                bd->lastDetune = bd->detune;
-                bd->detuneFactor = powf(twelfthRoot2, bd->detune / 100.0f);
-            }
             lfo_advance(bd);
             for (int osc = 0; osc < g_oscillatorsPerBank; osc++)
             {
                 OscillatorData *od = &g_oscData[b][osc];
                 Envelope *env = &od->env;
                 float f = od->frequency;
-                if (env->inUse)
-                {
-                    ladder_set_cutoff(&od->lpf, od->frequency * env->level * 15.0f);
-                }
                 if (f > nyquist)
                     f = nyquist;
                 int band = 0;
@@ -951,6 +1042,11 @@ void processBlock(float **outputBuffers, int numSamples)
                         PitchEnvelope* pitchEnv = &od->pitchEnv;
                         pitch_envelope_advance_to_sustain(pitchEnv);
                     }
+                    if(bd->useFilterPitchEnvelope)
+                    {
+                        PitchEnvelope* filterPitchEnvelope = &od->filterPitchEnv;
+                        pitch_envelope_advance_to_sustain(filterPitchEnvelope);
+                    }
                     envelope_advance_to_sustain(env);
                 }
                 else
@@ -959,6 +1055,11 @@ void processBlock(float **outputBuffers, int numSamples)
                     {
                         PitchEnvelope *pitchEnv = &od->pitchEnv;
                         pitch_envelope_advance_to_release_level(pitchEnv);
+                    }
+                    if(bd->useFilterPitchEnvelope)
+                    {
+                        PitchEnvelope* filterPitchEnv = &od->filterPitchEnv;
+                        pitch_envelope_advance_to_release_level(filterPitchEnv);
                     }
                     envelope_advance_to_zero(env);
                 }
@@ -969,6 +1070,16 @@ void processBlock(float **outputBuffers, int numSamples)
                     f *= od->pitchEnv.level;
                 }
                 f *= bd->detuneFactor;
+
+                if (env->inUse && bd->useFilter)
+                {
+                    float filterFx = od->filterFrequency;
+                    filterFx *= bd->filterDetuneFactor;
+                    if(bd->useFilterPitchEnvelope)
+                        filterFx *= od->filterPitchEnv.level;
+
+                    ladder_set_cutoff(&od->lpf, filterFx);
+                }
 
                 // AM and FM Mod output from accumulators
                 int idx = b * g_oscillatorsPerBank + osc;
@@ -991,7 +1102,7 @@ void processBlock(float **outputBuffers, int numSamples)
                 float signal = 0.0f;
                 if (bd->type == 0)
                 {
-                    signal = sinf(currentPhase * TWO_M_PI) * matrixA;
+                    signal = sinf(currentPhase * two_m_pi) * matrixA;
                 }
                 else if (bd->type == 1 && bd->periodicWaveData != NULL)
                 {
@@ -1023,7 +1134,7 @@ void processBlock(float **outputBuffers, int numSamples)
 
                 if (env->inUse)
                 {
-                    outputChannel[i] += ampEnvelope * ladder_process(&od->lpf, signal);
+                    outputChannel[i] += (bd->outputToFilter ?  ladder_process(&od->lpf, signal * ampEnvelope) : signal * ampEnvelope);
                 }
             }
         }
