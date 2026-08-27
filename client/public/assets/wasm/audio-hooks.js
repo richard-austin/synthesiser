@@ -114,7 +114,7 @@ if (typeof globalThis.registerProcessor === 'function') {
           if(this.isWasmBound) Module._setFilterQFactor(data.bank, data.filterQFactor);
           break;
         case 'filterPitchEnvelope':
-          if (this.isWasmBound) Module._setBankPitchEnvelopeParams(data.bank, data.phase, data.value);
+          if (this.isWasmBound) Module._setBankFilterPitchEnvelopeParams(data.bank, data.phase, data.value);
           break;
         case 'usePitchEnvelope':
           if(this.isWasmBound) Module._usePitchEnvelope(data.bank, data.value);

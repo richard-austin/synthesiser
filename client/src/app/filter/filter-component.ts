@@ -295,32 +295,32 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   protected setFreqAttack($event: number) {
     this.proxySettings.freqBend.attackTime = $event;
-    this.fmSynthService.pitchEnvelope(this.filterNumber(), pitchEnvelopePhase.attack, $event);
+    this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.attack, $event);
   }
 
   protected setFreqAttackLevel($event: number) {
     this.proxySettings.freqBend.attackLevel = $event;
-    this.fmSynthService.pitchEnvelope(this.filterNumber(), pitchEnvelopePhase.attackLevel, $event);
+    this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.attackLevel, $event);
   }
 
   protected setFreqDecayTime($event: number) {
     this.proxySettings.freqBend.decayTime = $event;
-    this.fmSynthService.pitchEnvelope(this.filterNumber(), pitchEnvelopePhase.decay, $event);
+    this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.decay, $event);
   }
 
   protected setFreqSustainLevel($event: number) {
     this.proxySettings.freqBend.sustainLevel = $event;
-    this.fmSynthService.pitchEnvelope(this.filterNumber(), pitchEnvelopePhase.sustainLevel, $event);
+    this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.sustainLevel, $event);
   }
 
   protected setFreqReleaseTime($event: number) {
     this.proxySettings.freqBend.releaseTime = $event;
-    this.fmSynthService.pitchEnvelope(this.filterNumber(), pitchEnvelopePhase.release, $event);
+    this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.release, $event);
   }
 
   protected setFreqReleaseLevel($event: number) {
     this.proxySettings.freqBend.releaseLevel = $event;
-    this.fmSynthService.pitchEnvelope(this.filterNumber(), pitchEnvelopePhase.releaseLevel, $event);
+    this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.releaseLevel, $event);
   }
 
   protected setModFrequency(freq: number) {
