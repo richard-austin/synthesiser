@@ -528,13 +528,8 @@ void pitch_envelope_set_timing(PitchEnvelope *env, float value, float time)
     env->t0 = env->t;
     env->t1 = env->t0 + time + env->lowestTime;
     env->targetReached = false;
-
 }
 
-float safe_powf(float base, float exponent) {
-    float sign = (base < 0) ? -1.0f : 1.0f;
-    return sign * powf(fabsf(base), exponent);
-}
 void pitch_envelope_data_init(PitchEnvelopeData* ped)
 {
      ped->attack = 0.0f;
@@ -557,7 +552,7 @@ float pitch_envelope_ramp(PitchEnvelope *env)
     {
         if((count++ % 300000)== 0)
         {
-            env->level = env->v0 * safe_powf(env->v1 / env->v0, (env->t - env->t0) / (env->t1 - env->t0));
+            env->level = env->v0 * powf(env->v1 / env->v0, (env->t - env->t0) / (env->t1 - env->t0));
             if (isnanf(env->level))
             {
                 emscripten_console_logf("v0 %f v1 %f t %f t0 %f t1 %f",env->v0, env->v1, env->t, env->t0, env->t1);
@@ -596,7 +591,6 @@ void pitch_envelope_advance_to_sustain(PitchEnvelope *env)
         env->level = pitch_envelope_ramp(env);
         if (env->targetReached)
         {
-            emscripten_console_logf("attack level reached %f", env->level);
             env->phase = ENV_DECAY;
             pitch_envelope_set_timing(env, envData->sustainLevel, envData->decay);
         }
@@ -605,12 +599,7 @@ void pitch_envelope_advance_to_sustain(PitchEnvelope *env)
     {
         env->level = pitch_envelope_ramp(env);
         if (env->targetReached)
-        {
-            emscripten_console_logf("sustain level %f", envData->sustainLevel);
-            emscripten_console_logf("sustain level reached %f", env->level);
-            env->level = envData->sustainLevel;
             env->phase = ENV_SUSTAIN;
-       }
     }
 }
 
@@ -627,8 +616,6 @@ void pitch_envelope_advance_to_release_level(PitchEnvelope *env)
         env->level = pitch_envelope_ramp(env);
         if (env->targetReached)
         {
-                                    emscripten_console_logf("release level reached %f", env->level);
-            env->level = envData->releaseLevel;
             env->inUse = false;
             env->phase = ENV_INACTIVE;
         }
