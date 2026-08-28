@@ -48,14 +48,14 @@ if (typeof globalThis.registerProcessor === 'function') {
       const bytesPerFloat = 4;
       this.channelPtrs = [];
 
-      for (let b = 0; b < this.numberOfBanks; b++) {
+      for (let b = 0; b < this.numberOfBanks * 2; b++) {
         const ptr = Module._malloc(samplesPerBlock * bytesPerFloat);
         Module.HEAPF32.fill(0, ptr / bytesPerFloat, (ptr / bytesPerFloat) + samplesPerBlock);
         this.channelPtrs.push(ptr);
       }
 
-      this.wasmOutputPtrArray = Module._malloc(this.numberOfBanks * bytesPerFloat);
-      for (let b = 0; b < this.numberOfBanks; b++) {
+      this.wasmOutputPtrArray = Module._malloc(this.numberOfBanks * 2 * bytesPerFloat);
+      for (let b = 0; b < this.numberOfBanks * 2; b++) {
         Module.HEAP32[(this.wasmOutputPtrArray / 4) + b] = this.channelPtrs[b];
       }
       console.log("Memory marshalling arrays allocated successfully on WASM heap.");
@@ -63,7 +63,7 @@ if (typeof globalThis.registerProcessor === 'function') {
 
     handleIncomingMessage(data) {
       if (!data) return;
-      console.log("AudioWorklet received control type:", data.type);
+ //     console.log("AudioWorklet received control type:", data.type);
 
       switch (data.type) {
         case 'init':
@@ -182,7 +182,7 @@ if (typeof globalThis.registerProcessor === 'function') {
     minTime = 0;
 
     process(inputs, outputs, parameters) {
-     const start = Date.now();
+     // const start = Date.now();
 
       if (!this.isEngineRunning) return false;
       if (!this.isWasmBound) return true;
@@ -192,31 +192,31 @@ if (typeof globalThis.registerProcessor === 'function') {
 
       Module._processBlock(this.wasmOutputPtrArray, samplesPerBlock);
 
-      for (let b = 0; b < this.numberOfBanks; b++) {
+      for (let b = 0; b < this.numberOfBanks*2; b++) {
         const outputChannelData = outputs[b][0];
         if (!outputChannelData) continue;
         const startFloatIdx = this.channelPtrs[b] / 4;
         const wasmFloatView = Module.HEAPF32.subarray(startFloatIdx, startFloatIdx + samplesPerBlock);
         outputChannelData.set(wasmFloatView);
       }
-      const time = (Date.now() - start);
-      this.totalTime += time
-      this.iterationCount++;
-      if (time > this.maxTime)
-        this.maxTime = time;
-      if (time < this.minTime)
-        this.minTime = time;
-      //  Send an average performance report every 500 blocks (~1.5 seconds)
-      if (this.iterationCount >= 500) {
-        const averageMsPerBlock = this.totalTime / this.iterationCount;
-        console.log("averageMsPerBlock = " + averageMsPerBlock + " maxTime = " + this.maxTime + " minTime = "+ this.minTime);
-        //this.port.postMessage({ type: 'perf-report', averageMsPerBlock });
-
-        this.totalTime = 0;
-        this.iterationCount = 0;
-        this.maxTime = 0;
-        this.minTime = 100;
-      }
+      // const time = (Date.now() - start);
+      // this.totalTime += time
+      // this.iterationCount++;
+      // if (time > this.maxTime)
+      //   this.maxTime = time;
+      // if (time < this.minTime)
+      //   this.minTime = time;
+      // //  Send an average performance report every 500 blocks (~1.5 seconds)
+      // if (this.iterationCount >= 500) {
+      //   const averageMsPerBlock = this.totalTime / this.iterationCount;
+      //   console.log("averageMsPerBlock = " + averageMsPerBlock + " maxTime = " + this.maxTime + " minTime = "+ this.minTime);
+      //   //this.port.postMessage({ type: 'perf-report', averageMsPerBlock });
+      //
+      //   this.totalTime = 0;
+      //   this.iterationCount = 0;
+      //   this.maxTime = 0;
+      //   this.minTime = 100;
+      // }
 
       return true;
     }

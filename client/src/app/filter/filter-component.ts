@@ -18,8 +18,6 @@ import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {FilterSettings} from '../settings/filter';
 import {Cookies} from '../settings/cookies/cookies';
 import {pitchEnvelopePhase, PortamentoType} from '../oscillator/oscillator.component';
-import {ChordProcessor} from '../modules/chord-processor';
-import {DeviceKeys} from '../services/device-pool-manager-service';
 import {FmSynthService} from '../services/fm-synth-service';
 
 @Component({
@@ -36,9 +34,6 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   private audioCtx!: AudioContext;
   proxySettings!: FilterSettings
   private cookies!: Cookies;
-  chordProcessorNoise!: ChordProcessor;
-  chordProcessorOscillator1!: ChordProcessor;
-  chordProcessorOscillator2!: ChordProcessor;
 
   // One set for oscillator1, one set for oscillator2 and one for the noise source
   private readonly numberOfFilters: number = 1; // TODO: Should be 12 DevicePoolManager.numberOfDevices;
@@ -208,19 +203,13 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     this.proxySettings.portamentoType = value as PortamentoType;
   }
 
-  readonly frequencyFactor = 7.717057388; // To give middle C at 261.63 Hz on key 60
-  keyToFrequency = (key: number): number => {
-    return this.frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
-  }
 
   /**
    * connect: Connect all filters in this group to a single node (i.e. gain node).
    * @param node
    */
   connect(node: AudioNode) {
-    // for (let i = 0; i < this.filters.length; i++) {
-    //   this.filters[i].connect(node);
-    // }
+    this.fmSynthService.connectFilter(node, this.filterNumber())
   }
 
   connectToRingMod(): boolean {
@@ -228,9 +217,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     if (ringMod) {
       ok = true;
-      // for (let i = 0; i < this.filters.length; i++) {
-      //   this.filters[i].connect(ringMod.signalInput());
-      // }
+      this.fmSynthService.connectFilter(ringMod.signalInput(), this.filterNumber());
     }
     return ok;
   }
@@ -240,9 +227,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     if (phaser()) {
       ok = true;
-      // for (let i = 0; i < this.filters.length; i++) {
-      //   this.filters[i].connect(phaser().input);
-      // }
+      this.fmSynthService.connectFilter(phaser().input, this.filterNumber());
     }
     return ok;
   }
@@ -252,26 +237,13 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     if (reverb) {
       ok = true;
-      // for (let i = 0; i < this.filters.length; i++) {
-      //   this.filters[i].connect(reverb.input);
-      // }
-    }
+      this.fmSynthService.connectFilter(reverb.input, this.filterNumber());
+     }
     return ok;
   }
 
   disconnect() {
-    // for (let i = 0; i < this.filters.length; i++) {
-    //   this.filters[i].disconnect();
-    // }
-  }
-
-  keysDown: DeviceKeys[] = [];
-
-  private chordProcessorKeyDownCallback: (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => void = (prevKeyIndex: DeviceKeys, keyIndex: DeviceKeys) => {
-    // this.filters[keyIndex.deviceIndex].filter.frequency.value = this.keyToFrequency(prevKeyIndex.keyIndex);
-    // this.filters[keyIndex.deviceIndex].filter.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
-    // this.filters[keyIndex.deviceIndex].filter2.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
-    // this.filters[keyIndex.deviceIndex].keyDown(0x7f);  // TODO: Need to pass velocity through ChordProcessor
+    this.fmSynthService.disconnectFilter(this.filterNumber());
   }
 
   protected setPortamento($event: number) {
@@ -351,14 +323,6 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     // this.devicePoolManagerService.notifyKeyup[this.filterNumber()] = (keys: DeviceKeys) => {
     //   this.deviceKeyUp(keys);
     // }
-
-
-    this.chordProcessorNoise = new ChordProcessor();
-    this.chordProcessorNoise.setKeyDownCallback(this.chordProcessorKeyDownCallback);
-    this.chordProcessorOscillator1 = new ChordProcessor();
-    this.chordProcessorOscillator1.setKeyDownCallback(this.chordProcessorKeyDownCallback);
-    this.chordProcessorOscillator2 = new ChordProcessor();
-    this.chordProcessorOscillator2.setKeyDownCallback(this.chordProcessorKeyDownCallback);
 
     const filterOutForm = this.filterOutputTo().nativeElement;
     for (let i = 0; i < filterOutForm.elements.length; ++i) {

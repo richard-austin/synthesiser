@@ -14,9 +14,11 @@ export class FmSynthService {
   private keyDownHandlers: ((bank: number, device: number, key: number, velocity: number) => void)[] = [];
   private keyUpHandlers: ((bank: number, device: number, key: number,) => void)[] = [];
   private port!: MessagePort;
+  private _numberOfBanks!:number;
 
   async initializeSynth(audioCtx: AudioContext, numberOfBanks: number = 4, oscillatorsPerBank: number = 12): Promise<void> {
     if (!this.audioContext) {
+      this._numberOfBanks = numberOfBanks;
       // 1. Instantiate the AudioContext on the main thread
       this.audioContext = audioCtx;
       this.gainNodes = Array.from({length: numberOfBanks}, () => audioCtx.createGain());
@@ -60,8 +62,8 @@ export class FmSynthService {
 
     // 4. Create your AudioWorkletNode instance linking your custom 'oscillator' token
     this.synthNode = new AudioWorkletNode(this.audioContext, 'oscillator', {
-      numberOfOutputs: numberOfBanks,
-      outputChannelCount: Array(numberOfBanks).fill(1),
+      numberOfOutputs: numberOfBanks * 2, // 2 x numberOfBanks to accommodate separate filter outputs
+      outputChannelCount: Array(numberOfBanks * 2).fill(1),
       channelInterpretation: 'speakers',
       processorOptions: {
         numberOfBanks: numberOfBanks,
@@ -154,6 +156,14 @@ export class FmSynthService {
 
   public disconnect(output: number) {
     this.gainNodes[output].disconnect();
+  }
+
+  connectFilter(dest: AudioNode, output: number) {
+    this.synthNode.connect(dest, output+this._numberOfBanks);
+  }
+
+  disconnectFilter(output: number) {
+    this.synthNode.disconnect(output+this._numberOfBanks);
   }
 
   public tuning(tuning: number, bank: number): void {

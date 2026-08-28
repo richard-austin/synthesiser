@@ -971,7 +971,7 @@ void processBlock(float **outputBuffers, int numSamples)
     float nyquist = g_sampleRate / 2.0f;
     float root2 = 1.41421356237f;
     // 1. Instantly wipe the channel buffers to absolute zero
-    for (int b = 0; b < g_numberOfBanks; b++)
+    for (int b = 0; b < g_numberOfBanks*2; b++)
     {
         memset(outputBuffers[b], 0, sizeof(float) * numSamples);
     }
@@ -1004,6 +1004,7 @@ void processBlock(float **outputBuffers, int numSamples)
         for (int b = 0; b < g_numberOfBanks; b++)
         {
             float *outputChannel = outputBuffers[b];
+            float *filterOutputChannel = outputBuffers[b+g_numberOfBanks];
             BankData *bd = &g_banks[b];
             lfo_advance(bd);
             for (int osc = 0; osc < g_oscillatorsPerBank; osc++)
@@ -1121,7 +1122,10 @@ void processBlock(float **outputBuffers, int numSamples)
 
                 if (env->inUse)
                 {
-                    outputChannel[i] += (bd->outputToFilter ?  ladder_process(&od->lpf, signal * ampEnvelope) : signal * ampEnvelope);
+                    if(bd->outputToFilter)
+                        filterOutputChannel[i] += ladder_process(&od->lpf, signal * ampEnvelope);
+                    else
+                       outputChannel[i] += signal * ampEnvelope;
                 }
             }
         }
