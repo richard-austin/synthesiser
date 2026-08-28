@@ -795,7 +795,6 @@ EMSCRIPTEN_KEEPALIVE
 void useFilter(int bank, bool useFilter)
 {
     g_banks[bank].useFilter = useFilter;
-        emscripten_console_logf("useFilter %d", useFilter);
 }
 
 EMSCRIPTEN_KEEPALIVE
