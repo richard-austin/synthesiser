@@ -808,9 +808,11 @@ EMSCRIPTEN_KEEPALIVE
 void triggerNoteOn(int key, int velocity)
 {
     int foundIdx = -1;
-    for (int b = 0; b < g_numberOfBanks; b++)
+
+    // STEP 1: Strict Global Co-indexing Lookup. Is this key already active?
+    for (int o = 0; o < g_oscillatorsPerBank; o++)
     {
-        for (int o = 0; o < g_oscillatorsPerBank; o++)
+        for (int b = 0; b < g_numberOfBanks; b++)
         {
             if (g_oscData[b][o].env.inUse && g_oscData[b][o].key == key)
             {
@@ -818,35 +820,57 @@ void triggerNoteOn(int key, int velocity)
                 break;
             }
         }
-        if (foundIdx != -1)
-            break;
+        if (foundIdx != -1) break;
     }
-    if (foundIdx != -1)
-    {
-        for (int b = 0; b < g_numberOfBanks; b++)
-        {
-            g_oscData[b][foundIdx].env.phase = ENV_RETRIGGER;
-        }
-    }
-    else
+
+    // STEP 2: If it's a completely fresh note, assign next global slot
+    bool isRetrigger = (foundIdx != -1);
+    if (!isRetrigger)
     {
         foundIdx = g_roundRobinIndex++;
         if (g_roundRobinIndex >= g_oscillatorsPerBank)
             g_roundRobinIndex = 0;
     }
+
+    // STEP 3: Map parameters identically across all multi-bank nodes
     for (int b = 0; b < g_numberOfBanks; b++)
     {
         OscillatorData *od = &g_oscData[b][foundIdx];
+
+        // If an allocation collision happens with an existing active different note,
+        // force clear it to prevent old dead note values from lingering.
+        if (!isRetrigger && od->env.inUse)
+        {
+            od->env.inUse = false;
+            od->env.phase = ENV_INACTIVE;
+        }
+
         od->frequency = key_to_frequency(key, b);
         od->filterFrequency = filter_key_to_frequency(key, b);
         od->key = key;
+
         od->env.keyDown = true;
         od->env.inUse = true;
+        od->env.t = 0.0f; // Clear layout ramp clock timers
         od->env.envelopeData->velocity = velocity;
-        if (od->env.phase != ENV_RETRIGGER)
-            od->phase = 0.0f;
+
+        od->pitchEnv.t = 0.0f;
+        od->filterPitchEnv.t = 0.0f;
+
+        if (isRetrigger)
+        {
+            od->env.phase = ENV_RETRIGGER;
+        }
+        else
+        {
+            // FIX: Set to ENV_INACTIVE so envelope_advance_to_sustain()
+            // triggers cleanly on the first block iteration cycle.
+            od->env.phase = ENV_INACTIVE;
+            od->phase = 0.0f; // Clear standard oscillator cycle phase accumulator
+        }
     }
 }
+
 EMSCRIPTEN_KEEPALIVE
 void triggerNoteOff(int key)
 {
@@ -856,7 +880,16 @@ void triggerNoteOff(int key)
         {
             if (g_oscData[b][o].env.inUse && g_oscData[b][o].key == key)
             {
-                g_oscData[b][o].env.keyDown = false;
+                OscillatorData *od = &g_oscData[b][o];
+                od->env.keyDown = false;
+
+                // If the voice was caught mid-retrigger or processing anomaly,
+                // forcefully push its envelope execution profile straight to Release
+                if (od->env.phase != ENV_RELEASE && od->env.phase != ENV_INACTIVE)
+                {
+                    od->env.phase = ENV_RELEASE;
+                    envelope_set_timing(&od->env, od->env.lowestLevel, od->env.envelopeData->release);
+                }
             }
         }
     }
