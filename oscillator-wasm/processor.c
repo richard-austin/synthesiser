@@ -284,18 +284,21 @@ void svf_init(SVFFilter *f, float sampleRate)
 
 void svf_set_params(SVFFilter *f, float cutoffHz, float qFactor)
 {
-    // Clamp cutoff safely below Nyquist to prevent tangent calculations from hitting asymptotes
+    // Clamp cutoff safely below Nyquist to keep the tangent stable
     float maxF = f->sampleRate * 0.49f;
     f->cutoffHz = cutoffHz < 5.0f ? 5.0f : (cutoffHz > maxF ? maxF : cutoffHz);
 
-    // Map damping factor (k = 2 * R in standard SVF literature, where R = 1 / (2 * Q))
-    float Q = qFactor < 0.02f ? 0.02f : qFactor;
-    f->k = 1.0f / Q;
+    // DIRECT DAMPING PARAMETER MAPPING:
+    // When qFactor is 0.0 -> k is 2.0 (Completely flat, over-damped)
+    // When qFactor is 0.7 -> k is ~0.2 (Sharp, beautiful musical peak)
+    // When qFactor is 1.0 -> k is exactly 0.0 (Pure self-oscillation whistle)
+    float inverseQ = 1.0f - qFactor;
+    f->k = 2.0f * (inverseQ * inverseQ * inverseQ); // 3rd power curve for smooth analog feel
 
     // Pre-warp coefficient evaluated at the 2x oversampled sub-step rate
     f->g = tanf((float)M_PI * f->cutoffHz / (2.0f * f->sampleRate));
 
-    // Pristine matrix loop denominator calculation
+    // Matrix loop denominator calculation
     f->a1 = 1.0f / (1.0f + f->g * (f->g + f->k));
 }
 
@@ -309,25 +312,27 @@ float svf_process_morph(SVFFilter *f, float input)
 {
     float lp = 0.0f, bp = 0.0f, hp = 0.0f;
 
-    // Internal 2x Oversampling loop execution
+    // Internal 2x Oversampling execution
     for (int subStep = 0; subStep < 2; subStep++)
     {
         float v0 = input;
         float v1 = f->ic1eq;
         float v2 = f->ic2eq;
 
-        // PERFECT MATRICIAL ZERO-DELAY RESOLUTION
-        // This includes the critical cross-coupling tracking term (f->k + f->g)
+        // PURE LINEAR ZERO-DELAY RESOLUTION
+        // Removing internal tanhf() distortion inside the loop allows the loop
+        // gain to reach exactly 1.0, enabling pristine, infinite self-oscillation.
         hp = (v0 - (f->k + f->g) * v1 - v2) * f->a1;
         bp = f->g * hp + v1;
         lp = f->g * bp + v2;
 
-        // Exact trapezoidal integration state update equations
-        f->ic1eq = 2.0f * bp - v1;
-        f->ic2eq = 2.0f * lp - v2;
+        // Linear integration step updates with an added micro-damping layer
+        // This stops extreme math registers from expanding under infinite feedback loop states.
+        f->ic1eq = (2.0f * bp - v1) * 0.9999f;
+        f->ic2eq = (2.0f * lp - v2) * 0.9999f;
     }
 
-    // Inline Safety Check against extreme float underflows or denormals
+    // Safety check against invalid numbers or infinite values
     if (isnanf(f->ic1eq) || isinf(f->ic1eq) || isnanf(f->ic2eq) || isinf(f->ic2eq))
     {
         f->ic1eq = 0.0f;
@@ -352,7 +357,7 @@ float svf_process_morph(SVFFilter *f, float input)
     return finalOutput;
 }
 
- void envelope_data_init(EnvelopeData* ed)
+void envelope_data_init(EnvelopeData* ed)
  {
         ed->attack = 0.0f;
         ed->decay = 0.5f;
@@ -965,13 +970,17 @@ void setFilterDetune(int bank, float detune)
 EMSCRIPTEN_KEEPALIVE
 void setFilterQFactor(int bank, float qFactor)
 {
-    BankData* bd = &g_banks[bank];
-    const float resFactor = bd->resonanceBankFactor = 0.5f + (qFactor * 3.5f);
+    // Clamp the raw input safely between 0.0 and 1.0
+    float rawQ = qFactor < 0.0f ? 0.0f : (qFactor > 1.0f ? 1.0f : qFactor);
 
-    for(int o = 0; o < g_oscillatorsPerBank; ++o)
+    // Store it on your bank data if you track it there
+    g_banks[bank].resonanceBankFactor = rawQ;
+
+    for (int o = 0; o < g_oscillatorsPerBank; ++o)
     {
         OscillatorData *od = &g_oscData[bank][o];
-        svf_set_params(&od->svf, od->svf.cutoffHz, qFactor);
+        // Pass the raw 0.0 -> 1.0 value directly down
+        svf_set_params(&od->svf, od->svf.cutoffHz, rawQ);
     }
 }
 
@@ -1135,9 +1144,8 @@ void processBlock(float **outputBuffers, int numSamples)
                         filterFx *= od->filterPitchEnv.level;
                     }
 
-                    // Direct, uncompressed mapping—completely safe now thanks to oversampling!
-                    svf_set_params(&od->svf, filterFx, 0.5f + (bd->resonanceBankFactor));
-                  //  emscripten_console_logf("filterFx %f res %f", filterFx, 0.5f + bd->resonanceBankFactor);
+                    // FIX: Pass the raw 0.0 -> 1.0 factor directly down into the per-sample update
+                    svf_set_params(&od->svf, filterFx, bd->resonanceBankFactor);
                 }
 
                 // Gather AM & FM accumulators
