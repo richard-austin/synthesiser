@@ -997,18 +997,20 @@ float *getBankOutputBufferPtr(int bank)
 {
     return NULL;
 }
+
 EMSCRIPTEN_KEEPALIVE
 void processBlock(float **outputBuffers, int numSamples)
 {
     float nyquist = g_sampleRate / 2.0f;
     float root2 = 1.41421356237f;
-    // 1. Instantly wipe the channel buffers to absolute zero
-    for (int b = 0; b < g_numberOfBanks*2; b++)
+
+    // 1. Instantly wipe the channel buffers to absolute zero (Vectorised via memset)
+    for (int b = 0; b < g_numberOfBanks * 2; b++)
     {
         memset(outputBuffers[b], 0, sizeof(float) * numSamples);
     }
 
-    // 2. Check if ANY envelope is currently active
+    // 2. Structural Active Audio Check
     bool activeAudioEngine = false;
     for (int b = 0; b < g_numberOfBanks; b++)
     {
@@ -1020,144 +1022,165 @@ void processBlock(float **outputBuffers, int numSamples)
                 break;
             }
         }
-        if (activeAudioEngine)
-            break;
+        if (activeAudioEngine) break;
     }
 
-    // FIX: Early exit! If no notes are playing or decaying, do zero math.
-    // This stops powf() denormal generation completely.
-    if (!activeAudioEngine)
-    {
-        return;
-    }
+    if (!activeAudioEngine) return;
+
+//     // 3. CACHE ENV STATE & ADVANCE TIMERS (Hoisted Out of Sample Loop)
+//     // Advance envelopes once per block instead of 128 times inside the deep loop.
+//     // Note: If you require sub-sample modulation accuracy for envelopes, keep them internal.
+//     // However, for typical ADSR performance, block-rate evaluation delivers immense speedups.
+//     for (int b = 0; b < g_numberOfBanks; b++)
+//     {
+//         BankData *bd = &g_banks[b];
+//         for (int osc = 0; osc < g_oscillatorsPerBank; osc++)
+//         {
+//             OscillatorData *od = &g_oscData[b][osc];
+//             if (!od->env.inUse) continue;
+//
+//             // Execute envelope advances outside sample block if fine sub-sample ramp isn't strict
+//             // If you choose to keep them sample-accurate, leave them inside step 4 below.
+//         }
+//     }
+
+    // 4. MAIN RENDERING ENGINE (Optimized Loop Iteration Hierarchy)
+    // Flatten lookups out to local stacks to assist SIMD auto-vectorization
+    float invSampleRate = 1.0f / g_sampleRate;
 
     for (int i = 0; i < numSamples; i++)
     {
+        // Update LFOs globally per sample block iteration frame
+        for (int b = 0; b < g_numberOfBanks; b++)
+        {
+            lfo_advance(&g_banks[b]);
+        }
+
         for (int b = 0; b < g_numberOfBanks; b++)
         {
             float *outputChannel = outputBuffers[b];
-            float *filterOutputChannel = outputBuffers[b+g_numberOfBanks];
+            float *filterOutputChannel = outputBuffers[b + g_numberOfBanks];
             BankData *bd = &g_banks[b];
-            lfo_advance(bd);
+
+            // Local cache parameters for bank states
+            int bd_type = bd->type;
+            bool bd_useFilter = bd->useFilter;
+            bool bd_outputToFilter = bd->outputToFilter;
+            int bd_waveTableSize = bd->waveTableSize;
+            float *bd_periodicWaveData = bd->periodicWaveData;
+            int bd_modOutput = bd->modOutput;
+
             for (int osc = 0; osc < g_oscillatorsPerBank; osc++)
             {
                 OscillatorData *od = &g_oscData[b][osc];
                 Envelope *env = &od->env;
-                float f = od->frequency;
-                if (f > nyquist)
-                    f = nyquist;
-                int band = 0;
-                if (bd->type == 1 && bd->periodicWaveData != NULL)
-                {
-                    band = (int)floorf(log2f(f / g_startFx) / log2f(root2));
-                    if (band < 0)
-                        band = 0;
-                    else if (band > bd->numBands - 1)
-                        band = bd->numBands - 1;
-                }
+                if (!env->inUse) continue;
+
+                // --- SAMPLE ACCURATE ENVELOPE PROCESSING (If strict sub-sample resolution needed) ---
                 if (env->keyDown)
                 {
-                    if(bd->usePitchEnvelope)
-                    {
-                        PitchEnvelope* pitchEnv = &od->pitchEnv;
-                        pitch_envelope_advance_to_sustain(pitchEnv);
-                    }
-                    if(bd->useFilterPitchEnvelope)
-                    {
-                        PitchEnvelope* filterPitchEnvelope = &od->filterPitchEnv;
-                        pitch_envelope_advance_to_sustain(filterPitchEnvelope);
-                    }
+                    if (bd->usePitchEnvelope) pitch_envelope_advance_to_sustain(&od->pitchEnv);
+                    if (bd->useFilterPitchEnvelope) pitch_envelope_advance_to_sustain(&od->filterPitchEnv);
                     envelope_advance_to_sustain(env);
                 }
                 else
                 {
-                    if(bd->usePitchEnvelope)
-                    {
-                        PitchEnvelope *pitchEnv = &od->pitchEnv;
-                        pitch_envelope_advance_to_release_level(pitchEnv);
-                    }
-                    if(bd->useFilterPitchEnvelope)
-                    {
-                        PitchEnvelope* filterPitchEnv = &od->filterPitchEnv;
-                        pitch_envelope_advance_to_release_level(filterPitchEnv);
-                    }
+                    if (bd->usePitchEnvelope) pitch_envelope_advance_to_release_level(&od->pitchEnv);
+                    if (bd->useFilterPitchEnvelope) pitch_envelope_advance_to_release_level(&od->filterPitchEnv);
                     envelope_advance_to_zero(env);
                 }
 
-
-                if(bd->usePitchEnvelope)
-                {
-                    f *= od->pitchEnv.level;
-                }
+                float f = od->frequency;
+                if (bd->usePitchEnvelope) f *= od->pitchEnv.level;
                 f *= bd->detuneFactor;
+                if (f > nyquist) f = nyquist;
 
-                if (env->inUse && bd->useFilter)
+                if (bd_useFilter)
                 {
-                    float filterFx = od->filterFrequency;
-                    filterFx *= bd->filterDetuneFactor;
-                    if(bd->useFilterPitchEnvelope)
-                        filterFx *= od->filterPitchEnv.level;
-
+                    float filterFx = od->filterFrequency * bd->filterDetuneFactor;
+                    if (bd->useFilterPitchEnvelope) filterFx *= od->filterPitchEnv.level;
                     ladder_set_cutoff(&od->lpf, filterFx);
                 }
 
-                // AM and FM Mod output from accumulators
+                // Gather AM & FM accumulators
                 int idx = b * g_oscillatorsPerBank + osc;
-                const float matrixF = g_fmAccumulators[idx];
-                g_fmAccumulators[idx] = 0.0f;
-                const float matrixA = 1.0f + g_amAccumulators[idx];
+                float matrixF = g_fmAccumulators[idx];
+                g_fmAccumulators[idx] = 0.0f; // Clear layout cleanly
+
+                float matrixA = 1.0f + g_amAccumulators[idx];
                 g_amAccumulators[idx] = 0.0f;
 
                 float mod = butterworth_process(&od->butterworthFilter, matrixF);
-                float inc = f / g_sampleRate;
-                if(bd->lfoData.modType == LFO_FREQUENCY)
+                float inc = f * invSampleRate;
+
+                if (bd->lfoData.modType == LFO_FREQUENCY)
                 {
-                    inc *= (1+lfo_output(bd));
+                    inc *= (1.0f + lfo_output(bd));
                 }
+
                 od->phase += inc;
+                // Fast wrapping logic instead of heavy floorf calls
+                if (od->phase >= 1.0f) od->phase -= (int)od->phase;
+
                 float currentPhase = od->phase + mod;
-                currentPhase = currentPhase - floorf(currentPhase);
-                od->phase = od->phase - floorf(od->phase);
+                if (currentPhase >= 1.0f) currentPhase -= (int)currentPhase;
+                if (currentPhase < 0.0f) currentPhase += 1.0f;
+
                 const float ampEnvelope = env->level;
                 float signal = 0.0f;
-                if (bd->type == 0)
+
+                if (bd_type == 0)
                 {
+                    // sinf implementation leveraging fast-math properties
                     signal = sinf(currentPhase * two_m_pi) * matrixA;
                 }
-                else if (bd->type == 1 && bd->periodicWaveData != NULL)
+                else if (bd_type == 1 && bd_periodicWaveData != NULL)
                 {
-                    int sampleIdx = (int)floorf(currentPhase * bd->waveTableSize);
-                    signal = bd->periodicWaveData[band * bd->waveTableSize + sampleIdx];
+                    int band = 0;
+                    // Cache or optimize log calculations if tables remain stable
+                    band = (int)(log2f(f / g_startFx) / log2f(root2));
+                    if (band < 0) band = 0;
+                    else if (band > bd->numBands - 1) band = bd->numBands - 1;
+
+                    int sampleIdx = (int)(currentPhase * bd_waveTableSize);
+                    if (sampleIdx >= bd_waveTableSize) sampleIdx = bd_waveTableSize - 1;
+
+                    signal = bd_periodicWaveData[band * bd_waveTableSize + sampleIdx];
                 }
-                float modSignal = signal;
-                if (bd->modOutput == 2)
-                {
-                    modSignal *= ampEnvelope;
-                }
-                // Mod input to accumulators
+
+                float modSignal = (bd_modOutput == 2) ? (signal * ampEnvelope) : signal;
+
+                // Mod distribution matrix mapping
                 for (int cB = 0; cB < g_numberOfBanks; cB++)
                 {
                     ModSettings *ms = &g_modMatrix[b * g_numberOfBanks + cB];
-                    if (ms->modType == MOD_FREQUENCY && ms->carrierIdx == cB)
+                    if (ms->carrierIdx == cB)
                     {
-                        g_fmAccumulators[cB * g_oscillatorsPerBank + osc] += modSignal * ms->level;
+                        int targetIdx = cB * g_oscillatorsPerBank + osc;
+                        if (ms->modType == MOD_FREQUENCY)
+                        {
+                            g_fmAccumulators[targetIdx] += modSignal * ms->level;
+                        }
+                        else if (ms->modType == MOD_AMPLITUDE)
+                        {
+                            g_amAccumulators[targetIdx] += modSignal * ms->level;
+                        }
                     }
-                    else if (ms->modType == MOD_AMPLITUDE && ms->carrierIdx == cB)
-                    {
-                        g_amAccumulators[cB * g_oscillatorsPerBank + osc] += modSignal * ms->level;
-                    }
-                }
-                if(bd->lfoData.modType == LFO_AMPLITUDE)
-                {
-                    signal *= (1+lfo_output(bd));
                 }
 
-                if (env->inUse)
+                if (bd->lfoData.modType == LFO_AMPLITUDE)
                 {
-                    if(bd->outputToFilter)
-                        filterOutputChannel[i] += ladder_process(&od->lpf, signal * ampEnvelope);
-                    else
-                       outputChannel[i] += signal * ampEnvelope;
+                    signal *= (1.0f + lfo_output(bd));
+                }
+
+                float finalOutputSample = signal * ampEnvelope;
+                if (bd_outputToFilter)
+                {
+                    filterOutputChannel[i] += ladder_process(&od->lpf, finalOutputSample);
+                }
+                else
+                {
+                    outputChannel[i] += finalOutputSample;
                 }
             }
         }
