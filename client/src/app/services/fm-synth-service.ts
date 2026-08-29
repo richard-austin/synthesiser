@@ -142,12 +142,25 @@ export class FmSynthService {
     this.port?.postMessage({type: 'useFilter', bank, useFilter});
   }
 
+  public setOscillatorLevel(bank: number, oscillatorLevel: number): void {
+    this.port?.postMessage({type: 'setOscillatorLevel', bank, oscillatorLevel});
+  }
+
+  public setFilterLevel(bank: number, filterLevel: number,): void {
+    this.port?.postMessage({type: 'setFilterLevel', bank, filterLevel});
+  }
+
+  public setFilterMorphMode(bank: number, filterMorphMode: number): void {
+    this.port?.postMessage({type: 'setFilterMorphMode', bank, filterMorphMode});
+  }
+
   getAudioContext(): AudioContext {
     return this.audioContext;
   }
 
   public setGain(gain: number, bank: number) {
-    this.gainNodes[bank].gain.value = gain;
+    this.setOscillatorLevel(bank, gain);
+    //this.gainNodes[bank].gain.value = gain;
   }
 
   public connect(dest: AudioNode, output: number, input?: number): AudioNode {

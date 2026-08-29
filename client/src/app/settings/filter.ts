@@ -2,7 +2,6 @@ import {FreqBendValues} from '../util-classes/freq-bend-values';
 import {
   filterModType,
   filterOutputs,
-  filterTypes,
   modWaveforms,
   onOff,
 } from '../enums/enums';
@@ -13,7 +12,7 @@ export class FilterSettings {
   frequency: number;
   qFactor: number;
   gain: number;
-  filterType: filterTypes;
+  filterType: number;
   output: filterOutputs;
   modFreq: number;
   modLevel: number;
@@ -30,7 +29,7 @@ export class FilterSettings {
               deTune: number = 0,
               qFactor: number = 20,
               gain: number = .4,
-              filterType: filterTypes = filterTypes.lowpass,
+              filterType: number = 0.0,
               output: filterOutputs = filterOutputs.off,
               modFreq: number = 2,
               modLevel: number=.4,

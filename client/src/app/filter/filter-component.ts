@@ -13,7 +13,7 @@ import {LevelControlComponent} from '../level-control/level-control.component';
 import {ReverbComponent} from '../reverb-component/reverb-component';
 import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component';
 import {PhaserComponent} from '../phaser/phaser.component';
-import {filterModType, filterTypes, modWaveforms, onOff} from '../enums/enums';
+import {filterModType, modWaveforms, onOff} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {FilterSettings} from '../settings/filter';
 import {Cookies} from '../settings/cookies/cookies';
@@ -169,9 +169,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   protected setGain(gain: number) {
     this.proxySettings.gain = gain;
-    // for (let i = 0; i < this.filters.length; i++) {
-    //   this.filters[i].setGain(gain);
-    // }
+    this.fmSynthService.setFilterLevel(this.filterNumber(), gain);
   }
 
   protected setDetune(deTune: number) {
@@ -192,8 +190,9 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     this.fmSynthService.useFilterPitchEnvelope(this.filterNumber(), useFreqBendEnvelope);
   }
 
-  private setFilterType(value: BiquadFilterType) {
-    this.proxySettings.filterType = value as filterTypes;
+  private setFilterType(value: number) {
+    this.proxySettings.filterType = value;
+    this.fmSynthService.setFilterMorphMode(this.filterNumber(), value);
     // for (let i = 0; i < this.numberOfFilters; ++i) {
     //   this.filters[i].setType(value);
     // }
@@ -345,8 +344,8 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     for (let i = 0; i < filterType.elements.length; ++i) {
       filterType.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
-        const value = $event.target.value as OscillatorType;
-        this.setFilterType(value as BiquadFilterType);
+        const value = $event.target.value;
+        this.setFilterType(value);
       });
 
       const portamentoType = this.portamentoType().nativeElement;

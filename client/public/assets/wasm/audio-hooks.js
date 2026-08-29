@@ -63,7 +63,7 @@ if (typeof globalThis.registerProcessor === 'function') {
 
     handleIncomingMessage(data) {
       if (!data) return;
- //     console.log("AudioWorklet received control type:", data.type);
+      //     console.log("AudioWorklet received control type:", data.type);
 
       switch (data.type) {
         case 'init':
@@ -105,28 +105,28 @@ if (typeof globalThis.registerProcessor === 'function') {
           if (this.isWasmBound) Module._setBankPitchEnvelopeParams(data.bank, data.phase, data.value);
           break;
         case 'filterTuning':
-          if(this.isWasmBound) Module._setFilterTuning(data.bank, data.filterTuning);
+          if (this.isWasmBound) Module._setFilterTuning(data.bank, data.filterTuning);
           break;
         case 'filterDetune':
-          if(this.isWasmBound) Module._setFilterDetune(data.bank, data.filterDetune);
+          if (this.isWasmBound) Module._setFilterDetune(data.bank, data.filterDetune);
           break;
         case 'filterQFactor':
-          if(this.isWasmBound) Module._setFilterQFactor(data.bank, data.filterQFactor);
+          if (this.isWasmBound) Module._setFilterQFactor(data.bank, data.filterQFactor);
           break;
         case 'filterPitchEnvelope':
           if (this.isWasmBound) Module._setBankFilterPitchEnvelopeParams(data.bank, data.phase, data.value);
           break;
         case 'usePitchEnvelope':
-          if(this.isWasmBound) Module._usePitchEnvelope(data.bank, data.value);
+          if (this.isWasmBound) Module._usePitchEnvelope(data.bank, data.value);
           break;
         case 'useFilterPitchEnvelope':
-          if(this.isWasmBound) Module._useFilterPitchEnvelope(data.bank, data.value);
+          if (this.isWasmBound) Module._useFilterPitchEnvelope(data.bank, data.value);
           break;
         case 'outputToFilter':
-          if(this.isWasmBound) Module._outputToFilter(data.bank, data.outputToFilter);
+          if (this.isWasmBound) Module._outputToFilter(data.bank, data.outputToFilter);
           break;
         case 'useFilter':
-          if(this.isWasmBound) Module._useFilter(data.bank, data.useFilter);
+          if (this.isWasmBound) Module._useFilter(data.bank, data.useFilter);
           break;
         case 'setModType': {
           if (this.isWasmBound) {
@@ -170,6 +170,21 @@ if (typeof globalThis.registerProcessor === 'function') {
             Module._setLFOFrequency(data.bank, frequency);
           }
           break;
+        case 'setOscillatorLevel':
+          if (this.isWasmBound) {
+            Module._setOscillatorLevel(data.bank, data.oscillatorLevel);
+          }
+          break;
+        case 'setFilterLevel':
+          if (this.isWasmBound) {
+            Module._setFilterLevel(data.bank, data.filterLevel);
+          }
+          break;
+        case 'setFilterMorphMode':
+          if (this.isWasmBound) {
+            Module._setFilterMorphMode(data.bank, data.filterMorphMode);
+          }
+          break;
         default:
           console.error("Unknown control type " + type);
           break;
@@ -182,7 +197,7 @@ if (typeof globalThis.registerProcessor === 'function') {
     minTime = 0;
 
     process(inputs, outputs, parameters) {
-     // const start = Date.now();
+      // const start = Date.now();
 
       if (!this.isEngineRunning) return false;
       if (!this.isWasmBound) return true;
@@ -192,7 +207,7 @@ if (typeof globalThis.registerProcessor === 'function') {
 
       Module._processBlock(this.wasmOutputPtrArray, samplesPerBlock);
 
-      for (let b = 0; b < this.numberOfBanks*2; b++) {
+      for (let b = 0; b < this.numberOfBanks * 2; b++) {
         const outputChannelData = outputs[b][0];
         if (!outputChannelData) continue;
         const startFloatIdx = this.channelPtrs[b] / 4;

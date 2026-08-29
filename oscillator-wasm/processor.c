@@ -165,6 +165,8 @@ typedef struct
     oscModOutput modOutput; // 1=direct, 2=envelope
     LfoData lfoData;
     float resonanceBankFactor;
+    float oscillatorLevel;
+    float filterLevel;
 } BankData;
 
 typedef struct
@@ -209,6 +211,8 @@ void bank_data_init(BankData* bd, int waveTableSize)
     bd->useFilterPitchEnvelope = false;
     bd->useFilter = false;
     bd->outputToFilter = false;
+    bd->oscillatorLevel = 0.0f;
+    bd->filterLevel = 0.0f;
 }
 
 void oscillator_data_init(OscillatorData* od)
@@ -276,7 +280,7 @@ void svf_init(SVFFilter *f, float sampleRate)
     f->ic2eq = 0.0f;
     f->cutoffHz = 1000.0f;
     f->resonance = 0.707f; // Standard clean Butterworth Q damping factor
-    f->morphMode = 0.0f;
+    f->morphMode = 1.0f;
     f->g = 0.0f;
     f->k = 0.0f;
     f->a1 = f->a2 = f->a3 = 0.0f;
@@ -1040,6 +1044,32 @@ float *getBankOutputBufferPtr(int bank)
 }
 
 EMSCRIPTEN_KEEPALIVE
+void setOscillatorLevel(int bank, float level)
+{
+    BankData* bd = &g_banks[bank];
+    bd->oscillatorLevel = level;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setFilterLevel(int bank, float level)
+{
+    BankData* bd = &g_banks[bank];
+    bd->filterLevel = level;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setFilterMorphMode(int bank, float morphMode)
+{
+    BankData* bd = &g_banks[bank];
+    OscillatorData* oscData = g_oscData[bank];
+    for(int o = 0; o < g_oscillatorsPerBank; ++o)
+    {
+        OscillatorData* od = &oscData[o];
+        svf_set_morph(&od->svf, morphMode);
+    }
+}
+
+EMSCRIPTEN_KEEPALIVE
 void processBlock(float **outputBuffers, int numSamples)
 {
     float nyquist = g_sampleRate / 2.0f;
@@ -1222,11 +1252,11 @@ void processBlock(float **outputBuffers, int numSamples)
                 float finalOutputSample = signal * ampEnvelope;
                 if (bd_outputToFilter)
                 {
-                    filterOutputChannel[i] += svf_process_morph(&od->svf, finalOutputSample);
+                    filterOutputChannel[i] += svf_process_morph(&od->svf, 0.1f * finalOutputSample) * bd->filterLevel;
                 }
                 else
                 {
-                    outputChannel[i] += finalOutputSample;
+                    outputChannel[i] += finalOutputSample * bd->oscillatorLevel;
                 }
             }
         }
