@@ -457,7 +457,7 @@ void envelope_advance_to_zero(Envelope *env)
     {
         if (!envData->legato)
         {
-            if (env->phase != ENV_RELEASE)
+            if (env->phase != ENV_RELEASE && env->phase != ENV_INACTIVE)
             {
                 env->phase = ENV_RELEASE;
                 envelope_set_timing(env, env->lowestLevel, envData->release);
@@ -475,7 +475,7 @@ void envelope_advance_to_zero(Envelope *env)
         }
         else
         {
-            if (env->phase == ENV_ATTACK || env->phase == ENV_DECAY)
+            if (env->phase != ENV_SUSTAIN && env->phase != ENV_RELEASE && env->phase != ENV_INACTIVE)
             {
                 envelope_set_timing(env, env->lowestLevel, envData->decay);
                 env->phase = ENV_SUSTAIN;
@@ -606,7 +606,7 @@ void pitch_envelope_advance_to_sustain(PitchEnvelope *env)
 void pitch_envelope_advance_to_release_level(PitchEnvelope *env)
 {
     PitchEnvelopeData *envData = env->envelopeData;
-    if (env->phase != ENV_RELEASE)
+    if (env->phase != ENV_RELEASE && env->phase != ENV_INACTIVE)
     {
         env->phase = ENV_RELEASE;
         pitch_envelope_set_timing(env, envData->releaseLevel, envData->release);

@@ -282,7 +282,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   disconnect(output: number) {
-//    this.fmSynthService.oscillatorOutputToFilter(this.oscNumber(), false);
+    this.fmSynthService.oscillatorOutputToFilter(this.oscNumber(), false);
     this.fmSynthService.disconnect(output);
     // this.oscillators.forEach(osc => {
     //   osc.disconnect();
