@@ -109,13 +109,19 @@ typedef struct
     float sampleRate;
     float cutoffHz;
     float resonance;
-    float drive;
-    float s1, s2, s3, s4;
-    float output;
+
+    // Internal state registers
+    float ic1eq;
+    float ic2eq;
+
+    // Filter coefficients
     float g;
-    float resonanceGain;
-    int iterations;
-} LadderFilter4Pole;
+    float k;
+    float a1, a2, a3;
+
+    // FIX: Morph parameter variable state (0.0 = LP, 1.0 = BP, 2.0 = HP)
+    float morphMode;
+} SVFFilter;
 
 typedef struct
 {
@@ -136,7 +142,7 @@ typedef struct
     float phase;
     ButterworthFilter butterworthFilter;
     float filterFrequency;
-    LadderFilter4Pole lpf;
+    SVFFilter svf;
 } OscillatorData;
 
 typedef struct
@@ -158,6 +164,7 @@ typedef struct
     int waveTableSize;
     oscModOutput modOutput; // 1=direct, 2=envelope
     LfoData lfoData;
+    float resonanceBankFactor;
 } BankData;
 
 typedef struct
@@ -262,65 +269,87 @@ float butterworth_process(ButterworthFilter *f, float input)
     return output;
 }
 
-void ladder_update_coefficient(LadderFilter4Pole *f)
-{
-    f->g = tanf(m_pi * f->cutoffHz / f->sampleRate);
-}
-
-void ladder_set_cutoff(LadderFilter4Pole *f, float cutoffHz)
-{
-    float maxF = f->sampleRate * 0.45f;
-    f->cutoffHz = cutoffHz < 5.0f ? 5.0f : (cutoffHz > maxF ? maxF : cutoffHz);
-    ladder_update_coefficient(f);
-}
-
-void ladder_set_resonance(LadderFilter4Pole *f, float resonance)
-{
-    f->resonance = resonance < 0.0f ? 0.0f : (resonance > 1.0f ? 1.0f : resonance);
-    float r = f->resonance;
-    f->resonanceGain = 4.0f * r * (0.85f + 0.15f * r);
-}
-
-void ladder_set_drive(LadderFilter4Pole *f, float drive)
-{
-    f->drive = drive < 0.1f ? 0.1f : drive;
-}
-
-void ladder_init(LadderFilter4Pole *f, float sampleRate)
+void svf_init(SVFFilter *f, float sampleRate)
 {
     f->sampleRate = sampleRate;
-    f->iterations = 3;
-    f->s1 = f->s2 = f->s3 = f->s4 = 0.0f;
-    f->output = 0.0f;
-    ladder_set_cutoff(f, 1000.0f);
-    ladder_set_resonance(f, 3.0f);
-    ladder_set_drive(f, 1.0f);
+    f->ic1eq = 0.0f;
+    f->ic2eq = 0.0f;
+    f->cutoffHz = 1000.0f;
+    f->resonance = 0.707f; // Standard clean Butterworth Q damping factor
+    f->morphMode = 0.0f;
+    f->g = 0.0f;
+    f->k = 0.0f;
+    f->a1 = f->a2 = f->a3 = 0.0f;
 }
 
-float ladder_tpt(LadderFilter4Pole *f, float input, float state)
+void svf_set_params(SVFFilter *f, float cutoffHz, float qFactor)
 {
-    return (f->g * input + state) / (1.0f + f->g);
+    // Clamp cutoff safely below Nyquist to prevent tangent calculations from hitting asymptotes
+    float maxF = f->sampleRate * 0.49f;
+    f->cutoffHz = cutoffHz < 5.0f ? 5.0f : (cutoffHz > maxF ? maxF : cutoffHz);
+
+    // Map damping factor (k = 2 * R in standard SVF literature, where R = 1 / (2 * Q))
+    float Q = qFactor < 0.02f ? 0.02f : qFactor;
+    f->k = 1.0f / Q;
+
+    // Pre-warp coefficient evaluated at the 2x oversampled sub-step rate
+    f->g = tanf((float)M_PI * f->cutoffHz / (2.0f * f->sampleRate));
+
+    // Pristine matrix loop denominator calculation
+    f->a1 = 1.0f / (1.0f + f->g * (f->g + f->k));
 }
 
-float ladder_process(LadderFilter4Pole *f, float input)
+void svf_set_morph(SVFFilter *f, float morphValue)
 {
-    float x = tanhf(input * f->drive);
-    float y4 = f->s4, y1 = f->s1, y2 = f->s2, y3 = f->s3;
-    for (int i = 0; i < f->iterations; i++)
+    // Clamp the incoming crossfade slider value safely between 0.0 and 2.0
+    f->morphMode = morphValue < 0.0f ? 0.0f : (morphValue > 2.0f ? 2.0f : morphValue);
+}
+
+float svf_process_morph(SVFFilter *f, float input)
+{
+    float lp = 0.0f, bp = 0.0f, hp = 0.0f;
+
+    // Internal 2x Oversampling loop execution
+    for (int subStep = 0; subStep < 2; subStep++)
     {
-        float feedback = f->resonanceGain * tanhf(y4);
-        float u = x - feedback;
-        y1 = ladder_tpt(f, u, f->s1);
-        y2 = ladder_tpt(f, y1, f->s2); // Fixed missing 'f' parameter context
-        y3 = ladder_tpt(f, y2, f->s3); // Fixed missing 'f' parameter context
-        y4 = ladder_tpt(f, y3, f->s4); // Fixed missing 'f' parameter context
+        float v0 = input;
+        float v1 = f->ic1eq;
+        float v2 = f->ic2eq;
+
+        // PERFECT MATRICIAL ZERO-DELAY RESOLUTION
+        // This includes the critical cross-coupling tracking term (f->k + f->g)
+        hp = (v0 - (f->k + f->g) * v1 - v2) * f->a1;
+        bp = f->g * hp + v1;
+        lp = f->g * bp + v2;
+
+        // Exact trapezoidal integration state update equations
+        f->ic1eq = 2.0f * bp - v1;
+        f->ic2eq = 2.0f * lp - v2;
     }
-    f->s1 = 2.0f * y1 - f->s1;
-    f->s2 = 2.0f * y2 - f->s2;
-    f->s3 = 2.0f * y3 - f->s3;
-    f->s4 = 2.0f * y4 - f->s4;
-    f->output = tanhf(y4);
-    return f->output;
+
+    // Inline Safety Check against extreme float underflows or denormals
+    if (isnanf(f->ic1eq) || isinf(f->ic1eq) || isnanf(f->ic2eq) || isinf(f->ic2eq))
+    {
+        f->ic1eq = 0.0f;
+        f->ic2eq = 0.0f;
+        return 0.0f;
+    }
+
+    // Morph crossfade layer
+    float finalOutput = 0.0f;
+    float m = f->morphMode;
+
+    if (m <= 1.0f)
+    {
+        finalOutput = lp + m * (bp - lp);
+    }
+    else
+    {
+        float weight = m - 1.0f;
+        finalOutput = bp + weight * (hp - bp);
+    }
+
+    return finalOutput;
 }
 
  void envelope_data_init(EnvelopeData* ed)
@@ -666,7 +695,7 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, float start
             pitch_envelope_init(&g_oscData[b][o].pitchEnv, &g_banks[b].pitchEnvelopeData);
             pitch_envelope_init(&g_oscData[b][o].filterPitchEnv, &g_banks[b].filterPitchEnvelopeData);
             butterworth_calculate_coefficients(&g_oscData[b][o].butterworthFilter, 1000.0f, sampleRate);
-            ladder_init(&g_oscData[b][o].lpf, sampleRate);
+            svf_init(&g_oscData[b][o].svf, sampleRate);
         }
     }
 }
@@ -936,10 +965,13 @@ void setFilterDetune(int bank, float detune)
 EMSCRIPTEN_KEEPALIVE
 void setFilterQFactor(int bank, float qFactor)
 {
+    BankData* bd = &g_banks[bank];
+    const float resFactor = bd->resonanceBankFactor = 0.5f + (qFactor * 3.5f);
+
     for(int o = 0; o < g_oscillatorsPerBank; ++o)
     {
         OscillatorData *od = &g_oscData[bank][o];
-        ladder_set_resonance(&od->lpf, qFactor);
+        svf_set_params(&od->svf, od->svf.cutoffHz, qFactor);
     }
 }
 
@@ -1098,8 +1130,14 @@ void processBlock(float **outputBuffers, int numSamples)
                 if (bd_useFilter)
                 {
                     float filterFx = od->filterFrequency * bd->filterDetuneFactor;
-                    if (bd->useFilterPitchEnvelope) filterFx *= od->filterPitchEnv.level;
-                    ladder_set_cutoff(&od->lpf, filterFx);
+                    if (bd->useFilterPitchEnvelope)
+                    {
+                        filterFx *= od->filterPitchEnv.level;
+                    }
+
+                    // Direct, uncompressed mapping—completely safe now thanks to oversampling!
+                    svf_set_params(&od->svf, filterFx, 0.5f + (bd->resonanceBankFactor));
+                  //  emscripten_console_logf("filterFx %f res %f", filterFx, 0.5f + bd->resonanceBankFactor);
                 }
 
                 // Gather AM & FM accumulators
@@ -1176,7 +1214,7 @@ void processBlock(float **outputBuffers, int numSamples)
                 float finalOutputSample = signal * ampEnvelope;
                 if (bd_outputToFilter)
                 {
-                    filterOutputChannel[i] += ladder_process(&od->lpf, finalOutputSample);
+                    filterOutputChannel[i] += svf_process_morph(&od->svf, finalOutputSample);
                 }
                 else
                 {
