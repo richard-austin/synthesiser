@@ -1249,14 +1249,14 @@ void processBlock(float **outputBuffers, int numSamples)
                     signal *= (1.0f + lfo_output(bd));
                 }
 
-                float finalOutputSample = signal * ampEnvelope;
+                float finalOutputSample = signal * bd->oscillatorLevel * ampEnvelope;
                 if (bd_outputToFilter)
                 {
                     filterOutputChannel[i] += svf_process_morph(&od->svf, 0.1f * finalOutputSample) * bd->filterLevel;
                 }
                 else
                 {
-                    outputChannel[i] += finalOutputSample * bd->oscillatorLevel;
+                    outputChannel[i] += finalOutputSample;
                 }
             }
         }
