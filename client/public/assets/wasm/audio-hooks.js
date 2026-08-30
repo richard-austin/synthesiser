@@ -223,7 +223,7 @@ if (typeof globalThis.registerProcessor === 'function') {
     minTime = 0;
 
     process(inputs, outputs, parameters) {
-      // const start = Date.now();
+       const start = Date.now();
 
       if (!this.isEngineRunning) return false;
       if (!this.isWasmBound) return true;
@@ -240,24 +240,24 @@ if (typeof globalThis.registerProcessor === 'function') {
         const wasmFloatView = Module.HEAPF32.subarray(startFloatIdx, startFloatIdx + samplesPerBlock);
         outputChannelData.set(wasmFloatView);
       }
-      // const time = (Date.now() - start);
-      // this.totalTime += time
-      // this.iterationCount++;
-      // if (time > this.maxTime)
-      //   this.maxTime = time;
-      // if (time < this.minTime)
-      //   this.minTime = time;
-      // //  Send an average performance report every 500 blocks (~1.5 seconds)
-      // if (this.iterationCount >= 500) {
-      //   const averageMsPerBlock = this.totalTime / this.iterationCount;
-      //   console.log("averageMsPerBlock = " + averageMsPerBlock + " maxTime = " + this.maxTime + " minTime = "+ this.minTime);
-      //   //this.port.postMessage({ type: 'perf-report', averageMsPerBlock });
-      //
-      //   this.totalTime = 0;
-      //   this.iterationCount = 0;
-      //   this.maxTime = 0;
-      //   this.minTime = 100;
-      // }
+      const time = (Date.now() - start);
+      this.totalTime += time
+      this.iterationCount++;
+      if (time > this.maxTime)
+        this.maxTime = time;
+      if (time < this.minTime)
+        this.minTime = time;
+      //  Send an average performance report every 500 blocks (~1.5 seconds)
+      if (this.iterationCount >= 500) {
+        const averageMsPerBlock = this.totalTime / this.iterationCount;
+        console.log("averageMsPerBlock = " + averageMsPerBlock + " maxTime = " + this.maxTime + " minTime = "+ this.minTime);
+        //this.port.postMessage({ type: 'perf-report', averageMsPerBlock });
+
+        this.totalTime = 0;
+        this.iterationCount = 0;
+        this.maxTime = 0;
+        this.minTime = 100;
+      }
 
       return true;
     }

@@ -58,6 +58,10 @@ tasks.register('checkWasmVersion', Exec) {
 //    }
 }
 
+tasks.register('clean', Delete) {
+    group = 'build'
+    delete "${outputJsPath}"
+}
 
 // 5. Register the final cache-compliant automated execution task
 tasks.register('compileWasm', Exec) {
