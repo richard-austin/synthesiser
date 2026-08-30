@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {OscillatorSettings} from '../settings/oscillator';
-import {modWaveforms, oscModOutput, oscModType} from '../enums/enums';
+import {filterModType, modWaveforms, oscModOutput, oscModType} from '../enums/enums';
 import {envelopePhase, pitchEnvelopePhase} from '../oscillator/oscillator.component';
 import {lastValueFrom, timer} from 'rxjs';
 
@@ -245,6 +245,22 @@ export class FmSynthService {
 
   setLFOLevel(bank: number, level: number) {
     this.port.postMessage({type: 'setLFOLevel', bank: bank, level});
+  }
+
+  setFilterLFOModType(bank: number, modType: filterModType) {
+    this.port.postMessage({type: 'setFilterLFOModType', bank: bank, modType: modType});
+  }
+
+  setFilterLFOWaveform(bank: number, waveform: modWaveforms) {
+    this.port.postMessage({type: 'setFilterLFOWaveform', bank: bank, waveform: waveform});
+  }
+
+  setFilterLFOFrequency(bank: number, frequency: number) {
+    this.port.postMessage({type: 'setFilterLFOFrequency', bank: bank, frequency});
+  }
+
+  setFilterLFOLevel(bank: number, level: number) {
+    this.port.postMessage({type: 'setFilterLFOLevel', bank: bank, level});
   }
 
   addKeyDownHandler(handler: (bank: number, device: number, key: number, velocity: number) => void) {

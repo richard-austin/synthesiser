@@ -164,6 +164,7 @@ typedef struct
     int waveTableSize;
     oscModOutput modOutput; // 1=direct, 2=envelope
     LfoData lfoData;
+    LfoData filterLfoData;
     float resonanceBankFactor;
     float oscillatorLevel;
     float filterLevel;
@@ -231,9 +232,8 @@ void lfo_init(LfoData *data)
     data->lfoWaveform = LFO_SIN;
 }
 
-void lfo_advance(BankData* bank)
+void lfo_advance(LfoData* ld)
 {
-    LfoData *ld = &bank->lfoData;
     if (ld->modType != LFO_OFF)
     {
         ld->phase += (ld->frequency / g_sampleRate);
@@ -242,9 +242,8 @@ void lfo_advance(BankData* bank)
     }
 }
 
-float lfo_output(BankData *bank)
+float lfo_output(LfoData *ld)
 {
-    const LfoData *ld = &bank->lfoData;
     return sinf(ld->phase * two_m_pi) * ld->level;
 }
 
@@ -696,6 +695,7 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, float start
         pitch_envelope_data_init(&g_banks[b].pitchEnvelopeData);
         pitch_envelope_data_init(&g_banks[b].filterPitchEnvelopeData);
         lfo_init(&g_banks[b].lfoData);
+        lfo_init(&g_banks[b].filterLfoData);
         g_oscData[b] = (OscillatorData *)malloc(sizeof(OscillatorData) * oscsPerBank);
         for (int o = 0; o < oscsPerBank; o++)
         {
@@ -1038,6 +1038,44 @@ void setLFOFrequency(int bank, float frequency)
 }
 
 EMSCRIPTEN_KEEPALIVE
+void setFilterLFOModType(int bank, lfoModType modType)
+{
+    BankData* bd = &g_banks[bank];
+    LfoData *ld = &bd->filterLfoData;
+    ld->modType = modType;
+    emscripten_console_logf("setFilterLFOModType %d %d", bank, modType);
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setFilterLFOWaveform(int bank, lfoWaveform waveform)
+{
+    BankData* bd = &g_banks[bank];
+    LfoData *ld = &bd->filterLfoData;
+    ld->lfoWaveform = waveform;
+    emscripten_console_logf("setFilterLFOWaveform %d %d", bank, waveform);
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setFilterLFOLevel(int bank, float level)
+{
+    BankData* bd = &g_banks[bank];
+    LfoData *ld = &bd->filterLfoData;
+    ld->level = level;
+    emscripten_console_logf("setFilterLFOLevel %d %f", bank, level);
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setFilterLFOFrequency(int bank, float frequency)
+{
+    BankData* bd = &g_banks[bank];
+    if (g_modFreqFactor == -1)
+        g_modFreqFactor = g_modFreqMax / (pow(g_modFreqBase, g_modFreqMaxInput) - 1);
+    LfoData *ld = &bd->filterLfoData;
+    ld->frequency = g_modFreqFactor * (powf(g_modFreqBase, frequency) - 1);
+    emscripten_console_logf("setFilterLFOFrequency %d %f", bank, frequency);
+}
+
+EMSCRIPTEN_KEEPALIVE
 float *getBankOutputBufferPtr(int bank)
 {
     return NULL;
@@ -1124,7 +1162,11 @@ void processBlock(float **outputBuffers, int numSamples)
         // Update LFOs globally per sample block iteration frame
         for (int b = 0; b < g_numberOfBanks; b++)
         {
-            lfo_advance(&g_banks[b]);
+            BankData* bd = &g_banks[b];
+            if(bd->lfoData.modType != LFO_OFF)
+                lfo_advance(&bd->lfoData);
+            if(bd->filterLfoData.modType != LFO_OFF)
+                lfo_advance(&bd->filterLfoData);
         }
 
         for (int b = 0; b < g_numberOfBanks; b++)
@@ -1170,9 +1212,9 @@ void processBlock(float **outputBuffers, int numSamples)
                 {
                     float filterFx = od->filterFrequency * bd->filterDetuneFactor;
                     if (bd->useFilterPitchEnvelope)
-                    {
                         filterFx *= od->filterPitchEnv.level;
-                    }
+                    if(bd->filterLfoData.modType == LFO_FREQUENCY)
+                        filterFx *= (1.0f +lfo_output(&bd->filterLfoData));
 
                     // FIX: Pass the raw 0.0 -> 1.0 factor directly down into the per-sample update
                     svf_set_params(&od->svf, filterFx, bd->resonanceBankFactor);
@@ -1191,7 +1233,7 @@ void processBlock(float **outputBuffers, int numSamples)
 
                 if (bd->lfoData.modType == LFO_FREQUENCY)
                 {
-                    inc *= (1.0f + lfo_output(bd));
+                    inc *= (1.0f + lfo_output(&bd->lfoData));
                 }
 
                 od->phase += inc;
@@ -1246,13 +1288,15 @@ void processBlock(float **outputBuffers, int numSamples)
 
                 if (bd->lfoData.modType == LFO_AMPLITUDE)
                 {
-                    signal *= (1.0f + lfo_output(bd));
+                    signal *= (1.0f + lfo_output(&bd->lfoData));
                 }
 
                 float finalOutputSample = signal * bd->oscillatorLevel * ampEnvelope;
                 if (bd_outputToFilter)
                 {
                     filterOutputChannel[i] += svf_process_morph(&od->svf, 0.1f * finalOutputSample) * bd->filterLevel;
+                    if(bd->filterLfoData.modType == LFO_AMPLITUDE)
+                        filterOutputChannel[i] *= (1.0f + lfo_output(&bd->filterLfoData));
                 }
                 else
                 {

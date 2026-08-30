@@ -170,6 +170,32 @@ if (typeof globalThis.registerProcessor === 'function') {
             Module._setLFOFrequency(data.bank, frequency);
           }
           break;
+        case 'setFilterLFOModType':
+          if (this.isWasmBound) {
+            const modType = data.modType;
+            const typeVal = modType === 'amplitude' ? 1 : modType === 'frequency' ? 2 : 3;
+            Module._setFilterLFOModType(data.bank, typeVal);
+          }
+          break;
+        case 'setFilterLFOWaveform':
+          if (this.isWasmBound) {
+            const waveform = data.waveform;
+            const typeVal = waveform === 'sine' ? 1 : waveform === 'trangle' ? 2 : waveform === 'square' ? 3 : waveform === 'sawtooth' ? 4 : 0;
+            Module._setFilterLFOWaveform(data.bank, typeVal);
+          }
+          break;
+        case 'setFilterLFOLevel':
+          if (this.isWasmBound) {
+            const levelVal = data.level;
+            Module._setFilterLFOLevel(data.bank, levelVal);
+          }
+          break;
+        case 'setFilterLFOFrequency':
+          if (this.isWasmBound) {
+            const frequency = data.frequency;
+            Module._setFilterLFOFrequency(data.bank, frequency);
+          }
+          break;
         case 'setOscillatorLevel':
           if (this.isWasmBound) {
             Module._setOscillatorLevel(data.bank, data.oscillatorLevel);

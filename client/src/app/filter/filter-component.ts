@@ -30,7 +30,6 @@ import {FmSynthService} from '../services/fm-synth-service';
 })
 export class FilterComponent implements AfterViewInit, OnDestroy {
   protected tuningDivisions = 6;
-  private lfo!: OscillatorNode;
   private audioCtx!: AudioContext;
   proxySettings!: FilterSettings
   private cookies!: Cookies;
@@ -77,8 +76,6 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     this.audioCtx = audioCtx;
     let ok = false;
     if (this.numberOfFilters && !this.started) {
-      this.lfo = new OscillatorNode(this.audioCtx);
-      this.lfo.start();
       this.cookies = new Cookies();
     }
     this.applySettings(settings);
@@ -296,21 +293,17 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   protected setModFrequency(freq: number) {
     this.proxySettings.modFreq = freq;
-    this.lfo.frequency.value = freq * 20;
+    this.fmSynthService.setFilterLFOFrequency(this.filterNumber(), freq);
   }
 
   protected setModLevel($event: number) {
     this.proxySettings.modLevel = $event;
-    // for (let i = 0; i < this.numberOfFilters; ++i) {
-    //   this.filters[i].setModLevel($event);
-    // }
+    this.fmSynthService.setFilterLFOLevel(this.filterNumber(), $event);
   }
 
   protected setModType(type: filterModType) {
     this.proxySettings.modType = type;
-    // for (let i = 0; i < this.numberOfFilters; ++i) {
-    //   this.filters[i].modulation(this.lfo, type);
-    // }
+    this.fmSynthService.setFilterLFOModType(this.filterNumber(), type);
   }
 
 
@@ -368,8 +361,8 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
       for (let j = 0; j < modWaveForm.elements.length; ++j) {
         modWaveForm.elements[j].addEventListener('change', ($event) => {
           // @ts-ignore
-          const value = $event.target.value as OscillatorType;
-          this.lfo.type = value;
+          const value = $event.target.value;
+          this.fmSynthService.setFilterLFOWaveform(this.filterNumber(), value);
           this.proxySettings.modWaveform = value as modWaveforms;
         })
       }
