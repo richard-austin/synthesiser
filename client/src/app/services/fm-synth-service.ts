@@ -3,6 +3,7 @@ import {OscillatorSettings} from '../settings/oscillator';
 import {filterModType, modWaveforms, oscModOutput, oscModType} from '../enums/enums';
 import {envelopePhase, pitchEnvelopePhase} from '../oscillator/oscillator.component';
 import {lastValueFrom, timer} from 'rxjs';
+import {WaveTables} from '../modules/wavetables';
 
 @Injectable({
   providedIn: 'root'
@@ -15,6 +16,8 @@ export class FmSynthService {
   private keyUpHandlers: ((bank: number, device: number, key: number,) => void)[] = [];
   private port!: MessagePort;
   private _numberOfBanks!:number;
+  private waveTableSize: number = 2048;
+  private numberOfBands = 21;
 
   async initializeSynth(audioCtx: AudioContext, numberOfBanks: number = 4, oscillatorsPerBank: number = 12): Promise<void> {
     if (!this.audioContext) {
@@ -68,7 +71,7 @@ export class FmSynthService {
       processorOptions: {
         numberOfBanks: numberOfBanks,
         oscillatorsPerBank: oscillatorsPerBank,
-        waveTableSize: 2048,
+        waveTableSize: this.waveTableSize,
         startFx: 20
       }
     });
@@ -91,6 +94,49 @@ export class FmSynthService {
 
   public keyUp(key: number): void {
     this.port?.postMessage({type: 'keyUp', key});
+  }
+
+  lastReal: number[] = [];
+  lastImag: number[] = [];
+  lastTable!: Promise<AudioBuffer[]>;
+  readonly startFx = 20;
+
+  public createPeriodicWave(audioCtx: AudioContext, real: number[], imag: number[], constraints: { disableNormalization: boolean } = { disableNormalization: false }): Promise<AudioBuffer[]> {
+    if (real === this.lastReal && imag === this.lastImag) return this.lastTable;
+    this.lastReal = real;
+    this.lastImag = imag;
+    const refFreq = audioCtx.sampleRate / this.waveTableSize;
+    const sampleRate = audioCtx.sampleRate;
+    const retVal = [];
+    const root2 = Math.pow(2, 1 / 2);
+    for (let fx = this.startFx; fx < sampleRate / 2; fx *= root2) {
+      const olac = new OfflineAudioContext(1, this.waveTableSize, sampleRate);
+      const o = olac.createOscillator();
+      const numberOfTerms = Math.floor(sampleRate / 2 / fx) + 1;
+      o.setPeriodicWave(olac.createPeriodicWave(real.slice(0, numberOfTerms), imag.slice(0, numberOfTerms), constraints));
+      o.frequency.value = refFreq;
+      o.connect(olac.destination);
+      o.start();
+      retVal.push(olac.startRendering());
+    }
+    return this.lastTable = Promise.all(retVal);
+  }
+
+  setPeriodicWave(periodicWaves: Promise<AudioBuffer[]>, bank:number) {
+    const waveTables: Float32Array = new Float32Array(this.waveTableSize * this.numberOfBands);
+    periodicWaves.then(aba => {
+      let length = 0;
+      let numberOfBands = 0;
+      // Merge all the separate wavetables into one contiguous array
+      aba.forEach(ab => {
+        const channelData = ab.getChannelData(0)
+        waveTables.set(channelData, length);
+        length += channelData.length;
+        ++numberOfBands;
+      });
+
+      this.port.postMessage({ type: 'periodicWave', bank, waveTables, numberOfBands});
+    });
   }
 
   public envelope(bank: number, phase: number, value: number): void {
@@ -195,19 +241,22 @@ export class FmSynthService {
     this.port.postMessage({type: "setModLevel", modBank: modBank, carrierBank: carrierBank, modLevel: modLevel});
   }
 
-  setType(type: OscillatorType, bank: number) {
-    // if (/^(sine)$/.test(type)) {
-    //   this.synthNode.setType(type, bank);
-    // } else {
-    //   const wtDetails = WaveTables.wavetables.find(el => el.value === type);
-    //   if (wtDetails) {
-    //     this.synthNode.setPeriodicWave(OscillatorArray.createPeriodicWave(this.audioContext, wtDetails?.waveTable.real, wtDetails?.waveTable.imag), bank);
-    //     this.synthNode.setType(type, bank);
-    //   } else {
-    //     console.error("Cannot find wave table for" + type)
-    //     this.synthNode.setType("sine", bank);
-    //   }
-    // }
+  setOutputWaveform(type: OscillatorType, bank: number) {
+    if (/^(sine)$/.test(type)) {
+      this.setSine(bank);
+    } else {
+      const wtDetails = WaveTables.wavetables.find(el => el.value === type);
+      if (wtDetails) {
+        this.setPeriodicWave(this.createPeriodicWave(this.audioContext, wtDetails?.waveTable.real, wtDetails?.waveTable.imag), bank);
+      } else {
+        console.error("Cannot find wave table for" + type)
+        this.setSine(bank);
+      }
+    }
+  }
+
+  setSine(bank: number): void {
+    this.port.postMessage({type: 'setSine', bank});
   }
 
   setModOutput(bank: number, modOutput: oscModOutput) {
@@ -227,7 +276,7 @@ export class FmSynthService {
     this.envelope(bank, envelopePhase.legato, proxySettings.legatoMode ? 1 : 0)
     //  this.setFreqBendEnvelope(proxySettings.freqBend);
     //  this.useFreqBendEnvelope(proxySettings.useFrequencyEnvelope === onOff.on);
-    this.setType(proxySettings.waveForm, bank);
+    this.setOutputWaveform(proxySettings.waveForm, bank);
     // this.clearModulation();  // Remove any preexisting mod settings
   }
 

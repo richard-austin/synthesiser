@@ -68,7 +68,7 @@ if (typeof globalThis.registerProcessor === 'function') {
       switch (data.type) {
         case 'init':
           if (this.isWasmBound && typeof Module._initProcessor === 'function') {
-            Module._initProcessor(this.numberOfBanks, this.oscillatorsPerBank, 2048, 20.0, sampleRate);
+            Module._initProcessor(this.numberOfBanks, this.oscillatorsPerBank, 2048, 21, 20.0, sampleRate);
             console.log("C-Memory maps allocated successfully.");
           }
           break;
@@ -88,6 +88,22 @@ if (typeof globalThis.registerProcessor === 'function') {
           break;
         case 'keyUp':
           if (this.isWasmBound) Module._triggerNoteOff(data.key);
+          break;
+        case 'periodicWave': // And cancel setSine
+          if (this.isWasmBound) {
+            Module._setNumberOfBands(data.numberOfBands);
+            const heapIndex = Module._allocateWaveTableMemory(data.bank) >> 2;  // Allocate memory if not already done. Allow 4 bytes per float
+
+            // 3. CRITICAL: Always read 'this.Module.HEAPF32' FRESH right here.
+            // This grabs the newly updated, expanded ArrayBuffer wrapper.
+            const freshHeap = Module.HEAPF32;
+
+            // 4. Safely copy the data
+            freshHeap.set(data.waveTables, heapIndex);
+          }
+          break;
+        case 'setSine':
+          if (this.isWasmBound) Module._setSine(data.bank); // And cancel any periodic wave set
           break;
         case 'tuning':
           if (this.isWasmBound) Module._setBankTuning(data.bank, data.tuning);
@@ -223,7 +239,7 @@ if (typeof globalThis.registerProcessor === 'function') {
     minTime = 0;
 
     process(inputs, outputs, parameters) {
-       const start = Date.now();
+      const start = Date.now();
 
       if (!this.isEngineRunning) return false;
       if (!this.isWasmBound) return true;
@@ -250,7 +266,7 @@ if (typeof globalThis.registerProcessor === 'function') {
       //  Send an average performance report every 500 blocks (~1.5 seconds)
       if (this.iterationCount >= 500) {
         const averageMsPerBlock = this.totalTime / this.iterationCount;
-        console.log("averageMsPerBlock = " + averageMsPerBlock + " maxTime = " + this.maxTime + " minTime = "+ this.minTime);
+        console.log("averageMsPerBlock = " + averageMsPerBlock + " maxTime = " + this.maxTime + " minTime = " + this.minTime);
         //this.port.postMessage({ type: 'perf-report', averageMsPerBlock });
 
         this.totalTime = 0;

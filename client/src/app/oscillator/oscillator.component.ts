@@ -215,7 +215,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   private setWaveForm(value: OscillatorType) {
     this.proxySettings.waveForm = value as oscWaveforms;
-    this.fmSynthService.setType(value, this.oscNumber());
+    this.fmSynthService.setOutputWaveform(value, this.oscNumber());
   }
 
   private setPortamentoType(value: PortamentoType) {

@@ -197,7 +197,7 @@ static float *g_amAccumulators = NULL;
 static ModSettings *g_modMatrix = NULL;
 static float twelfthRoot2 = 1.05946309436f;
 
-void bank_data_init(BankData* bd, int waveTableSize)
+void bank_data_init(BankData* bd, int waveTableSize, int numBands)
 {
     bd->detuneFactor = 1.0f;
     bd->tuning = 0.0f;
@@ -205,7 +205,7 @@ void bank_data_init(BankData* bd, int waveTableSize)
     bd->filterTuning = 0.0f;
     bd->type = 0;
     bd->periodicWaveData = NULL;
-    bd->numBands = 0;
+    bd->numBands = numBands;
     bd->waveTableSize = waveTableSize;
     bd->modOutput = 0;
     bd->usePitchEnvelope = false;
@@ -672,7 +672,7 @@ float filter_key_to_frequency(int key, int bank)
 }
 
 EMSCRIPTEN_KEEPALIVE
-void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, float startFx, float sampleRate)
+void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, int numBands, float startFx, float sampleRate)
 {
     g_numberOfBanks = numBanks;
     g_oscillatorsPerBank = oscsPerBank;
@@ -690,7 +690,7 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, float start
 
     for (int b = 0; b < numBanks; b++)
     {
-        bank_data_init(&g_banks[b], waveTableSize);
+        bank_data_init(&g_banks[b], waveTableSize, numBands);
         envelope_data_init(&g_banks[b].envelopeData);
         pitch_envelope_data_init(&g_banks[b].pitchEnvelopeData);
         pitch_envelope_data_init(&g_banks[b].filterPitchEnvelopeData);
@@ -1108,6 +1108,66 @@ void setFilterMorphMode(int bank, float morphMode)
 }
 
 EMSCRIPTEN_KEEPALIVE
+float* allocateWaveTableMemory(int bank)
+{
+    BankData* bd = &g_banks[bank];
+    if(bd->periodicWaveData == NULL)
+        bd->periodicWaveData = calloc(bd->waveTableSize * 21, sizeof(float));
+    bd->type = 1; // 1 == use wavetable
+    return bd->periodicWaveData;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setSine(int bank)
+{
+    BankData* bd = &g_banks[bank];
+    bd->type = 0; // 0 == sine wave
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setNumberOfBands(int numberOfBands)
+{
+    for(int b = 0; b < g_numberOfBanks; ++b)
+        g_banks[b].numBands = numberOfBands;
+}
+
+EMSCRIPTEN_KEEPALIVE
+float render_sample_from_phase(int bank, int table_index, float phase) {
+    BankData* bd = &g_banks[bank];
+    if (bd->periodicWaveData == NULL) return 0.0f;
+
+    // 1. Point to the specific wavetable inside the continuous memory block
+    // (Assuming 21 tables per bank as per your calloc setup)
+    float* current_table = bd->periodicWaveData + (table_index * bd->waveTableSize);
+
+    // 2. Scale phase (0.0 to 1.0) to the wavetable size index space
+    float exact_index = phase * (float)bd->waveTableSize;
+
+    // 3. Get the floor integer index and the fractional remainder
+    int index_a = (int)exact_index;
+    float fraction = exact_index - (float)index_a;
+
+    // 4. Determine the next sample index (with wrap-around handling)
+    int index_b = index_a + 1;
+    if (index_b >= bd->waveTableSize) {
+        index_b = 0;
+    }
+
+    // Safety guard for boundaries
+    if (index_a >= bd->waveTableSize) {
+        index_a = bd->waveTableSize - 1;
+    }
+
+    // 5. Fetch the two samples
+    float sample_a = current_table[index_a];
+    float sample_b = current_table[index_b];
+
+    // 6. Linearly interpolate between them
+    // formula: a + fraction * (b - a)
+    return sample_a + fraction * (sample_b - sample_a);
+}
+
+EMSCRIPTEN_KEEPALIVE
 void processBlock(float **outputBuffers, int numSamples)
 {
     float nyquist = g_sampleRate / 2.0f;
@@ -1178,6 +1238,8 @@ void processBlock(float **outputBuffers, int numSamples)
             // Local cache parameters for bank states
             int bd_type = bd->type;
             bool bd_useFilter = bd->useFilter;
+            const bool bd_usePitchEnvelope = bd->usePitchEnvelope;
+            const bool bd_useFilterPitchEnvelope = bd->useFilterPitchEnvelope;
             bool bd_outputToFilter = bd->outputToFilter;
             int bd_waveTableSize = bd->waveTableSize;
             float *bd_periodicWaveData = bd->periodicWaveData;
@@ -1192,26 +1254,26 @@ void processBlock(float **outputBuffers, int numSamples)
                 // --- SAMPLE ACCURATE ENVELOPE PROCESSING (If strict sub-sample resolution needed) ---
                 if (env->keyDown)
                 {
-                    if (bd->usePitchEnvelope) pitch_envelope_advance_to_sustain(&od->pitchEnv);
-                    if (bd->useFilterPitchEnvelope) pitch_envelope_advance_to_sustain(&od->filterPitchEnv);
+                    if (bd_usePitchEnvelope) pitch_envelope_advance_to_sustain(&od->pitchEnv);
+                    if (bd_useFilterPitchEnvelope) pitch_envelope_advance_to_sustain(&od->filterPitchEnv);
                     envelope_advance_to_sustain(env);
                 }
                 else
                 {
-                    if (bd->usePitchEnvelope) pitch_envelope_advance_to_release_level(&od->pitchEnv);
-                    if (bd->useFilterPitchEnvelope) pitch_envelope_advance_to_release_level(&od->filterPitchEnv);
+                    if (bd_usePitchEnvelope) pitch_envelope_advance_to_release_level(&od->pitchEnv);
+                    if (bd_useFilterPitchEnvelope) pitch_envelope_advance_to_release_level(&od->filterPitchEnv);
                     envelope_advance_to_zero(env);
                 }
 
                 float f = od->frequency;
-                if (bd->usePitchEnvelope) f *= od->pitchEnv.level;
+                if (bd_usePitchEnvelope) f *= od->pitchEnv.level;
                 f *= bd->detuneFactor;
                 if (f > nyquist) f = nyquist;
 
                 if (bd_useFilter)
                 {
                     float filterFx = od->filterFrequency * bd->filterDetuneFactor;
-                    if (bd->useFilterPitchEnvelope)
+                    if (bd_useFilterPitchEnvelope)
                         filterFx *= od->filterPitchEnv.level;
                     if(bd->filterLfoData.modType == LFO_FREQUENCY)
                         filterFx *= (1.0f +lfo_output(&bd->filterLfoData));
@@ -1259,11 +1321,7 @@ void processBlock(float **outputBuffers, int numSamples)
                     band = (int)(log2f(f / g_startFx) / log2f(root2));
                     if (band < 0) band = 0;
                     else if (band > bd->numBands - 1) band = bd->numBands - 1;
-
-                    int sampleIdx = (int)(currentPhase * bd_waveTableSize);
-                    if (sampleIdx >= bd_waveTableSize) sampleIdx = bd_waveTableSize - 1;
-
-                    signal = bd_periodicWaveData[band * bd_waveTableSize + sampleIdx];
+                    signal = render_sample_from_phase(b, band, currentPhase);
                 }
 
                 float modSignal = (bd_modOutput == 2) ? (signal * ampEnvelope) : signal;
