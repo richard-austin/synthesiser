@@ -4,7 +4,7 @@ export class WaveTables {
   public static readonly wavetables: WaveTableDetails[] = [
     new WaveTableDetails(
       "Sine", "sine",
-      {imag: [], real: []}
+      {imag: [0, 1], real: [0, 0]}
     ),
     new WaveTableDetails(
       "Square", "square",

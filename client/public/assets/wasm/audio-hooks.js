@@ -92,7 +92,7 @@ if (typeof globalThis.registerProcessor === 'function') {
         case 'keyUp':
           if (this.isWasmBound) Module._triggerNoteOff(data.key);
           break;
-        case 'periodicWave': // And cancel setSine
+        case 'periodicWave':
           if (this.isWasmBound) {
             const alreadyAllocated = Module._waveTableMemoryAllocated(data.bank);
             Module._setNumberOfBands(data.numberOfBands);
@@ -107,9 +107,6 @@ if (typeof globalThis.registerProcessor === 'function') {
             if(!alreadyAllocated)
                this.channelPtrs.push(ptr);
           }
-          break;
-        case 'setSine':
-          if (this.isWasmBound) Module._setSine(data.bank); // And cancel any periodic wave set
           break;
         case 'tuning':
           if (this.isWasmBound) Module._setBankTuning(data.bank, data.tuning);

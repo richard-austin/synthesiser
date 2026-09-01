@@ -15,7 +15,7 @@ export class FmSynthService {
   private keyDownHandlers: ((bank: number, device: number, key: number, velocity: number) => void)[] = [];
   private keyUpHandlers: ((bank: number, device: number, key: number,) => void)[] = [];
   private port!: MessagePort;
-  private _numberOfBanks!:number;
+  private _numberOfBanks!: number;
   private waveTableSize: number = 2048;
   private numberOfBands = 21;
 
@@ -101,7 +101,9 @@ export class FmSynthService {
   lastTable!: Promise<AudioBuffer[]>;
   readonly startFx = 20;
 
-  public createPeriodicWave(audioCtx: AudioContext, real: number[], imag: number[], constraints: { disableNormalization: boolean } = { disableNormalization: false }): Promise<AudioBuffer[]> {
+  public createPeriodicWave(audioCtx: AudioContext, real: number[], imag: number[], constraints: {
+    disableNormalization: boolean
+  } = {disableNormalization: false}): Promise<AudioBuffer[]> {
     if (real === this.lastReal && imag === this.lastImag) return this.lastTable;
     this.lastReal = real;
     this.lastImag = imag;
@@ -122,7 +124,7 @@ export class FmSynthService {
     return this.lastTable = Promise.all(retVal);
   }
 
-  setPeriodicWave(periodicWaves: Promise<AudioBuffer[]>, bank:number) {
+  setPeriodicWave(periodicWaves: Promise<AudioBuffer[]>, bank: number) {
     const waveTables: Float32Array = new Float32Array(this.waveTableSize * this.numberOfBands);
     periodicWaves.then(aba => {
       let length = 0;
@@ -135,7 +137,7 @@ export class FmSynthService {
         ++numberOfBands;
       });
 
-      this.port.postMessage({ type: 'periodicWave', bank, waveTables, numberOfBands});
+      this.port.postMessage({type: 'periodicWave', bank, waveTables, numberOfBands});
     });
   }
 
@@ -146,7 +148,7 @@ export class FmSynthService {
   private readonly sixthRoot2: number = 1.122462048;
 
   public pitchEnvelope(bank: number, phase: number, value: number): void {
-    if(phase === pitchEnvelopePhase.attackLevel || phase === pitchEnvelopePhase.sustainLevel || phase === pitchEnvelopePhase.releaseLevel) {
+    if (phase === pitchEnvelopePhase.attackLevel || phase === pitchEnvelopePhase.sustainLevel || phase === pitchEnvelopePhase.releaseLevel) {
       value = Math.pow(this.sixthRoot2, value * 48);
     }
 
@@ -154,7 +156,7 @@ export class FmSynthService {
   }
 
   public filterPitchEnvelope(bank: number, phase: number, value: number): void {
-    if(phase === pitchEnvelopePhase.attackLevel || phase === pitchEnvelopePhase.sustainLevel || phase === pitchEnvelopePhase.releaseLevel) {
+    if (phase === pitchEnvelopePhase.attackLevel || phase === pitchEnvelopePhase.sustainLevel || phase === pitchEnvelopePhase.releaseLevel) {
       value = Math.pow(this.sixthRoot2, value * 48);
     }
 
@@ -180,6 +182,7 @@ export class FmSynthService {
   public useFilterPitchEnvelope(bank: number, value: boolean): void {
     this.port?.postMessage({type: 'useFilterPitchEnvelope', bank: bank, value: value});
   }
+
   public oscillatorOutputToFilter(bank: number, outputToFilter: boolean): void {
     this.port?.postMessage({type: 'outputToFilter', bank, outputToFilter});
   }
@@ -218,11 +221,11 @@ export class FmSynthService {
   }
 
   connectFilter(dest: AudioNode, output: number) {
-    this.synthNode.connect(dest, output+this._numberOfBanks);
+    this.synthNode.connect(dest, output + this._numberOfBanks);
   }
 
   disconnectFilter(output: number) {
-    this.synthNode.disconnect(output+this._numberOfBanks);
+    this.synthNode.disconnect(output + this._numberOfBanks);
   }
 
   public tuning(tuning: number, bank: number): void {
@@ -242,21 +245,12 @@ export class FmSynthService {
   }
 
   setOutputWaveform(type: OscillatorType, bank: number) {
-    if (/^(sine)$/.test(type)) {
-      this.setSine(bank);
+    const wtDetails = WaveTables.wavetables.find(el => el.value === type);
+    if (wtDetails) {
+      this.setPeriodicWave(this.createPeriodicWave(this.audioContext, wtDetails?.waveTable.real, wtDetails?.waveTable.imag), bank);
     } else {
-      const wtDetails = WaveTables.wavetables.find(el => el.value === type);
-      if (wtDetails) {
-        this.setPeriodicWave(this.createPeriodicWave(this.audioContext, wtDetails?.waveTable.real, wtDetails?.waveTable.imag), bank);
-      } else {
-        console.error("Cannot find wave table for" + type)
-        this.setSine(bank);
-      }
+      console.error("Cannot find wave table for" + type)
     }
-  }
-
-  setSine(bank: number): void {
-    this.port.postMessage({type: 'setSine', bank});
   }
 
   setModOutput(bank: number, modOutput: oscModOutput) {

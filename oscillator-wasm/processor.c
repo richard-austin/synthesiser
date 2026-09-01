@@ -158,7 +158,6 @@ typedef struct
     bool useFilterPitchEnvelope;
     bool useFilter;
     bool outputToFilter;
-    int type; // 0=sine, 1=custom
     float *periodicWaveData;
     int numBands;
     int waveTableSize;
@@ -203,7 +202,6 @@ void bank_data_init(BankData* bd, int waveTableSize, int numBands)
     bd->tuning = 0.0f;
     bd->filterDetuneFactor = 1.0f;
     bd->filterTuning = 0.0f;
-    bd->type = 0;
     bd->periodicWaveData = NULL;
     bd->numBands = numBands;
     bd->waveTableSize = waveTableSize;
@@ -1113,7 +1111,7 @@ float* allocateWaveTableMemory(int bank)
     BankData* bd = &g_banks[bank];
     if(bd->periodicWaveData == NULL)
         bd->periodicWaveData = calloc(bd->waveTableSize * 21, sizeof(float));
-    bd->type = 1; // 1 == use wavetable
+
     return bd->periodicWaveData;
 }
 
@@ -1121,13 +1119,6 @@ EMSCRIPTEN_KEEPALIVE
 bool waveTableMemoryAllocated(int bank)
 {
     return g_banks[bank].periodicWaveData != NULL;
-}
-
-EMSCRIPTEN_KEEPALIVE
-void setSine(int bank)
-{
-    BankData* bd = &g_banks[bank];
-    bd->type = 0; // 0 == sine wave
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -1242,7 +1233,6 @@ void processBlock(float **outputBuffers, int numSamples)
             BankData *bd = &g_banks[b];
 
             // Local cache parameters for bank states
-            int bd_type = bd->type;
             bool bd_useFilter = bd->useFilter;
             const bool bd_usePitchEnvelope = bd->usePitchEnvelope;
             const bool bd_useFilterPitchEnvelope = bd->useFilterPitchEnvelope;
@@ -1315,19 +1305,14 @@ void processBlock(float **outputBuffers, int numSamples)
                 const float ampEnvelope = env->level;
                 float signal = 0.0f;
 
-                if (bd_type == 0)
-                {
-                    // sinf implementation leveraging fast-math properties
-                    signal = sinf(currentPhase * two_m_pi) * matrixA;
-                }
-                else if (bd_type == 1 && bd_periodicWaveData != NULL)
+                if (bd_periodicWaveData != NULL)
                 {
                     int band = 0;
                     // Cache or optimize log calculations if tables remain stable
                     band = (int)(log2f(f / g_startFx) / log2f(root2));
                     if (band < 0) band = 0;
                     else if (band > bd->numBands - 1) band = bd->numBands - 1;
-                    signal = render_sample_from_phase(b, band, currentPhase);
+                    signal = render_sample_from_phase(b, band, currentPhase) * matrixA;
                 }
 
                 float modSignal = (bd_modOutput == 2) ? (signal * ampEnvelope) : signal;
