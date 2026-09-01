@@ -1289,9 +1289,11 @@ void processBlock(float **outputBuffers, int numSamples)
                     svf_set_params(&od->svf, filterFx, bd->resonanceBankFactor);
                 }
 
-                int idx = b + osc;
+                // Gather AM & FM accumulators
+                int idx = b * g_oscillatorsPerBank + osc;
                 float matrixF = g_fmAccumulators[idx];
-                g_fmAccumulators[idx] = 0.0f;
+                g_fmAccumulators[idx] = 0.0f; // Clear layout cleanly
+
                 float matrixA = 1.0f + g_amAccumulators[idx];
                 g_amAccumulators[idx] = 0.0f;
 
