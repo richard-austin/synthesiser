@@ -97,13 +97,8 @@ if (typeof globalThis.registerProcessor === 'function') {
             const alreadyAllocated = Module._waveTableMemoryAllocated(data.bank);
             Module._setNumberOfBands(data.numberOfBands);
             const ptr = Module._allocateWaveTableMemory(data.bank);  // Allocate memory if not already done. Allow 4 bytes per float
-            const heapIndex = ptr >> 2;
-            // 3. CRITICAL: Always read 'this.Module.HEAPF32' FRESH right here.
-            // This grabs the newly updated, expanded ArrayBuffer wrapper.
-            const freshHeap = Module.HEAPF32;
-
-            // 4. Safely copy the data
-            freshHeap.set(data.waveTables, heapIndex);
+            const heapIndex = ptr >> 2;  // 4 bytes per float
+            Module.HEAPF32.set(data.waveTables, heapIndex);
             if(!alreadyAllocated)
                this.channelPtrs.push(ptr);
           }

@@ -1167,8 +1167,9 @@ float render_sample_from_phase(int bank, int table_index, float phase) {
 EMSCRIPTEN_KEEPALIVE
 void processBlock(float **outputBuffers, int numSamples)
 {
-    float nyquist = g_sampleRate / 2.0f;
-    float root2 = 1.41421356237f;
+    const float nyquist = g_sampleRate / 2.0f;
+    const float root2 = 1.41421356237f;
+    const float log2Root2 = log2f(root2);
 
     // 1. Instantly wipe the channel buffers to absolute zero (Vectorised via memset)
     for (int b = 0; b < g_numberOfBanks * 2; b++)
@@ -1192,23 +1193,6 @@ void processBlock(float **outputBuffers, int numSamples)
     }
 
     if (!activeAudioEngine) return;
-
-//     // 3. CACHE ENV STATE & ADVANCE TIMERS (Hoisted Out of Sample Loop)
-//     // Advance envelopes once per block instead of 128 times inside the deep loop.
-//     // Note: If you require sub-sample modulation accuracy for envelopes, keep them internal.
-//     // However, for typical ADSR performance, block-rate evaluation delivers immense speedups.
-//     for (int b = 0; b < g_numberOfBanks; b++)
-//     {
-//         BankData *bd = &g_banks[b];
-//         for (int osc = 0; osc < g_oscillatorsPerBank; osc++)
-//         {
-//             OscillatorData *od = &g_oscData[b][osc];
-//             if (!od->env.inUse) continue;
-//
-//             // Execute envelope advances outside sample block if fine sub-sample ramp isn't strict
-//             // If you choose to keep them sample-accurate, leave them inside step 4 below.
-//         }
-//     }
 
     // 4. MAIN RENDERING ENGINE (Optimized Loop Iteration Hierarchy)
     // Flatten lookups out to local stacks to assist SIMD auto-vectorization
@@ -1307,9 +1291,8 @@ void processBlock(float **outputBuffers, int numSamples)
 
                 if (bd_periodicWaveData != NULL)
                 {
-                    int band = 0;
-                    // Cache or optimize log calculations if tables remain stable
-                    band = (int)(log2f(f / g_startFx) / log2f(root2));
+                    int band;
+                    band = (int)(log2f(f / g_startFx) / log2Root2);
                     if (band < 0) band = 0;
                     else if (band > bd->numBands - 1) band = bd->numBands - 1;
                     signal = render_sample_from_phase(b, band, currentPhase) * matrixA;
