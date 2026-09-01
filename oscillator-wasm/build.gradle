@@ -65,6 +65,7 @@ tasks.register('clean', Delete) {
 
 // 5. Register the final cache-compliant automated execution task
 tasks.register('compileWasm', Exec) {
+    dependsOn('clean')
     group = 'build'
     description = 'Compiles processor.c into WebAssembly using Emscripten.'
 

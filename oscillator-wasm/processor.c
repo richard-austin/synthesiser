@@ -1118,6 +1118,12 @@ float* allocateWaveTableMemory(int bank)
 }
 
 EMSCRIPTEN_KEEPALIVE
+bool waveTableMemoryAllocated(int bank)
+{
+    return g_banks[bank].periodicWaveData != NULL;
+}
+
+EMSCRIPTEN_KEEPALIVE
 void setSine(int bank)
 {
     BankData* bd = &g_banks[bank];

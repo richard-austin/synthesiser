@@ -336,7 +336,9 @@ export class FmSynthService {
       this.keyUpHandlers.splice(i, 1);
   }
 
-  shutDown() {
+  // Redundant, browser will clean up when app is shut down
+  private performCleanup() {
     this.port.postMessage({type: "shutDown"});
+    this.synthNode.disconnect();
   }
 }

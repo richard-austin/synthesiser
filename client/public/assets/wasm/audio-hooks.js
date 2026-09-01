@@ -78,6 +78,9 @@ if (typeof globalThis.registerProcessor === 'function') {
           if (this.wasmOutputPtrArray !== 0) {
             for (let p of this.channelPtrs) Module._free(p);
             Module._free(this.wasmOutputPtrArray);
+            for (let b = 0; b < 4000; b++) {
+              console.log("Shutdown successfully.");
+            }
           }
           break;
         case 'keyDown':
@@ -91,15 +94,18 @@ if (typeof globalThis.registerProcessor === 'function') {
           break;
         case 'periodicWave': // And cancel setSine
           if (this.isWasmBound) {
+            const alreadyAllocated = Module._waveTableMemoryAllocated(data.bank);
             Module._setNumberOfBands(data.numberOfBands);
-            const heapIndex = Module._allocateWaveTableMemory(data.bank) >> 2;  // Allocate memory if not already done. Allow 4 bytes per float
-
+            const ptr = Module._allocateWaveTableMemory(data.bank);  // Allocate memory if not already done. Allow 4 bytes per float
+            const heapIndex = ptr >> 2;
             // 3. CRITICAL: Always read 'this.Module.HEAPF32' FRESH right here.
             // This grabs the newly updated, expanded ArrayBuffer wrapper.
             const freshHeap = Module.HEAPF32;
 
             // 4. Safely copy the data
             freshHeap.set(data.waveTables, heapIndex);
+            if(!alreadyAllocated)
+               this.channelPtrs.push(ptr);
           }
           break;
         case 'setSine':
