@@ -66,7 +66,7 @@ export class FmSynthService {
     // 4. Create your AudioWorkletNode instance linking your custom 'oscillator' token
     this.synthNode = new AudioWorkletNode(this.audioContext, 'oscillator', {
       numberOfOutputs: numberOfBanks * 2, // 2 x numberOfBanks to accommodate separate filter outputs
-      outputChannelCount: Array(numberOfBanks * 2).fill(1),
+      outputChannelCount: Array(numberOfBanks * 2).fill(2),
       channelInterpretation: 'speakers',
       processorOptions: {
         numberOfBanks: numberOfBanks,
@@ -197,6 +197,10 @@ export class FmSynthService {
 
   public setFilterLevel(bank: number, filterLevel: number,): void {
     this.port?.postMessage({type: 'setFilterLevel', bank, filterLevel});
+  }
+
+  public setBankPan(pan: number, bank: number): void {
+    this.port?.postMessage({type: 'setBankPan', bank, pan});
   }
 
   public setFilterMorphMode(bank: number, filterMorphMode: number): void {

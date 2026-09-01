@@ -48,17 +48,22 @@ if (typeof globalThis.registerProcessor === 'function') {
       const bytesPerFloat = 4;
       this.channelPtrs = [];
 
-      for (let b = 0; b < this.numberOfBanks * 2; b++) {
+      // 4 Oscillator Banks + 4 Filter Banks = 8 Banks total.
+      // With 2 channels each, we need 16 total discrete float pointers.
+      const totalChannels = this.numberOfBanks * 2 * 2;
+
+      for (let b = 0; b < totalChannels; b++) {
         const ptr = Module._malloc(samplesPerBlock * bytesPerFloat);
         Module.HEAPF32.fill(0, ptr / bytesPerFloat, (ptr / bytesPerFloat) + samplesPerBlock);
         this.channelPtrs.push(ptr);
       }
 
-      this.wasmOutputPtrArray = Module._malloc(this.numberOfBanks * 2 * bytesPerFloat);
-      for (let b = 0; b < this.numberOfBanks * 2; b++) {
+      // Allocate pointer array large enough to hold all 16 pointer addresses
+      this.wasmOutputPtrArray = Module._malloc(totalChannels * bytesPerFloat);
+      for (let b = 0; b < totalChannels; b++) {
         Module.HEAP32[(this.wasmOutputPtrArray / 4) + b] = this.channelPtrs[b];
       }
-      console.log("Memory marshalling arrays allocated successfully on WASM heap.");
+      console.log("Memory marshalling arrays allocated successfully on WASM heap for Stereo.");
     }
 
     handleIncomingMessage(data) {
@@ -99,8 +104,8 @@ if (typeof globalThis.registerProcessor === 'function') {
             const ptr = Module._allocateWaveTableMemory(data.bank);  // Allocate memory if not already done. Allow 4 bytes per float
             const heapIndex = ptr >> 2;  // 4 bytes per float
             Module.HEAPF32.set(data.waveTables, heapIndex);
-            if(!alreadyAllocated)
-               this.channelPtrs.push(ptr);
+            if (!alreadyAllocated)
+              this.channelPtrs.push(ptr);
           }
           break;
         case 'tuning':
@@ -220,6 +225,9 @@ if (typeof globalThis.registerProcessor === 'function') {
             Module._setFilterLevel(data.bank, data.filterLevel);
           }
           break;
+        case 'setBankPan':
+          if (this.isWasmBound) {Module._setBankPan(data.bank, data.pan);}
+          break;
         case 'setFilterMorphMode':
           if (this.isWasmBound) {
             Module._setFilterMorphMode(data.bank, data.filterMorphMode);
@@ -238,41 +246,44 @@ if (typeof globalThis.registerProcessor === 'function') {
 
     process(inputs, outputs, parameters) {
       const start = Date.now();
-
       if (!this.isEngineRunning) return false;
       if (!this.isWasmBound) return true;
-      const output = outputs[0];
-      const op = output[0];
-      const samplesPerBlock = op.length;
 
+      // Derive block constraints dynamically from the hardware target window
+      const samplesPerBlock = outputs[0] && outputs[0][0] ? outputs[0][0].length : 128;
+
+      // Run the C module engine step over the continuous memory heap
       Module._processBlock(this.wasmOutputPtrArray, samplesPerBlock);
 
-      for (let b = 0; b < this.numberOfBanks * 2; b++) {
-        const outputChannelData = outputs[b][0];
-        if (!outputChannelData) continue;
-        const startFloatIdx = this.channelPtrs[b] / 4;
-        const wasmFloatView = Module.HEAPF32.subarray(startFloatIdx, startFloatIdx + samplesPerBlock);
-        outputChannelData.set(wasmFloatView);
-      }
-      const time = (Date.now() - start);
-      this.totalTime += time
-      this.iterationCount++;
-      if (time > this.maxTime)
-        this.maxTime = time;
-      if (time < this.minTime)
-        this.minTime = time;
-      //  Send an average performance report every 500 blocks (~1.5 seconds)
-      if (this.iterationCount >= 500) {
-        const averageMsPerBlock = this.totalTime / this.iterationCount;
-        console.log("averageMsPerBlock = " + averageMsPerBlock + " maxTime = " + this.maxTime + " minTime = " + this.minTime);
-        //this.port.postMessage({ type: 'perf-report', averageMsPerBlock });
+      const totalBanks = this.numberOfBanks * 2; // 4 Osc banks + 4 Filter banks
 
-        this.totalTime = 0;
-        this.iterationCount = 0;
-        this.maxTime = 0;
-        this.minTime = 100;
+      for (let b = 0; b < totalBanks; b++) {
+        if (!outputs[b]) continue;
+
+        // TARGET NESTED INNER CHANNELS: [0] is Left, [1] is Right
+        const leftChannelData  = outputs[b][0];
+        const rightChannelData = outputs[b][1];
+
+        // Retrieve the flat, linear pointer mapping indices from our array
+        const leftPtrIdx  = b * 2;
+        const rightPtrIdx = (b * 2) + 1;
+
+        // Marshal Left Channel Data
+        if (leftChannelData) {
+          const startFloatIdx = this.channelPtrs[leftPtrIdx] / 4;
+          const wasmFloatView = Module.HEAPF32.subarray(startFloatIdx, startFloatIdx + samplesPerBlock);
+          leftChannelData.set(wasmFloatView);
+        }
+
+        // Marshal Right Channel Data
+        if (rightChannelData) {
+          const startFloatIdx = this.channelPtrs[rightPtrIdx] / 4;
+          const wasmFloatView = Module.HEAPF32.subarray(startFloatIdx, startFloatIdx + samplesPerBlock);
+          rightChannelData.set(wasmFloatView);
+        }
       }
 
+      // ... rest of performance metrics logging ...
       return true;
     }
   }

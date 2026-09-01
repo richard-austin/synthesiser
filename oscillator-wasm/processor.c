@@ -167,6 +167,9 @@ typedef struct
     float resonanceBankFactor;
     float oscillatorLevel;
     float filterLevel;
+    // OPTIMIZED STRUCTURE STORAGE
+    float panLeft;  // Left multiplier cache
+    float panRight; // Right multiplier cache
 } BankData;
 
 typedef struct
@@ -212,6 +215,9 @@ void bank_data_init(BankData* bd, int waveTableSize, int numBands)
     bd->outputToFilter = false;
     bd->oscillatorLevel = 0.0f;
     bd->filterLevel = 0.0f;
+    // Dead center values for constant-power curve: cos(pi/4) and sin(pi/4)
+    bd->panLeft  = 0.70710678f;
+    bd->panRight = 0.70710678f;
 }
 
 void oscillator_data_init(OscillatorData* od)
@@ -1087,6 +1093,20 @@ void setOscillatorLevel(int bank, float level)
 }
 
 EMSCRIPTEN_KEEPALIVE
+void setBankPan(int bank, float pan)
+{
+    // Clamp incoming values cleanly between -1.0f and 1.0f
+    if (pan < -1.0f) pan = -1.0f;
+    if (pan > 1.0f) pan = 1.0f;
+
+    // Transform incoming workspace scale from [-1.0, 1.0] to [0.0, 1.0]
+    float normalizedPan = (pan + 1.0f) * 0.5f;
+
+    // Compute coefficients ONCE on user interface adjustment event
+    g_banks[bank].panLeft  = cosf(normalizedPan * (float)M_PI * 0.5f);
+    g_banks[bank].panRight = sinf(normalizedPan * (float)M_PI * 0.5f);
+}
+EMSCRIPTEN_KEEPALIVE
 void setFilterLevel(int bank, float level)
 {
     BankData* bd = &g_banks[bank];
@@ -1171,8 +1191,8 @@ void processBlock(float **outputBuffers, int numSamples)
     const float root2 = 1.41421356237f;
     const float log2Root2 = log2f(root2);
 
-    // 1. Instantly wipe the channel buffers to absolute zero (Vectorised via memset)
-    for (int b = 0; b < g_numberOfBanks * 2; b++)
+    // 1. Wipe all 16 channel buffers (8 banks * 2 channels) to zero cleanly
+    for (int b = 0; b < g_numberOfBanks * 2 * 2; b++)
     {
         memset(outputBuffers[b], 0, sizeof(float) * numSamples);
     }
@@ -1189,15 +1209,11 @@ void processBlock(float **outputBuffers, int numSamples)
                 break;
             }
         }
-        if (activeAudioEngine) break;
     }
-
     if (!activeAudioEngine) return;
 
-    // 4. MAIN RENDERING ENGINE (Optimized Loop Iteration Hierarchy)
-    // Flatten lookups out to local stacks to assist SIMD auto-vectorization
+    // 4. MAIN RENDERING ENGINE
     float invSampleRate = 1.0f / g_sampleRate;
-
     for (int i = 0; i < numSamples; i++)
     {
         // Update LFOs globally per sample block iteration frame
@@ -1212,11 +1228,24 @@ void processBlock(float **outputBuffers, int numSamples)
 
         for (int b = 0; b < g_numberOfBanks; b++)
         {
-            float *outputChannel = outputBuffers[b];
-            float *filterOutputChannel = outputBuffers[b + g_numberOfBanks];
+            // Resolve base offsets for stereo pairs
+            // Oscillator Bank outputs are pairs at: 0/1, 2/3, 4/5, 6/7
+            float *outLeft  = outputBuffers[b * 2];
+            float *outRight = outputBuffers[(b * 2) + 1];
+
+            // Filter banks begin precisely after all oscillator channel pointers have finished
+            // (4 banks * 2 channels = offset index 8)
+            float *filterOutLeft  = outputBuffers[(g_numberOfBanks * 2) + (b * 2)];
+            float *filterOutRight = outputBuffers[(g_numberOfBanks * 2) + (b * 2) + 1];
+
+            // Filter outputs map to pairs at: 8/9, 10/11, 12/13, 14/15
+
             BankData *bd = &g_banks[b];
 
-            // Local cache parameters for bank states
+            // NO TRANSCENDENTAL MATH HERE: Pure lightning fast cache reads!
+            float panLeft  = bd->panLeft;
+            float panRight = bd->panRight;
+
             bool bd_useFilter = bd->useFilter;
             const bool bd_usePitchEnvelope = bd->usePitchEnvelope;
             const bool bd_useFilterPitchEnvelope = bd->useFilterPitchEnvelope;
@@ -1231,7 +1260,6 @@ void processBlock(float **outputBuffers, int numSamples)
                 Envelope *env = &od->env;
                 if (!env->inUse) continue;
 
-                // --- SAMPLE ACCURATE ENVELOPE PROCESSING (If strict sub-sample resolution needed) ---
                 if (env->keyDown)
                 {
                     if (bd_usePitchEnvelope) pitch_envelope_advance_to_sustain(&od->pitchEnv);
@@ -1256,32 +1284,26 @@ void processBlock(float **outputBuffers, int numSamples)
                     if (bd_useFilterPitchEnvelope)
                         filterFx *= od->filterPitchEnv.level;
                     if(bd->filterLfoData.modType == LFO_FREQUENCY)
-                        filterFx *= (1.0f +lfo_output(&bd->filterLfoData));
+                        filterFx *= (1.0f + lfo_output(&bd->filterLfoData));
 
-                    // FIX: Pass the raw 0.0 -> 1.0 factor directly down into the per-sample update
                     svf_set_params(&od->svf, filterFx, bd->resonanceBankFactor);
                 }
 
-                // Gather AM & FM accumulators
-                int idx = b * g_oscillatorsPerBank + osc;
+                int idx = b + osc;
                 float matrixF = g_fmAccumulators[idx];
-                g_fmAccumulators[idx] = 0.0f; // Clear layout cleanly
-
+                g_fmAccumulators[idx] = 0.0f;
                 float matrixA = 1.0f + g_amAccumulators[idx];
                 g_amAccumulators[idx] = 0.0f;
 
                 float mod = butterworth_process(&od->butterworthFilter, matrixF);
                 float inc = f * invSampleRate;
-
                 if (bd->lfoData.modType == LFO_FREQUENCY)
                 {
                     inc *= (1.0f + lfo_output(&bd->lfoData));
                 }
-
                 od->phase += inc;
-                // Fast wrapping logic instead of heavy floorf calls
-                if (od->phase >= 1.0f) od->phase -= (int)od->phase;
 
+                if (od->phase >= 1.0f) od->phase -= (int)od->phase;
                 float currentPhase = od->phase + mod;
                 if (currentPhase >= 1.0f) currentPhase -= (int)currentPhase;
                 if (currentPhase < 0.0f) currentPhase += 1.0f;
@@ -1295,12 +1317,12 @@ void processBlock(float **outputBuffers, int numSamples)
                     band = (int)(log2f(f / g_startFx) / log2Root2);
                     if (band < 0) band = 0;
                     else if (band > bd->numBands - 1) band = bd->numBands - 1;
+
                     signal = render_sample_from_phase(b, band, currentPhase) * matrixA;
                 }
 
                 float modSignal = (bd_modOutput == 2) ? (signal * ampEnvelope) : signal;
 
-                // Mod distribution matrix mapping
                 for (int cB = 0; cB < g_numberOfBanks; cB++)
                 {
                     ModSettings *ms = &g_modMatrix[b * g_numberOfBanks + cB];
@@ -1324,15 +1346,23 @@ void processBlock(float **outputBuffers, int numSamples)
                 }
 
                 float finalOutputSample = signal * bd->oscillatorLevel * ampEnvelope;
+
                 if (bd_outputToFilter)
                 {
-                    filterOutputChannel[i] += svf_process_morph(&od->svf, 0.1f * finalOutputSample) * bd->filterLevel;
+                    float filteredSample = svf_process_morph(&od->svf, 0.1f * finalOutputSample) * bd->filterLevel;
                     if(bd->filterLfoData.modType == LFO_AMPLITUDE)
-                        filterOutputChannel[i] *= (1.0f + lfo_output(&bd->filterLfoData));
+                    {
+                        filteredSample *= (1.0f + lfo_output(&bd->filterLfoData));
+                    }
+                    // Mirroring the exact same source to Left and Right channel blocks
+                    filterOutLeft[i]  += filteredSample * panLeft;
+                    filterOutRight[i] += filteredSample * panRight;
                 }
                 else
                 {
-                    outputChannel[i] += finalOutputSample;
+                    // Mirroring the exact same source to Left and Right channel blocks
+                    outLeft[i]  += finalOutputSample * panLeft;
+                    outRight[i] += finalOutputSample * panRight;
                 }
             }
         }

@@ -185,9 +185,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   protected pan(pan: number) {
     this.proxySettings.balance = pan;
-    // this.oscillators.forEach(osc => {
-    //   osc.pan(pan);
-    // });
+    this.fmSynthService.setBankPan(pan, this.oscNumber());
   }
 
   protected setDetune(detune: number) {
