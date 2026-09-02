@@ -1,5 +1,5 @@
-#include <emscripten.h>
 #include <emscripten/console.h>
+#include <emscripten.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,14 +40,6 @@ typedef enum
     LFO_FREQUENCY = 2,
     LFO_OFF = 3
 } lfoModType;
-
-typedef enum
-{
-    LFO_SIN = 1,
-    LFO_TRI = 2,
-    LFO_SQUARE = 3,
-    LFO_SAW = 4
-} lfoWaveform;
 
 // --- Struct Definitions ---
 typedef struct
@@ -126,10 +118,12 @@ typedef struct
 typedef struct
 {
     float frequency;
+    int band;
     float phase;
     float level;
     lfoModType modType;
-    lfoWaveform lfoWaveform;
+    long waveTableSize;
+    float *periodicWaveData;
 } LfoData;
 
 typedef struct
@@ -198,6 +192,8 @@ static float *g_fmAccumulators = NULL;
 static float *g_amAccumulators = NULL;
 static ModSettings *g_modMatrix = NULL;
 static float twelfthRoot2 = 1.05946309436f;
+static float log2Root2;
+static const float root2 = 1.41421356237f;
 
 void bank_data_init(BankData* bd, int waveTableSize, int numBands)
 {
@@ -227,13 +223,16 @@ void oscillator_data_init(OscillatorData* od)
     od->phase = 0.0f;
 }
 
-void lfo_init(LfoData *data)
+void lfo_init(LfoData *data, long waveTableSize)
 {
     data->frequency = 0.0f;
+    data->band = 0;
     data->phase = 0.0f;
     data->level = 0.0f;
     data->modType = LFO_OFF;
-    data->lfoWaveform = LFO_SIN;
+    data->waveTableSize = waveTableSize;
+    data->periodicWaveData = NULL;
+    data->band = 0;
 }
 
 void lfo_advance(LfoData* ld)
@@ -246,9 +245,39 @@ void lfo_advance(LfoData* ld)
     }
 }
 
-float lfo_output(LfoData *ld)
-{
-    return sinf(ld->phase * two_m_pi) * ld->level;
+EMSCRIPTEN_KEEPALIVE
+float render_lfo_sample(LfoData* ld) {
+    if (ld->periodicWaveData == NULL) return 0.0f;
+
+    // 1. Point to the specific wavetable inside the continuous memory block
+    // (Assuming 21 tables per bank as per your calloc setup)
+    float* current_table = ld->periodicWaveData + (ld->band * ld->waveTableSize);
+
+    // 2. Scale phase (0.0 to 1.0) to the wavetable size index space
+    float exact_index = ld->phase * (float)ld->waveTableSize;
+
+    // 3. Get the floor integer index and the fractional remainder
+    int index_a = (int)exact_index;
+    float fraction = exact_index - (float)index_a;
+
+    // 4. Determine the next sample index (with wrap-around handling)
+    int index_b = index_a + 1;
+    if (index_b >= ld->waveTableSize) {
+        index_b = 0;
+    }
+
+    // Safety guard for boundaries
+    if (index_a >= ld->waveTableSize) {
+        index_a = ld->waveTableSize - 1;
+    }
+
+    // 5. Fetch the two samples
+    float sample_a = current_table[index_a];
+    float sample_b = current_table[index_b];
+
+    // 6. Linearly interpolate between them
+    // formula: a + fraction * (b - a)
+    return (sample_a + fraction * (sample_b - sample_a)) * ld->level;
 }
 
 // --- Filter Architecture Logic ---
@@ -678,6 +707,7 @@ float filter_key_to_frequency(int key, int bank)
 EMSCRIPTEN_KEEPALIVE
 void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, int numBands, float startFx, float sampleRate)
 {
+    log2Root2 = log2f(root2);
     g_numberOfBanks = numBanks;
     g_oscillatorsPerBank = oscsPerBank;
     g_waveTableSize = waveTableSize;
@@ -698,8 +728,8 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, int numBand
         envelope_data_init(&g_banks[b].envelopeData);
         pitch_envelope_data_init(&g_banks[b].pitchEnvelopeData);
         pitch_envelope_data_init(&g_banks[b].filterPitchEnvelopeData);
-        lfo_init(&g_banks[b].lfoData);
-        lfo_init(&g_banks[b].filterLfoData);
+        lfo_init(&g_banks[b].lfoData, waveTableSize);
+        lfo_init(&g_banks[b].filterLfoData, waveTableSize);
         g_oscData[b] = (OscillatorData *)malloc(sizeof(OscillatorData) * oscsPerBank);
         for (int o = 0; o < oscsPerBank; o++)
         {
@@ -771,6 +801,7 @@ EMSCRIPTEN_KEEPALIVE
 void setBankPitchEnvelopeParams(int bank, int phase, float value)
 {
     PitchEnvelopeData *env = &g_banks[bank].pitchEnvelopeData;
+
     switch (phase)
     {
     case 1:
@@ -896,13 +927,17 @@ void triggerNoteOn(int key, int velocity)
         od->env.t = 0.0f; // Clear layout ramp clock timers
         od->env.envelopeData->velocity = velocity;
 
+        PitchEnvelopeData* ped = &g_banks[b].pitchEnvelopeData;
+        PitchEnvelopeData* fPed = &g_banks[b].filterPitchEnvelopeData;
+
+        // Set oscillator and filter pitch envelope times to 0 and level to release level
         od->pitchEnv.t = 0.0f;
+        od->pitchEnv.level = ped->releaseLevel;
         od->filterPitchEnv.t = 0.0f;
+        od->filterPitchEnv.level = fPed->releaseLevel;
 
         if (isRetrigger)
-        {
             od->env.phase = ENV_RETRIGGER;
-        }
         else
         {
             // FIX: Set to ENV_INACTIVE so envelope_advance_to_sustain()
@@ -1011,14 +1046,6 @@ void setLFOModType(int bank, lfoModType modType)
 }
 
 EMSCRIPTEN_KEEPALIVE
-void setLFOWaveform(int bank, lfoWaveform waveform)
-{
-    BankData* bd = &g_banks[bank];
-    LfoData *ld = &bd->lfoData;
-    ld->lfoWaveform = waveform;
-}
-
-EMSCRIPTEN_KEEPALIVE
 void setLFOLevel(int bank, float level)
 {
     BankData* bd = &g_banks[bank];
@@ -1039,6 +1066,12 @@ void setLFOFrequency(int bank, float frequency)
         g_modFreqFactor = g_modFreqMax / (pow(g_modFreqBase, g_modFreqMaxInput) - 1);
     LfoData *ld = &bd->lfoData;
     ld->frequency = g_modFreqFactor * (powf(g_modFreqBase, frequency) - 1);
+    int band;
+    band = (int)(log2f(frequency / g_startFx) / log2Root2);
+    if (band < 0) band = 0;
+    else if (band > bd->numBands - 1) band = bd->numBands - 1;
+
+    ld->band = band;
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -1048,15 +1081,6 @@ void setFilterLFOModType(int bank, lfoModType modType)
     LfoData *ld = &bd->filterLfoData;
     ld->modType = modType;
     emscripten_console_logf("setFilterLFOModType %d %d", bank, modType);
-}
-
-EMSCRIPTEN_KEEPALIVE
-void setFilterLFOWaveform(int bank, lfoWaveform waveform)
-{
-    BankData* bd = &g_banks[bank];
-    LfoData *ld = &bd->filterLfoData;
-    ld->lfoWaveform = waveform;
-    emscripten_console_logf("setFilterLFOWaveform %d %d", bank, waveform);
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -1136,6 +1160,26 @@ float* allocateWaveTableMemory(int bank)
 }
 
 EMSCRIPTEN_KEEPALIVE
+float* allocateLFOWaveTableMemory(int bank)
+{
+    LfoData* ld = &g_banks[bank].lfoData;
+    if(ld->periodicWaveData == NULL)
+        ld->periodicWaveData = calloc(ld->waveTableSize * 21, sizeof(float));
+
+    return ld->periodicWaveData;
+}
+
+EMSCRIPTEN_KEEPALIVE
+float* allocateFilterLFOWaveTableMemory(int bank)
+{
+    LfoData* ld = &g_banks[bank].filterLfoData;
+    if(ld->periodicWaveData == NULL)
+        ld->periodicWaveData = calloc(ld->waveTableSize * 21, sizeof(float));
+
+    return ld->periodicWaveData;
+}
+
+EMSCRIPTEN_KEEPALIVE
 bool waveTableMemoryAllocated(int bank)
 {
     return g_banks[bank].periodicWaveData != NULL;
@@ -1184,12 +1228,11 @@ float render_sample_from_phase(int bank, int table_index, float phase) {
     return sample_a + fraction * (sample_b - sample_a);
 }
 
+
 EMSCRIPTEN_KEEPALIVE
 void processBlock(float **outputBuffers, int numSamples)
 {
     const float nyquist = g_sampleRate / 2.0f;
-    const float root2 = 1.41421356237f;
-    const float log2Root2 = log2f(root2);
 
     // 1. Wipe all 16 channel buffers (8 banks * 2 channels) to zero cleanly
     for (int b = 0; b < g_numberOfBanks * 2 * 2; b++)
@@ -1284,7 +1327,7 @@ void processBlock(float **outputBuffers, int numSamples)
                     if (bd_useFilterPitchEnvelope)
                         filterFx *= od->filterPitchEnv.level;
                     if(bd->filterLfoData.modType == LFO_FREQUENCY)
-                        filterFx *= (1.0f + lfo_output(&bd->filterLfoData));
+                        filterFx *= (1.0f + render_lfo_sample(&bd->filterLfoData));
 
                     svf_set_params(&od->svf, filterFx, bd->resonanceBankFactor);
                 }
@@ -1301,7 +1344,7 @@ void processBlock(float **outputBuffers, int numSamples)
                 float inc = f * invSampleRate;
                 if (bd->lfoData.modType == LFO_FREQUENCY)
                 {
-                    inc *= (1.0f + lfo_output(&bd->lfoData));
+                    inc *= (1.0f + render_lfo_sample(&bd->lfoData));
                 }
                 od->phase += inc;
 
@@ -1344,7 +1387,7 @@ void processBlock(float **outputBuffers, int numSamples)
 
                 if (bd->lfoData.modType == LFO_AMPLITUDE)
                 {
-                    signal *= (1.0f + lfo_output(&bd->lfoData));
+                    signal *= (1.0f + render_lfo_sample(&bd->lfoData));
                 }
 
                 float finalOutputSample = signal * bd->oscillatorLevel * ampEnvelope;
@@ -1354,7 +1397,7 @@ void processBlock(float **outputBuffers, int numSamples)
                     float filteredSample = svf_process_morph(&od->svf, 0.1f * finalOutputSample) * bd->filterLevel;
                     if(bd->filterLfoData.modType == LFO_AMPLITUDE)
                     {
-                        filteredSample *= (1.0f + lfo_output(&bd->filterLfoData));
+                        filteredSample *= (1.0f + render_lfo_sample(&bd->filterLfoData));
                     }
                     // Mirroring the exact same source to Left and Right channel blocks
                     filterOutLeft[i]  += filteredSample * panLeft;

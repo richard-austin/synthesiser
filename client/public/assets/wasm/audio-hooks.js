@@ -99,13 +99,10 @@ if (typeof globalThis.registerProcessor === 'function') {
           break;
         case 'periodicWave':
           if (this.isWasmBound) {
-            const alreadyAllocated = Module._waveTableMemoryAllocated(data.bank);
             Module._setNumberOfBands(data.numberOfBands);
             const ptr = Module._allocateWaveTableMemory(data.bank);  // Allocate memory if not already done. Allow 4 bytes per float
             const heapIndex = ptr >> 2;  // 4 bytes per float
             Module.HEAPF32.set(data.waveTables, heapIndex);
-            if (!alreadyAllocated)
-              this.channelPtrs.push(ptr);
           }
           break;
         case 'tuning':
@@ -170,11 +167,12 @@ if (typeof globalThis.registerProcessor === 'function') {
             Module._setLFOModType(data.bank, typeVal);
           }
           break;
-        case 'setLFOWaveform':
+        case 'lfoPeriodicWave':
           if (this.isWasmBound) {
-            const waveform = data.waveform;
-            const typeVal = waveform === 'sine' ? 1 : waveform === 'trangle' ? 2 : waveform === 'square' ? 3 : waveform === 'sawtooth' ? 4 : 0;
-            Module._setLFOWaveform(data.bank, typeVal);
+            Module._setNumberOfBands(data.numberOfBands);
+            const ptr = Module._allocateLFOWaveTableMemory(data.bank);  // Allocate memory if not already done. Allow 4 bytes per float
+            const heapIndex = ptr >> 2;  // 4 bytes per float
+            Module.HEAPF32.set(data.waveTables, heapIndex);
           }
           break;
         case 'setLFOLevel':
@@ -196,11 +194,12 @@ if (typeof globalThis.registerProcessor === 'function') {
             Module._setFilterLFOModType(data.bank, typeVal);
           }
           break;
-        case 'setFilterLFOWaveform':
+        case 'filterLFOPeriodicWave':
           if (this.isWasmBound) {
-            const waveform = data.waveform;
-            const typeVal = waveform === 'sine' ? 1 : waveform === 'trangle' ? 2 : waveform === 'square' ? 3 : waveform === 'sawtooth' ? 4 : 0;
-            Module._setFilterLFOWaveform(data.bank, typeVal);
+            Module._setNumberOfBands(data.numberOfBands);
+            const ptr = Module._allocateFilterLFOWaveTableMemory(data.bank);  // Allocate memory if not already done. Allow 4 bytes per float
+            const heapIndex = ptr >> 2;  // 4 bytes per float
+            Module.HEAPF32.set(data.waveTables, heapIndex);
           }
           break;
         case 'setFilterLFOLevel':
@@ -226,7 +225,9 @@ if (typeof globalThis.registerProcessor === 'function') {
           }
           break;
         case 'setBankPan':
-          if (this.isWasmBound) {Module._setBankPan(data.bank, data.pan);}
+          if (this.isWasmBound) {
+            Module._setBankPan(data.bank, data.pan);
+          }
           break;
         case 'setFilterMorphMode':
           if (this.isWasmBound) {
@@ -261,11 +262,11 @@ if (typeof globalThis.registerProcessor === 'function') {
         if (!outputs[b]) continue;
 
         // TARGET NESTED INNER CHANNELS: [0] is Left, [1] is Right
-        const leftChannelData  = outputs[b][0];
+        const leftChannelData = outputs[b][0];
         const rightChannelData = outputs[b][1];
 
         // Retrieve the flat, linear pointer mapping indices from our array
-        const leftPtrIdx  = b * 2;
+        const leftPtrIdx = b * 2;
         const rightPtrIdx = (b * 2) + 1;
 
         // Marshal Left Channel Data
@@ -283,7 +284,25 @@ if (typeof globalThis.registerProcessor === 'function') {
         }
       }
 
-      // ... rest of performance metrics logging ...
+      const time = (Date.now() - start);
+      this.totalTime += time
+      this.iterationCount++;
+      if (time > this.maxTime)
+        this.maxTime = time;
+      if (time < this.minTime)
+        this.minTime = time;
+      //  Send an average performance report every 500 blocks (~1.5 seconds)
+      if (this.iterationCount >= 500) {
+        const averageMsPerBlock = this.totalTime / this.iterationCount;
+        console.log("averageMsPerBlock = " + averageMsPerBlock + " maxTime = " + this.maxTime + " minTime = " + this.minTime);
+        //this.port.postMessage({ type: 'perf-report', averageMsPerBlock });
+
+        this.totalTime = 0;
+        this.iterationCount = 0;
+        this.maxTime = 0;
+        this.minTime = 100;
+      }
+
       return true;
     }
   }

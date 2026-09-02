@@ -124,11 +124,12 @@ export class FmSynthService {
     return this.lastTable = Promise.all(retVal);
   }
 
-  setPeriodicWave(periodicWaves: Promise<AudioBuffer[]>, bank: number) {
+  setPeriodicWave(periodicWaves: Promise<AudioBuffer[]>, postCallback: (waveTables: Float32Array, numberOfBands: number) => void): void {
     const waveTables: Float32Array = new Float32Array(this.waveTableSize * this.numberOfBands);
+    let numberOfBands = 0;
     periodicWaves.then(aba => {
       let length = 0;
-      let numberOfBands = 0;
+
       // Merge all the separate wavetables into one contiguous array
       aba.forEach(ab => {
         const channelData = ab.getChannelData(0)
@@ -136,8 +137,7 @@ export class FmSynthService {
         length += channelData.length;
         ++numberOfBands;
       });
-
-      this.port.postMessage({type: 'periodicWave', bank, waveTables, numberOfBands});
+      postCallback(waveTables, numberOfBands);
     });
   }
 
@@ -251,7 +251,8 @@ export class FmSynthService {
   setOutputWaveform(type: OscillatorType, bank: number) {
     const wtDetails = WaveTables.wavetables.find(el => el.value === type);
     if (wtDetails) {
-      this.setPeriodicWave(this.createPeriodicWave(this.audioContext, wtDetails?.waveTable.real, wtDetails?.waveTable.imag), bank);
+      this.setPeriodicWave(this.createPeriodicWave(this.audioContext, wtDetails?.waveTable.real, wtDetails?.waveTable.imag),
+        (wt, nb) => this.port.postMessage({type: 'periodicWave', bank, waveTables: wt, numberOfBands: nb}));
     } else {
       console.error("Cannot find wave table for" + type)
     }
@@ -282,8 +283,14 @@ export class FmSynthService {
     this.port.postMessage({type: 'setLFOModType', bank: bank, modType: modType});
   }
 
-  setLFOWaveform(bank: number, waveform: modWaveforms) {
-    this.port.postMessage({type: 'setLFOWaveform', bank: bank, waveform: waveform});
+  setLFOWaveform(bank: number, type: modWaveforms) {
+    const wtDetails = WaveTables.wavetables.find(el => el.value === type);
+    if (wtDetails) {
+      this.setPeriodicWave(this.createPeriodicWave(this.audioContext, wtDetails?.waveTable.real, wtDetails?.waveTable.imag),
+        (wt, nb) => this.port.postMessage({type: 'lfoPeriodicWave', bank, waveTables: wt, numberOfBands: nb}));
+    } else {
+      console.error("Cannot find wave table for" + type)
+    }
   }
 
   setLFOFrequency(bank: number, frequency: number) {
@@ -298,8 +305,21 @@ export class FmSynthService {
     this.port.postMessage({type: 'setFilterLFOModType', bank: bank, modType: modType});
   }
 
-  setFilterLFOWaveform(bank: number, waveform: modWaveforms) {
-    this.port.postMessage({type: 'setFilterLFOWaveform', bank: bank, waveform: waveform});
+  setFilterLFOWaveform(bank: number, type: modWaveforms) {
+    const wtDetails = WaveTables.wavetables.find(el => el.value === type);
+    if (wtDetails) {
+      this.setPeriodicWave(this.createPeriodicWave(this.audioContext, wtDetails?.waveTable.real, wtDetails?.waveTable.imag),
+        (wt, nb) => this.port.postMessage({
+          type: 'filterLFOPeriodicWave',
+          bank: bank,
+          waveTables: wt,
+          numberOfBands: nb
+        }));
+    } else {
+      console.error("Cannot find wave table for" + type)
+    }
+
+
   }
 
   setFilterLFOFrequency(bank: number, frequency: number) {
