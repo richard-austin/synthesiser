@@ -41,16 +41,10 @@ File globalsSourceFile = layout.projectDirectory.file('globals.c').asFile
 File outputDirectory = new File(rootDir, '/client/public/assets/wasm') //layout.buildDirectory.dir('wasm').get().asFile
 String outputJsPath = new File(outputDirectory, 'engine-module.js').absolutePath
 
-
 // 1. The Diagnostic Version Check Task
 tasks.register('checkWasmVersion', Exec) {
     def kompleExtension = rootProject.extensions.findByName('komple')
     def emccPath = kompleExtension?.tools?.emscripten
-
-    doLast {
-        println(sysrootInclude)
-        println(systemInclude)
-    }
 
     doFirst {
         println "========================================="
@@ -109,8 +103,6 @@ tasks.register('compileWasm', Exec) {
             outputDirectory.mkdirs()
         }
     }
-
-    ///home/richard/dev-work/synthesiser/.komple/installs/emscripten/upstream/emscripten/system/include
 
    // emcc processor.c -O3 -flto -msimd128 -ffast-math -o processor.js -s WASM=1 -s AUDIO_WORKLET=1 -s WASM_WORKERS=1 -s STANDALONE_WASM -s EXPORTED_FUNCTIONS=['_initProcessor','_setMatrixGain','_setBankEnvelopeParams','_triggerNoteOn','_triggerNoteOff','_getBankOutputBufferPtr','_processBlock'] --no-entry
     // Call the verified absolute path direct from the .komple tracking home
