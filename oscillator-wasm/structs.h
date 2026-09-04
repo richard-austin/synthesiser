@@ -4,8 +4,7 @@
 #include <stdbool.h>
 
 // --- Enumerations ---
-typedef enum
-{
+typedef enum {
     ENV_INACTIVE = 0,
     ENV_ATTACK,
     ENV_DECAY,
@@ -15,29 +14,25 @@ typedef enum
     ENV_LEGATO
 } envelopePhase;
 
-typedef enum
-{
+typedef enum {
     MOD_OFF = 0,
     MOD_FREQUENCY,
     MOD_AMPLITUDE
 } oscModType;
 
-typedef enum
-{
+typedef enum {
     MOD_OUT_DIRECT = 1,
     MOD_OUT_ENVELOPE = 2
 } oscModOutput;
 
-typedef enum
-{
+typedef enum {
     LFO_AMPLITUDE = 1,
     LFO_FREQUENCY = 2,
     LFO_OFF = 3
 } lfoModType;
 
 // --- Struct Definitions ---
-typedef struct
-{
+typedef struct {
     float attack;
     float decay;
     float sustainLevel;
@@ -47,8 +42,7 @@ typedef struct
     int velocity;
 } EnvelopeData;
 
-typedef struct
-{
+typedef struct {
     EnvelopeData *envelopeData;
     float lowestTime;
     float lowestLevel;
@@ -61,8 +55,7 @@ typedef struct
     bool keyDown;
 } Envelope;
 
-typedef struct
-{
+typedef struct {
     float attack;
     float attackLevel;
     float decay;
@@ -71,8 +64,7 @@ typedef struct
     float releaseLevel;
 } PitchEnvelopeData;
 
-typedef struct
-{
+typedef struct {
     PitchEnvelopeData *envelopeData;
     float lowestTime;
     float lowestLevel;
@@ -94,14 +86,12 @@ typedef struct {
     int size;
 } CircularQueue;
 
-typedef struct
-{
+typedef struct {
     CircularQueue queue;
     float time;
 } PortamentoData;
 
-typedef struct
-{
+typedef struct {
     float lowestTime;
     float lowestLevel;
     float t0, t1, t;
@@ -110,14 +100,12 @@ typedef struct
     bool targetReached;
 } Portamento;
 
-typedef struct
-{
+typedef struct {
     float x1, x2, y1, y2;
     float b0, b1, b2, a1, a2;
 } ButterworthFilter;
 
-typedef struct
-{
+typedef struct {
     float sampleRate;
     float cutoffHz;
     float resonance;
@@ -135,8 +123,7 @@ typedef struct
     float morphMode;
 } SVFFilter;
 
-typedef struct
-{
+typedef struct {
     float frequency;
     int band;
     float phase;
@@ -146,8 +133,7 @@ typedef struct
     float *periodicWaveData;
 } LfoData;
 
-typedef struct
-{
+typedef struct {
     int key;
     Envelope env;
     PitchEnvelope pitchEnv;
@@ -160,8 +146,7 @@ typedef struct
     Portamento portamento;
 } OscillatorData;
 
-typedef struct
-{
+typedef struct {
     float detuneFactor;
     float tuning;
     float filterTuning;
@@ -183,13 +168,12 @@ typedef struct
     float oscillatorLevel;
     float filterLevel;
     // OPTIMIZED STRUCTURE STORAGE
-    float panLeft;  // Left multiplier cache
+    float panLeft; // Left multiplier cache
     float panRight; // Right multiplier cache
     PortamentoData portamentoData;
 } BankData;
 
-typedef struct
-{
+typedef struct {
     int carrierIdx;
     float level;
     oscModType modType;

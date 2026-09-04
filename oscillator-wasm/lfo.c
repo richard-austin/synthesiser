@@ -2,8 +2,7 @@
 #include "globals.h"
 #include "lfo.h"
 
-void lfo_init(LfoData *data, long waveTableSize)
-{
+void lfo_init(LfoData *data, long waveTableSize) {
     data->frequency = 0.0f;
     data->band = 0;
     data->phase = 0.0f;
@@ -14,10 +13,8 @@ void lfo_init(LfoData *data, long waveTableSize)
     data->band = 0;
 }
 
-void lfo_advance(LfoData *ld)
-{
-    if (ld->modType != LFO_OFF)
-    {
+void lfo_advance(LfoData *ld) {
+    if (ld->modType != LFO_OFF) {
         ld->phase += (ld->frequency / g_sampleRate);
         if (ld->phase >= 1)
             ld->phase -= 1;
@@ -25,8 +22,8 @@ void lfo_advance(LfoData *ld)
 }
 
 EMSCRIPTEN_KEEPALIVE
-float render_lfo_sample(LfoData *ld)
-{
+
+float render_lfo_sample(LfoData *ld) {
     if (ld->periodicWaveData == NULL)
         return 0.0f;
 
@@ -35,22 +32,20 @@ float render_lfo_sample(LfoData *ld)
     float *current_table = ld->periodicWaveData + (ld->band * ld->waveTableSize);
 
     // 2. Scale phase (0.0 to 1.0) to the wavetable size index space
-    float exact_index = ld->phase * (float)ld->waveTableSize;
+    float exact_index = ld->phase * (float) ld->waveTableSize;
 
     // 3. Get the floor integer index and the fractional remainder
-    int index_a = (int)exact_index;
-    float fraction = exact_index - (float)index_a;
+    int index_a = (int) exact_index;
+    float fraction = exact_index - (float) index_a;
 
     // 4. Determine the next sample index (with wrap-around handling)
     int index_b = index_a + 1;
-    if (index_b >= ld->waveTableSize)
-    {
+    if (index_b >= ld->waveTableSize) {
         index_b = 0;
     }
 
     // Safety guard for boundaries
-    if (index_a >= ld->waveTableSize)
-    {
+    if (index_a >= ld->waveTableSize) {
         index_a = ld->waveTableSize - 1;
     }
 

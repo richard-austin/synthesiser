@@ -1,8 +1,7 @@
 #include <math.h>
 #include "filter.h"
 
-void svf_init(SVFFilter *f, float sampleRate)
-{
+void svf_init(SVFFilter *f, float sampleRate) {
     f->sampleRate = sampleRate;
     f->ic1eq = 0.0f;
     f->ic2eq = 0.0f;
@@ -14,8 +13,7 @@ void svf_init(SVFFilter *f, float sampleRate)
     f->a1 = f->a2 = f->a3 = 0.0f;
 }
 
-void svf_set_params(SVFFilter *f, float cutoffHz, float qFactor)
-{
+void svf_set_params(SVFFilter *f, float cutoffHz, float qFactor) {
     // Clamp cutoff safely below Nyquist to keep the tangent stable
     float maxF = f->sampleRate * 0.49f;
     f->cutoffHz = cutoffHz < 5.0f ? 5.0f : (cutoffHz > maxF ? maxF : cutoffHz);
@@ -28,25 +26,22 @@ void svf_set_params(SVFFilter *f, float cutoffHz, float qFactor)
     f->k = 2.0f * (inverseQ * inverseQ * inverseQ); // 3rd power curve for smooth analog feel
 
     // Pre-warp coefficient evaluated at the 2x oversampled sub-step rate
-    f->g = tanf((float)M_PI * f->cutoffHz / (2.0f * f->sampleRate));
+    f->g = tanf((float) M_PI * f->cutoffHz / (2.0f * f->sampleRate));
 
     // Matrix loop denominator calculation
     f->a1 = 1.0f / (1.0f + f->g * (f->g + f->k));
 }
 
-void svf_set_morph(SVFFilter *f, float morphValue)
-{
+void svf_set_morph(SVFFilter *f, float morphValue) {
     // Clamp the incoming crossfade slider value safely between 0.0 and 2.0
     f->morphMode = morphValue < 0.0f ? 0.0f : (morphValue > 2.0f ? 2.0f : morphValue);
 }
 
-float svf_process_morph(SVFFilter *f, float input)
-{
+float svf_process_morph(SVFFilter *f, float input) {
     float lp = 0.0f, bp = 0.0f, hp = 0.0f;
 
     // Internal 2x Oversampling execution
-    for (int subStep = 0; subStep < 2; subStep++)
-    {
+    for (int subStep = 0; subStep < 2; subStep++) {
         float v0 = input;
         float v1 = f->ic1eq;
         float v2 = f->ic2eq;
@@ -65,8 +60,7 @@ float svf_process_morph(SVFFilter *f, float input)
     }
 
     // Safety check against invalid numbers or infinite values
-    if (isnanf(f->ic1eq) || isinf(f->ic1eq) || isnanf(f->ic2eq) || isinf(f->ic2eq))
-    {
+    if (isnanf(f->ic1eq) || isinf(f->ic1eq) || isnanf(f->ic2eq) || isinf(f->ic2eq)) {
         f->ic1eq = 0.0f;
         f->ic2eq = 0.0f;
         return 0.0f;
@@ -76,12 +70,9 @@ float svf_process_morph(SVFFilter *f, float input)
     float finalOutput = 0.0f;
     float m = f->morphMode;
 
-    if (m <= 1.0f)
-    {
+    if (m <= 1.0f) {
         finalOutput = lp + m * (bp - lp);
-    }
-    else
-    {
+    } else {
         float weight = m - 1.0f;
         finalOutput = bp + weight * (hp - bp);
     }

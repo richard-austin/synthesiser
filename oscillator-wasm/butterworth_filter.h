@@ -4,6 +4,7 @@
 
 // --- Filter Architecture Logic ---
 void butterworth_calculate_coefficients(ButterworthFilter *f, float cutoff, float sampleRate);
+
 float butterworth_process(ButterworthFilter *f, float input);
 
 #endif

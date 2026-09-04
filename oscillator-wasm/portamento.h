@@ -9,26 +9,32 @@
 #endif
 
 // Initialize the queue
-void initQueue(CircularQueue* q);
+void initQueue(CircularQueue *q);
+
 // Check if the queue is full
-bool isFull(CircularQueue* q);
+bool isFull(CircularQueue *q);
+
 // Check if the queue is empty
-bool isEmpty(CircularQueue* q);
+bool isEmpty(CircularQueue *q);
+
 // Add an element to the rear of the queue (Enqueue)
-bool enqueue(CircularQueue* q, float value);
+bool enqueue(CircularQueue *q, float value);
 
 // Remove and return the front element of the queue (Dequeue)
-float dequeue(CircularQueue* q);
-int queueSize(CircularQueue* q);
+float dequeue(CircularQueue *q);
+
+int queueSize(CircularQueue *q);
 
 // View the front element without removing it (Peek)
-float peek(CircularQueue* q) ;
-void initPortamentoData(PortamentoData* data);
+float peek(CircularQueue *q);
+
+void initPortamentoData(PortamentoData *data);
+
 void portamento_init(Portamento *porta/*, PortamentoData *data*/);
 
 void portamento_set_timing(Portamento *porta, float value, float time);
 
-float portamentoGlide(Portamento* porta);
+float portamentoGlide(Portamento *porta);
 
 
 #endif

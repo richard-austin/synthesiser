@@ -2,8 +2,7 @@
 #include <math.h>
 
 // --- Filter Architecture Logic ---
-void butterworth_calculate_coefficients(ButterworthFilter *f, float cutoff, float sampleRate)
-{
+void butterworth_calculate_coefficients(ButterworthFilter *f, float cutoff, float sampleRate) {
     float omega = m_pi * cutoff / sampleRate;
     float tanVal = tanf(omega);
     float sqrt2 = 1.41421356f;
@@ -16,8 +15,7 @@ void butterworth_calculate_coefficients(ButterworthFilter *f, float cutoff, floa
     f->a2 = (1.0f - sqrt2 * tanVal + c2) / a0;
 }
 
-float butterworth_process(ButterworthFilter *f, float input)
-{
+float butterworth_process(ButterworthFilter *f, float input) {
     float output = f->b0 * input + f->b1 * f->x1 + f->b2 * f->x2 - f->a1 * f->y1 - f->a2 * f->y2;
     f->x2 = f->x1;
     f->x1 = input;
@@ -25,4 +23,3 @@ float butterworth_process(ButterworthFilter *f, float input)
     f->y1 = output;
     return output;
 }
-
