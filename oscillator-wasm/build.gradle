@@ -34,6 +34,9 @@ File pitchEnvelopeSourceFile = layout.projectDirectory.file('pitch_envelope.c').
 File lfoSourceFile = layout.projectDirectory.file('lfo.c').asFile
 File filterSourceFile = layout.projectDirectory.file('filter.c').asFile
 File butterworthSourceFile = layout.projectDirectory.file('butterworth_filter.c').asFile
+File setupFromControlsSourceFile = layout.projectDirectory.file('setup_from_controls.c').asFile
+File keyToFrequencySourceFile = layout.projectDirectory.file('key_to_frequency.c').asFile
+File globalsSourceFile = layout.projectDirectory.file('globals.c').asFile
 
 File outputDirectory = new File(rootDir, '/client/public/assets/wasm') //layout.buildDirectory.dir('wasm').get().asFile
 String outputJsPath = new File(outputDirectory, 'engine-module.js').absolutePath
@@ -83,6 +86,9 @@ tasks.register('compileWasm', Exec) {
     inputs.file(lfoSourceFile)
     inputs.file(filterSourceFile)
     inputs.file(butterworthSourceFile)
+    inputs.file(setupFromControlsSourceFile)
+    inputs.file(keyToFrequencySourceFile)
+    inputs.file(globalsSourceFile)
     outputs.dir(outputDirectory)
 
     // Ensure the plugin installation executes before this compilation runs
@@ -109,6 +115,9 @@ tasks.register('compileWasm', Exec) {
             filterSourceFile.absolutePath,
             lfoSourceFile.absolutePath,
             butterworthSourceFile.absolutePath,
+            setupFromControlsSourceFile.absolutePath,
+            keyToFrequencySourceFile.absolutePath,
+            globalsSourceFile.absolutePath,
             "-O3",
             "-flto",
             "-msimd128",

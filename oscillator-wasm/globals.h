@@ -1,24 +1,28 @@
-#ifndef GLOBALS
-#define GLOBALS
-#include <stdlib.h>
+#ifndef __GLOBALS
+#define __GLOBALS
+
 #include "structs.h"
 
 // --- Global Engine Core Context Variables ---
-static int g_numberOfBanks = 0;
-static int g_oscillatorsPerBank = 0;
-static int g_waveTableSize = 2048;
-static float g_startFx = 20.0f;
-static float g_sampleRate = 44100.0f;
-static int g_roundRobinIndex = 0;
+extern int g_numberOfBanks ;
+extern int g_oscillatorsPerBank;
+extern int g_waveTableSize;
+extern float g_startFx;
+extern float g_sampleRate;
+extern int g_roundRobinIndex;
 
-static BankData *g_banks = NULL;
-static OscillatorData **g_oscData = NULL;
+extern BankData *g_banks ;
+extern OscillatorData **g_oscData;
 
-static float *g_fmAccumulators = NULL;
-static float *g_amAccumulators = NULL;
-static ModSettings *g_modMatrix = NULL;
-static float twelfthRoot2 = 1.05946309436f;
-static float log2Root2;
-static const float root2 = 1.41421356237f;
+extern float *g_fmAccumulators;
+extern float *g_amAccumulators;
+extern ModSettings *g_modMatrix;
+extern float twelfthRoot2;
+extern float log2Root2;
+extern const float root2;
+
+extern const float g_modFreqBase ;
+extern const float g_modFreqMax ;
+extern const float g_modFreqMaxInput;
 
 #endif
