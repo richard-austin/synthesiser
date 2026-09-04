@@ -1,4 +1,4 @@
-#include <emscripten/console.h>
+//#include <emscripten/console.h>
 #include <emscripten.h>
 #include <math.h>
 #include <stdlib.h>
