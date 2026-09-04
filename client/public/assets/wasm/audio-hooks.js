@@ -114,6 +114,9 @@ if (typeof globalThis.registerProcessor === 'function') {
         case "setVelocitySensitive":
           if (this.isWasmBound) Module._setVelocitySensitive(data.bank, data.velocitySensitive);
           break;
+        case 'setPortamentoTime':
+          if(this.isWasmBound) Module._setPortamentoTime(data.bank, data.time);
+          break;
         case 'envelope':
           if (this.isWasmBound) Module._setBankEnvelopeParams(data.bank, data.phase, data.value);
           break;

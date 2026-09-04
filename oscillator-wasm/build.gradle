@@ -27,7 +27,13 @@ File emccExecutable = rootProject.layout.projectDirectory.file(".komple/installs
 String absoluteEmccPath = emccExecutable.absolutePath
 
 // 4. Pre-compute primitive file layouts to satisfy the Configuration Cache completely
-File inputSourceFile = layout.projectDirectory.file('processor.c').asFile
+File processorSourceFile = layout.projectDirectory.file('processor.c').asFile
+File portamentoSourceFile = layout.projectDirectory.file('portamento.c').asFile
+File envelopeSourceFile = layout.projectDirectory.file('envelope.c').asFile
+File pitchEnvelopeSourceFile = layout.projectDirectory.file('pitch_envelope.c').asFile
+File lfoSourceFile = layout.projectDirectory.file('lfo.c').asFile
+File filterSourceFile = layout.projectDirectory.file('filter.c').asFile
+File butterworthSourceFile = layout.projectDirectory.file('butterworth_filter.c').asFile
 
 File outputDirectory = new File(rootDir, '/client/public/assets/wasm') //layout.buildDirectory.dir('wasm').get().asFile
 String outputJsPath = new File(outputDirectory, 'engine-module.js').absolutePath
@@ -70,7 +76,13 @@ tasks.register('compileWasm', Exec) {
     description = 'Compiles processor.c into WebAssembly using Emscripten.'
 
     // Ensure the task automatically triggers if your C source modifications change
-    inputs.file(inputSourceFile)
+    inputs.file(processorSourceFile)
+    inputs.file(portamentoSourceFile)
+    inputs.file(envelopeSourceFile)
+    inputs.file(pitchEnvelopeSourceFile)
+    inputs.file(lfoSourceFile)
+    inputs.file(filterSourceFile)
+    inputs.file(butterworthSourceFile)
     outputs.dir(outputDirectory)
 
     // Ensure the plugin installation executes before this compilation runs
@@ -81,16 +93,22 @@ tasks.register('compileWasm', Exec) {
 
     doFirst {
         // Ensure the output directory exists before compiling
-            if (!outputDirectory.exists()) {
-                outputDirectory.mkdirs()
-            }
+        if (!outputDirectory.exists()) {
+            outputDirectory.mkdirs()
+        }
     }
 
    // emcc processor.c -O3 -flto -msimd128 -ffast-math -o processor.js -s WASM=1 -s AUDIO_WORKLET=1 -s WASM_WORKERS=1 -s STANDALONE_WASM -s EXPORTED_FUNCTIONS=['_initProcessor','_setMatrixGain','_setBankEnvelopeParams','_triggerNoteOn','_triggerNoteOff','_getBankOutputBufferPtr','_processBlock'] --no-entry
     // Call the verified absolute path direct from the .komple tracking home
     commandLine(
             absoluteEmccPath,
-            inputSourceFile.absolutePath,
+            processorSourceFile.absolutePath,
+            portamentoSourceFile.absolutePath,
+            envelopeSourceFile.absolutePath,
+            pitchEnvelopeSourceFile.absolutePath,
+            filterSourceFile.absolutePath,
+            lfoSourceFile.absolutePath,
+            butterworthSourceFile.absolutePath,
             "-O3",
             "-flto",
             "-msimd128",
