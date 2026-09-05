@@ -11,7 +11,6 @@ typedef enum {
     ENV_SUSTAIN,
     ENV_RELEASE,
     ENV_RETRIGGER,
-    ENV_LEGATO
 } envelopePhase;
 
 typedef enum {

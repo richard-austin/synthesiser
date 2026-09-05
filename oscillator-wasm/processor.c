@@ -60,7 +60,7 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, int numBand
     g_modMatrix = (ModSettings *) calloc(numBanks * numBanks, sizeof(ModSettings));
 
     for (int b = 0; b < numBanks; b++) {
-        BankData* bd = &g_banks[b];
+        BankData *bd = &g_banks[b];
 
         bank_data_init(&g_banks[b], waveTableSize, numBands);
         envelope_data_init(&bd->envelopeData);
@@ -110,7 +110,7 @@ void triggerNoteOn(int key, int velocity) {
     // STEP 3: Map parameters identically across all multi-bank nodes
     for (int b = 0; b < g_numberOfBanks; b++) {
         OscillatorData *od = &g_oscData[b][foundIdx];
-        const BankData* bd = &g_banks[b];
+        const BankData *bd = &g_banks[b];
 
         // If an allocation collision happens with an existing active different note,
         // force clear it to prevent old dead note values from lingering.
@@ -122,17 +122,15 @@ void triggerNoteOn(int key, int velocity) {
         if (bd->portamentoData.inUse) {
             const float targetFrequency = key_to_frequency(key, b);
             portamento_set_timing(&od->portamento, targetFrequency, bd->portamentoData.time);
-             od->frequency =targetFrequency;
-        }
-        else
+            od->frequency = targetFrequency;
+        } else
             od->frequency = key_to_frequency(key, b);
 
         if (bd->filterPortamentoData.inUse) {
             const float targetFrequency = filter_key_to_frequency(key, b);
             portamento_set_timing(&od->filterPortamento, targetFrequency, bd->filterPortamentoData.time);
             od->filterFrequency = targetFrequency;
-        }
-        else
+        } else
             od->filterFrequency = filter_key_to_frequency(key, b);
 
         od->key = key;
@@ -165,12 +163,14 @@ void triggerNoteOff(int key) {
                 OscillatorData *od = &g_oscData[b][o];
                 od->env.keyDown = false;
 
-                // If the voice was caught mid-retrigger or processing anomaly,
-                // forcefully push its envelope execution profile straight to Release
-                if (od->env.phase != ENV_RELEASE && od->env.phase != ENV_INACTIVE) {
-                    od->env.phase = ENV_RELEASE;
-                    envelope_set_timing(&od->env, od->env.lowestLevel, od->env.envelopeData->release);
-                }
+                // if (!od->env.envelopeData->legato) {
+                //     // If the voice was caught mid-retrigger or processing anomaly,
+                //     // forcefully push its envelope execution profile straight to Release
+                //     if (od->env.phase != ENV_RELEASE && od->env.phase != ENV_INACTIVE) {
+                //         od->env.phase = ENV_RELEASE;
+                //         envelope_set_timing(&od->env, od->env.lowestLevel, od->env.envelopeData->release);
+                //     }
+                // }
             }
         }
     }
@@ -295,7 +295,7 @@ void processBlock(float **outputBuffers, int numSamples) {
                         pitch_envelope_advance_to_release_level(&od->pitchEnv);
                     if (bd_useFilterPitchEnvelope)
                         pitch_envelope_advance_to_release_level(&od->filterPitchEnv);
-                    envelope_advance_to_zero(env);
+                    envelope_advance_to_zero(env, od->frequency);
                 }
 
                 float f = od->frequency;
@@ -312,7 +312,7 @@ void processBlock(float **outputBuffers, int numSamples) {
                     float filterFx = od->filterFrequency;
                     if (od->filterPortamento.portamentoData->inUse)
                         filterFx = portamentoGlide(&od->filterPortamento, filterFx);
-                    filterFx *=  bd->filterDetuneFactor;
+                    filterFx *= bd->filterDetuneFactor;
 
                     if (bd_useFilterPitchEnvelope)
                         filterFx *= od->filterPitchEnv.level;
