@@ -87,6 +87,7 @@ typedef struct {
 
 typedef struct {
     CircularQueue queue;
+    float previousFrequency;
     float time;
     bool inUse;
 } PortamentoData;
@@ -97,7 +98,7 @@ typedef struct {
     float lowestLevel;
     float t0, t1, t;
     float v0, v1;
-    float level;
+    float frequency;
     bool targetReached;
 } Portamento;
 

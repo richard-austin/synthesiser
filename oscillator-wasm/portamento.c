@@ -2,6 +2,8 @@
 #include "portamento.h"
 #include <math.h>
 
+#include "../.komple/installs/emscripten/upstream/emscripten/system/lib/libunwind/src/shadow_stack_unwind.h"
+
 // Initialize the queue
 void initQueue(CircularQueue *q) {
     q->front = 0;
@@ -30,7 +32,7 @@ bool enqueue(CircularQueue *q, float value) {
     q->rear = (q->rear + 1) % CAPACITY;
     q->items[q->rear] = value;
     q->size++;
-
+    emscripten_console_logf("enqueue size %d\n", q->size);
     return true;
 }
 
@@ -46,6 +48,7 @@ float dequeue(CircularQueue *q) {
     // Circularly increment the front index
     q->front = (q->front + 1) % CAPACITY;
     q->size--;
+    emscripten_console_logf("dequeued size %d\n", q->size);
     return dequeuedValue;
 }
 
@@ -63,7 +66,8 @@ float peek(CircularQueue *q) {
 }
 
 void initPortamentoData(PortamentoData *data) {
-    initQueue(&data->queue);
+    data->previousFrequency = -1.0f;
+    //initQueue(&data->queue);
     data->time = 0.0f;
     data->inUse = false;
 }
@@ -74,17 +78,19 @@ void portamento_init(Portamento *porta, PortamentoData *data) {
     porta->lowestLevel = 0.0000001f;
     porta->v0 = porta->lowestLevel;
     porta->v1 = porta->lowestLevel;
-    porta->level = porta->lowestLevel;
+    porta->frequency = porta->lowestLevel;
     porta->targetReached = false;
 }
 
 void portamento_set_timing(Portamento *porta, float value, float time) {
-    porta->level =  dequeue(&porta->portamentoData->queue);  // Get least recent note frequency to start portamento from
-    if (porta->level == -1.0f)
-        porta->level = value;
-    enqueue(&porta->portamentoData->queue, value);
+    PortamentoData* pd = porta->portamentoData;
+
+    porta->frequency =  pd->previousFrequency != -1.0f ? pd->previousFrequency : value; //dequeue(&porta->portamentoData->queue);  // Get least recent note frequency to start portamento from
+    pd->previousFrequency = value;
+    if (porta->frequency == -1.0f)
+        porta->frequency = value;
     // FIX: Prevent porta->v0 from being 0 or lower than porta->lowestLevel
-    float currentLevel = porta->level;
+    float currentLevel = porta->frequency;
     if (currentLevel < porta->lowestLevel) {
         currentLevel = porta->lowestLevel;
     }
@@ -99,17 +105,18 @@ void portamento_set_timing(Portamento *porta, float value, float time) {
 float portamentoGlide(Portamento *porta, float currentFx) {
     porta->t += 1.0f / g_sampleRate;
     if ((porta->t1 - porta->t0) == 0) {
-        porta->level = porta->v1;
+        porta->frequency = porta->v1;
         porta->targetReached = true;
     } else {
-        porta->level = porta->v0 * powf(porta->v1 / porta->v0, (porta->t - porta->t0) / (porta->t1 - porta->t0));
-        if (isnanf(porta->level))
+        porta->frequency = porta->v0 * powf(porta->v1 / porta->v0, (porta->t - porta->t0) / (porta->t1 - porta->t0));
+        if (isnanf(porta->frequency))
             emscripten_console_errorf(
                 "NaN returned by powf(porta->v1 / porta->v0, (porta->t - porta->t0) / (porta->t1 - porta->t0) in pitch envelope");
-        if (porta->t >= porta->t1) {
+        if (porta->t >= porta->t1 && !porta->targetReached) {
             porta->targetReached = true;
-            porta->level = porta->v1;
+            porta->frequency = porta->v1;
+            //enqueue(&porta->portamentoData->queue, porta->frequency);
         }
     }
-    return !porta->targetReached ? porta->level : currentFx;  // Use current frequency when target reached to allow tuning
+    return !porta->targetReached ? porta->frequency : currentFx;  // Use current frequency when target reached to allow tuning
 }
