@@ -30,7 +30,7 @@ float peek(CircularQueue *q);
 
 void initPortamentoData(PortamentoData *data);
 
-void portamento_init(Portamento *porta/*, PortamentoData *data*/);
+void portamento_init(Portamento *porta, PortamentoData *data);
 
 void portamento_set_timing(Portamento *porta, float value, float time);
 

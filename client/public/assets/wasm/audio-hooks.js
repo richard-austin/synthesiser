@@ -120,6 +120,9 @@ if (typeof globalThis.registerProcessor === 'function') {
         case 'envelope':
           if (this.isWasmBound) Module._setBankEnvelopeParams(data.bank, data.phase, data.value);
           break;
+        case 'portamento':
+          if(this.isWasmBound) Module._setPortamento(data.bank, data.time);
+          break;
         case 'pitchEnvelope':
           if (this.isWasmBound) Module._setBankPitchEnvelopeParams(data.bank, data.phase, data.value);
           break;

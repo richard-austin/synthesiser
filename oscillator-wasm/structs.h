@@ -89,9 +89,11 @@ typedef struct {
 typedef struct {
     CircularQueue queue;
     float time;
+    bool inUse;
 } PortamentoData;
 
 typedef struct {
+    PortamentoData *portamentoData;
     float lowestTime;
     float lowestLevel;
     float t0, t1, t;

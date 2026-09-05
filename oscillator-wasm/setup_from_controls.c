@@ -63,6 +63,15 @@ void setBankEnvelopeParams(int bank, int phase, float value) {
 
 EMSCRIPTEN_KEEPALIVE
 
+void setPortamento(int bank, float time) {
+    PortamentoData* pd = &g_banks[bank].portamentoData;
+    pd->time = time;
+
+    pd->inUse = time != 0.0f;
+}
+
+EMSCRIPTEN_KEEPALIVE
+
 void setBankPitchEnvelopeParams(int bank, int phase, float value) {
     PitchEnvelopeData *env = &g_banks[bank].pitchEnvelopeData;
 

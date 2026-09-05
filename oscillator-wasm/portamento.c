@@ -67,10 +67,11 @@ float peek(CircularQueue *q) {
 void initPortamentoData(PortamentoData *data) {
     initQueue(&data->queue);
     data->time = 0.0f;
+    data->inUse = false;
 }
 
-void portamento_init(Portamento *porta/*, PortamentoData *data*/) {
-    //  porta->envelopeData = data;
+void portamento_init(Portamento *porta, PortamentoData *data) {
+    porta->portamentoData = data;
     porta->lowestTime = 0.0001f;
     porta->lowestLevel = 0.0000001f;
     porta->v0 = porta->lowestLevel;
@@ -80,6 +81,10 @@ void portamento_init(Portamento *porta/*, PortamentoData *data*/) {
 }
 
 void portamento_set_timing(Portamento *porta, float value, float time) {
+    porta->level =  dequeue(&porta->portamentoData->queue);  // Get least recent note frequency to start portamento from
+    if (porta->level == -1.0f)
+        porta->level = value;
+    enqueue(&porta->portamentoData->queue, value);
     // FIX: Prevent porta->v0 from being 0 or lower than porta->lowestLevel
     float currentLevel = porta->level;
     if (currentLevel < porta->lowestLevel) {

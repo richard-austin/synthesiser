@@ -299,6 +299,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
       this.proxySettings.useFrequencyEnvelope = onOff.off;
       SetRadioButtons.set(this.freqEnveOnOffForm(), this.proxySettings.useFrequencyEnvelope);
     }
+    this.fmSynthService.setPortamento(this.oscNumber(), $event);
   }
 
   midiPitchBend(value: number) {

@@ -59,19 +59,21 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, int numBand
     g_modMatrix = (ModSettings *) calloc(numBanks * numBanks, sizeof(ModSettings));
 
     for (int b = 0; b < numBanks; b++) {
+        BankData* bd = &g_banks[b];
+
         bank_data_init(&g_banks[b], waveTableSize, numBands);
-        envelope_data_init(&g_banks[b].envelopeData);
+        envelope_data_init(&bd->envelopeData);
         pitch_envelope_data_init(&g_banks[b].pitchEnvelopeData);
-        pitch_envelope_data_init(&g_banks[b].filterPitchEnvelopeData);
-        lfo_init(&g_banks[b].lfoData, waveTableSize);
-        lfo_init(&g_banks[b].filterLfoData, waveTableSize);
+        pitch_envelope_data_init(&bd->filterPitchEnvelopeData);
+        lfo_init(&bd->lfoData, waveTableSize);
+        lfo_init(&bd->filterLfoData, waveTableSize);
         g_oscData[b] = (OscillatorData *) malloc(sizeof(OscillatorData) * oscsPerBank);
         for (int o = 0; o < oscsPerBank; o++) {
             oscillator_data_init(&g_oscData[b][o]);
-            envelope_init(&g_oscData[b][o].env, &g_banks[b].envelopeData);
-            portamento_init(&g_oscData[b][o].portamento);
-            pitch_envelope_init(&g_oscData[b][o].pitchEnv, &g_banks[b].pitchEnvelopeData);
-            pitch_envelope_init(&g_oscData[b][o].filterPitchEnv, &g_banks[b].filterPitchEnvelopeData);
+            envelope_init(&g_oscData[b][o].env, &bd->envelopeData);
+            portamento_init(&g_oscData[b][o].portamento, &bd->portamentoData);
+            pitch_envelope_init(&g_oscData[b][o].pitchEnv, &bd->pitchEnvelopeData);
+            pitch_envelope_init(&g_oscData[b][o].filterPitchEnv, &bd->filterPitchEnvelopeData);
             butterworth_calculate_coefficients(&g_oscData[b][o].butterworthFilter, 1000.0f, sampleRate);
             svf_init(&g_oscData[b][o].svf, sampleRate);
         }
@@ -106,6 +108,9 @@ void triggerNoteOn(int key, int velocity) {
     // STEP 3: Map parameters identically across all multi-bank nodes
     for (int b = 0; b < g_numberOfBanks; b++) {
         OscillatorData *od = &g_oscData[b][foundIdx];
+        const BankData* bd = &g_banks[b];
+        const bool portamentoInUse = bd->portamentoData.inUse;
+        const float portamentoTime =bd->portamentoData.time;
 
         // If an allocation collision happens with an existing active different note,
         // force clear it to prevent old dead note values from lingering.
@@ -114,7 +119,12 @@ void triggerNoteOn(int key, int velocity) {
             od->env.phase = ENV_INACTIVE;
         }
 
-        od->frequency = key_to_frequency(key, b);
+        if (portamentoInUse) {
+            const float targetFrequency = key_to_frequency(key, b);
+            portamento_set_timing(&od->portamento, targetFrequency, portamentoTime);
+        }
+        else
+            od->frequency = key_to_frequency(key, b);
         od->filterFrequency = filter_key_to_frequency(key, b);
         od->key = key;
 
@@ -166,12 +176,14 @@ float render_sample_from_phase(int bank, int table_index, float phase) {
     if (bd->periodicWaveData == NULL)
         return 0.0f;
 
+    const int bd_waveTableSize = bd->waveTableSize;
     // 1. Point to the specific wavetable inside the continuous memory block
     // (Assuming 21 tables per bank as per your calloc setup)
-    float *current_table = bd->periodicWaveData + (table_index * bd->waveTableSize);
+    float *current_table = bd->periodicWaveData + (table_index * bd_waveTableSize);
+
 
     // 2. Scale phase (0.0 to 1.0) to the wavetable size index space
-    float exact_index = phase * (float) bd->waveTableSize;
+    float exact_index = phase * (float) bd_waveTableSize;
 
     // 3. Get the floor integer index and the fractional remainder
     int index_a = (int) exact_index;
@@ -179,13 +191,13 @@ float render_sample_from_phase(int bank, int table_index, float phase) {
 
     // 4. Determine the next sample index (with wrap-around handling)
     int index_b = index_a + 1;
-    if (index_b >= bd->waveTableSize) {
+    if (index_b >= bd_waveTableSize) {
         index_b = 0;
     }
 
     // Safety guard for boundaries
-    if (index_a >= bd->waveTableSize) {
-        index_a = bd->waveTableSize - 1;
+    if (index_a >= bd_waveTableSize) {
+        index_a = bd_waveTableSize - 1;
     }
 
     // 5. Fetch the two samples
@@ -255,7 +267,6 @@ void processBlock(float **outputBuffers, int numSamples) {
             const bool bd_usePitchEnvelope = bd->usePitchEnvelope;
             const bool bd_useFilterPitchEnvelope = bd->useFilterPitchEnvelope;
             bool bd_outputToFilter = bd->outputToFilter;
-            int bd_waveTableSize = bd->waveTableSize;
             float *bd_periodicWaveData = bd->periodicWaveData;
             int bd_modOutput = bd->modOutput;
 
@@ -280,6 +291,9 @@ void processBlock(float **outputBuffers, int numSamples) {
                 }
 
                 float f = od->frequency;
+
+                if (od->portamento.portamentoData->inUse)
+                    f = portamentoGlide(&od->portamento);
                 if (bd_usePitchEnvelope)
                     f *= od->pitchEnv.level;
                 f *= bd->detuneFactor;

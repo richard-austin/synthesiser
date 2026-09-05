@@ -147,6 +147,10 @@ export class FmSynthService {
 
   private readonly sixthRoot2: number = 1.122462048;
 
+  setPortamento(bank: number,time: number) {
+    this.port?.postMessage({type: 'portamento', bank, time});
+  }
+
   public pitchEnvelope(bank: number, phase: number, value: number): void {
     if (phase === pitchEnvelopePhase.attackLevel || phase === pitchEnvelopePhase.sustainLevel || phase === pitchEnvelopePhase.releaseLevel) {
       value = Math.pow(this.sixthRoot2, value * 48);
