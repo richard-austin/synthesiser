@@ -102,6 +102,14 @@ void setBankPitchEnvelopeParams(int bank, int phase, float value) {
 
 EMSCRIPTEN_KEEPALIVE
 
+void setFilterPortamento(int bank, float time) {
+    PortamentoData* pd = &g_banks[bank].filterPortamentoData;
+    pd->time = time;
+
+    pd->inUse = time != 0.0f;
+}
+EMSCRIPTEN_KEEPALIVE
+
 void setBankFilterPitchEnvelopeParams(int bank, int phase, float value) {
     PitchEnvelopeData *env = &g_banks[bank].filterPitchEnvelopeData;
     switch (phase) {

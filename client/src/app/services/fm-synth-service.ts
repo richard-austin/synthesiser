@@ -183,6 +183,10 @@ export class FmSynthService {
     this.port?.postMessage({type: 'filterQFactor', bank, filterQFactor});
   }
 
+  setFilterPortamento(bank: number,time: number) {
+    this.port?.postMessage({type: 'filterPortamento', bank, time});
+  }
+
   public useFilterPitchEnvelope(bank: number, value: boolean): void {
     this.port?.postMessage({type: 'useFilterPitchEnvelope', bank: bank, value: value});
   }

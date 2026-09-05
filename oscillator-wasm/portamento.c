@@ -31,7 +31,6 @@ bool enqueue(CircularQueue *q, float value) {
     q->items[q->rear] = value;
     q->size++;
 
-    emscripten_console_logf("Enqueued: %f\n", value);
     return true;
 }
 
@@ -47,7 +46,6 @@ float dequeue(CircularQueue *q) {
     // Circularly increment the front index
     q->front = (q->front + 1) % CAPACITY;
     q->size--;
-
     return dequeuedValue;
 }
 
@@ -98,7 +96,7 @@ void portamento_set_timing(Portamento *porta, float value, float time) {
     porta->targetReached = false;
 }
 
-float portamentoGlide(Portamento *porta) {
+float portamentoGlide(Portamento *porta, float currentFx) {
     porta->t += 1.0f / g_sampleRate;
     if ((porta->t1 - porta->t0) == 0) {
         porta->level = porta->v1;
@@ -113,5 +111,5 @@ float portamentoGlide(Portamento *porta) {
             porta->level = porta->v1;
         }
     }
-    return porta->level;
+    return !porta->targetReached ? porta->level : currentFx;  // Use current frequency when target reached to allow tuning
 }

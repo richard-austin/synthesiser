@@ -65,7 +65,7 @@ void envelope_sustain_time(Envelope *env) {
         env->targetReached = true;
 }
 
-void envelope_advance_to_sustain(Envelope *env) {
+void envelope_advance_to_sustain(Envelope *env, float frequency) {
     float vel = (float) env->envelopeData->velocity / 127.0f;
     EnvelopeData *envData = env->envelopeData;
     if (env->keyDown) {
@@ -73,7 +73,10 @@ void envelope_advance_to_sustain(Envelope *env) {
         if (!envData->legato) {
             if (env->phase != ENV_ATTACK && env->phase != ENV_DECAY && env->phase != ENV_SUSTAIN) {
                 env->inUse = true;
-                envelope_set_timing(env, attackTarget, envData->attack);
+                float attackTime = envData->attack;
+                if (env->phase == ENV_RETRIGGER)
+                    attackTime += 4/frequency; // Reduce clicks on retrigger
+                envelope_set_timing(env, attackTarget, attackTime);
                 env->phase = ENV_ATTACK;
             } else if (env->phase == ENV_ATTACK) {
                 env->level = envelope_ramp(env);

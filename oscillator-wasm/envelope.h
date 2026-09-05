@@ -14,7 +14,7 @@ float envelope_ramp(Envelope *env);
 
 void envelope_sustain_time(Envelope *env);
 
-void envelope_advance_to_sustain(Envelope *env);
+void envelope_advance_to_sustain(Envelope *env, float frequency);
 
 void envelope_advance_to_zero(Envelope *env);
 

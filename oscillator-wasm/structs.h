@@ -146,6 +146,7 @@ typedef struct {
     float filterFrequency;
     SVFFilter svf;
     Portamento portamento;
+    Portamento filterPortamento;
 } OscillatorData;
 
 typedef struct {
@@ -173,6 +174,7 @@ typedef struct {
     float panLeft; // Left multiplier cache
     float panRight; // Right multiplier cache
     PortamentoData portamentoData;
+    PortamentoData filterPortamentoData;
 } BankData;
 
 typedef struct {

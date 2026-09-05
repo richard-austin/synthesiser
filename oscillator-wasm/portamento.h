@@ -34,7 +34,7 @@ void portamento_init(Portamento *porta, PortamentoData *data);
 
 void portamento_set_timing(Portamento *porta, float value, float time);
 
-float portamentoGlide(Portamento *porta);
+float portamentoGlide(Portamento *porta, float currentFx);
 
 
 #endif

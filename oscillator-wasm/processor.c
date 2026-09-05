@@ -32,6 +32,7 @@ void bank_data_init(BankData *bd, int waveTableSize, int numBands) {
     // Dead center values for constant-power curve: cos(pi/4) and sin(pi/4)
     bd->panLeft = bd->panRight = 0.70710678f;
     initPortamentoData(&bd->portamentoData);
+    initPortamentoData(&bd->filterPortamentoData);
 }
 
 void oscillator_data_init(OscillatorData *od) {
@@ -72,6 +73,7 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, int numBand
             oscillator_data_init(&g_oscData[b][o]);
             envelope_init(&g_oscData[b][o].env, &bd->envelopeData);
             portamento_init(&g_oscData[b][o].portamento, &bd->portamentoData);
+            portamento_init(&g_oscData[b][o].filterPortamento, &bd->filterPortamentoData);
             pitch_envelope_init(&g_oscData[b][o].pitchEnv, &bd->pitchEnvelopeData);
             pitch_envelope_init(&g_oscData[b][o].filterPitchEnv, &bd->filterPitchEnvelopeData);
             butterworth_calculate_coefficients(&g_oscData[b][o].butterworthFilter, 1000.0f, sampleRate);
@@ -109,8 +111,6 @@ void triggerNoteOn(int key, int velocity) {
     for (int b = 0; b < g_numberOfBanks; b++) {
         OscillatorData *od = &g_oscData[b][foundIdx];
         const BankData* bd = &g_banks[b];
-        const bool portamentoInUse = bd->portamentoData.inUse;
-        const float portamentoTime =bd->portamentoData.time;
 
         // If an allocation collision happens with an existing active different note,
         // force clear it to prevent old dead note values from lingering.
@@ -119,15 +119,23 @@ void triggerNoteOn(int key, int velocity) {
             od->env.phase = ENV_INACTIVE;
         }
 
-        if (portamentoInUse) {
+        if (bd->portamentoData.inUse) {
             const float targetFrequency = key_to_frequency(key, b);
-            portamento_set_timing(&od->portamento, targetFrequency, portamentoTime);
+            portamento_set_timing(&od->portamento, targetFrequency, bd->portamentoData.time);
+             od->frequency =targetFrequency;
         }
         else
             od->frequency = key_to_frequency(key, b);
-        od->filterFrequency = filter_key_to_frequency(key, b);
-        od->key = key;
 
+        if (bd->filterPortamentoData.inUse) {
+            const float targetFrequency = filter_key_to_frequency(key, b);
+            portamento_set_timing(&od->filterPortamento, targetFrequency, bd->filterPortamentoData.time);
+            od->filterFrequency = targetFrequency;
+        }
+        else
+            od->filterFrequency = filter_key_to_frequency(key, b);
+
+        od->key = key;
         od->env.keyDown = true;
         od->env.inUse = true;
         od->env.t = 0.0f; // Clear layout ramp clock timers
@@ -281,7 +289,7 @@ void processBlock(float **outputBuffers, int numSamples) {
                         pitch_envelope_advance_to_sustain(&od->pitchEnv);
                     if (bd_useFilterPitchEnvelope)
                         pitch_envelope_advance_to_sustain(&od->filterPitchEnv);
-                    envelope_advance_to_sustain(env);
+                    envelope_advance_to_sustain(env, od->frequency);
                 } else {
                     if (bd_usePitchEnvelope)
                         pitch_envelope_advance_to_release_level(&od->pitchEnv);
@@ -293,7 +301,7 @@ void processBlock(float **outputBuffers, int numSamples) {
                 float f = od->frequency;
 
                 if (od->portamento.portamentoData->inUse)
-                    f = portamentoGlide(&od->portamento);
+                    f = portamentoGlide(&od->portamento, f);
                 if (bd_usePitchEnvelope)
                     f *= od->pitchEnv.level;
                 f *= bd->detuneFactor;
@@ -301,7 +309,11 @@ void processBlock(float **outputBuffers, int numSamples) {
                     f = nyquist;
 
                 if (bd_useFilter) {
-                    float filterFx = od->filterFrequency * bd->filterDetuneFactor;
+                    float filterFx = od->filterFrequency;
+                    if (od->filterPortamento.portamentoData->inUse)
+                        filterFx = portamentoGlide(&od->filterPortamento, filterFx);
+                    filterFx *=  bd->filterDetuneFactor;
+
                     if (bd_useFilterPitchEnvelope)
                         filterFx *= od->filterPitchEnv.level;
                     if (bd->filterLfoData.modType == LFO_FREQUENCY)

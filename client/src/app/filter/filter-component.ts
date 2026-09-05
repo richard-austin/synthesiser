@@ -244,6 +244,8 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   protected setPortamento($event: number) {
     this.proxySettings.portamento = $event;
+    this.fmSynthService.setFilterPortamento(this.filterNumber(), $event);
+
     if ($event > 0) {
       // Can't use frequency bend envelope with portamento
       this.proxySettings.useFrequencyEnvelope = onOff.off;
