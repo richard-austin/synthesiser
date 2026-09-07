@@ -63,7 +63,6 @@ void envelope_sustain_time(Envelope *env) {
     env->t += 1.0f / g_sampleRate;
     if (env->t >= env->t1) {
         env->targetReached = true;
-        emscripten_console_logf("sustain time complete");
     }
 }
 

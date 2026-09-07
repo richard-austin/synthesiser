@@ -35,6 +35,7 @@
                            [divisions]="10"
                            [calAngle]="300"
                            [radius]="50"
+                           [factor]="0.9"
                            (setLevel)="setAttack($event)">
         </app-level-control>
         <app-level-control #decay
@@ -49,7 +50,7 @@
                            label="Sustain"
                            [style]="dialStyle.red"
                            [radius]="50"
-                           [divisions]="10"
+                           [divisions]="6"
                            (setLevel)="setSustainLevel($event)">
         </app-level-control>
         <app-level-control #release
@@ -57,7 +58,7 @@
                            [style]="dialStyle.red"
                            [radius]="50"
                            [divisions]="10"
-                           [factor]="10"
+                           [factor]="6"
                            (setLevel)="setReleaseTime($event)">
         </app-level-control>
         <h4>Legato</h4>

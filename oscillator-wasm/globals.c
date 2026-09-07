@@ -11,6 +11,7 @@ int g_roundRobinIndex = 0;
 
 BankData *g_banks = NULL;
 OscillatorData **g_oscData = NULL;
+Noise* g_noise = NULL;
 
 float *g_fmAccumulators = NULL;
 float *g_amAccumulators = NULL;

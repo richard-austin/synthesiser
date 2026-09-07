@@ -58,13 +58,42 @@ void setBankEnvelopeParams(int bank, int phase, float value) {
         case 6:
             env->legato = (value > 0.0f);
             break;
+        default:
+            emscripten_console_errorf("Unknown oscillator envelope phase: %d", phase);
+            break;
+    }
+}
+
+EMSCRIPTEN_KEEPALIVE
+
+void setNoiseEnvelopeParams(int phase, float value) {
+    EnvelopeData *env = &g_noise->envelopeData;
+    switch (phase) {
+        case 1:
+            env->attack = value;
+            break;
+        case 2:
+            env->decay = value;
+            break;
+        case 3:
+            env->sustainLevel = value;
+            break;
+        case 4:
+            env->release = value;
+            break;
+        case 6:
+            env->legato = (value > 0.0f);
+            break;
+        default:
+            emscripten_console_errorf("Unknown noise envelope phase: %d", phase);
+            break;
     }
 }
 
 EMSCRIPTEN_KEEPALIVE
 
 void setPortamento(int bank, float time) {
-    PortamentoData* pd = &g_banks[bank].portamentoData;
+    PortamentoData *pd = &g_banks[bank].portamentoData;
     pd->time = time;
 
     pd->inUse = time != 0.0f;
@@ -97,17 +126,21 @@ void setBankPitchEnvelopeParams(int bank, int phase, float value) {
             for (int o = 0; o < g_oscillatorsPerBank; ++o)
                 od[o].pitchEnv.level = value;
             break;
+        default:
+            emscripten_console_errorf("Unknown oscillator pitch envelope phase: %d", phase);
+            break;
     }
 }
 
 EMSCRIPTEN_KEEPALIVE
 
 void setFilterPortamento(int bank, float time) {
-    PortamentoData* pd = &g_banks[bank].filterPortamentoData;
+    PortamentoData *pd = &g_banks[bank].filterPortamentoData;
     pd->time = time;
 
     pd->inUse = time != 0.0f;
 }
+
 EMSCRIPTEN_KEEPALIVE
 
 void setBankFilterPitchEnvelopeParams(int bank, int phase, float value) {
@@ -133,6 +166,9 @@ void setBankFilterPitchEnvelopeParams(int bank, int phase, float value) {
             OscillatorData *od = g_oscData[bank];
             for (int o = 0; o < g_oscillatorsPerBank; ++o)
                 od[o].filterPitchEnv.level = value;
+            break;
+        default:
+            emscripten_console_errorf("Unknown filter pitch envelope phase: %d", phase);
             break;
     }
 }
@@ -328,12 +364,41 @@ void setFilterLevel(int bank, float level) {
 EMSCRIPTEN_KEEPALIVE
 
 void setFilterMorphMode(int bank, float morphMode) {
-    BankData *bd = &g_banks[bank];
     OscillatorData *oscData = g_oscData[bank];
     for (int o = 0; o < g_oscillatorsPerBank; ++o) {
         OscillatorData *od = &oscData[o];
         svf_set_morph(&od->svf, morphMode);
     }
+}
+
+EMSCRIPTEN_KEEPALIVE
+
+void noiseConnectToMasterVolume() {
+    g_noise->output = MASTER_VOLUME;
+}
+
+EMSCRIPTEN_KEEPALIVE
+
+void noiseConnectToFilter() {
+    g_noise->output = FILTER;
+}
+
+EMSCRIPTEN_KEEPALIVE
+
+void noiseOff(bool isOff) {
+    g_noise->output = isOff ? OFF : MASTER_VOLUME;
+}
+
+EMSCRIPTEN_KEEPALIVE
+
+void setNoiseGain(float gain) {
+    g_noise->gain = gain;
+}
+
+EMSCRIPTEN_KEEPALIVE
+
+void setNoiseType(int type) {
+    g_noise->type = type;
 }
 
 EMSCRIPTEN_KEEPALIVE

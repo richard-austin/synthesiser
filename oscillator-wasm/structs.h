@@ -183,6 +183,19 @@ typedef struct {
     oscModType modType;
 } ModSettings;
 
+enum noiseType {WHITE, PINK, BROWN};
+enum noiseOutput{OFF, MASTER_VOLUME, FILTER};
+
+typedef struct {
+    enum noiseType type;
+    enum noiseOutput output;
+    float gain;
+    EnvelopeData envelopeData;
+    Envelope* envelopes;
+    int oscillatorsPerBank;;
+} Noise;
+
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif

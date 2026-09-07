@@ -65,8 +65,8 @@ export class FmSynthService {
 
     // 4. Create your AudioWorkletNode instance linking your custom 'oscillator' token
     this.synthNode = new AudioWorkletNode(this.audioContext, 'oscillator', {
-      numberOfOutputs: numberOfBanks * 2, // 2 x numberOfBanks to accommodate separate filter outputs
-      outputChannelCount: Array(numberOfBanks * 2).fill(2),
+      numberOfOutputs: numberOfBanks * 2 + 1, // 2 x numberOfBanks to accommodate separate filter outputs + 1 for the noise generator
+      outputChannelCount: Array(numberOfBanks * 2+1).fill(2), // numberOfBanks each for oscillators and filters plus one for noise generator
       channelInterpretation: 'speakers',
       processorOptions: {
         numberOfBanks: numberOfBanks,
@@ -143,6 +143,10 @@ export class FmSynthService {
 
   public envelope(bank: number, phase: number, value: number): void {
     this.port?.postMessage({type: 'envelope', bank: bank, phase: phase, value: value});
+  }
+
+  public noiseEnvelope(phase: number, value: number): void {
+    this.port?.postMessage({type: 'noiseEnvelope', phase, value});
   }
 
   private readonly sixthRoot2: number = 1.122462048;
@@ -240,6 +244,14 @@ export class FmSynthService {
     this.synthNode.disconnect(output + this._numberOfBanks);
   }
 
+  connectNoise(dest: AudioNode) {
+    this.synthNode.connect(dest, this._numberOfBanks * 2);
+  }
+
+  disconnectNoise() {
+    this.synthNode.disconnect(this._numberOfBanks * 2);
+  }
+
   public tuning(tuning: number, bank: number): void {
     this.port.postMessage({type: 'tuning', bank: bank, tuning: tuning});
   }
@@ -326,8 +338,23 @@ export class FmSynthService {
     } else {
       console.error("Cannot find wave table for" + type)
     }
+  }
 
 
+  noiseConnectToFilter() {
+    this.port.postMessage({type: 'noiseConnectToFilter'});
+  }
+
+  noiseOff(isOff: boolean) {
+    this.port.postMessage({type: 'noiseOff', isOff});
+  }
+
+  setNoiseGain(gain: number) {
+    this.port.postMessage({type: 'setNoiseGain', gain});
+  }
+
+  setNoiseType(noiseType: any) {
+    this.port.postMessage({type: 'setNoiseType', noiseType});
   }
 
   setFilterLFOFrequency(bank: number, frequency: number) {
@@ -367,4 +394,5 @@ export class FmSynthService {
     this.port.postMessage({type: "shutDown"});
     this.synthNode.disconnect();
   }
+
 }

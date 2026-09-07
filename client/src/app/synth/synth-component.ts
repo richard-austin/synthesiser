@@ -300,7 +300,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
   protected keydown(code: number, velocity: number) {
     this.fmSynthService.keyDown(code, velocity);
-    this.noise().keyDown(code, velocity);
   }
 
   protected computerKeyUp($event: KeyboardEvent) {
@@ -315,7 +314,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
   protected keyup(code: number) {
     this.fmSynthService.keyUp(code);
-    this.noise().keyUp(code);
   }
 
   keyCode(e: KeyboardEvent) {
@@ -484,10 +482,12 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   protected setNoiseOutputTarget($event: string) {
-    this.noise().disconnect();
+    this.fmSynthService.disconnectNoise();
+    this.noise().noiseOff(true);
     switch ($event) {
       case 'speaker':
-        this.noise().connect(this.masterVolume().node());
+        this.noise().noiseOff(false);
+        this.fmSynthService.connectNoise(this.masterVolume().node());
         break;
       case 'filter':
         this.noise().connectToFilters();

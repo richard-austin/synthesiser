@@ -1,4 +1,4 @@
-//#include <emscripten/console.h>
+#include <emscripten/console.h>
 #include <emscripten.h>
 #include <math.h>
 #include <stdlib.h>
@@ -13,6 +13,7 @@
 #include "filter.h"
 #include "butterworth_filter.h"
 #include "key_to_frequency.h"
+#include "noise.h"
 
 void bank_data_init(BankData *bd, int waveTableSize, int numBands) {
     bd->detuneFactor = 1.0f;
@@ -54,6 +55,8 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, int numBand
 
     g_banks = (BankData *) malloc(sizeof(BankData) * numBanks);
     g_oscData = (OscillatorData **) malloc(sizeof(OscillatorData *) * numBanks);
+    g_noise = (Noise *) malloc(sizeof(Noise));
+    noise_init(g_noise, oscsPerBank);
 
     g_fmAccumulators = (float *) calloc(numBanks * oscsPerBank, sizeof(float));
     g_amAccumulators = (float *) calloc(numBanks * oscsPerBank, sizeof(float));
@@ -142,7 +145,7 @@ void triggerNoteOn(int key, int velocity) {
         // Set oscillator and filter pitch envelope times to 0
         od->pitchEnv.t = 0.0f;
         od->filterPitchEnv.t = 0.0f;
-
+        noise_init_envelope(g_noise, foundIdx);
         if (isRetrigger)
             od->env.phase = ENV_RETRIGGER;
         else {
@@ -162,6 +165,7 @@ void triggerNoteOff(int key) {
             if (g_oscData[b][o].env.inUse && g_oscData[b][o].key == key) {
                 OscillatorData *od = &g_oscData[b][o];
                 od->env.keyDown = false;
+                g_noise->envelopes[o].keyDown = false;
 
                 // if (!od->env.envelopeData->legato) {
                 //     // If the voice was caught mid-retrigger or processing anomaly,
@@ -217,13 +221,14 @@ float render_sample_from_phase(int bank, int table_index, float phase) {
     return sample_a + fraction * (sample_b - sample_a);
 }
 
+bool shown = false;
 EMSCRIPTEN_KEEPALIVE
 
 void processBlock(float **outputBuffers, int numSamples) {
     const float nyquist = g_sampleRate / 2.0f;
 
-    // 1. Wipe all 16 channel buffers (8 banks * 2 channels) to zero cleanly
-    for (int b = 0; b < g_numberOfBanks * 2 * 2; b++) {
+    // 1. Wipe all 18 channel buffers ((8 banks + 1) * 2 channels) to zero cleanly
+    for (int b = 0; b < (g_numberOfBanks * 2 +1) * 2; b++) {
         memset(outputBuffers[b], 0, sizeof(float) * numSamples);
     }
 
@@ -231,7 +236,7 @@ void processBlock(float **outputBuffers, int numSamples) {
     bool activeAudioEngine = false;
     for (int b = 0; b < g_numberOfBanks; b++) {
         for (int osc = 0; osc < g_oscillatorsPerBank; osc++) {
-            if (g_oscData[b][osc].env.inUse) {
+            if (g_oscData[b][osc].env.inUse || g_noise->envelopes[osc].inUse) {
                 activeAudioEngine = true;
                 break;
             }
@@ -239,6 +244,11 @@ void processBlock(float **outputBuffers, int numSamples) {
     }
     if (!activeAudioEngine)
         return;
+
+    const enum noiseOutput g_noise_output = g_noise->output;
+
+    float* noiseOutLeft = outputBuffers[g_numberOfBanks * 4];
+    float* noiseOutRight = outputBuffers[g_numberOfBanks * 4 + 1];
 
     // 4. MAIN RENDERING ENGINE
     float invSampleRate = 1.0f / g_sampleRate;
@@ -290,12 +300,18 @@ void processBlock(float **outputBuffers, int numSamples) {
                     if (bd_useFilterPitchEnvelope)
                         pitch_envelope_advance_to_sustain(&od->filterPitchEnv);
                     envelope_advance_to_sustain(env, od->frequency);
+                    if (g_noise_output != OFF) {
+                        envelope_advance_to_sustain(&g_noise->envelopes[osc], 10000.0f);
+                    }
                 } else {
                     if (bd_usePitchEnvelope)
                         pitch_envelope_advance_to_release_level(&od->pitchEnv);
                     if (bd_useFilterPitchEnvelope)
                         pitch_envelope_advance_to_release_level(&od->filterPitchEnv);
                     envelope_advance_to_zero(env, od->frequency);
+                    if (g_noise_output != OFF) {
+                        envelope_advance_to_zero(&g_noise->envelopes[osc], 10000.0f);
+                    }
                 }
 
                 float f = od->frequency;
@@ -308,7 +324,7 @@ void processBlock(float **outputBuffers, int numSamples) {
                 if (f > nyquist)
                     f = nyquist;
 
-                if (bd_useFilter) {
+                if (bd_useFilter || g_noise->output == FILTER) {
                     float filterFx = od->filterFrequency;
                     if (od->filterPortamento.portamentoData->inUse)
                         filterFx = portamentoGlide(&od->filterPortamento, filterFx);
@@ -375,18 +391,29 @@ void processBlock(float **outputBuffers, int numSamples) {
                 if (bd->lfoData.modType == LFO_AMPLITUDE) {
                     signal *= (1.0f + render_lfo_sample(&bd->lfoData));
                 }
-
+                float noiseSample = noise(g_noise, osc);
                 float finalOutputSample = signal * bd->oscillatorLevel * ampEnvelope;
+                float filterInputSample = 0.0f;
 
-                if (bd_outputToFilter) {
-                    float filteredSample = svf_process_morph(&od->svf, 0.1f * finalOutputSample) * bd->filterLevel;
-                    if (bd->filterLfoData.modType == LFO_AMPLITUDE) {
-                        filteredSample *= (1.0f + render_lfo_sample(&bd->filterLfoData));
-                    }
+                if (bd_outputToFilter)
+                    filterInputSample = 0.5f * finalOutputSample;
+
+                if (g_noise_output == FILTER)
+                    filterInputSample += noiseSample;
+
+                if (bd_outputToFilter || (g_noise_output == FILTER && b == 0)) {
+                    float filterSample = svf_process_morph(&od->svf, filterInputSample) * bd->filterLevel;
                     // Mirroring the exact same source to Left and Right channel blocks
-                    filterOutLeft[i] += filteredSample * panLeft;
-                    filterOutRight[i] += filteredSample * panRight;
-                } else {
+                    filterOutLeft[i] += filterSample * panLeft;
+                    filterOutRight[i] += filterSample * panRight;
+                }
+
+                if (g_noise_output == MASTER_VOLUME) {
+                    noiseOutLeft[i] += noiseSample * panLeft;
+                    noiseOutRight[i] += noiseSample * panRight;
+                }
+
+                if (!bd_outputToFilter) {
                     // Mirroring the exact same source to Left and Right channel blocks
                     outLeft[i] += finalOutputSample * panLeft;
                     outRight[i] += finalOutputSample * panRight;

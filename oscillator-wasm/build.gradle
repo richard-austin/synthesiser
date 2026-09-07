@@ -37,6 +37,7 @@ File butterworthSourceFile = layout.projectDirectory.file('butterworth_filter.c'
 File setupFromControlsSourceFile = layout.projectDirectory.file('setup_from_controls.c').asFile
 File keyToFrequencySourceFile = layout.projectDirectory.file('key_to_frequency.c').asFile
 File globalsSourceFile = layout.projectDirectory.file('globals.c').asFile
+File noiseSourceFile = layout.projectDirectory.file('noise.c').asFile
 
 File outputDirectory = new File(rootDir, '/client/public/assets/wasm') //layout.buildDirectory.dir('wasm').get().asFile
 String outputJsPath = new File(outputDirectory, 'engine-module.js').absolutePath
@@ -89,6 +90,8 @@ tasks.register('compileWasm', Exec) {
     inputs.file(setupFromControlsSourceFile)
     inputs.file(keyToFrequencySourceFile)
     inputs.file(globalsSourceFile)
+    inputs.file(noiseSourceFile)
+
     outputs.dir(outputDirectory)
 
     // Ensure the plugin installation executes before this compilation runs
@@ -118,6 +121,7 @@ tasks.register('compileWasm', Exec) {
             setupFromControlsSourceFile.absolutePath,
             keyToFrequencySourceFile.absolutePath,
             globalsSourceFile.absolutePath,
+            noiseSourceFile.absolutePath,
             "-O3",
             "-flto",
             "-msimd128",

@@ -50,9 +50,9 @@ if (typeof globalThis.registerProcessor === 'function') {
 
       // 4 Oscillator Banks + 4 Filter Banks = 8 Banks total.
       // With 2 channels each, we need 16 total discrete float pointers.
-      const totalChannels = this.numberOfBanks * 2 * 2;
+      const totalChannels = this.numberOfBanks * 2 * 2 + 2; // Two per oscillator bank, two per filter bank plus two for the noise generator
 
-      for (let b = 0; b < totalChannels; b++) {
+      for (let c = 0; c < totalChannels; c++) {
         const ptr = Module._malloc(samplesPerBlock * bytesPerFloat);
         Module.HEAPF32.fill(0, ptr / bytesPerFloat, (ptr / bytesPerFloat) + samplesPerBlock);
         this.channelPtrs.push(ptr);
@@ -60,8 +60,8 @@ if (typeof globalThis.registerProcessor === 'function') {
 
       // Allocate pointer array large enough to hold all 16 pointer addresses
       this.wasmOutputPtrArray = Module._malloc(totalChannels * bytesPerFloat);
-      for (let b = 0; b < totalChannels; b++) {
-        Module.HEAP32[(this.wasmOutputPtrArray / 4) + b] = this.channelPtrs[b];
+      for (let c = 0; c < totalChannels; c++) {
+        Module.HEAP32[(this.wasmOutputPtrArray / 4) + c] = this.channelPtrs[c];
       }
       console.log("Memory marshalling arrays allocated successfully on WASM heap for Stereo.");
     }
@@ -119,6 +119,9 @@ if (typeof globalThis.registerProcessor === 'function') {
           break;
         case 'envelope':
           if (this.isWasmBound) Module._setBankEnvelopeParams(data.bank, data.phase, data.value);
+          break;
+        case 'noiseEnvelope':
+          if (this.isWasmBound) Module._setNoiseEnvelopeParams(data.phase, data.value);
           break;
         case 'portamento':
           if(this.isWasmBound) Module._setPortamento(data.bank, data.time);
@@ -243,6 +246,24 @@ if (typeof globalThis.registerProcessor === 'function') {
             Module._setFilterMorphMode(data.bank, data.filterMorphMode);
           }
           break;
+        case 'setNoiseGain':
+          if (this.isWasmBound) {Module._setNoiseGain(data.gain);}
+          break;
+        case 'setNoiseType':
+          if (this.isWasmBound) {
+            const type = data.noiseType === 'white' ? 0 : data.noiseType === 'pink' ? 1 : data.noiseType === 'brown' ? 2 : 0;
+            Module._setNoiseType(type)
+          }
+          break;
+        case 'noiseConnectToMasterVolume':
+          if (this.isWasmBound) {Module._noiseConnectToMasterVolume();}
+          break;
+        case 'noiseConnectToFilter':
+          if (this.isWasmBound) {Module._noiseConnectToFilter();}
+          break;
+        case 'noiseOff':
+          if (this.isWasmBound) {Module._noiseOff(data.isOff);}
+          break;
         default:
           console.error("Unknown control type " + type);
           break;
@@ -265,7 +286,7 @@ if (typeof globalThis.registerProcessor === 'function') {
       // Run the C module engine step over the continuous memory heap
       Module._processBlock(this.wasmOutputPtrArray, samplesPerBlock);
 
-      const totalBanks = this.numberOfBanks * 2; // 4 Osc banks + 4 Filter banks
+      const totalBanks = this.numberOfBanks * 2 + 1; // 4 Osc banks + 4 Filter banks + 1 noise bank
 
       for (let b = 0; b < totalBanks; b++) {
         if (!outputs[b]) continue;
@@ -293,25 +314,25 @@ if (typeof globalThis.registerProcessor === 'function') {
         }
       }
 
-      const time = (Date.now() - start);
-      this.totalTime += time
-      this.iterationCount++;
-      if (time > this.maxTime)
-        this.maxTime = time;
-      if (time < this.minTime)
-        this.minTime = time;
-      //  Send an average performance report every 500 blocks (~1.5 seconds)
-      if (this.iterationCount >= 500) {
-        const averageMsPerBlock = this.totalTime / this.iterationCount;
-        console.log("averageMsPerBlock = " + averageMsPerBlock + " maxTime = " + this.maxTime + " minTime = " + this.minTime);
-        //this.port.postMessage({ type: 'perf-report', averageMsPerBlock });
-
-        this.totalTime = 0;
-        this.iterationCount = 0;
-        this.maxTime = 0;
-        this.minTime = 100;
-      }
-
+      // const time = (Date.now() - start);
+      // this.totalTime += time
+      // this.iterationCount++;
+      // if (time > this.maxTime)
+      //   this.maxTime = time;
+      // if (time < this.minTime)
+      //   this.minTime = time;
+      // //  Send an average performance report every 500 blocks (~1.5 seconds)
+      // if (this.iterationCount >= 500) {
+      //   const averageMsPerBlock = this.totalTime / this.iterationCount;
+      //   console.log("averageMsPerBlock = " + averageMsPerBlock + " maxTime = " + this.maxTime + " minTime = " + this.minTime);
+      //   //this.port.postMessage({ type: 'perf-report', averageMsPerBlock });
+      //
+      //   this.totalTime = 0;
+      //   this.iterationCount = 0;
+      //   this.maxTime = 0;
+      //   this.minTime = 100;
+      // }
+      //
       return true;
     }
   }

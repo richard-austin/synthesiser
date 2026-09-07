@@ -13,6 +13,7 @@ extern int g_roundRobinIndex;
 
 extern BankData *g_banks;
 extern OscillatorData **g_oscData;
+extern Noise* g_noise;
 
 extern float *g_fmAccumulators;
 extern float *g_amAccumulators;
