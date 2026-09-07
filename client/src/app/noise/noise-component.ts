@@ -7,9 +7,6 @@ import {
   output,
   input, inject
 } from '@angular/core';
-import {WhiteNoise} from '../modules/noise/white-noise';
-import {PinkNoise} from '../modules/noise/pink-noise';
-import {BrownNoise} from '../modules/noise/brown-noise';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {FilterComponent} from '../filter/filter-component';
 import {dialStyle} from '../level-control/levelControlParameters';
@@ -90,20 +87,6 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
       // else use default settings
     }
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
-    // for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-    //   this.whiteNoise[i].setGain(settings.gain);
-    //   this.whiteNoise[i].setAmplitudeEnvelope(settings.adsr);
-    //   this.whiteNoise[i].legatoMode = settings.legatoMode === onOff.on;
-    //   this.pinkNoise[i].setGain(settings.gain);
-    //   this.pinkNoise[i].setAmplitudeEnvelope(settings.adsr);
-    //   this.pinkNoise[i].legatoMode = settings.legatoMode === onOff.on;
-    //   this.brownNoise[i].setGain(settings.gain);
-    //   this.brownNoise[i].setAmplitudeEnvelope(settings.adsr);
-    //   this.brownNoise[i].legatoMode = settings.legatoMode === onOff.on;
-    // }
-    let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] | undefined = this.noiseSource();
- //   this.noisePoolMgr = new DevicePoolManager(source, this.proxySettings);
-
     this.attack().setValue(this.proxySettings.adsr.attackTime);
     this.decay().setValue(this.proxySettings.adsr.decayTime);
     this.sustain().setValue(this.proxySettings.adsr.sustainLevel);
@@ -141,22 +124,6 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   noiseOff(isOff: boolean) {
     this.proxySettings.output = isOff ? noiseOutputs.off : noiseOutputs.speaker;
     this.fmSynthService.noiseOff(isOff);
-  }
-
-  private noiseSource(): WhiteNoise[] | PinkNoise[] | BrownNoise[] | undefined{
-    let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] | undefined = undefined;//this.whiteNoise;
-    switch (this.proxySettings.type) {
-      case 'white':
-      //  source = this.whiteNoise;
-        break;
-      case 'pink':
-      //  source = this.pinkNoise;
-        break;
-      case 'brown':
-     //   source = this.brownNoise;
-        break;
-    }
-    return source;
   }
 
   legatoMode(legatoMode: boolean) {
@@ -234,6 +201,5 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    WhiteNoise.theNode = PinkNoise.theNode = BrownNoise.theNode = undefined;
   }
 }

@@ -183,16 +183,29 @@ typedef struct {
     oscModType modType;
 } ModSettings;
 
-enum noiseType {WHITE, PINK, BROWN};
-enum noiseOutput{OFF, MASTER_VOLUME, FILTER};
+enum noiseType { WHITE, PINK, BROWN };
+
+enum noiseOutput { OFF, MASTER_VOLUME, FILTER };
 
 typedef struct {
     enum noiseType type;
     enum noiseOutput output;
     float gain;
     EnvelopeData envelopeData;
-    Envelope* envelopes;
+    Envelope *envelopes;
     int oscillatorsPerBank;;
+
+    // Pink noise filter parameters
+    float b0;
+    float b1;
+    float b2;
+    float b3;
+    float b4;
+    float b5;
+    float b6;
+
+    // For brown noise
+    float lastOut;
 } Noise;
 
 
