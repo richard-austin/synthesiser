@@ -26,11 +26,11 @@ void noise_init(Noise *n, int oscillatorsPerBank) {
     srand(time(NULL));
 }
 
-void noise_init_envelope(Noise *n, int oscIndex) {
+void noise_init_envelope(Noise *n, int oscIndex, float velocity) {
     Envelope *envelope = &n->envelopes[oscIndex];
 
     envelope->t = 0.0f;
-    n->envelopeData.velocity = 0.0f;
+    n->envelopeData.velocity = velocity;
     envelope->keyDown = true;
     envelope->inUse = true;
     envelope->phase = ENV_INACTIVE;;

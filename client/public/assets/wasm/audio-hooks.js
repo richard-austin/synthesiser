@@ -68,205 +68,211 @@ if (typeof globalThis.registerProcessor === 'function') {
 
     handleIncomingMessage(data) {
       if (!data) return;
-      //     console.log("AudioWorklet received control type:", data.type);
-
       switch (data.type) {
         case 'init':
           if (this.isWasmBound && typeof Module._initProcessor === 'function') {
             Module._initProcessor(this.numberOfBanks, this.oscillatorsPerBank, 2048, 21, 20.0, sampleRate);
             console.log("C-Memory maps allocated successfully.");
           }
-          break;
+          return;
         case 'shutDown':
           this.isEngineRunning = false;
           this.port.close();
           if (this.wasmOutputPtrArray !== 0) {
             for (let p of this.channelPtrs) Module._free(p);
             Module._free(this.wasmOutputPtrArray);
-            for (let b = 0; b < 4000; b++) {
-              console.log("Shutdown successfully.");
-            }
           }
+          return;
+        default:
           break;
-        case 'keyDown':
-          if (this.isWasmBound) {
+      }
+      if (this.isWasmBound) {
+        switch (data.type) {
+          case 'keyDown':
             Module._triggerNoteOn(data.key, data.velocity);
             //     console.log("C-Engine Note On executed for key:", data.key);
-          }
-          break;
-        case 'keyUp':
-          if (this.isWasmBound) Module._triggerNoteOff(data.key);
-          break;
-        case 'periodicWave':
-          if (this.isWasmBound) {
+            break;
+          case 'keyUp':
+            Module._triggerNoteOff(data.key);
+            break;
+          case 'periodicWave':
             Module._setNumberOfBands(data.numberOfBands);
             const ptr = Module._allocateWaveTableMemory(data.bank);  // Allocate memory if not already done. Allow 4 bytes per float
             const heapIndex = ptr >> 2;  // 4 bytes per float
             Module.HEAPF32.set(data.waveTables, heapIndex);
-          }
-          break;
-        case 'tuning':
-          if (this.isWasmBound) Module._setBankTuning(data.bank, data.tuning);
-          break;
-        case 'detune':
-          if (this.isWasmBound) Module._setBankDetune(data.bank, data.detune);
-          break;
-        case "setVelocitySensitive":
-          if (this.isWasmBound) Module._setVelocitySensitive(data.bank, data.velocitySensitive);
-          break;
-        case 'setPortamentoTime':
-          if(this.isWasmBound) Module._setPortamentoTime(data.bank, data.time);
-          break;
-        case 'envelope':
-          if (this.isWasmBound) Module._setBankEnvelopeParams(data.bank, data.phase, data.value);
-          break;
-        case 'noiseEnvelope':
-          if (this.isWasmBound) Module._setNoiseEnvelopeParams(data.phase, data.value);
-          break;
-        case 'portamento':
-          if(this.isWasmBound) Module._setPortamento(data.bank, data.time);
-          break;
-        case 'filterPortamento':
-          if(this.isWasmBound) Module._setFilterPortamento(data.bank, data.time);
-          break;
-        case 'pitchEnvelope':
-          if (this.isWasmBound) Module._setBankPitchEnvelopeParams(data.bank, data.phase, data.value);
-          break;
-        case 'filterTuning':
-          if (this.isWasmBound) Module._setFilterTuning(data.bank, data.filterTuning);
-          break;
-        case 'filterDetune':
-          if (this.isWasmBound) Module._setFilterDetune(data.bank, data.filterDetune);
-          break;
-        case 'filterQFactor':
-          if (this.isWasmBound) Module._setFilterQFactor(data.bank, data.filterQFactor);
-          break;
-        case 'filterPitchEnvelope':
-          if (this.isWasmBound) Module._setBankFilterPitchEnvelopeParams(data.bank, data.phase, data.value);
-          break;
-        case 'usePitchEnvelope':
-          if (this.isWasmBound) Module._usePitchEnvelope(data.bank, data.value);
-          break;
-        case 'useFilterPitchEnvelope':
-          if (this.isWasmBound) Module._useFilterPitchEnvelope(data.bank, data.value);
-          break;
-        case 'outputToFilter':
-          if (this.isWasmBound) Module._outputToFilter(data.bank, data.outputToFilter);
-          break;
-        case 'useFilter':
-          if (this.isWasmBound) Module._useFilter(data.bank, data.useFilter);
-          break;
-        case 'setModType': {
-          if (this.isWasmBound) {
+            break;
+          case 'tuning':
+            Module._setBankTuning(data.bank, data.tuning);
+            break;
+          case 'detune':
+            Module._setBankDetune(data.bank, data.detune);
+            break;
+          case "setVelocitySensitive":
+            Module._setVelocitySensitive(data.bank, data.velocitySensitive);
+            break;
+          case 'setPortamentoTime':
+            Module._setPortamentoTime(data.bank, data.time);
+            break;
+          case 'envelope':
+            Module._setBankEnvelopeParams(data.bank, data.phase, data.value);
+            break;
+          case 'portamento':
+            Module._setPortamento(data.bank, data.time);
+            break;
+          case 'filterPortamento':
+            Module._setFilterPortamento(data.bank, data.time);
+            break;
+          case 'pitchEnvelope':
+            Module._setBankPitchEnvelopeParams(data.bank, data.phase, data.value);
+            break;
+          case 'filterTuning':
+            Module._setFilterTuning(data.bank, data.filterTuning);
+            break;
+          case 'filterDetune':
+            Module._setFilterDetune(data.bank, data.filterDetune);
+            break;
+          case 'filterQFactor':
+            Module._setFilterQFactor(data.bank, data.filterQFactor);
+            break;
+          case 'filterPitchEnvelope':
+            Module._setBankFilterPitchEnvelopeParams(data.bank, data.phase, data.value);
+            break;
+          case 'usePitchEnvelope':
+            Module._usePitchEnvelope(data.bank, data.value);
+            break;
+          case 'useFilterPitchEnvelope':
+            Module._useFilterPitchEnvelope(data.bank, data.value);
+            break;
+          case 'outputToFilter':
+            Module._outputToFilter(data.bank, data.outputToFilter);
+            break;
+          case 'useFilter':
+            Module._useFilter(data.bank, data.useFilter);
+            break;
+          case 'setModType': {
             const typeVal = data.modType === 'frequency' ? 1 : (data.modType === 'amplitude' ? 2 : 0);
             Module._setModType(data.modBank, data.carrierBank, typeVal);
           }
-          break;
-        }
-        case 'setModLevel':
-          if (this.isWasmBound) Module._setModLevel(data.modBank, data.carrierBank, data.modLevel);
-          break;
-        case 'setModOutput':
-          if (this.isWasmBound) {
+            break;
+          case 'setModLevel':
+            Module._setModLevel(data.modBank, data.carrierBank, data.modLevel);
+            break;
+          case 'setModOutput':
+          {
             const typeVal = data.modOutput === 'direct' ? 1 : (data.modOutput === 'envelope' ? 2 : 0);
             Module._setModOutput(data.modBank, typeVal);
           }
-          break;
-        case 'setLFOModType':
-          if (this.isWasmBound) {
+            break;
+          case 'setLFOModType':
+          {
             const modType = data.modType;
             const typeVal = modType === 'amplitude' ? 1 : modType === 'frequency' ? 2 : 3;
             Module._setLFOModType(data.bank, typeVal);
           }
-          break;
-        case 'lfoPeriodicWave':
-          if (this.isWasmBound) {
+            break;
+          case 'lfoPeriodicWave':
+          {
             Module._setNumberOfBands(data.numberOfBands);
             const ptr = Module._allocateLFOWaveTableMemory(data.bank);  // Allocate memory if not already done. Allow 4 bytes per float
             const heapIndex = ptr >> 2;  // 4 bytes per float
             Module.HEAPF32.set(data.waveTables, heapIndex);
           }
-          break;
-        case 'setLFOLevel':
-          if (this.isWasmBound) {
+            break;
+          case 'setLFOLevel':
+          {
             const levelVal = data.level;
             Module._setLFOLevel(data.bank, levelVal);
           }
-          break;
-        case 'setLFOFrequency':
-          if (this.isWasmBound) {
+            break;
+          case 'setLFOFrequency':
+          {
             const frequency = data.frequency;
             Module._setLFOFrequency(data.bank, frequency);
           }
-          break;
-        case 'setFilterLFOModType':
-          if (this.isWasmBound) {
+            break;
+          case 'setFilterLFOModType':
+          {
             const modType = data.modType;
             const typeVal = modType === 'amplitude' ? 1 : modType === 'frequency' ? 2 : 3;
             Module._setFilterLFOModType(data.bank, typeVal);
           }
-          break;
-        case 'filterLFOPeriodicWave':
-          if (this.isWasmBound) {
+            break;
+          case 'filterLFOPeriodicWave':
+          {
             Module._setNumberOfBands(data.numberOfBands);
             const ptr = Module._allocateFilterLFOWaveTableMemory(data.bank);  // Allocate memory if not already done. Allow 4 bytes per float
             const heapIndex = ptr >> 2;  // 4 bytes per float
             Module.HEAPF32.set(data.waveTables, heapIndex);
           }
-          break;
-        case 'setFilterLFOLevel':
-          if (this.isWasmBound) {
+            break;
+          case 'setFilterLFOLevel':
+          {
             const levelVal = data.level;
             Module._setFilterLFOLevel(data.bank, levelVal);
           }
-          break;
-        case 'setFilterLFOFrequency':
-          if (this.isWasmBound) {
+            break;
+          case 'setFilterLFOFrequency':
+          {
             const frequency = data.frequency;
             Module._setFilterLFOFrequency(data.bank, frequency);
           }
-          break;
-        case 'setOscillatorLevel':
-          if (this.isWasmBound) {
+            break;
+          case 'setOscillatorLevel':
+          {
             Module._setOscillatorLevel(data.bank, data.oscillatorLevel);
           }
-          break;
-        case 'setFilterLevel':
-          if (this.isWasmBound) {
+            break;
+          case 'setFilterLevel':
+          {
             Module._setFilterLevel(data.bank, data.filterLevel);
           }
-          break;
-        case 'setBankPan':
-          if (this.isWasmBound) {
+            break;
+          case 'setBankPan':
+          {
             Module._setBankPan(data.bank, data.pan);
           }
-          break;
-        case 'setFilterMorphMode':
-          if (this.isWasmBound) {
+            break;
+          case 'setFilterMorphMode':
+          {
             Module._setFilterMorphMode(data.bank, data.filterMorphMode);
           }
-          break;
-        case 'setNoiseGain':
-          if (this.isWasmBound) {Module._setNoiseGain(data.gain);}
-          break;
-        case 'setNoiseType':
-          if (this.isWasmBound) {
+            break;
+          case 'noiseEnvelope':
+            Module._setNoiseEnvelopeParams(data.phase, data.value);
+            break;
+          case 'setNoiseVelocitySensitive':
+            Module._setNoiseVelocitySensitive(data.velocitySensitive);
+            break;
+          case 'setNoiseGain':
+          {
+            Module._setNoiseGain(data.gain);
+          }
+            break;
+          case 'setNoiseType':
+          {
             const type = data.noiseType === 'white' ? 0 : data.noiseType === 'pink' ? 1 : data.noiseType === 'brown' ? 2 : 0;
             Module._setNoiseType(type)
           }
-          break;
-        case 'noiseConnectToMasterVolume':
-          if (this.isWasmBound) {Module._noiseConnectToMasterVolume();}
-          break;
-        case 'noiseConnectToFilter':
-          if (this.isWasmBound) {Module._noiseConnectToFilter();}
-          break;
-        case 'noiseOff':
-          if (this.isWasmBound) {Module._noiseOff(data.isOff);}
-          break;
-        default:
-          console.error("Unknown control type " + type);
-          break;
+            break;
+          case 'noiseConnectToMasterVolume':
+          {
+            Module._noiseConnectToMasterVolume();
+          }
+            break;
+          case 'noiseConnectToFilter':
+          {
+            Module._noiseConnectToFilter();
+          }
+            break;
+          case 'noiseOff':
+          {
+            Module._noiseOff(data.isOff);
+          }
+            break;
+          default:
+            console.error("Unknown control type " + data.type);
+            break;
+        }
       }
     }
 

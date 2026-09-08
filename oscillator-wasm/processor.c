@@ -145,7 +145,7 @@ void triggerNoteOn(int key, int velocity) {
         // Set oscillator and filter pitch envelope times to 0
         od->pitchEnv.t = 0.0f;
         od->filterPitchEnv.t = 0.0f;
-        noise_init_envelope(g_noise, foundIdx);
+        noise_init_envelope(g_noise, foundIdx, velocity);
         if (isRetrigger)
             od->env.phase = ENV_RETRIGGER;
         else {

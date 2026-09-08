@@ -126,6 +126,11 @@ typedef struct {
 } SVFFilter;
 
 typedef struct {
+    SVFFilter stage1;
+    SVFFilter stage2;
+} SVF4Filter;
+
+typedef struct {
     float frequency;
     int band;
     float phase;
@@ -193,7 +198,7 @@ typedef struct {
     float gain;
     EnvelopeData envelopeData;
     Envelope *envelopes;
-    int oscillatorsPerBank;;
+    int oscillatorsPerBank;
 
     // Pink noise filter parameters
     float b0;
@@ -207,7 +212,6 @@ typedef struct {
     // For brown noise
     float lastOut;
 } Noise;
-
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846

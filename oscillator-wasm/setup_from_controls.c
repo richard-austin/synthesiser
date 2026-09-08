@@ -92,6 +92,12 @@ void setNoiseEnvelopeParams(int phase, float value) {
 
 EMSCRIPTEN_KEEPALIVE
 
+void setNoiseVelocitySensitive(bool velocitySensitive) {
+    g_noise->envelopeData.velocitySensitive = velocitySensitive;
+}
+
+EMSCRIPTEN_KEEPALIVE
+
 void setPortamento(int bank, float time) {
     PortamentoData *pd = &g_banks[bank].portamentoData;
     pd->time = time;

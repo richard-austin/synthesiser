@@ -29,7 +29,7 @@ import {FmSynthService} from '../services/fm-synth-service';
 export class NoiseComponent implements AfterViewInit, OnDestroy {
   private proxySettings!: NoiseSettings;
   private cookies!: Cookies;
-  private velocitySensitive: boolean = true;
+
  // private noisePoolMgr!: DevicePoolManager;
 
   readonly filters = input.required<FilterComponent | undefined>();
@@ -132,9 +132,9 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     this.fmSynthService.noiseEnvelope(envelopePhase.legato, legatoMode ? 1 : 0)
   }
 
-  useVelocitySensitive(velocitySensitive: boolean) {
+  setVelocitySensitive(velocitySensitive: boolean) {
     this.proxySettings.velocitySensitive = velocitySensitive ? onOff.on : onOff.off;
-    this.velocitySensitive = velocitySensitive;
+    this.fmSynthService.setNoiseVelocitySensitive(velocitySensitive);
   }
 
   protected setAttack($event: number) {
@@ -195,7 +195,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
       velocityOnOffForm.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value;
-        this.useVelocitySensitive(value === 'on');
+        this.setVelocitySensitive(value === 'on');
       });
     }
   }

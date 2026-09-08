@@ -145,10 +145,6 @@ export class FmSynthService {
     this.port?.postMessage({type: 'envelope', bank: bank, phase: phase, value: value});
   }
 
-  public noiseEnvelope(phase: number, value: number): void {
-    this.port?.postMessage({type: 'noiseEnvelope', phase, value});
-  }
-
   private readonly sixthRoot2: number = 1.122462048;
 
   setPortamento(bank: number,time: number) {
@@ -242,6 +238,30 @@ export class FmSynthService {
 
   disconnectFilter(output: number) {
     this.synthNode.disconnect(output + this._numberOfBanks);
+  }
+
+  noiseConnectToFilter() {
+    this.port.postMessage({type: 'noiseConnectToFilter'});
+  }
+
+  noiseOff(isOff: boolean) {
+    this.port.postMessage({type: 'noiseOff', isOff});
+  }
+
+  setNoiseGain(gain: number) {
+    this.port.postMessage({type: 'setNoiseGain', gain});
+  }
+
+  setNoiseType(noiseType: any) {
+    this.port.postMessage({type: 'setNoiseType', noiseType});
+  }
+
+  public noiseEnvelope(phase: number, value: number): void {
+    this.port?.postMessage({type: 'noiseEnvelope', phase, value});
+  }
+
+  public setNoiseVelocitySensitive(velocitySensitive: boolean): void {
+    this.port?.postMessage({type: 'setNoiseVelocitySensitive', velocitySensitive});
   }
 
   connectNoise(dest: AudioNode) {
@@ -340,22 +360,6 @@ export class FmSynthService {
     }
   }
 
-
-  noiseConnectToFilter() {
-    this.port.postMessage({type: 'noiseConnectToFilter'});
-  }
-
-  noiseOff(isOff: boolean) {
-    this.port.postMessage({type: 'noiseOff', isOff});
-  }
-
-  setNoiseGain(gain: number) {
-    this.port.postMessage({type: 'setNoiseGain', gain});
-  }
-
-  setNoiseType(noiseType: any) {
-    this.port.postMessage({type: 'setNoiseType', noiseType});
-  }
 
   setFilterLFOFrequency(bank: number, frequency: number) {
     this.port.postMessage({type: 'setFilterLFOFrequency', bank: bank, frequency});
