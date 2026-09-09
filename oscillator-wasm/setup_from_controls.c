@@ -6,6 +6,7 @@
 
 #include "filter.h"
 #include "key_to_frequency.h"
+#include "phaser.h"
 
 EMSCRIPTEN_KEEPALIVE
 
@@ -447,4 +448,28 @@ EMSCRIPTEN_KEEPALIVE
 void setNumberOfBands(int numberOfBands) {
     for (int b = 0; b < g_numberOfBanks; ++b)
         g_banks[b].numBands = numberOfBands;
+}
+
+EMSCRIPTEN_KEEPALIVE
+
+void setPhaserFreuency(float freq) {
+    phaser_set_frequency(g_phaser, freq);
+}
+
+EMSCRIPTEN_KEEPALIVE
+
+void setPhaserQ(float q) {
+    phaser_set_q(g_phaser, q);
+}
+
+EMSCRIPTEN_KEEPALIVE
+
+void setPhaserWetDry(float wetDry) {
+    phaser_set_wet_dry(g_phaser, wetDry);
+}
+
+EMSCRIPTEN_KEEPALIVE
+
+void setPhaserStages(int stages) {
+    phaser_set_stages(g_phaser, stages);
 }

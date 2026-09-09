@@ -38,6 +38,7 @@ File setupFromControlsSourceFile = layout.projectDirectory.file('setup_from_cont
 File keyToFrequencySourceFile = layout.projectDirectory.file('key_to_frequency.c').asFile
 File globalsSourceFile = layout.projectDirectory.file('globals.c').asFile
 File noiseSourceFile = layout.projectDirectory.file('noise.c').asFile
+File phaserSourceFile = layout.projectDirectory.file('phaser.c').asFile
 
 File outputDirectory = new File(rootDir, '/client/public/assets/wasm') //layout.buildDirectory.dir('wasm').get().asFile
 String outputJsPath = new File(outputDirectory, 'engine-module.js').absolutePath
@@ -91,6 +92,7 @@ tasks.register('compileWasm', Exec) {
     inputs.file(keyToFrequencySourceFile)
     inputs.file(globalsSourceFile)
     inputs.file(noiseSourceFile)
+    inputs.file(phaserSourceFile)
 
     outputs.dir(outputDirectory)
 
@@ -122,6 +124,7 @@ tasks.register('compileWasm', Exec) {
             keyToFrequencySourceFile.absolutePath,
             globalsSourceFile.absolutePath,
             noiseSourceFile.absolutePath,
+            phaserSourceFile.absolutePath,
             "-O3",
             "-flto",
             "-msimd128",

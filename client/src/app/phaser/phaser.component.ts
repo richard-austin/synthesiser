@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, OnDestroy, viewChild, output} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, OnDestroy, viewChild, output, inject} from '@angular/core';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {Phaser} from '../modules/phaser';
 import {dialStyle} from '../level-control/levelControlParameters';
@@ -8,6 +8,7 @@ import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {Cookies} from '../settings/cookies/cookies';
 import {FormsModule} from '@angular/forms';
 import {NgClass} from '@angular/common';
+import {FmSynthService} from '../services/fm-synth-service';
 
 @Component({
   selector: 'app-phaser',
@@ -25,8 +26,6 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
   private gain2!: GainNode;
   private panner!: StereoPannerNode;
   private panner2!: StereoPannerNode;
-  phaser!: Phaser;
-  phaser2!: Phaser;
   proxySettings!: PhasorSettings;
   cookies!: Cookies;
   private audioCtx!: AudioContext;
@@ -54,6 +53,8 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
   readonly lfoWaveForm = viewChild.required<ElementRef<HTMLFormElement>>('lfoWaveForm');
   readonly modOnOff = viewChild.required<ElementRef<HTMLFormElement>>('modOnOffForm');
   readonly feedback = viewChild.required<LevelControlComponent>('feedback');
+
+  readonly fmSynthService: FmSynthService = inject(FmSynthService);
 
   constructor() {
     this.isFirefox = navigator.userAgent.indexOf('Firefox') != -1;
@@ -109,15 +110,9 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
 
     this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
 
-    this.phaser?.destroy();
-    this.phaser2?.destroy();
-    this.phaser = new Phaser(this.audioCtx, this.input, this.panner, settings.stages);
-    this.phaser2 = new Phaser(this.audioCtx, this.input, this.panner2, settings.stages);
-    await this.phaser.start();
-    await this.phaser2.start();
     // Set up LFO default values
-    this.modGain.connect(this.phaser.modInput);
-    this.modGain2.connect(this.phaser2.modInput);
+    // this.modGain.connect(this.phaser.modInput);
+    // this.modGain2.connect(this.phaser2.modInput);
     this.started = true;
 
     // Set up the dials
@@ -140,66 +135,33 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
 
   protected setFrequency(frequency: number) {
     this.proxySettings.phase = frequency;
-    this.phaser.setFrequency(frequency);
-    this.phaser2.setFrequency(frequency);
+    this.fmSynthService.phaserSetFrequency(frequency);
   }
 
   protected setQFactor(q: number) {
     this.proxySettings.bandwidth = q;
-    this.phaser.setQFactor(q+0.5);
-    this.phaser2.setQFactor(q+0.5);
+    this.fmSynthService.phaserSetQ(q);
   }
 
   protected setLevel($event: number) {
     this.proxySettings.gain = $event;
-    this.phaser.setLevel($event);
-    this.phaser2.setLevel($event);
+   // this.fmSynthService.phaserSetLevel($event);
   }
 
   protected setWetDry(wetDry: number) {
     this.proxySettings.wetDry = wetDry;
-    this.phaser.setWetDry(wetDry);
-    this.phaser2.setWetDry(wetDry);
+    this.fmSynthService.phaserSetWetDry(wetDry);
   }
 
   protected setFeedback(feedback: number) {
     this.proxySettings.feedback = feedback;
-    this.phaser.setFeedback(feedback);
-    this.phaser2.setFeedback(feedback);
+    //this.fmSynthService.phaserSetFeedback(feedback);
   }
 
   protected async setStages(ev: Event) {
     // @ts-ignore
     const numberOfNodes = parseInt(ev.target.value);
-    if (numberOfNodes > this.maxStages || numberOfNodes < this.minStages) {
-      this.stages = this.proxySettings.stages;
-    } else {
-      this.phaser.destroy();
-      this.phaser2.destroy();
-      this.proxySettings.stages = this.stages = numberOfNodes;
-
-      this.phaser = new Phaser(this.audioCtx, this.input, this.panner, numberOfNodes);
-      this.phaser2 = new Phaser(this.audioCtx, this.input, this.panner2, numberOfNodes);
-      await this.phaser.start();
-      await this.phaser2.start();
-      const gain = this.proxySettings.gain;
-      this.phaser.setLevel(gain);
-      this.phaser2.setLevel(gain);
-      this.modGain.connect(this.phaser.modInput);
-      this.modGain2.connect(this.phaser2.modInput);
-      const feedback = this.proxySettings.feedback;
-      this.phaser.setFeedback(feedback);
-      this.phaser2.setFeedback(feedback);
-      const frequency = this.proxySettings.phase;
-      this.phaser.setFrequency(frequency);
-      this.phaser2.setFrequency(frequency);
-      const bandwidth = this.proxySettings.bandwidth;
-      this.phaser.setQFactor(bandwidth);
-      this.phaser2.setQFactor(bandwidth);
-
-      this.setOutputConnection();
-      this.setWetDry(this.proxySettings.wetDry);
-    }
+    this.fmSynthService.phaserSetStages(numberOfNodes);
   }
 
   protected setModFrequency(freq: number) {
@@ -220,7 +182,7 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
   }
 
   connect(node: AudioNode) {
-    this.gain.connect(node);
+   // this.gain.connect(node);
   }
 
   disconnect() {
@@ -279,7 +241,6 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
     this.panner.disconnect();
     this.panner2.disconnect();
     this.disconnect();
-    this.phaser.destroy();
-    this.phaser2.destroy();
+    //this.fmSynthService.phaserDestroy();
   }
 }

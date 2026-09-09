@@ -218,24 +218,16 @@ if (typeof globalThis.registerProcessor === 'function') {
           }
             break;
           case 'setOscillatorLevel':
-          {
             Module._setOscillatorLevel(data.bank, data.oscillatorLevel);
-          }
             break;
           case 'setFilterLevel':
-          {
             Module._setFilterLevel(data.bank, data.filterLevel);
-          }
             break;
           case 'setBankPan':
-          {
             Module._setBankPan(data.bank, data.pan);
-          }
             break;
           case 'setFilterMorphMode':
-          {
             Module._setFilterMorphMode(data.bank, data.filterMorphMode);
-          }
             break;
           case 'noiseEnvelope':
             Module._setNoiseEnvelopeParams(data.phase, data.value);
@@ -244,30 +236,32 @@ if (typeof globalThis.registerProcessor === 'function') {
             Module._setNoiseVelocitySensitive(data.velocitySensitive);
             break;
           case 'setNoiseGain':
-          {
             Module._setNoiseGain(data.gain);
-          }
             break;
           case 'setNoiseType':
-          {
             const type = data.noiseType === 'white' ? 0 : data.noiseType === 'pink' ? 1 : data.noiseType === 'brown' ? 2 : 0;
             Module._setNoiseType(type)
-          }
             break;
           case 'noiseConnectToMasterVolume':
-          {
             Module._noiseConnectToMasterVolume();
-          }
             break;
           case 'noiseConnectToFilter':
-          {
             Module._noiseConnectToFilter();
-          }
             break;
           case 'noiseOff':
-          {
             Module._noiseOff(data.isOff);
-          }
+            break;
+          case 'phaserSetFrequency':
+            Module._setPhaserFreuency(data.freq);
+            break;
+          case 'phaserSetQ':
+            Module._setPhaserQ(data.q);
+            break;
+          case 'phaserSetWetDry':
+            Module._setPhaserWetDry(data.wetDry);
+            break;
+          case 'phaserSetStages':
+            Module._setPhaserStages(data.stages);
             break;
           default:
             console.error("Unknown control type " + data.type);

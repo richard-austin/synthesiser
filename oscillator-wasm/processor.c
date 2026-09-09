@@ -14,6 +14,7 @@
 #include "butterworth_filter.h"
 #include "key_to_frequency.h"
 #include "noise.h"
+#include "phaser.h"
 
 void bank_data_init(BankData *bd, int waveTableSize, int numBands) {
     bd->detuneFactor = 1.0f;
@@ -57,6 +58,8 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, int numBand
     g_oscData = (OscillatorData **) malloc(sizeof(OscillatorData *) * numBanks);
     g_noise = (Noise *) malloc(sizeof(Noise));
     noise_init(g_noise, oscsPerBank);
+    g_phaser = calloc(1, sizeof(Phaser));
+    phaser_init(g_phaser, sampleRate);
 
     g_fmAccumulators = (float *) calloc(numBanks * oscsPerBank, sizeof(float));
     g_amAccumulators = (float *) calloc(numBanks * oscsPerBank, sizeof(float));
@@ -221,7 +224,7 @@ float render_sample_from_phase(int bank, int table_index, float phase) {
     return sample_a + fraction * (sample_b - sample_a);
 }
 
-bool shown = false;
+long count = 0;;
 EMSCRIPTEN_KEEPALIVE
 
 void processBlock(float **outputBuffers, int numSamples) {
@@ -409,8 +412,11 @@ void processBlock(float **outputBuffers, int numSamples) {
                 }
 
                 if (g_noise_output == MASTER_VOLUME) {
-                    noiseOutLeft[i] += noiseSample * panLeft;
-                    noiseOutRight[i] += noiseSample * panRight;
+                    float phaserOutput = phaser_process(g_phaser, noiseSample);
+                    // if (++count % 10000 == 0)
+                    //     emscripten_console_logf("phaserOutput %f\n", phaserOutput);
+                    noiseOutLeft[i] += phaserOutput; //noiseSample * panLeft);
+                    noiseOutRight[i] += noiseOutLeft[i]; // noiseSample * panRight;
                 }
 
                 if (!bd_outputToFilter) {

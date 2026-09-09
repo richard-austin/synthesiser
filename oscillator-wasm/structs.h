@@ -213,6 +213,32 @@ typedef struct {
     float lastOut;
 } Noise;
 
+typedef struct {
+    // Filter coefficients
+    float b0, b1, b2;
+    float a1, a2;
+
+    // History states
+    float x1, x2; // Previous inputs: x[n-1], x[n-2]
+    float y1, y2; // Previous outputs: y[n-1], y[n-2]
+} SecondOrderAllPass;
+
+typedef struct {
+    // Fixed values
+    SecondOrderAllPass* allPassSections;
+    LfoData* lfoData;
+    int numSections;
+
+    // Variable values
+    float frequency;
+    float Q;
+    float wetDry;
+    float level;
+    float feedback;
+    int sampleRate;
+    int sectionsInUse;
+} Phaser;
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif

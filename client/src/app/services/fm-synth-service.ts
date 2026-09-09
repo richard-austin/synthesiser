@@ -360,13 +360,28 @@ export class FmSynthService {
     }
   }
 
-
   setFilterLFOFrequency(bank: number, frequency: number) {
     this.port.postMessage({type: 'setFilterLFOFrequency', bank: bank, frequency});
   }
 
   setFilterLFOLevel(bank: number, level: number) {
     this.port.postMessage({type: 'setFilterLFOLevel', bank: bank, level});
+  }
+
+  phaserSetFrequency(fx: number) {
+    const freq = Math.pow(4000, fx) + 3;
+    this.port.postMessage({type: 'phaserSetFrequency', freq});
+  }
+
+  phaserSetQ(q: number) {
+    this.port.postMessage({type: 'phaserSetQ', q});
+  }
+
+  phaserSetWetDry(wetDry: number) {
+    this.port.postMessage({type: 'phaserSetWetDry', wetDry});
+  }
+  phaserSetStages(stages: number) {
+    this.port.postMessage({type: 'phaserSetStages', stages});
   }
 
   addKeyDownHandler(handler: (bank: number, device: number, key: number, velocity: number) => void) {
