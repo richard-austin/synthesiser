@@ -159,7 +159,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     await this.noise().start(this.audioCtx, settings ? settings.noiseSettings : settings);
     this.ringModulator().start(this.audioCtx, settings ? settings.ringModSettings : settings);
     this.reverb().start(this.audioCtx, settings ? settings.reverbSettings : settings);
-    await this.phaser().setUp(this.audioCtx, settings ? settings.phasorSettings : settings);
+    await this.phaser().setUp(settings ? settings.phasorSettings : settings);
     await this.analyser().start(this.audioCtx, settings ? settings.analyserSettings : settings);
     this.masterVolume().start(this.audioCtx, settings ? settings.generalSettings : settings);
     this.masterVolume().connect(this.analyser().node())
@@ -532,13 +532,13 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   protected setPhasorOutputTarget($event: string) {
-    this.phaser().disconnect();
+    this.fmSynthService.disconnectPhaser();
     switch ($event) {
       case 'speaker':
-        this.phaser().connect(this.masterVolume().node());
+        this.fmSynthService.connectPhaser(this.masterVolume().node());
         break;
       case 'reverb':
-        this.phaser().connect(this.reverb().input);
+        this.fmSynthService.connectPhaser(this.reverb().input);
         break;
       case 'off':
         break;
@@ -611,8 +611,12 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     await this.releaseWakeLock();
     this.ringModulator().disconnect();
     this.reverb().disconnect();
-    this.phaser().disconnect();
-    // this.noise.disconnect();
+    this.fmSynthService.disconnectPhaser();
+    this.fmSynthService.disconnectNoise();
+    Array.from(this.filtersGrp()).forEach((f, i) => {
+      this.fmSynthService.disconnectFilter(i);
+    });
+    this.fmSynthService.disconnect();
     await this.audioCtx.close();
     this.midiInputs.forEach(input => {
       input.close();

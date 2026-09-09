@@ -65,8 +65,8 @@ export class FmSynthService {
 
     // 4. Create your AudioWorkletNode instance linking your custom 'oscillator' token
     this.synthNode = new AudioWorkletNode(this.audioContext, 'oscillator', {
-      numberOfOutputs: numberOfBanks * 2 + 1, // 2 x numberOfBanks to accommodate separate filter outputs + 1 for the noise generator
-      outputChannelCount: Array(numberOfBanks * 2+1).fill(2), // numberOfBanks each for oscillators and filters plus one for noise generator
+      numberOfOutputs: numberOfBanks * 2 + 1 + 1, // 2 x numberOfBanks to accommodate separate filter outputs + 1 for the noise generator and 1 for the phaser
+      outputChannelCount: Array(numberOfBanks * 2+1+1).fill(2), // numberOfBanks each for oscillators and filters plus one for noise generator and 1 for the phaser
       channelInterpretation: 'speakers',
       processorOptions: {
         numberOfBanks: numberOfBanks,
@@ -195,6 +195,10 @@ export class FmSynthService {
     this.port?.postMessage({type: 'outputToFilter', bank, outputToFilter});
   }
 
+  public oscillatorOutputToPhaser(bank: number, outputToPhaser: boolean): void {
+    this.port?.postMessage({type: 'outputToPhaser', bank, outputToPhaser});
+  }
+
   public useFilter(bank: number, useFilter: boolean): void {
     this.port?.postMessage({type: 'useFilter', bank, useFilter});
   }
@@ -228,8 +232,13 @@ export class FmSynthService {
     return this.gainNodes[output].connect(dest);
   }
 
-  public disconnect(output: number) {
-    this.gainNodes[output].disconnect();
+  public disconnect(output: number): void;
+  public disconnect(): void;
+  public disconnect(output?: number) {
+    if(output !== undefined)
+      this.gainNodes[output].disconnect();
+    else
+      this.synthNode.disconnect();
   }
 
   connectFilter(dest: AudioNode, output: number) {
@@ -238,6 +247,10 @@ export class FmSynthService {
 
   disconnectFilter(output: number) {
     this.synthNode.disconnect(output + this._numberOfBanks);
+  }
+
+  filterConnectToPhaser(bank: number, connectToPhaser: boolean) {
+    this.port?.postMessage({type: 'filterConnectToPhaser', bank, connectToPhaser});
   }
 
   noiseConnectToFilter() {
@@ -270,6 +283,14 @@ export class FmSynthService {
 
   disconnectNoise() {
     this.synthNode.disconnect(this._numberOfBanks * 2);
+  }
+
+  connectPhaser(dest: AudioNode) {
+    this.synthNode.connect(dest, this._numberOfBanks * 2 + 1);
+  }
+
+  disconnectPhaser() {
+    this.synthNode.disconnect(this._numberOfBanks * 2 + 1);
   }
 
   public tuning(tuning: number, bank: number): void {

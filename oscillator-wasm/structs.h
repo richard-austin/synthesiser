@@ -165,7 +165,9 @@ typedef struct {
     bool usePitchEnvelope;
     bool useFilterPitchEnvelope;
     bool useFilter;
+    bool filterConnectToPhaser;
     bool outputToFilter;
+    bool outputToPhaser;
     float *periodicWaveData;
     int numBands;
     int waveTableSize;

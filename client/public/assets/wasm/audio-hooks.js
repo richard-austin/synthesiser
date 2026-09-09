@@ -50,7 +50,7 @@ if (typeof globalThis.registerProcessor === 'function') {
 
       // 4 Oscillator Banks + 4 Filter Banks = 8 Banks total.
       // With 2 channels each, we need 16 total discrete float pointers.
-      const totalChannels = this.numberOfBanks * 2 * 2 + 2; // Two per oscillator bank, two per filter bank plus two for the noise generator
+      const totalChannels = this.numberOfBanks * 2 * 2 + 2 + 2; // Two per oscillator bank, two per filter bank, two for the noise generator plus 2 for the phaser
 
       for (let c = 0; c < totalChannels; c++) {
         const ptr = Module._malloc(samplesPerBlock * bytesPerFloat);
@@ -58,7 +58,7 @@ if (typeof globalThis.registerProcessor === 'function') {
         this.channelPtrs.push(ptr);
       }
 
-      // Allocate pointer array large enough to hold all 16 pointer addresses
+      // Allocate pointer array large enough to hold all 20 pointer addresses
       this.wasmOutputPtrArray = Module._malloc(totalChannels * bytesPerFloat);
       for (let c = 0; c < totalChannels; c++) {
         Module.HEAP32[(this.wasmOutputPtrArray / 4) + c] = this.channelPtrs[c];
@@ -143,11 +143,17 @@ if (typeof globalThis.registerProcessor === 'function') {
           case 'useFilterPitchEnvelope':
             Module._useFilterPitchEnvelope(data.bank, data.value);
             break;
+          case 'filterConnectToPhaser':
+            Module._filterConnectToPhaser(data.bank, data.connectToPhaser);
+            break;
           case 'outputToFilter':
             Module._outputToFilter(data.bank, data.outputToFilter);
             break;
           case 'useFilter':
             Module._useFilter(data.bank, data.useFilter);
+            break;
+          case 'outputToPhaser':
+            Module._outputToPhaser(data.bank, data.outputToPhaser);
             break;
           case 'setModType': {
             const typeVal = data.modType === 'frequency' ? 1 : (data.modType === 'amplitude' ? 2 : 0);
@@ -286,7 +292,7 @@ if (typeof globalThis.registerProcessor === 'function') {
       // Run the C module engine step over the continuous memory heap
       Module._processBlock(this.wasmOutputPtrArray, samplesPerBlock);
 
-      const totalBanks = this.numberOfBanks * 2 + 1; // 4 Osc banks + 4 Filter banks + 1 noise bank
+      const totalBanks = this.numberOfBanks * 2 + 1 + 1; // 4 Osc banks + 4 Filter banks + 1 noise + 1 phaser
 
       for (let b = 0; b < totalBanks; b++) {
         if (!outputs[b]) continue;
@@ -314,25 +320,25 @@ if (typeof globalThis.registerProcessor === 'function') {
         }
       }
 
-      // const time = (Date.now() - start);
-      // this.totalTime += time
-      // this.iterationCount++;
-      // if (time > this.maxTime)
-      //   this.maxTime = time;
-      // if (time < this.minTime)
-      //   this.minTime = time;
-      // //  Send an average performance report every 500 blocks (~1.5 seconds)
-      // if (this.iterationCount >= 500) {
-      //   const averageMsPerBlock = this.totalTime / this.iterationCount;
-      //   console.log("averageMsPerBlock = " + averageMsPerBlock + " maxTime = " + this.maxTime + " minTime = " + this.minTime);
-      //   //this.port.postMessage({ type: 'perf-report', averageMsPerBlock });
-      //
-      //   this.totalTime = 0;
-      //   this.iterationCount = 0;
-      //   this.maxTime = 0;
-      //   this.minTime = 100;
-      // }
-      //
+      const time = (Date.now() - start);
+      this.totalTime += time
+      this.iterationCount++;
+      if (time > this.maxTime)
+        this.maxTime = time;
+      if (time < this.minTime)
+        this.minTime = time;
+      //  Send an average performance report every 500 blocks (~1.5 seconds)
+      if (this.iterationCount >= 500) {
+        const averageMsPerBlock = this.totalTime / this.iterationCount;
+        console.log("averageMsPerBlock = " + averageMsPerBlock + " maxTime = " + this.maxTime + " minTime = " + this.minTime);
+        //this.port.postMessage({ type: 'perf-report', averageMsPerBlock });
+
+        this.totalTime = 0;
+        this.iterationCount = 0;
+        this.maxTime = 0;
+        this.minTime = 100;
+      }
+
       return true;
     }
   }

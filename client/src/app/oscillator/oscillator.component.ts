@@ -228,11 +228,14 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
    * connectToFilters: Connect to a group of filters
    */
   connectToFilters(): void {
+    this.fmSynthService.disconnect(this.oscNumber());
+    this.fmSynthService.oscillatorOutputToPhaser(this.oscNumber(), false);
     this.fmSynthService.oscillatorOutputToFilter(this.oscNumber(), true);
   }
 
   connectToRingMod(): boolean {
     this.fmSynthService.oscillatorOutputToFilter(this.oscNumber(), false);
+    this.fmSynthService.oscillatorOutputToPhaser(this.oscNumber(), false);
     const ringMod = this.ringMod;
     let ok = false;
     if (ringMod()) {
@@ -245,6 +248,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   connectToReverb(): boolean {
     this.fmSynthService.oscillatorOutputToFilter(this.oscNumber(), false);
+    this.fmSynthService.oscillatorOutputToPhaser(this.oscNumber(), false);
     const reverb = this.reverb();
     let ok = false;
     if (reverb) {
@@ -262,7 +266,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     if (phaser) {
       ok = true;
       this.fmSynthService.disconnect(this.oscNumber());
-      this.fmSynthService.connect(phaser.input, this.oscNumber());
+      this.fmSynthService.oscillatorOutputToPhaser(this.oscNumber(), true);
     }
     return ok;
   }
@@ -273,6 +277,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
    */
   connect(node: AudioNode) {
     this.fmSynthService.oscillatorOutputToFilter(this.oscNumber(), false);
+    this.fmSynthService.oscillatorOutputToPhaser(this.oscNumber(), false);
     this.fmSynthService.connect(node, this.oscNumber(), 0);
     // this.oscillators.forEach((osc, i) => {
     //   this.oscillators[i].connect(node);
@@ -281,6 +286,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   disconnect(output: number) {
     this.fmSynthService.oscillatorOutputToFilter(this.oscNumber(), false);
+    this.fmSynthService.oscillatorOutputToPhaser(this.oscNumber(), false);
     this.fmSynthService.disconnect(output);
     // this.oscillators.forEach(osc => {
     //   osc.disconnect();

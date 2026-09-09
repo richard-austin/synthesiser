@@ -207,6 +207,18 @@ void outputToFilter(int bank, bool outputToFilter) {
 
 EMSCRIPTEN_KEEPALIVE
 
+void outputToPhaser(int bank, bool outputToPhaser) {
+    g_banks[bank].outputToPhaser = outputToPhaser;
+}
+
+EMSCRIPTEN_KEEPALIVE
+
+void filterConnectToPhaser(int bank, bool connectToPhaser) {
+    g_banks[bank].filterConnectToPhaser = connectToPhaser;
+}
+
+EMSCRIPTEN_KEEPALIVE
+
 void setBankTuning(int bank, float tuning) {
     g_banks[bank].tuning = tuning;
     for (int o = 0; o < g_oscillatorsPerBank; ++o) {

@@ -28,7 +28,9 @@ void bank_data_init(BankData *bd, int waveTableSize, int numBands) {
     bd->usePitchEnvelope = false;
     bd->useFilterPitchEnvelope = false;
     bd->useFilter = false;
+    bd->filterConnectToPhaser = false;
     bd->outputToFilter = false;
+    bd->outputToPhaser = false;
     bd->oscillatorLevel = 0.0f;
     bd->filterLevel = 0.0f;
     // Dead center values for constant-power curve: cos(pi/4) and sin(pi/4)
@@ -230,8 +232,8 @@ EMSCRIPTEN_KEEPALIVE
 void processBlock(float **outputBuffers, int numSamples) {
     const float nyquist = g_sampleRate / 2.0f;
 
-    // 1. Wipe all 18 channel buffers ((8 banks + 1) * 2 channels) to zero cleanly
-    for (int b = 0; b < (g_numberOfBanks * 2 +1) * 2; b++) {
+    // 1. Wipe all 20 channel buffers ((8 banks + 1) * 2 channels) to zero cleanly
+    for (int b = 0; b < (g_numberOfBanks * 2 + 1 + 1) * 2; b++) {
         memset(outputBuffers[b], 0, sizeof(float) * numSamples);
     }
 
@@ -250,8 +252,11 @@ void processBlock(float **outputBuffers, int numSamples) {
 
     const enum noiseOutput g_noise_output = g_noise->output;
 
-    float* noiseOutLeft = outputBuffers[g_numberOfBanks * 4];
-    float* noiseOutRight = outputBuffers[g_numberOfBanks * 4 + 1];
+    float *noiseOutLeft = outputBuffers[g_numberOfBanks * 4];
+    float *noiseOutRight = outputBuffers[g_numberOfBanks * 4 + 1];
+
+    float *phaserOutLeft = outputBuffers[g_numberOfBanks * 4 + 2];
+    float *phaserOutRight = outputBuffers[g_numberOfBanks * 4 + 2 + 1];
 
     // 4. MAIN RENDERING ENGINE
     float invSampleRate = 1.0f / g_sampleRate;
@@ -285,6 +290,7 @@ void processBlock(float **outputBuffers, int numSamples) {
             float panRight = bd->panRight;
 
             bool bd_useFilter = bd->useFilter;
+            bool bd_usePhaser = bd->outputToPhaser || bd->filterConnectToPhaser;
             const bool bd_usePitchEnvelope = bd->usePitchEnvelope;
             const bool bd_useFilterPitchEnvelope = bd->useFilterPitchEnvelope;
             bool bd_outputToFilter = bd->outputToFilter;
@@ -398,8 +404,12 @@ void processBlock(float **outputBuffers, int numSamples) {
                 float finalOutputSample = signal * bd->oscillatorLevel * ampEnvelope;
                 float filterInputSample = 0.0f;
 
+                float phaserOutputSample = 0.0f;
+
                 if (bd_outputToFilter)
                     filterInputSample = 0.5f * finalOutputSample;
+                else if (bd->outputToPhaser)
+                    phaserOutputSample = phaser_process(g_phaser, finalOutputSample);
 
                 if (g_noise_output == FILTER)
                     filterInputSample += noiseSample;
@@ -407,6 +417,9 @@ void processBlock(float **outputBuffers, int numSamples) {
                 if (bd_outputToFilter || (g_noise_output == FILTER && b == 0)) {
                     float filterSample = svf_process_morph(&od->svf, filterInputSample) * bd->filterLevel;
                     // Mirroring the exact same source to Left and Right channel blocks
+                    if (bd->filterConnectToPhaser)
+                        phaserOutputSample += phaser_process(g_phaser, filterSample);
+
                     filterOutLeft[i] += filterSample * panLeft;
                     filterOutRight[i] += filterSample * panRight;
                 }
@@ -415,14 +428,19 @@ void processBlock(float **outputBuffers, int numSamples) {
                     float phaserOutput = phaser_process(g_phaser, noiseSample);
                     // if (++count % 10000 == 0)
                     //     emscripten_console_logf("phaserOutput %f\n", phaserOutput);
-                    noiseOutLeft[i] += phaserOutput; //noiseSample * panLeft);
-                    noiseOutRight[i] += noiseOutLeft[i]; // noiseSample * panRight;
+                    noiseOutLeft[i] += noiseSample * panLeft;
+                    noiseOutRight[i] += noiseSample * panRight;
                 }
 
                 if (!bd_outputToFilter) {
                     // Mirroring the exact same source to Left and Right channel blocks
                     outLeft[i] += finalOutputSample * panLeft;
                     outRight[i] += finalOutputSample * panRight;
+                }
+
+                if (bd_usePhaser) {
+                    phaserOutLeft[i] += phaserOutputSample * panLeft;
+                    phaserOutRight[i] += phaserOutputSample * panRight;
                 }
             }
         }

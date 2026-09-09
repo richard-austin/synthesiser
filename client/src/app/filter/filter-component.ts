@@ -223,7 +223,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     let ok = false;
     if (phaser()) {
       ok = true;
-      this.fmSynthService.connectFilter(phaser().input, this.filterNumber());
+      this.fmSynthService.filterConnectToPhaser(this.filterNumber(), true);
     }
     return ok;
   }
