@@ -173,6 +173,7 @@ typedef struct {
     bool filterConnectToPhaser;
     bool outputToFilter;
     bool outputToPhaser;
+    float phaserInputs;
     float *periodicWaveData;
     int numBands;
     int waveTableSize;

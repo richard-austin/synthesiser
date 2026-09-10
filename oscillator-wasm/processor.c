@@ -30,6 +30,7 @@ void bank_data_init(BankData *bd, int waveTableSize, int numBands) {
     bd->useFilter = false;
     bd->filterConnectToPhaser = false;
     bd->outputToFilter = false;
+    bd->phaserInputs = 0.0f;
     bd->outputToPhaser = false;
     bd->oscillatorLevel = 0.0f;
     bd->filterLevel = 0.0f;
@@ -38,7 +39,7 @@ void bank_data_init(BankData *bd, int waveTableSize, int numBands) {
     initPortamentoData(&bd->portamentoData);
     initPortamentoData(&bd->filterPortamentoData);
     emscripten_console_logf("Initialising mod settings, numberOfBanks %d", g_numberOfBanks);
-    bd->modMatrix = calloc(g_numberOfBanks, sizeof(ModSettings*));
+    bd->modMatrix = calloc(g_numberOfBanks, sizeof(ModSettings *));
     for (int b = 0; b < g_numberOfBanks; b++) {
         bd->modMatrix[b] = malloc(sizeof(ModSettings));
         ModSettings *modSettings = bd->modMatrix[b];
@@ -104,6 +105,8 @@ void triggerNoteOn(int key, int velocity) {
     // STEP 1: Strict Global Co-indexing Lookup. Is this key already active?
     for (int o = 0; o < g_oscillatorsPerBank; o++) {
         for (int b = 0; b < g_numberOfBanks; b++) {
+            BankData *bd = &g_banks[b];
+
             if (g_oscData[b][o].env.inUse && g_oscData[b][o].key == key) {
                 foundIdx = o;
                 break;
@@ -191,7 +194,7 @@ void triggerNoteOff(int key) {
     }
 }
 
-bool is_modulating(BankData* bd, int osc) {
+bool is_modulating(BankData *bd, int osc) {
     bool retVal = false;
     for (int cB = 0; cB < g_numberOfBanks; cB++) {
         if (bd->modMatrix[cB]->modType != MOD_OFF) {
@@ -204,7 +207,7 @@ bool is_modulating(BankData* bd, int osc) {
     return retVal;
 }
 
-void matrix_apply_modulation(const BankData* bd, int osc, float modSignal) {
+void matrix_apply_modulation(const BankData *bd, int osc, float modSignal) {
     for (int cB = 0; cB < g_numberOfBanks; cB++) {
         ModSettings *ms = bd->modMatrix[cB];
         int targetIdx = cB * g_oscillatorsPerBank + osc;
@@ -312,6 +315,7 @@ void processBlock(float **outputBuffers, int numSamples) {
             // Filter outputs map to pairs at: 8/9, 10/11, 12/13, 14/15
 
             BankData *bd = &g_banks[b];
+            bd->phaserInputs = 0.0f;
 
             // NO TRANSCENDENTAL MATH HERE: Pure lightning fast cache reads!
             float panLeft = bd->panLeft;
@@ -422,12 +426,10 @@ void processBlock(float **outputBuffers, int numSamples) {
                 float finalOutputSample = signal * bd->oscillatorLevel * ampEnvelope;
                 float filterInputSample = 0.0f;
 
-                float phaserOutputSample = 0.0f;
-
                 if (bd_outputToFilter)
                     filterInputSample = 0.5f * finalOutputSample;
                 else if (bd->outputToPhaser)
-                    phaserOutputSample = phaser_process(g_phaser, finalOutputSample);
+                    bd->phaserInputs += finalOutputSample;
 
                 if (g_noise_output == FILTER)
                     filterInputSample += noiseSample;
@@ -436,7 +438,7 @@ void processBlock(float **outputBuffers, int numSamples) {
                     float filterSample = svf_process_morph(&od->svf, filterInputSample) * bd->filterLevel;
                     // Mirroring the exact same source to Left and Right channel blocks
                     if (bd->filterConnectToPhaser)
-                        phaserOutputSample += phaser_process(g_phaser, filterSample);
+                        bd->phaserInputs += filterSample;
 
                     filterOutLeft[i] += filterSample * panLeft;
                     filterOutRight[i] += filterSample * panRight;
@@ -452,11 +454,13 @@ void processBlock(float **outputBuffers, int numSamples) {
                     outLeft[i] += finalOutputSample * panLeft;
                     outRight[i] += finalOutputSample * panRight;
                 }
-
-                if (bd_usePhaser) {
-                    phaserOutLeft[i] += phaserOutputSample * panLeft;
-                    phaserOutRight[i] += phaserOutputSample * panRight;
-                }
+            }
+            // The phaser input is processed after the oscillator loop as the sum of the samples from the oscillators
+            //  and filters in the bank comprises the single sample for the phaser.
+            if (bd_usePhaser) {
+                const float phaserOutputSample = phaser_process(g_phaser, bd->phaserInputs);
+                phaserOutLeft[i] += phaserOutputSample * panLeft;
+                phaserOutRight[i] += phaserOutputSample * panRight;
             }
         }
     }
