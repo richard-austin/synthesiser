@@ -155,6 +155,11 @@ typedef struct {
 } OscillatorData;
 
 typedef struct {
+    float level;
+    oscModType modType;
+} ModSettings;
+
+typedef struct {
     float detuneFactor;
     float tuning;
     float filterTuning;
@@ -171,6 +176,7 @@ typedef struct {
     float *periodicWaveData;
     int numBands;
     int waveTableSize;
+    ModSettings** modMatrix;
     oscModOutput modOutput; // 1=direct, 2=envelope
     LfoData lfoData;
     LfoData filterLfoData;
@@ -183,12 +189,6 @@ typedef struct {
     PortamentoData portamentoData;
     PortamentoData filterPortamentoData;
 } BankData;
-
-typedef struct {
-    int carrierIdx;
-    float level;
-    oscModType modType;
-} ModSettings;
 
 enum noiseType { WHITE, PINK, BROWN };
 

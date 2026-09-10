@@ -15,7 +15,6 @@ Noise* g_noise = NULL;
 
 float *g_fmAccumulators = NULL;
 float *g_amAccumulators = NULL;
-ModSettings *g_modMatrix = NULL;
 Phaser *g_phaser = NULL;
 
 float twelfthRoot2 = 1.05946309436f;

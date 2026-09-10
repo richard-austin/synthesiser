@@ -37,6 +37,14 @@ void bank_data_init(BankData *bd, int waveTableSize, int numBands) {
     bd->panLeft = bd->panRight = 0.70710678f;
     initPortamentoData(&bd->portamentoData);
     initPortamentoData(&bd->filterPortamentoData);
+    emscripten_console_logf("Initialising mod settings, numberOfBanks %d", g_numberOfBanks);
+    bd->modMatrix = calloc(g_numberOfBanks, sizeof(ModSettings*));
+    for (int b = 0; b < g_numberOfBanks; b++) {
+        bd->modMatrix[b] = malloc(sizeof(ModSettings));
+        ModSettings *modSettings = bd->modMatrix[b];
+        modSettings->level = 0.0f;
+        modSettings->modType = MOD_OFF;
+    }
 }
 
 void oscillator_data_init(OscillatorData *od) {
@@ -65,12 +73,10 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, int numBand
 
     g_fmAccumulators = (float *) calloc(numBanks * oscsPerBank, sizeof(float));
     g_amAccumulators = (float *) calloc(numBanks * oscsPerBank, sizeof(float));
-    g_modMatrix = (ModSettings *) calloc(numBanks * numBanks, sizeof(ModSettings));
 
     for (int b = 0; b < numBanks; b++) {
         BankData *bd = &g_banks[b];
-
-        bank_data_init(&g_banks[b], waveTableSize, numBands);
+        bank_data_init(bd, waveTableSize, numBands);
         envelope_data_init(&bd->envelopeData);
         pitch_envelope_data_init(&g_banks[b].pitchEnvelopeData);
         pitch_envelope_data_init(&bd->filterPitchEnvelopeData);
@@ -185,8 +191,30 @@ void triggerNoteOff(int key) {
     }
 }
 
+bool is_modulating(BankData* bd, int osc) {
+    bool retVal = false;
+    for (int cB = 0; cB < g_numberOfBanks; cB++) {
+        if (bd->modMatrix[cB]->modType != MOD_OFF) {
+            if (g_oscData[cB][osc].env.inUse) {
+                retVal = true;
+                break;
+            }
+        }
+    }
+    return retVal;
+}
 
-EMSCRIPTEN_KEEPALIVE
+void matrix_apply_modulation(const BankData* bd, int osc, float modSignal) {
+    for (int cB = 0; cB < g_numberOfBanks; cB++) {
+        ModSettings *ms = bd->modMatrix[cB];
+        int targetIdx = cB * g_oscillatorsPerBank + osc;
+        if (ms->modType == MOD_FREQUENCY) {
+            g_fmAccumulators[targetIdx] += modSignal * ms->level;
+        } else if (ms->modType == MOD_AMPLITUDE) {
+            g_amAccumulators[targetIdx] += modSignal * ms->level;
+        }
+    }
+}
 
 float render_sample_from_phase(int bank, int table_index, float phase) {
     BankData *bd = &g_banks[bank];
@@ -300,7 +328,7 @@ void processBlock(float **outputBuffers, int numSamples) {
             for (int osc = 0; osc < g_oscillatorsPerBank; osc++) {
                 OscillatorData *od = &g_oscData[b][osc];
                 Envelope *env = &od->env;
-                if (!env->inUse)
+                if (!env->inUse && !is_modulating(bd, osc))
                     continue;
 
                 if (env->keyDown) {
@@ -385,17 +413,7 @@ void processBlock(float **outputBuffers, int numSamples) {
                 }
                 float modSignal = (bd_modOutput == 2) ? (signal * ampEnvelope) : signal;
 
-                for (int cB = 0; cB < g_numberOfBanks; cB++) {
-                    ModSettings *ms = &g_modMatrix[b * g_numberOfBanks + cB];
-                    if (ms->carrierIdx == cB) {
-                        int targetIdx = cB * g_oscillatorsPerBank + osc;
-                        if (ms->modType == MOD_FREQUENCY) {
-                            g_fmAccumulators[targetIdx] += modSignal * ms->level;
-                        } else if (ms->modType == MOD_AMPLITUDE) {
-                            g_amAccumulators[targetIdx] += modSignal * ms->level;
-                        }
-                    }
-                }
+                matrix_apply_modulation(bd, osc, modSignal);
 
                 if (bd->lfoData.modType == LFO_AMPLITUDE) {
                     signal *= (1.0f + render_lfo_sample(&bd->lfoData));
@@ -425,9 +443,6 @@ void processBlock(float **outputBuffers, int numSamples) {
                 }
 
                 if (g_noise_output == MASTER_VOLUME) {
-                    float phaserOutput = phaser_process(g_phaser, noiseSample);
-                    // if (++count % 10000 == 0)
-                    //     emscripten_console_logf("phaserOutput %f\n", phaserOutput);
                     noiseOutLeft[i] += noiseSample * panLeft;
                     noiseOutRight[i] += noiseSample * panRight;
                 }

@@ -17,7 +17,6 @@ extern Noise* g_noise;
 
 extern float *g_fmAccumulators;
 extern float *g_amAccumulators;
-extern ModSettings *g_modMatrix;
 extern Phaser* g_phaser;
 extern float twelfthRoot2;
 extern float log2Root2;
