@@ -206,10 +206,12 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
    */
   connect(node: AudioNode) {
     this.fmSynthService.connectFilter(node, this.filterNumber())
+    this.fmSynthService.filterConnectToPhaser(this.filterNumber(), false);
   }
 
   connectToRingMod(): boolean {
     const ringMod = this.ringMod();
+    this.fmSynthService.filterConnectToPhaser(this.filterNumber(), false);
     let ok = false;
     if (ringMod) {
       ok = true;
@@ -220,6 +222,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   connectToPhasor(): boolean {
     const phaser = this.phaser;
+    this.fmSynthService.disconnectFilter(this.filterNumber());
     let ok = false;
     if (phaser()) {
       ok = true;
@@ -229,6 +232,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   connectToReverb(): boolean {
+    this.fmSynthService.filterConnectToPhaser(this.filterNumber(), false);
     const reverb = this.reverb();
     let ok = false;
     if (reverb) {
@@ -240,6 +244,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   disconnect() {
     this.fmSynthService.disconnectFilter(this.filterNumber());
+    this.fmSynthService.filterConnectToPhaser(this.filterNumber(), false);
   }
 
   protected setPortamento($event: number) {
