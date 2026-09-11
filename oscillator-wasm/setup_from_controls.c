@@ -489,9 +489,7 @@ void setPhaserStages(int stages) {
 EMSCRIPTEN_KEEPALIVE
 
 void setPhaserFeedback(float feedback) {
-    emscripten_console_logf("feedBack %f", feedback);
     phaser_set_feedback(g_phaser, feedback);
-    emscripten_console_logf("feedBack %f", feedback);
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -499,7 +497,6 @@ EMSCRIPTEN_KEEPALIVE
 void setPhaserLFOModType(const phaserLfo phaserLfo) {
     LfoData *ld = g_phaser->lfoData;
     ld->phaserLfo = phaserLfo;
-    emscripten_console_logf("modType %d", phaserLfo);
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -507,7 +504,6 @@ EMSCRIPTEN_KEEPALIVE
 void setPhaserLFOLevel(const float level) {
     LfoData *ld = g_phaser->lfoData;
     ld->level = level;
-    emscripten_console_logf("setPhaserLFOLevel %f", level);
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -515,7 +511,6 @@ EMSCRIPTEN_KEEPALIVE
 void setPhaserLFOFrequency(const float frequency) {
     LfoData *ld = g_phaser->lfoData;
     ld->frequency = (powf(4, frequency) - 1);
-    emscripten_console_logf("setPhaserLFOFrequency %f", ld->frequency);
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -524,6 +519,5 @@ float *allocatePhaserLFOWaveTableMemory() {
     LfoData *ld = g_phaser->lfoData;
     if (ld->periodicWaveData == NULL)
         ld->periodicWaveData = calloc(ld->waveTableSize * 21, sizeof(float));
-    emscripten_console_logf("periodicWaveData %p", ld->periodicWaveData);
     return ld->periodicWaveData;
 }
