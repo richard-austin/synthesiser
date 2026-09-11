@@ -163,62 +163,53 @@ if (typeof globalThis.registerProcessor === 'function') {
           case 'setModLevel':
             Module._setModLevel(data.modBank, data.carrierBank, data.modLevel);
             break;
-          case 'setModOutput':
-          {
+          case 'setModOutput': {
             const typeVal = data.modOutput === 'direct' ? 1 : (data.modOutput === 'envelope' ? 2 : 0);
             Module._setModOutput(data.modBank, typeVal);
           }
             break;
-          case 'setLFOModType':
-          {
+          case 'setLFOModType': {
             const modType = data.modType;
             const typeVal = modType === 'amplitude' ? 1 : modType === 'frequency' ? 2 : 3;
             Module._setLFOModType(data.bank, typeVal);
           }
             break;
-          case 'lfoPeriodicWave':
-          {
+          case 'lfoPeriodicWave': {
             Module._setNumberOfBands(data.numberOfBands);
             const ptr = Module._allocateLFOWaveTableMemory(data.bank);  // Allocate memory if not already done. Allow 4 bytes per float
             const heapIndex = ptr >> 2;  // 4 bytes per float
             Module.HEAPF32.set(data.waveTables, heapIndex);
           }
             break;
-          case 'setLFOLevel':
-          {
+          case 'setLFOLevel': {
             const levelVal = data.level;
             Module._setLFOLevel(data.bank, levelVal);
           }
             break;
-          case 'setLFOFrequency':
-          {
+          case 'setLFOFrequency': {
             const frequency = data.frequency;
             Module._setLFOFrequency(data.bank, frequency);
           }
             break;
-          case 'setFilterLFOModType':
-          {
+          case 'setFilterLFOModType': {
             const modType = data.modType;
             const typeVal = modType === 'amplitude' ? 1 : modType === 'frequency' ? 2 : 3;
             Module._setFilterLFOModType(data.bank, typeVal);
           }
             break;
-          case 'filterLFOPeriodicWave':
-          {
+          case 'filterLFOPeriodicWave': {
             Module._setNumberOfBands(data.numberOfBands);
             const ptr = Module._allocateFilterLFOWaveTableMemory(data.bank);  // Allocate memory if not already done. Allow 4 bytes per float
             const heapIndex = ptr >> 2;  // 4 bytes per float
             Module.HEAPF32.set(data.waveTables, heapIndex);
           }
             break;
-          case 'setFilterLFOLevel':
-          {
+          case 'setFilterLFOLevel': {
             const levelVal = data.level;
             Module._setFilterLFOLevel(data.bank, levelVal);
           }
             break;
-          case 'setFilterLFOFrequency':
-          {
+          case 'setFilterLFOFrequency': {
             const frequency = data.frequency;
             Module._setFilterLFOFrequency(data.bank, frequency);
           }
@@ -274,6 +265,29 @@ if (typeof globalThis.registerProcessor === 'function') {
             break;
           case 'phaserSetFeedback':
             Module._setPhaserFeedback(data.feedback);
+            break;
+          case 'setPhaserLFOModType': {
+            const modType = data.modType;
+            const typeVal = modType === 'on' ? 1 : 2;
+            Module._setPhaserLFOModType(typeVal);
+          }
+            break;
+          case 'phaserLFOPeriodicWave': {
+            Module._setNumberOfBands(data.numberOfBands);
+            const ptr = Module._allocatePhaserLFOWaveTableMemory();  // Allocate memory if not already done. Allow 4 bytes per float
+            const heapIndex = ptr >> 2;  // 4 bytes per float
+            Module.HEAPF32.set(data.waveTables, heapIndex);
+          }
+            break;
+          case 'setPhaserLFOLevel': {
+            const levelVal = data.level;
+            Module._setPhaserLFOLevel(levelVal);
+          }
+            break;
+          case 'setPhaserLFOFrequency': {
+            const frequency = data.frequency;
+            Module._setPhaserLFOFrequency(frequency);
+          }
             break;
           default:
             console.error("Unknown control type " + data.type);

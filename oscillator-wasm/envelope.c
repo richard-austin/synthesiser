@@ -114,7 +114,7 @@ void envelope_advance_to_sustain(Envelope *env, float frequency) {
 
 void envelope_advance_to_zero(Envelope *env, float frequency) {
     EnvelopeData *envData = env->envelopeData;
-    const float smallestTime  = 4.0f / frequency;  // To reduce clicks on sharp envelope trasitions
+    const float smallestTime  = 4.0f / frequency;  // To reduce clicks on sharp envelope transitions
     if (!env->keyDown) {
         if (!envData->legato) {
             if (env->phase != ENV_RELEASE && env->phase != ENV_INACTIVE) {

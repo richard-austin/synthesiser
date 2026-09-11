@@ -131,6 +131,7 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
 
   protected setModFrequency(freq: number) {
     this.proxySettings.lfoFrequency = freq;
+    this.fmSynthService.setPhaserLFOFrequency(freq);
   }
 
   lastLevel: number = 0;
@@ -139,8 +140,7 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
     this.proxySettings.modDepth = $event;
     this.lastLevel = $event;
     if (this.proxySettings.modulation === onOff.on) {
-      // this.modGain.gain.value = level;
-      // this.modGain2.gain.value = level;
+      this.fmSynthService.setPhaserLFOLevel($event);
     }
   }
 
@@ -160,14 +160,7 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
       lfoWaveForm.elements[j].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value as OscillatorType;
-        if (value === "sine") {
-          // Use modulators in quadrature
-          // this.lfo.setPeriodicWave(this.audioCtx.createPeriodicWave([0, 1], [0, 0]));
-          // this.lfo2.setPeriodicWave(this.audioCtx.createPeriodicWave([0, 0], [0, 1]));
-        } else {
-          // this.lfo.type = value;
-          // this.lfo2.type = value;
-        }
+        this.fmSynthService.setPhaserLFOWaveform(value as modWaveforms);
         this.proxySettings.modWaveform = value as modWaveforms;
       });
     }
@@ -175,15 +168,9 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
     for (let j = 0; j < modOnOff.elements.length; ++j) {
       modOnOff.elements[j].addEventListener('change', ($event) => {
         // @ts-ignore
-        const value = $event.target.value as string;
-        if (value === 'on') {
-          // this.modGain.gain.value = this.lastLevel;
-          // this.modGain2.gain.value = this.lastLevel;
-        } else {
-          // this.modGain.gain.value = 0;
-          // this.modGain2.gain.value = 0;
-        }
-        this.proxySettings.modulation = value as onOff;
+        const value: onOff = $event.target.value as onOff;
+          this.fmSynthService.setPhaserLFOModType(value)
+        this.proxySettings.modulation = value;
       });
     }
   }

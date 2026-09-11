@@ -323,7 +323,6 @@ void setFilterLFOModType(int bank, lfoModType modType) {
     BankData *bd = &g_banks[bank];
     LfoData *ld = &bd->filterLfoData;
     ld->modType = modType;
-    emscripten_console_logf("setFilterLFOModType %d %d", bank, modType);
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -332,7 +331,6 @@ void setFilterLFOLevel(int bank, float level) {
     BankData *bd = &g_banks[bank];
     LfoData *ld = &bd->filterLfoData;
     ld->level = level;
-    emscripten_console_logf("setFilterLFOLevel %d %f", bank, level);
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -343,7 +341,6 @@ void setFilterLFOFrequency(int bank, float frequency) {
         g_modFreqFactor = g_modFreqMax / (pow(g_modFreqBase, g_modFreqMaxInput) - 1);
     LfoData *ld = &bd->filterLfoData;
     ld->frequency = g_modFreqFactor * (powf(g_modFreqBase, frequency) - 1);
-    emscripten_console_logf("setFilterLFOFrequency %d %f", bank, frequency);
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -494,4 +491,39 @@ EMSCRIPTEN_KEEPALIVE
 void setPhaserFeedback(float feedback) {
     emscripten_console_logf("feedBack %f", feedback);
     phaser_set_feedback(g_phaser, feedback);
+    emscripten_console_logf("feedBack %f", feedback);
+}
+
+EMSCRIPTEN_KEEPALIVE
+
+void setPhaserLFOModType(const phaserLfo phaserLfo) {
+    LfoData *ld = g_phaser->lfoData;
+    ld->phaserLfo = phaserLfo;
+    emscripten_console_logf("modType %d", phaserLfo);
+}
+
+EMSCRIPTEN_KEEPALIVE
+
+void setPhaserLFOLevel(const float level) {
+    LfoData *ld = g_phaser->lfoData;
+    ld->level = level;
+    emscripten_console_logf("setPhaserLFOLevel %f", level);
+}
+
+EMSCRIPTEN_KEEPALIVE
+
+void setPhaserLFOFrequency(const float frequency) {
+    LfoData *ld = g_phaser->lfoData;
+    ld->frequency = (powf(4, frequency) - 1);
+    emscripten_console_logf("setPhaserLFOFrequency %f", ld->frequency);
+}
+
+EMSCRIPTEN_KEEPALIVE
+
+float *allocatePhaserLFOWaveTableMemory() {
+    LfoData *ld = g_phaser->lfoData;
+    if (ld->periodicWaveData == NULL)
+        ld->periodicWaveData = calloc(ld->waveTableSize * 21, sizeof(float));
+    emscripten_console_logf("periodicWaveData %p", ld->periodicWaveData);
+    return ld->periodicWaveData;
 }

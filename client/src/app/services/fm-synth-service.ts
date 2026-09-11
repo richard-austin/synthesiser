@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {OscillatorSettings} from '../settings/oscillator';
-import {filterModType, modWaveforms, oscModOutput, oscModType} from '../enums/enums';
+import {filterModType, modWaveforms, onOff, oscModOutput, oscModType} from '../enums/enums';
 import {envelopePhase, pitchEnvelopePhase} from '../oscillator/oscillator.component';
 import {lastValueFrom, timer} from 'rxjs';
 import {WaveTables} from '../modules/wavetables';
@@ -411,6 +411,32 @@ export class FmSynthService {
 
   phaserSetFeedback(feedback: number) {
     this.port.postMessage({type: 'phaserSetFeedback', feedback});
+  }
+
+  setPhaserLFOModType(modType: onOff) {
+    this.port.postMessage({type: 'setPhaserLFOModType', modType});
+  }
+
+  setPhaserLFOWaveform(type: modWaveforms) {
+    const wtDetails = WaveTables.wavetables.find(el => el.value === type);
+    if (wtDetails) {
+      this.setPeriodicWave(this.createPeriodicWave(this.audioContext, wtDetails?.waveTable.real, wtDetails?.waveTable.imag),
+        (wt, nb) => this.port.postMessage({
+          type: 'phaserLFOPeriodicWave',
+          waveTables: wt,
+          numberOfBands: nb
+        }));
+    } else {
+      console.error("Cannot find wave table for" + type)
+    }
+  }
+
+  setPhaserLFOFrequency(frequency: number) {
+    this.port.postMessage({type: 'setPhaserLFOFrequency', frequency});
+  }
+
+  setPhaserLFOLevel(level: number) {
+    this.port.postMessage({type: 'setPhaserLFOLevel', level});
   }
 
   addKeyDownHandler(handler: (bank: number, device: number, key: number, velocity: number) => void) {

@@ -1,4 +1,5 @@
 #include <emscripten.h>
+#include "emscripten/console.h"
 #include "globals.h"
 #include "lfo.h"
 
@@ -8,6 +9,7 @@ void lfo_init(LfoData *data, long waveTableSize) {
     data->phase = 0.0f;
     data->level = 0.0f;
     data->modType = LFO_OFF;
+    data->phaserLfo = PHASER_LFO_OFF;
     data->waveTableSize = waveTableSize;
     data->periodicWaveData = NULL;
     data->band = 0;

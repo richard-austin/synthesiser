@@ -61,7 +61,7 @@ void phaser_init(Phaser *phaser, int sampleRate) {
     phaser->numSections = 64;
     phaser->lfoData = calloc(1, sizeof(LfoData));
     lfo_init(phaser->lfoData, sampleRate);
-
+    phaser->lfoData->modType = LFO_FREQUENCY; // Must set this or phase will not advance;
     phaser->sampleRate = sampleRate;
     phaser->allPassSections = calloc(phaser->numSections, sizeof(SecondOrderAllPass));
     phaser->frequency = 1.0f;
@@ -107,18 +107,27 @@ void phaser_set_stages(Phaser *phaser, int stages) {
     phaser->sectionsInUse = stages;
 }
 
-void phaser_set_feedback(Phaser* phaser, float feedback) {
+void phaser_set_feedback(Phaser *phaser, float feedback) {
     phaser->feedback = feedback;
 }
 
-extern long count;
-
 float phaser_process(Phaser *phaser, float input) {
+    LfoData *lfoData = phaser->lfoData;
+    const float setFrequency = phaser->frequency;
+    if (lfoData->phaserLfo == PHASER_LFO_ON) {
+        phaser_set_frequency(phaser, phaser->frequency *(1.05f+ render_lfo_sample(lfoData))/2.0f);
+    }
+
     float output = input + phaser->lastOutput * phaser->feedback;
     for (int i = 0; i < phaser->sectionsInUse; i++) {
         SecondOrderAllPass *ap = &phaser->allPassSections[i];
         output = allpass_process(ap, output);
     }
+
+    if (lfoData->phaserLfo == PHASER_LFO_ON) {
+        phaser_set_frequency(phaser, setFrequency); // Restore original frequency after modulation was applied
+    }
+
     const float wetDry = phaser->wetDry;
-    return phaser->lastOutput = phaser->level * (output * (wetDry+1.0f) - input * (wetDry-1.0f));
+    return phaser->lastOutput = phaser->level * (output * (wetDry + 1.0f) - input * (wetDry - 1.0f));
 }

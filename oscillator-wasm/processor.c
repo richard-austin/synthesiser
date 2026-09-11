@@ -159,7 +159,8 @@ void triggerNoteOn(int key, int velocity) {
         // Set oscillator and filter pitch envelope times to 0
         od->pitchEnv.t = 0.0f;
         od->filterPitchEnv.t = 0.0f;
-        noise_init_envelope(g_noise, foundIdx, velocity);
+        if (g_noise->output != OFF)
+            noise_init_envelope(g_noise, foundIdx, velocity);
         if (isRetrigger)
             od->env.phase = ENV_RETRIGGER;
         else {
@@ -263,7 +264,7 @@ EMSCRIPTEN_KEEPALIVE
 void processBlock(float **outputBuffers, int numSamples) {
     const float nyquist = g_sampleRate / 2.0f;
 
-    // 1. Wipe all 20 channel buffers ((8 banks + 1) * 2 channels) to zero cleanly
+    // 1. Wipe all 20 channel buffers ((8 banks + 1 + 1) * 2 channels) to zero cleanly
     for (int b = 0; b < (g_numberOfBanks * 2 + 1 + 1) * 2; b++) {
         memset(outputBuffers[b], 0, sizeof(float) * numSamples);
     }
@@ -277,6 +278,8 @@ void processBlock(float **outputBuffers, int numSamples) {
                 break;
             }
         }
+        if (activeAudioEngine)
+            break;
     }
     if (!activeAudioEngine)
         return;
@@ -288,6 +291,10 @@ void processBlock(float **outputBuffers, int numSamples) {
 
     float *phaserOutLeft = outputBuffers[g_numberOfBanks * 4 + 2];
     float *phaserOutRight = outputBuffers[g_numberOfBanks * 4 + 2 + 1];
+
+    if (g_phaser->lfoData->phaserLfo == PHASER_LFO_ON) {
+        lfo_advance(g_phaser->lfoData);
+    }
 
     // 4. MAIN RENDERING ENGINE
     float invSampleRate = 1.0f / g_sampleRate;

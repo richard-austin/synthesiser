@@ -30,6 +30,11 @@ typedef enum {
     LFO_OFF = 3
 } lfoModType;
 
+typedef enum {
+    PHASER_LFO_ON = 1,
+    PHASER_LFO_OFF = 2
+} phaserLfo;
+
 // --- Struct Definitions ---
 typedef struct {
     float attack;
@@ -136,6 +141,7 @@ typedef struct {
     float phase;
     float level;
     lfoModType modType;
+    phaserLfo phaserLfo;
     long waveTableSize;
     float *periodicWaveData;
 } LfoData;
