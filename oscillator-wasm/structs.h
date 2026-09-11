@@ -238,6 +238,7 @@ typedef struct {
     float wetDry;
     float level;
     float feedback;
+    float lastOutput;
     int sampleRate;
     int sectionsInUse;
 } Phaser;

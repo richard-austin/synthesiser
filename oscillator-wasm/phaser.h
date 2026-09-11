@@ -15,6 +15,8 @@ void phaser_set_wet_dry(Phaser *phaser, float wetDry);
 
 void phaser_set_stages(Phaser *phaser, int stages);
 
+void phaser_set_feedback(Phaser* phaser, float feedback);
+
 float phaser_process(Phaser *phaser, float input);
 
 #endif

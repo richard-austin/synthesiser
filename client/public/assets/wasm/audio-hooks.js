@@ -257,8 +257,11 @@ if (typeof globalThis.registerProcessor === 'function') {
           case 'noiseOff':
             Module._noiseOff(data.isOff);
             break;
+          case 'phaserSetLevel':
+            Module._setPhaserLevel(data.level);
+            break;
           case 'phaserSetFrequency':
-            Module._setPhaserFreuency(data.freq);
+            Module._setPhaserFrequency(data.freq);
             break;
           case 'phaserSetQ':
             Module._setPhaserQ(data.q);
@@ -268,6 +271,9 @@ if (typeof globalThis.registerProcessor === 'function') {
             break;
           case 'phaserSetStages':
             Module._setPhaserStages(data.stages);
+            break;
+          case 'phaserSetFeedback':
+            Module._setPhaserFeedback(data.feedback);
             break;
           default:
             console.error("Unknown control type " + data.type);

@@ -109,7 +109,7 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
 
   protected setLevel($event: number) {
     this.proxySettings.gain = $event;
-   // this.fmSynthService.phaserSetLevel($event);
+    this.fmSynthService.phaserSetLevel($event);
   }
 
   protected setWetDry(wetDry: number) {
@@ -119,7 +119,7 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
 
   protected setFeedback(feedback: number) {
     this.proxySettings.feedback = feedback;
-    //this.fmSynthService.phaserSetFeedback(feedback);
+    this.fmSynthService.phaserSetFeedback(feedback);
   }
 
   protected async setStages(ev: Event) {

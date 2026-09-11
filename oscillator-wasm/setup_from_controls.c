@@ -461,7 +461,13 @@ void setNumberOfBands(int numberOfBands) {
 
 EMSCRIPTEN_KEEPALIVE
 
-void setPhaserFreuency(float freq) {
+void setPhaserLevel(float level) {
+    phaser_set_level(g_phaser, level);
+}
+
+EMSCRIPTEN_KEEPALIVE
+
+void setPhaserFrequency(float freq) {
     phaser_set_frequency(g_phaser, freq);
 }
 
@@ -481,4 +487,11 @@ EMSCRIPTEN_KEEPALIVE
 
 void setPhaserStages(int stages) {
     phaser_set_stages(g_phaser, stages);
+}
+
+EMSCRIPTEN_KEEPALIVE
+
+void setPhaserFeedback(float feedback) {
+    emscripten_console_logf("feedBack %f", feedback);
+    phaser_set_feedback(g_phaser, feedback);
 }

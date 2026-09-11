@@ -389,6 +389,10 @@ export class FmSynthService {
     this.port.postMessage({type: 'setFilterLFOLevel', bank: bank, level});
   }
 
+  phaserSetLevel(level: number) {
+    this.port.postMessage({type: 'phaserSetLevel', level});
+  }
+
   phaserSetFrequency(fx: number) {
     const freq = Math.pow(4000, fx) + 3;
     this.port.postMessage({type: 'phaserSetFrequency', freq});
@@ -403,6 +407,10 @@ export class FmSynthService {
   }
   phaserSetStages(stages: number) {
     this.port.postMessage({type: 'phaserSetStages', stages});
+  }
+
+  phaserSetFeedback(feedback: number) {
+    this.port.postMessage({type: 'phaserSetFeedback', feedback});
   }
 
   addKeyDownHandler(handler: (bank: number, device: number, key: number, velocity: number) => void) {

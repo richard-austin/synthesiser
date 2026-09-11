@@ -68,6 +68,7 @@ void phaser_init(Phaser *phaser, int sampleRate) {
     phaser->Q = 1.0f;
     phaser->level = 1.0f;
     phaser->feedback = 0.0f;
+    phaser->lastOutput = 0.0f;
     phaser->wetDry = 0.5f;
     phaser->sectionsInUse = 5;
 
@@ -106,14 +107,18 @@ void phaser_set_stages(Phaser *phaser, int stages) {
     phaser->sectionsInUse = stages;
 }
 
+void phaser_set_feedback(Phaser* phaser, float feedback) {
+    phaser->feedback = feedback;
+}
+
 extern long count;
 
 float phaser_process(Phaser *phaser, float input) {
-    float output = input;
+    float output = input + phaser->lastOutput * phaser->feedback;
     for (int i = 0; i < phaser->sectionsInUse; i++) {
         SecondOrderAllPass *ap = &phaser->allPassSections[i];
         output = allpass_process(ap, output);
     }
     const float wetDry = phaser->wetDry;
-    return phaser->level * output * (wetDry+1.0f) - input * (wetDry-1.0f);
+    return phaser->lastOutput = phaser->level * (output * (wetDry+1.0f) - input * (wetDry-1.0f));
 }
