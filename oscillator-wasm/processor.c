@@ -40,9 +40,9 @@ void bank_data_init(BankData *bd, int waveTableSize, int numBands) {
     initPortamentoData(&bd->filterPortamentoData);
     emscripten_console_logf("Initialising mod settings, numberOfBanks %d", g_numberOfBanks);
     bd->modMatrix = calloc(g_numberOfBanks, sizeof(ModSettings *));
+    bd->modMatrix = calloc(g_numberOfBanks, sizeof(ModSettings));
     for (int b = 0; b < g_numberOfBanks; b++) {
-        bd->modMatrix[b] = malloc(sizeof(ModSettings));
-        ModSettings *modSettings = bd->modMatrix[b];
+        ModSettings* modSettings = bd->modMatrix + b;
         modSettings->level = 0.0f;
         modSettings->modType = MOD_OFF;
     }
@@ -197,7 +197,7 @@ void triggerNoteOff(int key) {
 bool is_modulating(BankData *bd, int osc) {
     bool retVal = false;
     for (int cB = 0; cB < g_numberOfBanks; cB++) {
-        if (bd->modMatrix[cB]->modType != MOD_OFF) {
+        if (bd->modMatrix[cB].modType != MOD_OFF) {
             if (g_oscData[cB][osc].env.inUse) {
                 retVal = true;
                 break;
@@ -209,7 +209,7 @@ bool is_modulating(BankData *bd, int osc) {
 
 void matrix_apply_modulation(const BankData *bd, int osc, float modSignal) {
     for (int cB = 0; cB < g_numberOfBanks; cB++) {
-        ModSettings *ms = bd->modMatrix[cB];
+        ModSettings *ms = bd->modMatrix + cB;
         int targetIdx = cB * g_oscillatorsPerBank + osc;
         if (ms->modType == MOD_FREQUENCY) {
             g_fmAccumulators[targetIdx] += modSignal * ms->level;

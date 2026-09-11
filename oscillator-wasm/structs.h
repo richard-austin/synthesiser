@@ -177,7 +177,7 @@ typedef struct {
     float *periodicWaveData;
     int numBands;
     int waveTableSize;
-    ModSettings** modMatrix;
+    ModSettings* modMatrix;
     oscModOutput modOutput; // 1=direct, 2=envelope
     LfoData lfoData;
     LfoData filterLfoData;

@@ -11,7 +11,7 @@
 EMSCRIPTEN_KEEPALIVE
 
 void setMatrixGain(int modBank, int carrierBank, int type, float level) {
-    ModSettings *modSettings = g_banks[modBank].modMatrix[carrierBank];
+    ModSettings *modSettings = g_banks[modBank].modMatrix + carrierBank;
     modSettings->modType = (oscModType) type;
     modSettings->level = level * 7.0f;
 }
@@ -19,14 +19,14 @@ void setMatrixGain(int modBank, int carrierBank, int type, float level) {
 EMSCRIPTEN_KEEPALIVE
 
 void setModType(int modBank, int carrierBank, int type) {
-    ModSettings *modSettings = g_banks[modBank].modMatrix[carrierBank];
+    ModSettings *modSettings = g_banks[modBank].modMatrix + carrierBank;
     modSettings->modType = (oscModType) type;
 }
 
 EMSCRIPTEN_KEEPALIVE
 
 void setModLevel(int modBank, int carrierBank, float level) {
-    ModSettings *modSettings = g_banks[modBank].modMatrix[carrierBank];
+    ModSettings *modSettings = g_banks[modBank].modMatrix + carrierBank;
     modSettings->level = level * 7.0f;
 }
 
