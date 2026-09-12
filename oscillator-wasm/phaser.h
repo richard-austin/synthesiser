@@ -3,7 +3,7 @@
 
 #include "structs.h"
 
-void phaser_init(Phaser *phaser, int sampleRate);
+void phaser_init(Phaser *phaser, int sampleRate, int waveTableSize);
 
 void phaser_set_frequency(Phaser *phaser, float freq);
 

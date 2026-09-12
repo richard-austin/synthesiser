@@ -139,9 +139,7 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
   protected setModLevel($event: number) {
     this.proxySettings.modDepth = $event;
     this.lastLevel = $event;
-    if (this.proxySettings.modulation === onOff.on) {
-      this.fmSynthService.setPhaserLFOLevel($event);
-    }
+    this.fmSynthService.setPhaserLFOLevel($event);
   }
 
   ngAfterViewInit(): void {

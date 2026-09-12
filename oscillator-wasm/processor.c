@@ -70,7 +70,7 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, int numBand
     g_noise = (Noise *) malloc(sizeof(Noise));
     noise_init(g_noise, oscsPerBank);
     g_phaser = calloc(1, sizeof(Phaser));
-    phaser_init(g_phaser, sampleRate);
+    phaser_init(g_phaser, sampleRate, waveTableSize);
 
     g_fmAccumulators = (float *) calloc(numBanks * oscsPerBank, sizeof(float));
     g_amAccumulators = (float *) calloc(numBanks * oscsPerBank, sizeof(float));
@@ -292,9 +292,6 @@ void processBlock(float **outputBuffers, int numSamples) {
     float *phaserOutLeft = outputBuffers[g_numberOfBanks * 4 + 2];
     float *phaserOutRight = outputBuffers[g_numberOfBanks * 4 + 2 + 1];
 
-    if (g_phaser->lfoData->phaserLfo == PHASER_LFO_ON) {
-        lfo_advance(g_phaser->lfoData);
-    }
 
     // 4. MAIN RENDERING ENGINE
     float invSampleRate = 1.0f / g_sampleRate;
@@ -306,6 +303,10 @@ void processBlock(float **outputBuffers, int numSamples) {
                 lfo_advance(&bd->lfoData);
             if (bd->filterLfoData.modType != LFO_OFF)
                 lfo_advance(&bd->filterLfoData);
+        }
+
+        if (g_phaser->lfoData->modType != LFO_OFF) {
+            lfo_advance(g_phaser->lfoData);
         }
 
         for (int b = 0; b < g_numberOfBanks; b++) {

@@ -57,11 +57,10 @@ float allpass_process(SecondOrderAllPass *ap, float x0) {
     return y0;
 }
 
-void phaser_init(Phaser *phaser, int sampleRate) {
+void phaser_init(Phaser *phaser, int sampleRate, int waveTableSize) {
     phaser->numSections = 64;
     phaser->lfoData = calloc(1, sizeof(LfoData));
-    lfo_init(phaser->lfoData, sampleRate);
-    phaser->lfoData->modType = LFO_FREQUENCY; // Must set this or phase will not advance;
+    lfo_init(phaser->lfoData, waveTableSize);
     phaser->sampleRate = sampleRate;
     phaser->allPassSections = calloc(phaser->numSections, sizeof(SecondOrderAllPass));
     phaser->frequency = 1.0f;
@@ -114,8 +113,9 @@ void phaser_set_feedback(Phaser *phaser, float feedback) {
 float phaser_process(Phaser *phaser, float input) {
     LfoData *lfoData = phaser->lfoData;
     const float setFrequency = phaser->frequency;
-    if (lfoData->phaserLfo == PHASER_LFO_ON) {
-        phaser_set_frequency(phaser, phaser->frequency *(1.05f+ render_lfo_sample(lfoData))/2.0f);
+    if (lfoData->modType != LFO_OFF) {
+        const float lfoSample = render_lfo_sample(lfoData);
+        phaser_set_frequency(phaser, phaser->frequency*(1.0f-0.5f*lfoData->level) *(1.05f+ lfoSample));
     }
 
     float output = input + phaser->lastOutput * phaser->feedback;
@@ -124,7 +124,7 @@ float phaser_process(Phaser *phaser, float input) {
         output = allpass_process(ap, output);
     }
 
-    if (lfoData->phaserLfo == PHASER_LFO_ON) {
+    if (lfoData->modType != LFO_OFF) {
         phaser_set_frequency(phaser, setFrequency); // Restore original frequency after modulation was applied
     }
 

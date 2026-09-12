@@ -268,15 +268,24 @@ if (typeof globalThis.registerProcessor === 'function') {
             break;
           case 'setPhaserLFOModType': {
             const modType = data.modType;
-            const typeVal = modType === 'on' ? 1 : 2;
+            const typeVal = modType === 'on' ? 2 : 3;
             Module._setPhaserLFOModType(typeVal);
           }
             break;
           case 'phaserLFOPeriodicWave': {
             Module._setNumberOfBands(data.numberOfBands);
-            const ptr = Module._allocatePhaserLFOWaveTableMemory();  // Allocate memory if not already done. Allow 4 bytes per float
-            const heapIndex = ptr >> 2;  // 4 bytes per float
-            Module.HEAPF32.set(data.waveTables, heapIndex);
+
+            // 1. Allocate/retrieve the raw byte pointer from C
+            const bytePtr = Module._allocatePhaserLFOWaveTableMemory();
+
+            // 2. Convert the byte offset to a Float32 element index
+            const heapIndex = bytePtr >> 2;
+
+            // 3. Create a fresh view from Emscripten's active heap buffer
+            const liveHeapF32 = new Float32Array(Module.HEAPF32.buffer);
+
+            // 4. Safely copy the wave table array into the WASM memory space
+            liveHeapF32.set(data.waveTables, heapIndex);
           }
             break;
           case 'setPhaserLFOLevel': {

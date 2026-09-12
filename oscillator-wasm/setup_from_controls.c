@@ -494,9 +494,9 @@ void setPhaserFeedback(float feedback) {
 
 EMSCRIPTEN_KEEPALIVE
 
-void setPhaserLFOModType(const phaserLfo phaserLfo) {
+void setPhaserLFOModType(const lfoModType phaserLfo) {
     LfoData *ld = g_phaser->lfoData;
-    ld->phaserLfo = phaserLfo;
+    ld->modType = phaserLfo;
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -510,7 +510,7 @@ EMSCRIPTEN_KEEPALIVE
 
 void setPhaserLFOFrequency(const float frequency) {
     LfoData *ld = g_phaser->lfoData;
-    ld->frequency = (powf(4, frequency) - 1);
+    ld->frequency = (powf(2, frequency) - 1);
 }
 
 EMSCRIPTEN_KEEPALIVE
