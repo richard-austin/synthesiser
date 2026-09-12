@@ -10,7 +10,7 @@
 #include "envelope.h"
 #include "pitch_envelope.h"
 #include "lfo.h"
-#include "filter.h"
+#include "svf4_filter.h"
 #include "butterworth_filter.h"
 #include "key_to_frequency.h"
 #include "noise.h"
@@ -92,7 +92,7 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, int numBand
             pitch_envelope_init(&g_oscData[b][o].pitchEnv, &bd->pitchEnvelopeData);
             pitch_envelope_init(&g_oscData[b][o].filterPitchEnv, &bd->filterPitchEnvelopeData);
             butterworth_calculate_coefficients(&g_oscData[b][o].butterworthFilter, 1000.0f, sampleRate);
-            svf_init(&g_oscData[b][o].svf, sampleRate);
+            svf4_init(&g_oscData[b][o].svf, sampleRate);
         }
     }
 }
@@ -384,7 +384,7 @@ void processBlock(float **outputBuffers, int numSamples) {
                     if (bd->filterLfoData.modType == LFO_FREQUENCY)
                         filterFx *= (1.0f + render_lfo_sample(&bd->filterLfoData));
 
-                    svf_set_params(&od->svf, filterFx, bd->resonanceBankFactor);
+                    svf4_set_params(&od->svf, filterFx, bd->resonanceBankFactor);
                 }
 
                 // Gather AM & FM accumulators
@@ -443,7 +443,7 @@ void processBlock(float **outputBuffers, int numSamples) {
                     filterInputSample += noiseSample;
 
                 if (bd_outputToFilter || (g_noise_output == FILTER && b == 0)) {
-                    float filterSample = svf_process_morph(&od->svf, filterInputSample) * bd->filterLevel;
+                    float filterSample = svf4_process_morph(&od->svf, filterInputSample) * bd->filterLevel;
                     // Mirroring the exact same source to Left and Right channel blocks
                     if (bd->filterConnectToPhaser)
                         bd->phaserInputs += filterSample;

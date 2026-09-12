@@ -126,8 +126,8 @@ typedef struct {
 } SVFFilter;
 
 typedef struct {
-    SVFFilter stage1;
-    SVFFilter stage2;
+    SVFFilter* stage1;
+    SVFFilter* stage2;
 } SVF4Filter;
 
 typedef struct {
@@ -149,7 +149,7 @@ typedef struct {
     float phase;
     ButterworthFilter butterworthFilter;
     float filterFrequency;
-    SVFFilter svf;
+    SVF4Filter svf;
     Portamento portamento;
     Portamento filterPortamento;
 } OscillatorData;

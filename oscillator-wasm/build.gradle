@@ -33,6 +33,7 @@ File envelopeSourceFile = layout.projectDirectory.file('envelope.c').asFile
 File pitchEnvelopeSourceFile = layout.projectDirectory.file('pitch_envelope.c').asFile
 File lfoSourceFile = layout.projectDirectory.file('lfo.c').asFile
 File filterSourceFile = layout.projectDirectory.file('filter.c').asFile
+File filter4SourceFile = layout.projectDirectory.file('svf4_filter.c').asFile
 File butterworthSourceFile = layout.projectDirectory.file('butterworth_filter.c').asFile
 File setupFromControlsSourceFile = layout.projectDirectory.file('setup_from_controls.c').asFile
 File keyToFrequencySourceFile = layout.projectDirectory.file('key_to_frequency.c').asFile
@@ -87,6 +88,7 @@ tasks.register('compileWasm', Exec) {
     inputs.file(pitchEnvelopeSourceFile)
     inputs.file(lfoSourceFile)
     inputs.file(filterSourceFile)
+    inputs.file(filter4SourceFile)
     inputs.file(butterworthSourceFile)
     inputs.file(setupFromControlsSourceFile)
     inputs.file(keyToFrequencySourceFile)
@@ -118,6 +120,7 @@ tasks.register('compileWasm', Exec) {
             envelopeSourceFile.absolutePath,
             pitchEnvelopeSourceFile.absolutePath,
             filterSourceFile.absolutePath,
+            filter4SourceFile.absolutePath,
             lfoSourceFile.absolutePath,
             butterworthSourceFile.absolutePath,
             setupFromControlsSourceFile.absolutePath,

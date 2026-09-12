@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include "globals.h"
 
-#include "filter.h"
+#include "svf4_filter.h"
 #include "key_to_frequency.h"
 #include "phaser.h"
 
@@ -262,7 +262,7 @@ void setFilterQFactor(int bank, float qFactor) {
     for (int o = 0; o < g_oscillatorsPerBank; ++o) {
         OscillatorData *od = &g_oscData[bank][o];
         // Pass the raw 0.0 -> 1.0 value directly down
-        svf_set_params(&od->svf, od->svf.cutoffHz, rawQ);
+        svf4_set_params(&od->svf, od->svf.stage1->cutoffHz, rawQ);
     }
 }
 
@@ -380,7 +380,7 @@ void setFilterMorphMode(int bank, float morphMode) {
     OscillatorData *oscData = g_oscData[bank];
     for (int o = 0; o < g_oscillatorsPerBank; ++o) {
         OscillatorData *od = &oscData[o];
-        svf_set_morph(&od->svf, morphMode);
+        svf4_set_morph(&od->svf, morphMode);
     }
 }
 
