@@ -39,6 +39,7 @@ typedef struct {
     bool legato;
     bool velocitySensitive;
     int velocity;
+    float justAudible;  // Just audible level to start attack phase at, so that slow attacks don't have a silent period at the the start
 } EnvelopeData;
 
 typedef struct {

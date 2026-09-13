@@ -10,6 +10,7 @@ void envelope_data_init(EnvelopeData *ed) {
     ed->legato = false;
     ed->velocity = 0x7f;
     ed->velocitySensitive = false;
+    ed->justAudible = 0.003f;
 }
 
 // --- Envelope Phase Traversal Mathematics ---
@@ -78,6 +79,8 @@ void envelope_advance_to_sustain(Envelope *env, float frequency) {
                 float attackTime = envData->attack;
                 if (env->phase == ENV_RETRIGGER)
                     attackTime += smallestTime; // Reduce clicks on retrigger
+                if (env->level < envData->justAudible)
+                    env->level = envData->justAudible;
                 envelope_set_timing(env, attackTarget, attackTime);
                 env->phase = ENV_ATTACK;
             } else if (env->phase == ENV_ATTACK) {
