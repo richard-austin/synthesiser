@@ -11,7 +11,6 @@ import {WaveTables} from '../modules/wavetables';
 export class FmSynthService {
   private audioContext!: AudioContext;
   private synthNode!: AudioWorkletNode;
-  private gainNodes: GainNode[] = [];
   private keyDownHandlers: ((bank: number, device: number, key: number, velocity: number) => void)[] = [];
   private keyUpHandlers: ((bank: number, device: number, key: number,) => void)[] = [];
   private port!: MessagePort;
@@ -24,10 +23,6 @@ export class FmSynthService {
       this._numberOfBanks = numberOfBanks;
       // 1. Instantiate the AudioContext on the main thread
       this.audioContext = audioCtx;
-      this.gainNodes = Array.from({length: numberOfBanks}, () => audioCtx.createGain());
-      this.gainNodes.forEach(gainNode => {
-        gainNode.gain.value = 1
-      });
       await this.start(numberOfBanks, oscillatorsPerBank);
       this.synthNode.port.onmessage = (event: MessageEvent) => {
         switch (event.data.type) {
@@ -42,10 +37,6 @@ export class FmSynthService {
             break;
         }
       }
-
-      this.gainNodes.forEach((gainNode, b) => {
-        this.synthNode.connect(gainNode, b);
-      })
     }
   }
 
@@ -229,14 +220,14 @@ export class FmSynthService {
   }
 
   public connect(dest: AudioNode, output: number, input?: number): AudioNode {
-    return this.gainNodes[output].connect(dest);
+    return this.synthNode.connect(dest, output);
   }
 
   public disconnect(output: number): void;
   public disconnect(): void;
   public disconnect(output?: number) {
     if(output !== undefined)
-      this.gainNodes[output].disconnect();
+      this.synthNode.disconnect(output);
     else
       this.synthNode.disconnect();
   }
