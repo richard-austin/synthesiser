@@ -19,8 +19,6 @@ import {modWaveforms, onOff, oscModOutput, oscWaveforms} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {timer} from 'rxjs';
 import {Cookies} from '../settings/cookies/cookies';
-import {ChordProcessor} from '../modules/chord-processor';
-import {DeviceKeys} from '../services/device-pool-manager-service';
 import {ClipboardService} from './clipboard-service';
 import {FmSynthService} from '../services/fm-synth-service';
 import {WaveTables} from '../modules/wavetables';
@@ -53,7 +51,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
  // private wasmBinary!: ArrayBuffer;
   private proxySettings!: OscillatorSettings;
   private cookies!: Cookies;
-  private chordProcessor!: ChordProcessor;
 
   filters: InputSignal<FilterComponent> = input.required<FilterComponent>();
   ringMod: InputSignal<RingModulatorComponent> = input.required<RingModulatorComponent>();
@@ -109,8 +106,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.audioCtx = audioCtx;
    // this.wasmBinary = wasmBinary;
     this.cookies = new Cookies();
-    this.chordProcessor = new ChordProcessor();
-    this.chordProcessor.setKeyDownCallback(this.chordProcessorKeyDownCallback);
     await this.applySettings(settings);
   }
 
@@ -279,23 +274,12 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.fmSynthService.oscillatorOutputToFilter(this.oscNumber(), false);
     this.fmSynthService.oscillatorOutputToPhaser(this.oscNumber(), false);
     this.fmSynthService.connect(node, this.oscNumber(), 0);
-    // this.oscillators.forEach((osc, i) => {
-    //   this.oscillators[i].connect(node);
-    // });
   }
 
   disconnect(output: number) {
     this.fmSynthService.oscillatorOutputToFilter(this.oscNumber(), false);
     this.fmSynthService.oscillatorOutputToPhaser(this.oscNumber(), false);
     this.fmSynthService.disconnect(output);
-    // this.oscillators.forEach(osc => {
-    //   osc.disconnect();
-    // })
-  }
-
-  private chordProcessorKeyDownCallback: (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => void = (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => {
-    //const freq = this.keyToFrequency(prevKeys.keyIndex);
-  //  this.fmSynthService.keyDown(this.oscNumber(), theseKeys.deviceIndex, 0x0f);
   }
 
   protected setPortamento($event: number) {
@@ -309,9 +293,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   midiPitchBend(value: number) {
-    // for (let i = 0; i < this.oscillators.length; i++) {
-    //   this.oscillators[i].setDetune((value - 0x40) * 5 + this.proxySettings.deTune);
-    // }
+    this.fmSynthService.detune((value - 0x40) * 5 + this.proxySettings.deTune, this.oscNumber());
   }
 
   midiModLevel(value: number) {
@@ -525,11 +507,5 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   showWaveformSelector = false;
 
-  protected selectWaveform($event: Event) {
-    // @ts-ignore
-    this.showWaveformSelector = $event.target.checked;
-  }
-
- // protected readonly Oscillator = Oscillator;
   protected readonly WaveTables = WaveTables;
 }

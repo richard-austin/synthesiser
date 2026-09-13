@@ -3,7 +3,7 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef, output,
-  OnDestroy, OutputEmitterRef,
+  OnDestroy,
   signal,
   viewChild,
   ViewEncapsulation
@@ -12,7 +12,6 @@ import {LevelControlComponent} from "../level-control/level-control.component";
 import {dialStyle} from '../level-control/levelControlParameters';
 import {Cookies} from '../settings/cookies/cookies';
 import {GeneralSettings} from '../settings/General';
-import {GainEnvelopeBase} from '../modules/gain-envelope-base';
 import {timer} from 'rxjs';
 import {FormsModule} from '@angular/forms';
 import {SynthComponent} from '../synth/synth-component';
@@ -100,7 +99,8 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
 
   protected setLevel($event: number) {
     this.proxySettings.level = $event
-    this.volume.gain.value = GainEnvelopeBase.exponentiateGain($event);
+    // Exponentiate the gain control
+    this.volume.gain.value = (Math.pow(10, $event) - 1) / (Math.pow(10, 1) - 1);
   }
 
   setVolume(value: number) {
