@@ -14,109 +14,98 @@ import tools.jackson.databind.ObjectWriter
 
 import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
+import java.nio.file.NoSuchFileException
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
+import java.util.stream.Collectors
 
 @RestController
 @RequestMapping("/syn")
 class SynthController {
-    private final configFileDir = Path.of(System.getProperty("user.home"), "configs2")
+
+    private final Path configFileDir = Path.of(System.getProperty("user.home"), "configs2").toAbsolutePath().normalize()
+
+    private Path resolveSafePath(String fileName) {
+        if (fileName == null || fileName.contains("..")) {
+            throw new IllegalArgumentException("Invalid file name")
+        }
+
+        String cleanName = fileName.endsWith(".json") ? fileName : fileName + ".json"
+        Path resolvedPath = configFileDir.resolve(cleanName).normalize()
+
+        if (!resolvedPath.startsWith(configFileDir)) {
+            throw new SecurityException("Unauthorized path access detected")
+        }
+        return resolvedPath
+    }
 
     @PostMapping('/saveConfig')
     def saveConfig(@RequestBody SaveConfigCommand cmd) {
-        try {
-            ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter()
-            String json = ow.writeValueAsString(cmd.synthSettings)
-            def fileName = cmd.fileName
-            if(!fileName.endsWithIgnoreCase('.json'))
-                fileName += '.json'
+        ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter()
+        String json = ow.writeValueAsString(cmd.synthSettings)
 
-            def path = configFileDir
-            Files.createDirectories(path)
-            path = Path.of(path.toString(), fileName)
-            File file = path.toFile()
+        Path targetPath = resolveSafePath(cmd.fileName)
+        Files.createDirectories(configFileDir)
 
-            // Ensure the file name is not already used if overwrite is false
-            if(!cmd.overwrite && file.exists() && !file.isDirectory())
-                throw new FileAlreadyExistsException("File name already in use")
+        if (!cmd.overwrite && Files.exists(targetPath)) {
+            throw new FileAlreadyExistsException("File name already in use")
+        }
 
-            FileWriter fileWriter = new FileWriter(file)
-            fileWriter.write(json)
-            fileWriter.flush()
-            fileWriter.close()
-            return ResponseEntity.ok().body([message: fileName + " successfully " + (cmd.overwrite ? "updated": "saved")])
-        }
-        catch(FileAlreadyExistsException ex) {
-            return ResponseEntity.badRequest().body([exception: ex.getClass(), message: ex.getMessage()])
-        }
-        catch (Exception ex) {
-            return ResponseEntity
-                    .internalServerError()
-                    .body([exception: ex.getClass(), message: ex.getMessage()])
-        }
+        Files.writeString(targetPath, json)
+
+        return ResponseEntity.ok().body([
+                message: targetPath.getFileName().toString() + " successfully " + (cmd.overwrite ? "updated" : "saved")
+        ])
     }
 
     @PostMapping('/getConfigFileList')
     def getConfigFileList() {
-        try {
-            def files = new File(configFileDir.toString()).listFiles()
-            def fileNames = new ArrayList()
-            for(f in files) {
-                def fileName = Path.of(f.toURI()).toFile().getName()
-                if(fileName.endsWith(".json")) {
-                    def fileNameNoExt = fileName.substring(0, fileName.lastIndexOf('.'))
-                    fileNames.add(fileNameNoExt)
-                }
-            }
-            return ResponseEntity.ok().body(fileNames)
+        if (!Files.exists(configFileDir)) {
+            return ResponseEntity.ok().body([])
         }
-        catch(Exception ex) {
-            return ResponseEntity.internalServerError().body([exception: ex.getClass(), message: ex.getMessage()])
-        }
+
+        def fileNames = Files.list(configFileDir)
+                .filter(Files::isRegularFile)
+                .map(p -> p.getFileName().toString())
+                .filter(name -> name.endsWith(".json"))
+                .map(name -> name.substring(0, name.lastIndexOf('.')))
+                .collect(Collectors.toList())
+
+        return ResponseEntity.ok().body(fileNames)
     }
 
-    @PostMapping('getSettings')
+    @PostMapping('/getSettings')
     def getSettings(@RequestBody GetSettingsCommand cmd) {
-        try {
-            def configFile = Files.readString(Path.of(configFileDir.toString(), cmd.fileName+".json"))
-            ObjectMapper mapper = new ObjectMapper()
-            Map<String, Object> map = mapper.readValue(configFile, Map.class)
-            return ResponseEntity.ok().body(map)
-        }
-        catch(Exception ex) {
-            return ResponseEntity.internalServerError().body([exception: ex.getClass(), message: ex.getMessage()])
-        }
+        Path targetPath = resolveSafePath(cmd.fileName)
+        String configFile = Files.readString(targetPath)
+
+        ObjectMapper mapper = new ObjectMapper()
+        Map<String, Object> map = mapper.readValue(configFile, Map.class)
+        return ResponseEntity.ok().body(map)
     }
 
-    @PostMapping('deleteConfig')
+    @PostMapping('/deleteConfig')
     def deleteConfig(@RequestBody DeleteConfigCommand cmd) {
-        try {
-            def configFile = new File(Path.of(configFileDir.toString(), cmd.fileName+".json").toString())
-            if(configFile.delete())
-                return ResponseEntity.ok().body([message: "File "+cmd.fileName+" deleted"])
-            else
-                throw new Exception("Could not delete "+cmd.fileName)
-        }
-        catch(Exception ex) {
-            return ResponseEntity.internalServerError().body([exception: ex.getClass(), message: ex.getMessage()])
+        Path targetPath = resolveSafePath(cmd.fileName)
+
+        if (Files.deleteIfExists(targetPath)) {
+            return ResponseEntity.ok().body([message: "File " + cmd.fileName + " deleted"])
+        } else {
+            throw new NoSuchFileException("Could not find file " + cmd.fileName)
         }
     }
 
-    @PostMapping('renameConfigFile')
+    @PostMapping('/renameConfigFile')
     def renameConfigFile(@RequestBody RenameConfigFileCommand cmd) {
-        try {
-            def oldFile = new File(Path.of(configFileDir.toString(), cmd.oldName+".json").toString())
-            def newFile = new File(Path.of(configFileDir.toString(), cmd.newName+".json").toString())
-            if(newFile.exists())
-                throw new Exception("File "+cmd.newName+" already exists")
+        Path oldPath = resolveSafePath(cmd.oldName)
+        Path newPath = resolveSafePath(cmd.newName)
 
-            boolean moved = oldFile.renameTo(newFile)
-            if(!moved)
-                throw new Exception("Could not rename file "+cmd.oldName+" to "+cmd.newName)
+        if (Files.exists(newPath)) {
+            throw new FileAlreadyExistsException("File " + cmd.newName + " already exists")
+        }
 
-            return ResponseEntity.ok().body([message: "Config file "+cmd.oldName+" renamed to "+cmd.newName])
-        }
-        catch(Exception ex) {
-            return ResponseEntity.internalServerError().body([exception: ex.getClass(), message: ex.getMessage()])
-        }
+        Files.move(oldPath, newPath, StandardCopyOption.ATOMIC_MOVE)
+
+        return ResponseEntity.ok().body([message: "Config file " + cmd.oldName + " renamed to " + cmd.newName])
     }
 }
