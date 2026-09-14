@@ -21,10 +21,10 @@ import {RestfulApiService} from '../services/restful-api.service';
 import {OscillatorParams} from '../modules/oscillator';
 import {OscillatorSettings} from '../settings/oscillator';
 import {FilterSettings} from '../settings/filter';
-import {Cookies} from '../settings/cookies/cookies';
 import {SynthComponentSettings} from '../settings/synth-component-settings';
 import {MatrixComponent} from '../matrix/matrix-component';
 import {FmSynthService} from '../services/fm-synth-service';
+import {IndexedDBService} from '../services/indexed-db-service';
 
 @Component({
   selector: 'app-synth-component',
@@ -54,7 +54,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   midiInputs: MIDIInput[] = [];
   settings: SynthSettings | null = null;
   proxySettings!: SynthComponentSettings;
-  cookies: Cookies
   fileNameEffectRef!: EffectRef;
   homeControlEffectRef!: EffectRef;
   signalSelectOperator = signal<number>(0);
@@ -98,6 +97,9 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   synth: Signal<ElementRef<HTMLDivElement>> = viewChild.required('synth');
 
   masterVolume: Signal<GeneralComponent> = viewChild.required('general');
+
+  indexedDBService = inject(IndexedDBService);
+
   fmSynthService: FmSynthService = inject(FmSynthService);
 
   constructor(private rest: RestfulApiService) {
@@ -125,7 +127,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       }
     });
 
-    this.cookies = new Cookies();
     this.effectRef = effect(() => {
       const value = this.signalSelectOperator();
       if (this.oscillatorWindow() && this.proxySettings) {
@@ -137,31 +138,31 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   protected async start(settings: SynthSettings | null): Promise<void> {
-    const cookieName = 'synthComponent';
+    const objectName = 'synthComponent';
     await this.fmSynthService.initializeSynth(this.audioCtx);
     if (!settings) {
       let synthComponentSettings = new SynthComponentSettings();
-      const savedSettings = this.cookies.getSettings(cookieName, synthComponentSettings);
+      const savedSettings = await this.indexedDBService.getSynthObject(objectName);
 
-      if (Object.keys(savedSettings).length > 0) {
+      if (savedSettings && Object.keys(savedSettings).length > 0) {
         // Use values from cookie
         synthComponentSettings = savedSettings as SynthComponentSettings;
       }
       // else use default settings
-      this.proxySettings = this.cookies.getSettingsProxy(synthComponentSettings, cookieName);
+      this.proxySettings = this.indexedDBService.getSettingsProxy(synthComponentSettings, objectName);
     } else
-      this.proxySettings = this.cookies.getSettingsProxy(settings.synthComponentSettings, cookieName);
+      this.proxySettings = this.indexedDBService.getSettingsProxy(settings.synthComponentSettings, objectName);
 
 
     // Start the module components
     this.filtersGrp().forEach((filter, i) => filter.start(this.audioCtx, settings ? settings.filterSettings[i] : settings));
 
     await this.noise().start(this.audioCtx, settings ? settings.noiseSettings : settings);
-    this.ringModulator().start(this.audioCtx, settings ? settings.ringModSettings : settings);
-    this.reverb().start(this.audioCtx, settings ? settings.reverbSettings : settings);
+    await this.ringModulator().start(this.audioCtx, settings ? settings.ringModSettings : settings);
+    await this.reverb().start(this.audioCtx, settings ? settings.reverbSettings : settings);
     await this.phaser().setUp(settings ? settings.phasorSettings : settings);
     await this.analyser().start(this.audioCtx, settings ? settings.analyserSettings : settings);
-    this.masterVolume().start(this.audioCtx, settings ? settings.generalSettings : settings);
+    await this.masterVolume().start(this.audioCtx, settings ? settings.generalSettings : settings);
     this.masterVolume().connect(this.analyser().node())
 
     // Connect the module component outputs
@@ -169,7 +170,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       await oscillator.start(this.audioCtx, settings ? settings.oscillatorSettings[i] : settings);
     }
 
-    this.matrixComponent().start(settings ? settings.matrixSettings : settings);
+    await this.matrixComponent().start(settings ? settings.matrixSettings : settings);
 
     this.ringModulator().setOutputConnection();
     this.noise().setOutputConnection();

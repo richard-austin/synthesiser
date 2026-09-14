@@ -6,16 +6,16 @@ import {
   OnDestroy,
   signal,
   viewChild,
-  ViewEncapsulation
+  ViewEncapsulation, inject
 } from '@angular/core';
 import {LevelControlComponent} from "../level-control/level-control.component";
 import {dialStyle} from '../level-control/levelControlParameters';
-import {Cookies} from '../settings/cookies/cookies';
 import {GeneralSettings} from '../settings/General';
 import {timer} from 'rxjs';
 import {FormsModule} from '@angular/forms';
 import {SynthComponent} from '../synth/synth-component';
 import {RestfulApiService} from '../services/restful-api.service';
+import {IndexedDBService} from '../services/indexed-db-service';
 
 
 @Component({
@@ -33,7 +33,6 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   private compressor!: DynamicsCompressorNode;
   private volume!: GainNode;
   protected proxySettings!: GeneralSettings;
-  private cookies!: Cookies;
   protected showConfigEditor: boolean = false;
   protected addConfigMode: boolean = false;
   protected configFileName: string = "";
@@ -52,12 +51,12 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
 
   animationEnter = signal('enter-animation');
   animationLeave = signal('leaving-animation');
-
+  private readonly indexedDBService: IndexedDBService = inject(IndexedDBService);
 
   constructor(private cdr: ChangeDetectorRef, private parent: SynthComponent, private rest: RestfulApiService) {
   }
 
-  start(audioCtx: AudioContext, settings: GeneralSettings | null): boolean {
+  async start(audioCtx: AudioContext, settings: GeneralSettings | null): Promise<boolean> {
     let ok = true;
     this.compressor = audioCtx.createDynamicsCompressor();
     this.compressor.threshold.value = -3;
@@ -70,25 +69,24 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
 
     this.compressor.connect(this.volume);
     this.volume.connect(audioCtx.destination);
-    this.cookies = new Cookies();
-    this.applySettings(settings);
+    await this.applySettings(settings);
     return ok;
   }
 
-  applySettings(settings: GeneralSettings | null) {
-    const cookieName = 'masterVolume';
+  async applySettings(settings: GeneralSettings | null) {
+    const objectName = 'masterVolume';
 
     if (!settings) {
       settings = new GeneralSettings();
-      const savedSettings = this.cookies.getSettings(cookieName, settings);
+      const savedSettings = await this.indexedDBService.getSynthObject(objectName);
 
-      if (Object.keys(savedSettings).length > 0) {
+      if (savedSettings && Object.keys(savedSettings).length > 0) {
         // Use values from cookie
         settings = savedSettings as GeneralSettings;
       }
       // else use default settings
     }
-    this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
+    this.proxySettings = this.indexedDBService.getSettingsProxy(settings, objectName);
     this.configFileName = this.proxySettings.configFileName;
     this.masterVolume().setValue(this.proxySettings.level);
   }

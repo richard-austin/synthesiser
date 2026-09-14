@@ -4,10 +4,10 @@ import {dialStyle} from '../level-control/levelControlParameters';
 import {PhasorSettings} from '../settings/phasor';
 import {modWaveforms, onOff, phasorOutputs} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
-import {Cookies} from '../settings/cookies/cookies';
 import {FormsModule} from '@angular/forms';
 import {NgClass} from '@angular/common';
 import {FmSynthService} from '../services/fm-synth-service';
+import {IndexedDBService} from '../services/indexed-db-service';
 
 @Component({
   selector: 'app-phaser',
@@ -21,7 +21,6 @@ import {FmSynthService} from '../services/fm-synth-service';
 })
 export class PhaserComponent implements AfterViewInit, OnDestroy {
   proxySettings!: PhasorSettings;
-  cookies!: Cookies;
   protected stages!: number;
 
   protected readonly dialStyle = dialStyle;
@@ -43,6 +42,7 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
   readonly modOnOff = viewChild.required<ElementRef<HTMLFormElement>>('modOnOffForm');
   readonly feedback = viewChild.required<LevelControlComponent>('feedback');
 
+  readonly indexedDBService = inject(IndexedDBService);
   readonly fmSynthService: FmSynthService = inject(FmSynthService);
 
   constructor() {
@@ -50,7 +50,6 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
   }
 
   async setUp(settings: PhasorSettings | null) {
-    this.cookies = new Cookies();
 
     await this.applySettings(settings);
   }
@@ -61,18 +60,18 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
   }
 
   async applySettings(settings: PhasorSettings | null) {
-    const cookieName = 'phasor';
+    const objectName = 'phasor';
 
     if (!settings) {
       settings = new PhasorSettings();
-      const savedSettings = this.cookies.getSettings(cookieName, settings);
+      const savedSettings = await this.indexedDBService.getSynthObject(objectName);
 
-      if (Object.keys(savedSettings).length > 0)
+      if (savedSettings && Object.keys(savedSettings).length > 0)
         settings = savedSettings as PhasorSettings;  // Use values from cookie
       // Else use default values
     }
 
-    this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
+    this.proxySettings = this.indexedDBService.getSettingsProxy(settings, objectName);
 
     // Set up LFO default values
     // this.modGain.connect(this.phaser.modInput);

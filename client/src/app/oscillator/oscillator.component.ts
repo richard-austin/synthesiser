@@ -18,10 +18,10 @@ import {OscillatorSettings} from '../settings/oscillator';
 import {modWaveforms, onOff, oscModOutput, oscWaveforms} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {timer} from 'rxjs';
-import {Cookies} from '../settings/cookies/cookies';
 import {ClipboardService} from './clipboard-service';
 import {FmSynthService} from '../services/fm-synth-service';
 import {WaveTables} from '../modules/wavetables';
+import {IndexedDBService} from '../services/indexed-db-service';
 export enum envelopePhase {inactive, attack, decay, sustain, release, retrigger, legato }
 export enum pitchEnvelopePhase {inactive, attack, attackLevel, decay, sustainLevel, release, releaseLevel, retrigger}
 
@@ -50,7 +50,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   private audioCtx!: AudioContext;
  // private wasmBinary!: ArrayBuffer;
   private proxySettings!: OscillatorSettings;
-  private cookies!: Cookies;
 
   filters: InputSignal<FilterComponent> = input.required<FilterComponent>();
   ringMod: InputSignal<RingModulatorComponent> = input.required<RingModulatorComponent>();
@@ -97,6 +96,8 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   readonly modLevel = viewChild.required<LevelControlComponent>('modDepth');
   readonly lfoWaveForm = viewChild.required<ElementRef<HTMLFormElement>>('modWaveForm');
 
+  readonly  indexedDBService: IndexedDBService = inject(IndexedDBService);
+
   readonly fmSynthService: FmSynthService = inject(FmSynthService);
 
   clipboard: ClipboardService = inject(ClipboardService);
@@ -105,24 +106,23 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   async start(audioCtx: AudioContext, settings: OscillatorSettings | null): Promise<void> {
     this.audioCtx = audioCtx;
    // this.wasmBinary = wasmBinary;
-    this.cookies = new Cookies();
     await this.applySettings(settings);
   }
 
   async applySettings(settings: OscillatorSettings | null) {
-    const cookieName = "oscillator" + this.params().settingsId;
+    const objectName = "oscillator" + this.params().settingsId;
     if (!settings) {  // If no settings supplied, create default and check if previously saved in cookie
       settings = new OscillatorSettings();
-      const savedSettings = this.cookies.getSettings(cookieName, settings);
+      const savedSettings = await this.indexedDBService.getSynthObject(objectName);
 
-      if (Object.keys(savedSettings).length > 0) {
+      if (savedSettings && Object.keys(savedSettings).length > 0) {
         // Use values from cookie
         settings = savedSettings as OscillatorSettings;
       }
       // else use default settings
     }
 
-    this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
+    this.proxySettings = this.indexedDBService.getSettingsProxy(settings, objectName);
     this.fmSynthService.applySettings(this.proxySettings, this.oscNumber());
 
     this.frequency().setValue(this.proxySettings.frequency);  // Set frequency dial initial value.

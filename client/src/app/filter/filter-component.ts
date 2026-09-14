@@ -16,9 +16,10 @@ import {PhaserComponent} from '../phaser/phaser.component';
 import {filterModType, modWaveforms, onOff} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {FilterSettings} from '../settings/filter';
-import {Cookies} from '../settings/cookies/cookies';
+
 import {pitchEnvelopePhase, PortamentoType} from '../oscillator/oscillator.component';
 import {FmSynthService} from '../services/fm-synth-service';
+import {IndexedDBService} from '../services/indexed-db-service';
 
 @Component({
   selector: 'app-filters',
@@ -32,7 +33,6 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   protected tuningDivisions = 6;
   private audioCtx!: AudioContext;
   proxySettings!: FilterSettings
-  private cookies!: Cookies;
 
   // One set for oscillator1, one set for oscillator2 and one for the noise source
   private readonly numberOfFilters: number = 1; // TODO: Should be 12 DevicePoolManager.numberOfDevices;
@@ -67,18 +67,18 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   readonly modLevel = viewChild.required<LevelControlComponent>('modDepth');
   readonly lfoWaveForm = viewChild.required<ElementRef<HTMLFormElement>>('lfoWaveForm');
 
+  private readonly indexedDBService = inject(IndexedDBService);
   private fmSynthService: FmSynthService = inject(FmSynthService);
 
   private started = false;
 
-  start(audioCtx: AudioContext, settings: FilterSettings | null): boolean {
+  async start(audioCtx: AudioContext, settings: FilterSettings | null): Promise<boolean> {
 
     this.audioCtx = audioCtx;
     let ok = false;
     if (this.numberOfFilters && !this.started) {
-      this.cookies = new Cookies();
     }
-    this.applySettings(settings);
+    await this.applySettings(settings);
     return ok;
   }
 
@@ -87,13 +87,13 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     SetRadioButtons.set(this.filterOutputTo(), this.proxySettings.output);
   }
 
-  applySettings(settings: FilterSettings | null) {
-    const cookieName = 'filter' + this.filterNumber();
+  async applySettings(settings: FilterSettings | null) {
+    const objectName = 'filter' + this.filterNumber();
     if (!settings) {
       settings = new FilterSettings();
-      const savedSettings = this.cookies.getSettings(cookieName, settings);
+      const savedSettings = await this.indexedDBService.getSynthObject(objectName);
 
-      if (Object.keys(savedSettings).length > 0) {
+      if (savedSettings && Object.keys(savedSettings).length > 0) {
         // Use values from cookie
         settings = savedSettings as FilterSettings;
       }
@@ -101,7 +101,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
     // else use default settings
 
-    this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
+    this.proxySettings = this.indexedDBService.getSettingsProxy(settings, objectName);
     if (!this.started) {
       this.started = true;
     }

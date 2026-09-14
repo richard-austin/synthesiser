@@ -1,6 +1,6 @@
 import {
   AfterViewInit,
-  Component,
+  Component, inject,
   input,
   InputSignal,
   Signal, viewChildren,
@@ -10,7 +10,7 @@ import {MatrixControlComponent, ModSetting} from '../matrix-control/matrix-contr
 import {SynthComponent} from '../synth/synth-component';
 import {OscillatorComponent} from '../oscillator/oscillator.component';
 import {MatrixSettings} from '../settings/matrix';
-import {Cookies} from '../settings/cookies/cookies';
+import {IndexedDBService} from '../services/indexed-db-service';
 
 @Component({
   selector: 'app-matrix',
@@ -24,29 +24,28 @@ export class MatrixComponent implements AfterViewInit {
   matrixControls: Signal<readonly MatrixControlComponent[]> = viewChildren(MatrixControlComponent);
   oscillators: InputSignal<readonly OscillatorComponent[]> = input.required<readonly OscillatorComponent[]>();
   selectOperator: InputSignal<WritableSignal<number>> = input.required<WritableSignal<number>>();
+  indexedDBService = inject(IndexedDBService);
 
   protected _oscillatorParams = SynthComponent.oscillatorParams;
-  private cookies!: Cookies;
   private proxySettings!: MatrixSettings;
 
   constructor() {
-    this.cookies = new Cookies();
   }
 
-  public start(settings: MatrixSettings | null): void {
-    const cookieName = 'matrix';
+  public async start(settings: MatrixSettings | null): Promise<void> {
+    const objectName = 'matrix';
     if (!settings) {  // If no settings supplied, create default and check if previously saved in cookie
       settings = new MatrixSettings();
-      const savedSettings = this.cookies.getSettings(cookieName, settings);
+      const savedSettings = await this.indexedDBService.getSynthObject(objectName);
 
-      if (Object.keys(savedSettings).length > 0) {
+      if (savedSettings && Object.keys(savedSettings).length > 0) {
         // Use values from cookie
         settings = savedSettings as MatrixSettings;
       }
       // else use default settings
     }
 
-    this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
+    this.proxySettings = this.indexedDBService.getSettingsProxy(settings, objectName);
 
     this.proxySettings.matrix.forEach((row, carrierIdx) => {
     row.forEach((mtxCtl, modIdx) => {

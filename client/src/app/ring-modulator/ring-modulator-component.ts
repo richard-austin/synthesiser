@@ -6,7 +6,7 @@ import {
   viewChild,
   output,
   input,
-  OutputEmitterRef
+  OutputEmitterRef, inject
 } from '@angular/core';
 import {RingModulator} from '../modules/ring-modulator';
 import {LevelControlComponent} from '../level-control/level-control.component';
@@ -16,8 +16,7 @@ import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {modWaveforms, onOff, ringModOutput} from '../enums/enums';
 import {FilterComponent} from '../filter/filter-component';
 import {ReverbComponent} from '../reverb-component/reverb-component';
-import {Cookies} from '../settings/cookies/cookies';
-//import DevicePoolManager from '../util-classes/device-pool-manager';
+import {IndexedDBService} from '../services/indexed-db-service';
 
 @Component({
   selector: 'app-ring-modulator',
@@ -30,11 +29,9 @@ import {Cookies} from '../settings/cookies/cookies';
 export class RingModulatorComponent implements AfterViewInit, OnDestroy {
   ringMod!: RingModulator;
   proxySettings!: RingModSettings;
-  private cookies!: Cookies;
 
   readonly filters = input.required<FilterComponent | undefined>();
   readonly reverb = input.required<ReverbComponent>();
-  numberOfDevices: number = 12; // TODO: DevicePoolManager.numberOfDevices;
   readonly output: OutputEmitterRef<string> = output<string>();
 
   readonly modFreq = viewChild.required<LevelControlComponent>('modFreq');
@@ -42,13 +39,13 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
   readonly modWaveForm = viewChild.required<ElementRef<HTMLFormElement>>('modWaveForm');
   readonly internalModForm = viewChild.required<ElementRef<HTMLFormElement>>('internalModForm');
   readonly outputToForm = viewChild.required<ElementRef<HTMLFormElement>>('outputToForm');
+  private readonly indexedDBService: IndexedDBService = inject(IndexedDBService);
 
-  start(audioCtx: AudioContext, settings: RingModSettings | null) {
+  async start(audioCtx: AudioContext, settings: RingModSettings | null) {
     this.ringMod = new RingModulator(audioCtx);
-    this.cookies = new Cookies();
 
     // Set default ring mod settings
-    this.applySettings(settings);
+    await this.applySettings(settings);
   }
 
   // Called after all synth components have been started
@@ -56,20 +53,20 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
     SetRadioButtons.set(this.outputToForm(), this.proxySettings.output);
   }
 
-  applySettings(settings: RingModSettings | null) {
-    const cookieName = 'ringMod';
+  async applySettings(settings: RingModSettings | null) {
+    const objectName = 'ringMod';
     if(!settings) {
       settings = new RingModSettings();
-      const savedSettings = this.cookies.getSettings(cookieName, settings);
+      const savedSettings = await this.indexedDBService.getSynthObject(objectName);
 
-      if (Object.keys(savedSettings).length > 0) {
+      if (savedSettings && Object.keys(savedSettings).length > 0) {
         // Use values from cookie
         settings = savedSettings as RingModSettings;
       }
       // else use default settings
     }
 
-    this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
+    this.proxySettings = this.indexedDBService.getSettingsProxy(settings, objectName);
 
     // Set up the dial positions
     this.modFreq().setValue(settings.modFrequency);

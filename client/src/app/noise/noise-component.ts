@@ -13,10 +13,9 @@ import {dialStyle} from '../level-control/levelControlParameters';
 import {NoiseSettings} from '../settings/noise';
 import {noiseOutputs, onOff} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
-import {Cookies} from '../settings/cookies/cookies';
 import {envelopePhase} from '../oscillator/oscillator.component';
 import {FmSynthService} from '../services/fm-synth-service';
-//import DevicePoolManager from '../util-classes/device-pool-manager';
+import {IndexedDBService} from '../services/indexed-db-service';
 
 @Component({
   selector: 'app-noise',
@@ -28,7 +27,6 @@ import {FmSynthService} from '../services/fm-synth-service';
 })
 export class NoiseComponent implements AfterViewInit, OnDestroy {
   private proxySettings!: NoiseSettings;
-  private cookies!: Cookies;
 
  // private noisePoolMgr!: DevicePoolManager;
 
@@ -46,6 +44,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   readonly legatoOnOffForm = viewChild.required<ElementRef<HTMLFormElement>>('legatoOnOffForm');
   readonly velocityOnOffForm = viewChild.required<ElementRef<HTMLFormElement>>('velocity');
 
+  private readonly indexedDBService: IndexedDBService = inject(IndexedDBService);
   readonly fmSynthService: FmSynthService = inject(FmSynthService);
   private started: boolean;
 
@@ -65,7 +64,6 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
       // }
       this.started = true;
     }
-    this.cookies = new Cookies();
     this.applySettings(settings);
   }
 
@@ -74,19 +72,19 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     SetRadioButtons.set(this.noiseOutputToForm(), this.proxySettings.output);
   }
 
-  applySettings(settings: NoiseSettings | null) {
-    const cookieName = 'noise';
+  async applySettings(settings: NoiseSettings | null) {
+    const objectName = 'noise';
     if (!settings) {
       settings = new NoiseSettings();
-      const savedSettings = this.cookies.getSettings(cookieName, settings);
+      const savedSettings = await this.indexedDBService.getSynthObject(objectName);
 
-      if (Object.keys(savedSettings).length > 0) {
+      if (savedSettings && Object.keys(savedSettings).length > 0) {
         // Use values from cookie
         settings = savedSettings as NoiseSettings;
       }
       // else use default settings
     }
-    this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
+    this.proxySettings = this.indexedDBService.getSettingsProxy(settings, objectName);
     this.attack().setValue(this.proxySettings.adsr.attackTime);
     this.decay().setValue(this.proxySettings.adsr.decayTime);
     this.sustain().setValue(this.proxySettings.adsr.sustainLevel);
