@@ -62,3 +62,9 @@ tasks.register('buildClientWatch', NpmTask) {
   description = 'Builds and watches the client side assets for rebuilding'
   args = ['run', 'buildWatch']
 }
+
+tasks.register("copyToServer", Copy) {
+  dependsOn(['buildClient'])
+  from file("${projectDir}/dist/synthesiser/browser")
+  into file("${rootDir}/server/src/main/resources/static")
+}

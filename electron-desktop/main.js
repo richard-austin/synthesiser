@@ -67,7 +67,7 @@ function createWindow() {
             .then((res) => {
                 if (res.ok) {
                     mainWindow.loadURL(LOCAL_URL);
-                    mainWindow.webContents.openDevTools(); // Optional development logging
+                  //  mainWindow.webContents.openDevTools(); // Optional development logging
                 } else {
                     setTimeout(checkServerReady, 200);
                 }

@@ -30,3 +30,13 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+tasks.register("copyJarToElectronDesktop", Copy) {
+    from "$projectDir/build/libs/"
+    into "$rootDir/electron-desktop/server"
+}
+
+bootJar {
+    dependsOn ":client:buildClient"
+    finalizedBy copyJarToElectronDesktop
+}

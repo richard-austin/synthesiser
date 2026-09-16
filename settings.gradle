@@ -8,4 +8,4 @@ pluginManagement {
 
 rootProject.name = 'synthesiser'
 
-include 'client', 'server', 'oscillator-wasm'
+include 'client', 'server', 'electron-desktop', 'oscillator-wasm'
