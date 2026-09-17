@@ -1,0 +1,1 @@
+jlink   --add-modules java.base,java.logging,java.naming,java.desktop,java.management,jdk.management,java.instrument,java.sql,java.xml,java.security.jgss   --strip-debug   --no-man-pages   --no-header-files   --compress=zip-9   --output /home/richard/dev-work/synthesiser/electron-desktop/jre
