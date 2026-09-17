@@ -34,7 +34,8 @@
     "asar": true,
     "asarUnpack": [
       "jre/**",
-      "server/**"
+      "server/**",
+      "**/engine-module.js"
     ]
   }
 }

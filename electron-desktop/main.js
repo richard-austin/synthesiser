@@ -56,8 +56,10 @@ function createWindow() {
         width: 1200,
         height: 800,
         webPreferences: {
+            nodeIntegrationInWorker: true, // Absolutely mandatory for production WASM workers
             nodeIntegration: false,
-            contextIsolation: true
+            contextIsolation: true,
+            webSecurity: true             // Standard enforcement
         }
     });
 
