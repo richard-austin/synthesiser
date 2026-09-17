@@ -16,8 +16,15 @@ void lfo_init(LfoData *data, long waveTableSize) {
 void lfo_advance(LfoData *ld) {
     if (ld->modType != LFO_OFF) {
         ld->phase += (ld->frequency / g_sampleRate);
-        if (ld->phase >= 1)
-            ld->phase -= 1;
+
+        // Handle overflow safely using truncation to catch multi-cycle jumps or drift
+        if (ld->phase >= 1.0f) {
+            ld->phase -= (float)((int)ld->phase);
+        }
+        // Safety check for unexpected negative phase values
+        else if (ld->phase < 0.0f) {
+            ld->phase = 0.0f;
+        }
     }
 }
 

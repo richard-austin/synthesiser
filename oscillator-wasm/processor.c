@@ -42,7 +42,7 @@ void bank_data_init(BankData *bd, int waveTableSize, int numBands) {
     bd->modMatrix = calloc(g_numberOfBanks, sizeof(ModSettings *));
     bd->modMatrix = calloc(g_numberOfBanks, sizeof(ModSettings));
     for (int b = 0; b < g_numberOfBanks; b++) {
-        ModSettings* modSettings = bd->modMatrix + b;
+        ModSettings *modSettings = bd->modMatrix + b;
         modSettings->level = 0.0f;
         modSettings->modType = MOD_OFF;
     }
@@ -226,35 +226,36 @@ float render_sample_from_phase(int bank, int table_index, float phase) {
         return 0.0f;
 
     const int bd_waveTableSize = bd->waveTableSize;
-    // 1. Point to the specific wavetable inside the continuous memory block
-    // (Assuming 21 tables per bank as per your calloc setup)
     float *current_table = bd->periodicWaveData + (table_index * bd_waveTableSize);
 
+    // 1. Force phase into a strict [0.0, 1.0) range to prevent floating-point edge cases
+    if (phase >= 1.0f) phase -= (int)phase;
+    if (phase < 0.0f)  phase += 1.0f;
 
-    // 2. Scale phase (0.0 to 1.0) to the wavetable size index space
-    float exact_index = phase * (float) bd_waveTableSize;
+    // 2. Scale phase to index space
+    float exact_index = phase * (float)bd_waveTableSize;
 
-    // 3. Get the floor integer index and the fractional remainder
-    int index_a = (int) exact_index;
-    float fraction = exact_index - (float) index_a;
+    // 3. Get floor integer and fraction
+    int index_a = (int)exact_index;
+    float fraction = exact_index - (float)index_a;
 
-    // 4. Determine the next sample index (with wrap-around handling)
+    // 4. Robust boundary safety guard BEFORE calculating index_b
+    if (index_a >= bd_waveTableSize) {
+        index_a = bd_waveTableSize - 1;
+    } else if (index_a < 0) {
+        index_a = 0;
+    }
+
+    // 5. Determine next sample index safely
     int index_b = index_a + 1;
     if (index_b >= bd_waveTableSize) {
         index_b = 0;
     }
 
-    // Safety guard for boundaries
-    if (index_a >= bd_waveTableSize) {
-        index_a = bd_waveTableSize - 1;
-    }
-
-    // 5. Fetch the two samples
+    // 6. Fetch and interpolate safely
     float sample_a = current_table[index_a];
     float sample_b = current_table[index_b];
 
-    // 6. Linearly interpolate between them
-    // formula: a + fraction * (b - a)
     return sample_a + fraction * (sample_b - sample_a);
 }
 
@@ -308,7 +309,7 @@ void processBlock(float **outputBuffers, int numSamples) {
         if (g_phaser->lfoData->modType != LFO_OFF) {
             lfo_advance(g_phaser->lfoData);
         }
-
+        float noiseSample = 0.0f;
         for (int b = 0; b < g_numberOfBanks; b++) {
             // Resolve base offsets for stereo pairs
             // Oscillator Bank outputs are pairs at: 0/1, 2/3, 4/5, 6/7
@@ -430,7 +431,9 @@ void processBlock(float **outputBuffers, int numSamples) {
                 if (bd->lfoData.modType == LFO_AMPLITUDE) {
                     signal *= (1.0f + render_lfo_sample(&bd->lfoData));
                 }
-                float noiseSample = noise(g_noise, osc);
+                if (g_noise_output != OFF)
+                    noiseSample = noise(g_noise, osc);
+
                 float finalOutputSample = signal * bd->oscillatorLevel * ampEnvelope;
                 float filterInputSample = 0.0f;
 
@@ -452,17 +455,17 @@ void processBlock(float **outputBuffers, int numSamples) {
                     filterOutRight[i] += filterSample * panRight;
                 }
 
-                if (g_noise_output == MASTER_VOLUME) {
-                    noiseOutLeft[i] += noiseSample * panLeft;
-                    noiseOutRight[i] += noiseSample * panRight;
-                }
-
                 if (!bd_outputToFilter) {
                     // Mirroring the exact same source to Left and Right channel blocks
                     outLeft[i] += finalOutputSample * panLeft;
                     outRight[i] += finalOutputSample * panRight;
                 }
             }
+            if (g_noise_output == MASTER_VOLUME && b == 0) {  // Only allow bank 0 panner to pan noise
+                noiseOutLeft[i] += noiseSample * panLeft;
+                noiseOutRight[i] += noiseSample * panRight;
+            }
+
             // The phaser input is processed after the oscillator loop as the sum of the samples from the oscillators
             //  and filters in the bank comprises the single sample for the phaser.
             if (bd_usePhaser) {

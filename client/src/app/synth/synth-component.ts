@@ -496,7 +496,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       case 'off':
         break;
       default:
-        console.error('Unknown filter output destination');
+        console.error('Unknown noise output destination');
         break;
     }
   }
