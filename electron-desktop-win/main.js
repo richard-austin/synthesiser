@@ -44,7 +44,7 @@ function createWindow() {
     });
 
     // Open DevTools immediately
-    mainWindow.webContents.openDevTools();
+    //mainWindow.webContents.openDevTools();
 
     const checkServerReady = () => {
         // If already loaded, stop looping completely to prevent DevTools disconnection
