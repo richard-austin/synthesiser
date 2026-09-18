@@ -1,0 +1,59 @@
+{
+  "name": "synthesiser-desktop-win",
+  "version": "1.0.0",
+  "description": "Windows Desktop Wrapper for Synthesiser",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win"
+  },
+  "keywords": [],
+  "author": {
+    "name": "Richard Austin",
+    "email": "richard.david.austin@gmail.com"
+  },
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^44.4.0",
+    "electron-builder": "^26.15.3"
+  },
+  "overrides": {
+    "@noble/hashes": "1.8.0"
+  },
+  "build": {
+    "appId": "io.github.richard-austin.synthesiser",
+    "asar": true,
+    "files": [
+      "**/*",
+      "!jre-win${/*}"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "requestedExecutionLevel": "asInvoker",
+      "extraFiles": [
+        {
+          "from": "jre-win",
+          "to": "resources/jre-win",
+          "filter": ["**/*"]
+        },
+        {
+          "from": "server",
+          "to": "resources/server",
+          "filter": ["**/*"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}
