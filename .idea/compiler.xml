@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel target="21">
+      <module name="synthesiser.oscillator-wasm-go.main" target="25" />
+      <module name="synthesiser.oscillator-wasm-go.test" target="25" />
+    </bytecodeTargetLevel>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="synthesiser.server" options="-parameters" />
+      <module name="synthesiser.server.main" options="-parameters" />
+      <module name="synthesiser.server.test" options="-parameters" />
+    </option>
+  </component>
+</project>
