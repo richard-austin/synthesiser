@@ -1,3 +1,5 @@
+import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
+
 repositories {
     mavenCentral()
     maven {
@@ -22,8 +24,14 @@ if (envProperty instanceof Provider) {
     finalEnvMap = emscriptenTool.getProperties().getOrDefault('env', [:]) as Map
 }
 
+def emcc = "emcc"
+
+OperatingSystem os = DefaultNativePlatform.currentOperatingSystem
+if(os.toFamilyName() == 'windows')
+    emcc = "emcc.bat"
+
 // 3. Directly target the confirmed emcc executable relative to the root layout context
-File emccExecutable = rootProject.layout.projectDirectory.file(".komple/installs/emscripten/upstream/emscripten/emcc").asFile
+File emccExecutable = rootProject.layout.projectDirectory.file(".komple/installs/emscripten/upstream/emscripten/$emcc").asFile
 String absoluteEmccPath = emccExecutable.absolutePath
 
 // 4. Pre-compute primitive file layouts to satisfy the Configuration Cache completely
