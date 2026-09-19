@@ -54,6 +54,7 @@ tasks.register('buildClient', NpmTask) {
   group = 'build'
   description = 'Compile client side assets for production'
   args = ['run', 'build']
+  //finalizedBy copyToServer
 }
 
 tasks.register('buildClientWatch', NpmTask) {
@@ -63,8 +64,9 @@ tasks.register('buildClientWatch', NpmTask) {
   args = ['run', 'buildWatch']
 }
 
-tasks.register("copyToServer", Copy) {
+tasks.register("copyToServerResources", Copy) {
   dependsOn(['buildClient'])
+  delete file("${rootDir}/server/src/main/resources/static")
   from file("${projectDir}/dist/synthesiser/browser")
   into file("${rootDir}/server/src/main/resources/static")
 }

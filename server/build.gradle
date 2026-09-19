@@ -31,12 +31,24 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
+tasks.register("copyJarToElectronDesktopWin", Copy) {
+    delete file("$rootDir/electron-desktop-win/server")
+    from "$projectDir/build/libs/"
+    into "$rootDir/electron-desktop-win/server"
+}
+
 tasks.register("copyJarToElectronDesktop", Copy) {
+    delete file("$rootDir/electron-desktop/server")
     from "$projectDir/build/libs/"
     into "$rootDir/electron-desktop/server"
+   finalizedBy copyJarToElectronDesktopWin
 }
 
 bootJar {
     dependsOn ":client:buildClient"
     finalizedBy copyJarToElectronDesktop
+}
+
+processResources {
+    dependsOn ":client:copyToServerResources"
 }

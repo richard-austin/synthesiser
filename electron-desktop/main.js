@@ -53,8 +53,8 @@ function startBackendServer() {
 
 function createWindow() {
     mainWindow = new BrowserWindow({
-        width: 1200,
-        height: 800,
+        // width: 1200,
+        // height: 800,
         webPreferences: {
             nodeIntegrationInWorker: true, // Absolutely mandatory for production WASM workers
             nodeIntegration: false,

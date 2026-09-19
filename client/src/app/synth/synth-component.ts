@@ -6,7 +6,7 @@ import {
   OnDestroy,
   Signal, signal, viewChild,
   viewChildren,
-  WritableSignal
+  WritableSignal,
 } from '@angular/core';
 import {FilterComponent} from "../filter/filter-component";
 import {OscillatorComponent} from "../oscillator/oscillator.component";
@@ -82,9 +82,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   homeComponentControl: InputSignal<WritableSignal<boolean>> = input.required<WritableSignal<boolean>>();
 
   oscillatorsGrp: Signal<readonly OscillatorComponent[]> = viewChildren(OscillatorComponent);
-  oscillatorWindow: Signal<ElementRef<HTMLDivElement>> = viewChild.required<ElementRef<HTMLDivElement>>('oscillatorWindow');
-
-  filterWindow: Signal<ElementRef<HTMLDivElement>> = viewChild.required<ElementRef<HTMLDivElement>>('filterWindow');
   filtersGrp  = viewChildren(FilterComponent);
   noise: Signal<NoiseComponent> = viewChild.required(NoiseComponent);
   ringModulator: Signal<RingModulatorComponent> = viewChild.required(RingModulatorComponent);
@@ -98,6 +95,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
   masterVolume: Signal<GeneralComponent> = viewChild.required('general');
 
+  selectedOscillator: number = 0;
   indexedDBService = inject(IndexedDBService);
 
   fmSynthService: FmSynthService = inject(FmSynthService);
@@ -129,11 +127,8 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
     this.effectRef = effect(() => {
       const value = this.signalSelectOperator();
-      if (this.oscillatorWindow() && this.proxySettings) {
-        this.oscillatorWindow().nativeElement.scroll({left: 0, top: value * 979.3, behavior: 'instant'});
-        this.filterWindow().nativeElement.scroll({left: 0, top: value * 980, behavior: 'instant'});
-        this.proxySettings.selectedOscillator = (value + 1).toString();
-      }
+      this.selectedOscillator = value;
+      this.proxySettings.selectedOscillator = (value + 1).toString();
     });
   }
 
