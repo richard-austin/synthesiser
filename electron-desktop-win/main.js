@@ -3,6 +3,7 @@ const path = require('node:path');
 const { spawn, exec } = require('node:child_process');
 const http = require('node:http');
 
+// App icon "synth.png courtesy of smalllikeart",
 let mainWindow = null;
 let springBootProcess = null;
 let isLoaded = false; // Flag to prevent multiple loads and fix DevTools disconnection

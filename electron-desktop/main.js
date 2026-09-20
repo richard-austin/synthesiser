@@ -5,12 +5,7 @@ const { app, BrowserWindow, session } = require('electron'); // Fixed: Added ses
 
 // Alternative 1: Disable GPU rasterization specifically (keeps core acceleration on)
 app.commandLine.appendSwitch('disable-gpu-rasterization');
-
-// Alternative 2: Force the app to use software backings for rendering frames
-// app.commandLine.appendSwitch('disable-software-rasterizer');
-
-// Alternative 3: Force standard angle graphics architecture processing
-// app.commandLine.appendSwitch('use-gl', 'desktop');
+// App icon "synth.png courtesy of smalllikeart",
 
 const path = require('node:path');
 const { spawn } = require('node:child_process');
