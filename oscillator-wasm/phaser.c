@@ -129,5 +129,6 @@ float phaser_process(Phaser *phaser, float input) {
     }
 
     const float wetDry = phaser->wetDry;
-    return phaser->lastOutput = phaser->level * (output * (wetDry + 1.0f) - input * (wetDry - 1.0f));
+    phaser->lastOutput = output;
+    return phaser->level * (output * (wetDry + 1.0f) - input * (wetDry - 1.0f));
 }
