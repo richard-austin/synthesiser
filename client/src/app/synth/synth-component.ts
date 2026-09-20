@@ -128,7 +128,8 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.effectRef = effect(() => {
       const value = this.signalSelectOperator();
       this.selectedOscillator = value;
-      this.proxySettings.selectedOscillator = (value + 1).toString();
+      if(this.proxySettings)  // Prevent error on start up
+        this.proxySettings.selectedOscillator = (value + 1).toString();
     });
   }
 

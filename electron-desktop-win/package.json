@@ -29,6 +29,8 @@
       "!jre-win${/*}"
     ],
     "win": {
+      "__comment__": "synth.png courtesy of smalllikeart <a href=\"https://www.flaticon.com/free-icons/piano\" title=\"piano icons\">Piano icons created by smalllikeart - Flaticon</a>",
+      "icon": "synth.ico",
       "target": [
         {
           "target": "nsis",
