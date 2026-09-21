@@ -331,7 +331,7 @@ void processBlock(float **outputBuffers, int numSamples) {
             float panRight = bd->panRight;
 
             bool bd_useFilter = bd->useFilter;
-            bool bd_usePhaser = bd->outputToPhaser || bd->filterConnectToPhaser;
+            bool bd_usePhaser = bd->outputToPhaser || bd->filterConnectToPhaser || g_noise_output == PHASER;
             const bool bd_usePitchEnvelope = bd->usePitchEnvelope;
             const bool bd_useFilterPitchEnvelope = bd->useFilterPitchEnvelope;
             bool bd_outputToFilter = bd->outputToFilter;
@@ -444,6 +444,8 @@ void processBlock(float **outputBuffers, int numSamples) {
 
                 if (g_noise_output == FILTER)
                     filterInputSample += noiseSample;
+                else if(g_noise_output == PHASER)
+                    bd->phaserInputs += noiseSample;
 
                 if (bd_outputToFilter || (g_noise_output == FILTER && b == 0)) {
                     float filterSample = svf4_process_morph(&od->svf, filterInputSample) * bd->filterLevel;

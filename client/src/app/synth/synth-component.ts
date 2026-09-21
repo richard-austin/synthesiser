@@ -495,6 +495,13 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       case 'filter':
         this.noise().connectToFilters();
         break;
+      case 'reverb':
+        this.noise().noiseOff(false);
+        this.fmSynthService.connectNoise(this.reverb().input);
+        break;
+      case 'phaser':
+        this.noise().connectToPhaser();
+        break;
       case 'off':
         break;
       default:

@@ -119,6 +119,11 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     this.fmSynthService.noiseConnectToFilter();
    }
 
+  connectToPhaser() {
+    this.proxySettings.output = noiseOutputs.phaser;
+    this.fmSynthService.noiseConnectToPhaser();
+  }
+
   noiseOff(isOff: boolean) {
     this.proxySettings.output = isOff ? noiseOutputs.off : noiseOutputs.speaker;
     this.fmSynthService.noiseOff(isOff);

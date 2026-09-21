@@ -194,7 +194,7 @@ typedef struct {
 
 enum noiseType { WHITE, PINK, BROWN };
 
-enum noiseOutput { OFF, MASTER_VOLUME, FILTER };
+enum noiseOutput { OFF, MASTER_VOLUME, FILTER, REVERB, PHASER };
 
 typedef struct {
     enum noiseType type;

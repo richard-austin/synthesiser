@@ -248,6 +248,10 @@ export class FmSynthService {
     this.port.postMessage({type: 'noiseConnectToFilter'});
   }
 
+  noiseConnectToPhaser() {
+    this.port.postMessage({type: 'noiseConnectToPhaser'});
+  }
+
   noiseOff(isOff: boolean) {
     this.port.postMessage({type: 'noiseOff', isOff});
   }

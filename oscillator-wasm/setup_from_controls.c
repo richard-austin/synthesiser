@@ -398,6 +398,12 @@ void noiseConnectToFilter() {
 
 EMSCRIPTEN_KEEPALIVE
 
+void noiseConnectToPhaser() {
+    g_noise->output = PHASER;
+}
+
+EMSCRIPTEN_KEEPALIVE
+
 void noiseOff(bool isOff) {
     g_noise->output = isOff ? OFF : MASTER_VOLUME;
 }

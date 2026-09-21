@@ -245,6 +245,9 @@ if (typeof globalThis.registerProcessor === 'function') {
           case 'noiseConnectToFilter':
             Module._noiseConnectToFilter();
             break;
+          case 'noiseConnectToPhaser':
+            Module._noiseConnectToPhaser();
+            break;
           case 'noiseOff':
             Module._noiseOff(data.isOff);
             break;
