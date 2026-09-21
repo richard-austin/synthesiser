@@ -7,6 +7,7 @@ import {
   Signal, signal, viewChild,
   viewChildren,
   WritableSignal,
+  ChangeDetectorRef
 } from '@angular/core';
 import {FilterComponent} from "../filter/filter-component";
 import {OscillatorComponent} from "../oscillator/oscillator.component";
@@ -46,11 +47,14 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   audioCtx!: AudioContext;
   public static readonly oscillatorParams: OscillatorParams[] = [
     new OscillatorParams("signal", 1),
-    new OscillatorParams("mod", 2),
+    new OscillatorParams("signal", 2),
     new OscillatorParams("signal", 3),
     new OscillatorParams("signal", 4),
   ];
   protected _oscillatorParams = SynthComponent.oscillatorParams;
+  protected readonly FilterComponent = FilterComponent;
+  protected isRendered: boolean = false;
+
   midiInputs: MIDIInput[] = [];
   settings: SynthSettings | null = null;
   proxySettings!: SynthComponentSettings;
@@ -99,8 +103,10 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   indexedDBService = inject(IndexedDBService);
 
   fmSynthService: FmSynthService = inject(FmSynthService);
+  private rest: RestfulApiService = inject(RestfulApiService);
+  private changeDetectorRef: ChangeDetectorRef = inject(ChangeDetectorRef);
 
-  constructor(private rest: RestfulApiService) {
+  constructor() {
     this.audioCtx = new AudioContext({sampleRate: 48000, latencyHint: "interactive"});
     this.fileNameEffectRef = effect(() => {
       const fileName = this.filename()();
@@ -601,7 +607,10 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.scaleToFitSmallWindow();
     window.onresize = () => {
       this.scaleToFitSmallWindow();
+      this.isRendered = true;
     }
+   this.isRendered = true;
+    this.changeDetectorRef.detectChanges();
   }
 
   async ngOnDestroy(): Promise<void> {
@@ -624,6 +633,4 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     this.fileNameEffectRef.destroy();
     this.homeControlEffectRef.destroy();
   }
-
-  protected readonly FilterComponent = FilterComponent;
 }

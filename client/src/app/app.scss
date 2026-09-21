@@ -7,3 +7,33 @@ div.home-button {
     width: 50px;
   }
 }
+
+div.splash {
+  position: absolute;
+  z-index: -3;
+  left: 0;
+  right: 0;
+  margin-inline: auto;
+  width: fit-content;
+  top: 0;
+  bottom: 0;
+  margin-bottom: auto;
+  margin-top: auto;
+  height: fit-content;
+  padding: 3px 10px 3px 10px;
+  border-radius: 15px;
+
+  > h3 {
+    background-image: linear-gradient(to bottom, #f19c9c, #9bffae);
+    color: transparent;
+    background-clip: text;
+
+    text-align: center;
+  }
+
+  box-shadow: 16px 10px 52px 5px rgba(179, 178, 178, 0.68);
+  -webkit-box-shadow: 16px 10px 52px 5px rgba(179, 178, 178, 0.68);
+}
+div.synth-background {
+  background-color: rgba(0, 0, 0, 1);
+}
