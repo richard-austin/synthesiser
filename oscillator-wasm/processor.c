@@ -462,12 +462,11 @@ void processBlock(float **outputBuffers, int numSamples) {
                     outLeft[i] += finalOutputSample * panLeft;
                     outRight[i] += finalOutputSample * panRight;
                 }
+                if (g_noise_output == MASTER_VOLUME && b == 0) {  // Only allow bank 0 panner to pan noise
+                    noiseOutLeft[i] += noiseSample * panLeft;
+                    noiseOutRight[i] += noiseSample * panRight;
+                }
             }
-            if (g_noise_output == MASTER_VOLUME && b == 0) {  // Only allow bank 0 panner to pan noise
-                noiseOutLeft[i] += noiseSample * panLeft;
-                noiseOutRight[i] += noiseSample * panRight;
-            }
-
             // The phaser input is processed after the oscillator loop as the sum of the samples from the oscillators
             //  and filters in the bank comprises the single sample for the phaser.
             if (bd_usePhaser) {
