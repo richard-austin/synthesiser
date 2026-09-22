@@ -1,10 +1,18 @@
-import {AfterViewInit, ChangeDetectorRef, Component, ElementRef, Signal, viewChild, ViewChild} from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  inject,
+  Signal,
+  viewChild,
+} from '@angular/core';
 import {analyserTypes} from '../enums/enums';
 import {AnalyserSettings} from '../settings/analyser-settings';
-import {Cookies} from '../settings/cookies/cookies';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
+import {IndexedDBService} from '../services/indexed-db-service';
 
 @Component({
   selector: 'app-analyser',
@@ -19,7 +27,6 @@ export class AnalyserComponent implements AfterViewInit {
   private analyser!: AnalyserNode;
   private canvasCtx!: CanvasRenderingContext2D | null;
   private canvasEL!: HTMLCanvasElement;
-  private cookies: Cookies;
   protected proxySettings!: AnalyserSettings;
 
   private triggerEdge = "rising";
@@ -32,9 +39,8 @@ export class AnalyserComponent implements AfterViewInit {
   yScaleControl = viewChild.required<LevelControlComponent>('yScale');
   xScaleControl = viewChild.required<LevelControlComponent>('xScale');
   triggerLevelControl = viewChild.required<LevelControlComponent>('trigLevel');
-
+  private readonly indexedDBService = inject(IndexedDBService);
   constructor(private cd: ChangeDetectorRef) {
-    this.cookies = new Cookies();
   }
 
   async start(audioCtx: AudioContext, settings: AnalyserSettings | null): Promise<void> {
@@ -42,24 +48,24 @@ export class AnalyserComponent implements AfterViewInit {
     this.analyser = this.audioCtx.createAnalyser();
     this.analyser.fftSize = 2048;
 
-    this.applySettings(settings);
+    await this.applySettings(settings);
   }
 
-  applySettings(settings: AnalyserSettings | null) {
-    const cookieName = 'analyser';
+  async applySettings(settings: AnalyserSettings | null) {
+    const objectName = 'analyser';
 
     if(!settings) {
       settings = new AnalyserSettings();
-      const savedSettings = this.cookies.getSettings(cookieName, settings);
+      const savedSettings = await this.indexedDBService.getSynthObject(objectName);
 
-      if (Object.keys(savedSettings).length > 0) {
+      if (savedSettings && Object.keys(savedSettings).length > 0) {
         // Use values from cookie
         settings = savedSettings as AnalyserSettings;
       }
       // else use default settings
     }
 
-    this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
+    this.proxySettings = this.indexedDBService.getSettingsProxy(settings, objectName);
     this.yScaleControl().setValue(this.proxySettings.yScale ? this.proxySettings.yScale : 1);
     this.xScaleControl().setValue(this.proxySettings?.xScale ? this.proxySettings.xScale : 1);
     this.triggerLevelControl().setValue(this.proxySettings?.triggerLevel ? this.proxySettings.triggerLevel : 0);

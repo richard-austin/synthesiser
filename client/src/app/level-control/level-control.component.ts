@@ -6,6 +6,7 @@ import {dialStyle, LevelControlParameters} from './levelControlParameters';
   imports: [],
   templateUrl: './level-control.component.html',
   styleUrl: './level-control.component.scss',
+  standalone: true
 })
 export class LevelControlComponent implements AfterViewInit, OnDestroy {
   drawOperationsWorker!: Worker;

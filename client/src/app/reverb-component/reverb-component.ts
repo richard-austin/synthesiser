@@ -1,11 +1,20 @@
-import {AfterViewInit, Component, ElementRef, OnDestroy, viewChild, output, OutputEmitterRef} from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnDestroy,
+  viewChild,
+  output,
+  OutputEmitterRef,
+  inject
+} from '@angular/core';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {Reverb} from '../modules/reverb';
 import {ReverbSettings} from '../settings/reverb';
 import {onOff} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
-import {Cookies} from '../settings/cookies/cookies';
+import {IndexedDBService} from '../services/indexed-db-service';
 
 @Component({
   selector: 'app-reverb-component',
@@ -21,7 +30,6 @@ export class ReverbComponent implements AfterViewInit, OnDestroy {
   gain!: GainNode;
   input!: GainNode;
   proxySettings!: ReverbSettings;
-  private cookies!: Cookies;
 
   readonly output: OutputEmitterRef<string> = output<string>();
 
@@ -33,10 +41,11 @@ export class ReverbComponent implements AfterViewInit, OnDestroy {
   readonly repeatEchoLevelDial = viewChild.required<LevelControlComponent>('repeatEchoLevel');
   readonly wetDryDial = viewChild.required<LevelControlComponent>('wetDry');
 
+  private readonly indexedDBService = inject(IndexedDBService);
   protected readonly dialStyle = dialStyle;
   private started = false;
 
-  start(audioCtx: AudioContext, settings: ReverbSettings | null) {
+  async start(audioCtx: AudioContext, settings: ReverbSettings | null) {
     if(!this.started) {
       this.audioCtx = audioCtx;
       this.input = this.audioCtx.createGain();
@@ -44,9 +53,8 @@ export class ReverbComponent implements AfterViewInit, OnDestroy {
       this.gain = this.audioCtx.createGain();
       this.gain.gain.value = 1;
       this.reverb = new Reverb(audioCtx, this.input, this.gain, this.gain);
-      this.cookies = new Cookies();
     }
-    this.applySettings(settings);
+    await this.applySettings(settings);
   }
 
   // Called after all synth components have been started
@@ -54,21 +62,21 @@ export class ReverbComponent implements AfterViewInit, OnDestroy {
     SetRadioButtons.set(this.reverbOnOffForm(), this.proxySettings.output);
   }
 
-  applySettings(settings: ReverbSettings | null) {
-    const cookieName = 'reverb';
+  async applySettings(settings: ReverbSettings | null) {
+    const objectName = 'reverb';
 
     if(!settings) {
       settings = new ReverbSettings();
 
-      const savedSettings = this.cookies.getSettings(cookieName, settings);
+      const savedSettings = await this.indexedDBService.getSynthObject(objectName);
 
-      if (Object.keys(savedSettings).length > 0) {
+      if (savedSettings && Object.keys(savedSettings).length > 0) {
         // Use values from cookie
         settings = savedSettings as ReverbSettings;
       }
     }
 
-    this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
+    this.proxySettings = this.indexedDBService.getSettingsProxy(settings, objectName);
     this.reverb.setup(this.proxySettings.attackTime, this.proxySettings.decayTime, this.proxySettings.predelay, this.proxySettings.repeatEchoTime, this.proxySettings.repeatEchoGain);
     this.predelayDial().setValue(this.proxySettings.predelay);
     this.repeatEchoTimeDial().setValue(this.proxySettings.repeatEchoTime);

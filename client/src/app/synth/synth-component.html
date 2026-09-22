@@ -1,32 +1,32 @@
-<div #synth>
+<div #synth  [style]="{'display' : isRendered ? '' : 'none'}">
   <div style="display: flex; flex-direction: row">
-    <div #oscillatorWindow class="oscillator-window">
+    <div class="oscillator-window">
       @for (osc of _oscillatorParams; let i = $index; track osc) {
-        <app-oscillators [oscNumber]="i"
-                         [params]="_oscillatorParams[i]"
-                         [filters]="filtersGrp()[0]"
-                         [ringMod]="ringMod"
-                         [reverb]="reverb"
-                         [phaser]="phaser"
-                         (output)="setOscOutputTarget($event, i)">
-        </app-oscillators>
+        <app-oscillators  [style]="selectedOscillator !== i ? {'display': 'none'} : {'display': 'block'}" [oscNumber]="i"
+                           [params]="_oscillatorParams[i]"
+                           [filters]="filtersGrp()[i]"
+                           [ringMod]="ringMod"
+                           [reverb]="reverb"
+                           [phaser]="phaser"
+                           (output)="setOscOutputTarget($event, i)">
+          </app-oscillators>
       }
     </div>
-    <div #filterWindow class="filter-window">
+    <div class="filter-window">
       @for (filter of _oscillatorParams; let i = $index; track filter) {
-        <app-filters [filterNumber]="i"
-                     [ringMod]="ringMod"
-                     [reverb]="reverb"
-                     [phaser]="phaser"
-                     (output)="setFilterOutputTarget($event, i)">
-        </app-filters>
+          <app-filters [style]="selectedOscillator !== i ? {'display': 'none'} : {'display': 'block'}" [filterNumber]="i"
+                       [ringMod]="ringMod"
+                       [reverb]="reverb"
+                       [phaser]="phaser"
+                       (output)="setFilterOutputTarget($event, i)">
+          </app-filters>
       }
     </div>
     <app-matrix [oscillators]="oscillatorsGrp()" [selectOperator]="signalSelectOperator"></app-matrix>
     <div class="analyser">
-        <app-noise [filters]="filtersGrp()[0]"
-                   (output)="setNoiseOutputTarget($event)">
-        </app-noise>
+      <app-noise [filters]="filtersGrp()[0]"
+                 (output)="setNoiseOutputTarget($event)">
+      </app-noise>
     </div>
     <app-ring-modulator #ringMod
                         [filters]="filtersGrp()[0]"

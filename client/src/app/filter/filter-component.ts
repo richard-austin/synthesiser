@@ -10,20 +10,16 @@ import {
 } from '@angular/core';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {LevelControlComponent} from '../level-control/level-control.component';
-import {Filter} from '../modules/filter';
 import {ReverbComponent} from '../reverb-component/reverb-component';
 import {RingModulatorComponent} from '../ring-modulator/ring-modulator-component';
 import {PhaserComponent} from '../phaser/phaser.component';
-import {filterModType, filterTypes, modWaveforms, onOff} from '../enums/enums';
+import {filterModType, modWaveforms, onOff} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {FilterSettings} from '../settings/filter';
-import {Cookies} from '../settings/cookies/cookies';
-import {Oscillator} from '../modules/oscillator';
-import {PortamentoType} from '../oscillator/oscillator.component';
-import {ChordProcessor} from '../modules/chord-processor';
-import DevicePoolManager from '../util-classes/device-pool-manager';
-import {DeviceKeys, DevicePoolManagerService} from '../services/device-pool-manager-service';
-import {timer} from 'rxjs';
+
+import {pitchEnvelopePhase, PortamentoType} from '../oscillator/oscillator.component';
+import {FmSynthService} from '../services/fm-synth-service';
+import {IndexedDBService} from '../services/indexed-db-service';
 
 @Component({
   selector: 'app-filters',
@@ -34,29 +30,19 @@ import {timer} from 'rxjs';
   styleUrl: './filter-component.scss',
 })
 export class FilterComponent implements AfterViewInit, OnDestroy {
-  private _filters: Filter[] = [];
   protected tuningDivisions = 6;
-  private lfo!: OscillatorNode;
   private audioCtx!: AudioContext;
   proxySettings!: FilterSettings
-  private cookies!: Cookies;
-  chordProcessorNoise!: ChordProcessor;
-  chordProcessorOscillator1!: ChordProcessor;
-  chordProcessorOscillator2!: ChordProcessor;
-
-  public get filters(): Filter[] {
-    return this._filters;
-  }
 
   // One set for oscillator1, one set for oscillator2 and one for the noise source
-  private readonly numberOfFilters: number = DevicePoolManager.numberOfDevices;
+  private readonly numberOfFilters: number = 1; // TODO: Should be 12 DevicePoolManager.numberOfDevices;
 
   reverb: InputSignal<ReverbComponent> = input.required<ReverbComponent>();
   ringMod: InputSignal<RingModulatorComponent> = input.required<RingModulatorComponent>();
   phaser: InputSignal<PhaserComponent> = input.required<PhaserComponent>();
   filterNumber: InputSignal<number> = input.required<number>();
 
-  output: OutputEmitterRef<string> = output<string>() ;
+  output: OutputEmitterRef<string> = output<string>();
   frequency: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('frequency');
   deTune: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('deTune');
   gain: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('gain');
@@ -81,19 +67,18 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   readonly modLevel = viewChild.required<LevelControlComponent>('modDepth');
   readonly lfoWaveForm = viewChild.required<ElementRef<HTMLFormElement>>('lfoWaveForm');
 
-  private devicePoolManagerService: DevicePoolManagerService = inject(DevicePoolManagerService);
+  private readonly indexedDBService = inject(IndexedDBService);
+  private fmSynthService: FmSynthService = inject(FmSynthService);
+
   private started = false;
 
-  start(audioCtx: AudioContext, settings: FilterSettings | null): boolean {
+  async start(audioCtx: AudioContext, settings: FilterSettings | null): Promise<boolean> {
 
     this.audioCtx = audioCtx;
     let ok = false;
     if (this.numberOfFilters && !this.started) {
-      this.lfo = new OscillatorNode(this.audioCtx);
-      this.lfo.start();
-      this.cookies = new Cookies();
     }
-    this.applySettings(settings);
+    await this.applySettings(settings);
     return ok;
   }
 
@@ -102,13 +87,13 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     SetRadioButtons.set(this.filterOutputTo(), this.proxySettings.output);
   }
 
-  applySettings(settings: FilterSettings | null) {
-    const cookieName = 'filter'+this.filterNumber();
+  async applySettings(settings: FilterSettings | null) {
+    const objectName = 'filter' + this.filterNumber();
     if (!settings) {
       settings = new FilterSettings();
-      const savedSettings = this.cookies.getSettings(cookieName, settings);
+      const savedSettings = await this.indexedDBService.getSynthObject(objectName);
 
-      if (Object.keys(savedSettings).length > 0) {
+      if (savedSettings && Object.keys(savedSettings).length > 0) {
         // Use values from cookie
         settings = savedSettings as FilterSettings;
       }
@@ -116,21 +101,28 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
     // else use default settings
 
-    this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
-    if(!this.started) {
-      for (let i = 0; i < this.numberOfFilters; ++i) {
-        this.filters.push(new Filter(this.audioCtx));
-      }
+    this.proxySettings = this.indexedDBService.getSettingsProxy(settings, objectName);
+    if (!this.started) {
       this.started = true;
     }
-    this.filters.forEach((filter, i) => {
-      filter.setFrequency(this.keyToFrequency(i));
-      filter.setDetune(this.proxySettings.deTune);
-      filter.setFreqBendEnvelope(this.proxySettings.freqBend);
-      filter.useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.off);
-      filter.setType(this.proxySettings.filterType);
-      filter.clearModulation();  // Remove any preexisting mod settings
-    });
+    this.fmSynthService.filterDetune(this.filterNumber(), this.proxySettings.deTune);
+    this.fmSynthService.filterTuning(this.filterNumber(), 10);
+    this.fmSynthService.useFilterPitchEnvelope(this.filterNumber(), (this.proxySettings.useFrequencyEnvelope === onOff.off));
+    this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.attack, this.proxySettings.freqBend.attackTime);
+    this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.attackLevel, this.proxySettings.freqBend.attackLevel);
+    this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.decay, this.proxySettings.freqBend.decayTime);
+    this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.sustainLevel, this.proxySettings.freqBend.sustainLevel);
+    this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.release, this.proxySettings.freqBend.releaseTime);
+    this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.releaseLevel, this.proxySettings.freqBend.releaseLevel);
+
+    // this.filters.forEach((filter, i) => {
+    //   filter.setFrequency(this.keyToFrequency(i));
+    //   filter.setDetune(this.proxySettings.deTune);
+    //   filter.setFreqBendEnvelope(this.proxySettings.freqBend);
+    //   filter.useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.off);
+    //   filter.setType(this.proxySettings.filterType);
+    //   filter.clearModulation();  // Remove any preexisting mod settings
+    // });
 
     this.frequency().setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
     this.deTune().setValue(this.proxySettings.deTune);
@@ -155,7 +147,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     this.modLevel().setValue(this.proxySettings.modLevel);  // Set dial
 
     // Set up the buttons
-    //   SetRadioButtons.set(this.filterOutputTo, this.settings.output);
+//    SetRadioButtons.set(this.filterOutputTo, this.settings.output);
     SetRadioButtons.set(this.filterType(), this.proxySettings.filterType);
     SetRadioButtons.set(this.freqEnveOnOff(), this.proxySettings.useFrequencyEnvelope);
     SetRadioButtons.set(this.modSettingsForm(), this.proxySettings.modType);
@@ -168,227 +160,97 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   protected setFrequency(freq: number) {
     this.proxySettings.frequency = freq;
-    // Set frequency on the oscillators bank 1 and 2 related filters
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      const filter = this.filters[i];
-      if (filter.keyIndex > -1) {
-        filter.setFrequency(this.keyToFrequency(filter.keyIndex))
-      }
-    }
 
-    // for (let i = 0; i < this.filters.length; i++) {
-    //   this.filters[i].setFrequency(this.keyToFrequency(i));
-    // }
+    this.fmSynthService.filterTuning(this.filterNumber(), freq);
   }
 
   protected setGain(gain: number) {
     this.proxySettings.gain = gain;
-    for (let i = 0; i < this.filters.length; i++) {
-      this.filters[i].setGain(gain);
-    }
+    this.fmSynthService.setFilterLevel(this.filterNumber(), gain);
   }
 
   protected setDetune(deTune: number) {
     this.proxySettings.deTune = deTune;
-    for (let i = 0; i < this.filters.length; i++) {
-      this.filters[i].setDetune(deTune);
-    }
+    this.fmSynthService.filterDetune(this.filterNumber(), deTune);
   }
 
   protected setQFactor(qfactor: number) {
     this.proxySettings.qFactor = qfactor;
-    for (let i = 0; i < this.filters.length; i++) {
-      this.filters[i].setQ(qfactor);
-    }
+    this.fmSynthService.filterQFactor(this.filterNumber(), qfactor);
   }
 
   useFreqBendEnvelope(useFreqBendEnvelope: boolean) {
     if (useFreqBendEnvelope)
       this.portamento().setValue(0); // Cannot use portamento with frequency envelope
-
     this.proxySettings.useFrequencyEnvelope = useFreqBendEnvelope ? onOff.on : onOff.off;
-    for (let i = 0; i < this.filters.length; i++) {
-      this.filters[i].useFreqBendEnvelope(useFreqBendEnvelope);
-    }
+
+    this.fmSynthService.useFilterPitchEnvelope(this.filterNumber(), useFreqBendEnvelope);
   }
 
-  private setFilterType(value: BiquadFilterType) {
-    this.proxySettings.filterType = value as filterTypes;
-    for (let i = 0; i < this.numberOfFilters; ++i) {
-      this.filters[i].setType(value);
-    }
+  private setFilterType(value: number) {
+    this.proxySettings.filterType = value;
+    this.fmSynthService.setFilterMorphMode(this.filterNumber(), value);
+    // for (let i = 0; i < this.numberOfFilters; ++i) {
+    //   this.filters[i].setType(value);
+    // }
   }
 
   private setPortamentoType(value: PortamentoType) {
     this.proxySettings.portamentoType = value as PortamentoType;
   }
 
-  keyToFrequency = (key: number) => {
-    return Oscillator.frequencyFactor * Math.pow(Math.pow(2, 1 / 12), (key + 1) + 120 * this.proxySettings.frequency * this.tuningDivisions / 10);
-  }
 
   /**
    * connect: Connect all filters in this group to a single node (i.e. gain node).
    * @param node
    */
   connect(node: AudioNode) {
-    for (let i = 0; i < this.filters.length; i++) {
-      this.filters[i].connect(node);
-    }
+    this.fmSynthService.connectFilter(node, this.filterNumber())
+    this.fmSynthService.filterConnectToPhaser(this.filterNumber(), false);
   }
 
   connectToRingMod(): boolean {
     const ringMod = this.ringMod();
+    this.fmSynthService.filterConnectToPhaser(this.filterNumber(), false);
     let ok = false;
     if (ringMod) {
       ok = true;
-      for (let i = 0; i < this.filters.length; i++) {
-        this.filters[i].connect(ringMod.signalInput());
-      }
+      this.fmSynthService.connectFilter(ringMod.signalInput(), this.filterNumber());
     }
     return ok;
   }
 
   connectToPhasor(): boolean {
     const phaser = this.phaser;
+    this.fmSynthService.disconnectFilter(this.filterNumber());
     let ok = false;
-    if (phaser) {
+    if (phaser()) {
       ok = true;
-      for (let i = 0; i < this.filters.length; i++) {
-        this.filters[i].connect(phaser().input);
-      }
+      this.fmSynthService.filterConnectToPhaser(this.filterNumber(), true);
     }
     return ok;
   }
 
   connectToReverb(): boolean {
+    this.fmSynthService.filterConnectToPhaser(this.filterNumber(), false);
     const reverb = this.reverb();
     let ok = false;
     if (reverb) {
       ok = true;
-      for (let i = 0; i < this.filters.length; i++) {
-        this.filters[i].connect(reverb.input);
-      }
-    }
+      this.fmSynthService.connectFilter(reverb.input, this.filterNumber());
+     }
     return ok;
   }
 
   disconnect() {
-    for (let i = 0; i < this.filters.length; i++) {
-      this.filters[i].disconnect();
-    }
-  }
-
-  keysDown: DeviceKeys[] = [];
-
-  deviceKeyDown = (keys: DeviceKeys) => {
-    if(keys === undefined || keys.keyIndex === -1)
-      return;
-    const freq = this.keyToFrequency(keys.keyIndex);
-    const dev = this.filters[keys.deviceIndex]
-    dev.freq = freq;
-    if (this.proxySettings.portamento === 0)
-      dev.filter.frequency.value = dev.filter2.frequency.value = freq;
-
-    const lastKey = this.keysDown.length > 0 ? this.keysDown[this.keysDown.length - 1] : null;
-    if (-1 === this.keysDown.findIndex(key => key.keyIndex === keys.keyIndex)) {
-      this.keysDown.push(keys as DeviceKeys);
-    }
-
-    if (this.proxySettings.portamento > 0) {
-      const proxySettings = this.proxySettings;
-      switch (proxySettings.portamentoType) {
-        case 'chord':
-          const clonedKeys = structuredClone(keys);
-          if (clonedKeys.deviceIndex < DevicePoolManager.numberOfDevices) {
-            // Triggered by noise gen
-            if (!this.chordProcessorNoise.addNote(structuredClone(clonedKeys)))
-              return;  // Less than the minimum time for a chord
-            this.chordProcessorNoise.setStartNote(clonedKeys, this.filters[keys.deviceIndex], this.keyToFrequency);
-          } else if (clonedKeys.deviceIndex < 2 * DevicePoolManager.numberOfDevices) {
-            // Triggered by oscillator 1
-            if (!this.chordProcessorOscillator1.addNote(structuredClone(clonedKeys)))
-              return;  // Less than the minimum time for a chord
-            this.chordProcessorOscillator1.setStartNote(clonedKeys, this.filters[keys.deviceIndex], this.keyToFrequency);
-          } else {
-            // Triggered by oscillator 1
-            if (!this.chordProcessorOscillator2.addNote(structuredClone(clonedKeys)))
-              return;  // Less than the minimum time for a chord
-            this.chordProcessorOscillator2.setStartNote(clonedKeys, this.filters[keys.deviceIndex], this.keyToFrequency);
-          }
-          break;
-        case 'last':
-          if (lastKey)
-            dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(lastKey.keyIndex);
-          break;
-        case 'first':
-          const firstKeys = this.keysDown[0];
-          dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(firstKeys.keyIndex);
-          break;
-        case 'lowest':
-          const lowestKey = Math.min(...this.keysDown.map(keys => keys.keyIndex));
-          if (lowestKey !== undefined)
-            dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(lowestKey);
-          break;
-        case 'highest':
-          const highestKey = Math.max(...this.keysDown.map(keys => keys.keyIndex));
-          dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(highestKey);
-          break;
-        case 'plus12':
-          dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(keys.keyIndex) * 2;
-          break;
-        case 'plus24':
-          dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(keys.keyIndex) * 4;
-          break;
-        case 'minus12':
-          dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(keys.keyIndex) / 2;
-          break;
-        case 'minus24':
-          dev.filter.frequency.value = dev.filter2.frequency.value = this.keyToFrequency(keys.keyIndex) / 4;
-          break;
-      }
-
-      dev.filter.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keys.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
-      dev.filter2.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keys.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
-    }
-
-    dev.keyIndex = keys.keyIndex;
-    dev.keyDown(0x7f);
-  }
-
-  deviceKeyUp = (keys: DeviceKeys) => {
-    if (keys) {
-      if(keys.deviceIndex === -1)
-        return;
-      const dev = this.filters[keys.deviceIndex]
-
-      const sub = timer((keys.filterTimeout) * 1000).subscribe(() => {
-        sub.unsubscribe();
-        const idx = this.keysDown.findIndex(key => key.keyIndex === keys.keyIndex);
-        if (idx > -1)
-          this.keysDown.splice(idx, 1);
-        //    console.log("keysDown.length = ", this.keysDown.length, " idx = ", idx);
-      });
-
-      if (keys.deviceIndex < DevicePoolManager.numberOfDevices)
-        this.chordProcessorNoise.release(keys.filterTimeout);
-      else if (keys.deviceIndex < 2 * DevicePoolManager.numberOfDevices)
-        this.chordProcessorOscillator1.release(keys.filterTimeout);
-      else
-        this.chordProcessorOscillator2.release(keys.filterTimeout);
-      dev.keyUp();
-    }
-  }
-
-  private chordProcessorKeyDownCallback: (prevKeys: DeviceKeys, theseKeys: DeviceKeys) => void = (prevKeyIndex: DeviceKeys, keyIndex: DeviceKeys) => {
-    this.filters[keyIndex.deviceIndex].filter.frequency.value = this.keyToFrequency(prevKeyIndex.keyIndex);
-    this.filters[keyIndex.deviceIndex].filter.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
-    this.filters[keyIndex.deviceIndex].filter2.frequency.exponentialRampToValueAtTime(this.keyToFrequency(keyIndex.keyIndex), this.audioCtx.currentTime + this.proxySettings.portamento);
-    this.filters[keyIndex.deviceIndex].keyDown(0x7f);  // TODO: Need to pass velocity through ChordProcessor
+    this.fmSynthService.disconnectFilter(this.filterNumber());
+    this.fmSynthService.filterConnectToPhaser(this.filterNumber(), false);
   }
 
   protected setPortamento($event: number) {
     this.proxySettings.portamento = $event;
+    this.fmSynthService.setFilterPortamento(this.filterNumber(), $event);
+
     if ($event > 0) {
       // Can't use frequency bend envelope with portamento
       this.proxySettings.useFrequencyEnvelope = onOff.off;
@@ -397,9 +259,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   midiPitchBend(value: number) {
-    for (let i = 0; i < this.filters.length; i++) {
-      this.filters[i].setDetune((value - 0x40) * 5 + this.proxySettings.deTune);
-    }
+    this.fmSynthService.filterDetune(this.filterNumber(), (value - 0x40) * 5 + this.proxySettings.deTune);
   }
 
   midiModLevel(value: number) {
@@ -410,62 +270,58 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   protected setFreqAttack($event: number) {
     this.proxySettings.freqBend.attackTime = $event;
+    this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.attack, $event);
   }
 
   protected setFreqAttackLevel($event: number) {
     this.proxySettings.freqBend.attackLevel = $event;
+    this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.attackLevel, $event);
   }
 
   protected setFreqDecayTime($event: number) {
     this.proxySettings.freqBend.decayTime = $event;
+    this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.decay, $event);
   }
 
   protected setFreqSustainLevel($event: number) {
     this.proxySettings.freqBend.sustainLevel = $event;
+    this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.sustainLevel, $event);
   }
 
   protected setFreqReleaseTime($event: number) {
     this.proxySettings.freqBend.releaseTime = $event;
+    this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.release, $event);
   }
 
   protected setFreqReleaseLevel($event: number) {
     this.proxySettings.freqBend.releaseLevel = $event;
+    this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.releaseLevel, $event);
   }
 
   protected setModFrequency(freq: number) {
     this.proxySettings.modFreq = freq;
-    this.lfo.frequency.value = freq * 20;
+    this.fmSynthService.setFilterLFOFrequency(this.filterNumber(), freq);
   }
 
   protected setModLevel($event: number) {
     this.proxySettings.modLevel = $event;
-    for (let i = 0; i < this.numberOfFilters; ++i) {
-      this.filters[i].setModLevel($event);
-    }
+    this.fmSynthService.setFilterLFOLevel(this.filterNumber(), $event);
   }
 
   protected setModType(type: filterModType) {
     this.proxySettings.modType = type;
-    for (let i = 0; i < this.numberOfFilters; ++i) {
-      this.filters[i].modulation(this.lfo, type);
-    }
+    this.fmSynthService.setFilterLFOModType(this.filterNumber(), type);
   }
 
+
   ngAfterViewInit(): void {
-    this.devicePoolManagerService.notifyKeydown[this.filterNumber()] = (keys: DeviceKeys) => {
-      this.deviceKeyDown(keys);
-    }
-
-    this.devicePoolManagerService.notifyKeyup[this.filterNumber()] = (keys: DeviceKeys) => {
-      this.deviceKeyUp(keys);
-    }
-
-    this.chordProcessorNoise = new ChordProcessor();
-    this.chordProcessorNoise.setKeyDownCallback(this.chordProcessorKeyDownCallback);
-    this.chordProcessorOscillator1 = new ChordProcessor();
-    this.chordProcessorOscillator1.setKeyDownCallback(this.chordProcessorKeyDownCallback);
-    this.chordProcessorOscillator2 = new ChordProcessor();
-    this.chordProcessorOscillator2.setKeyDownCallback(this.chordProcessorKeyDownCallback);
+    // this.devicePoolManagerService.notifyKeydown[this.filterNumber()] = (keys: DeviceKeys) => {
+    //   this.deviceKeyDown(keys);
+    // }
+    //
+    // this.devicePoolManagerService.notifyKeyup[this.filterNumber()] = (keys: DeviceKeys) => {
+    //   this.deviceKeyUp(keys);
+    // }
 
     const filterOutForm = this.filterOutputTo().nativeElement;
     for (let i = 0; i < filterOutForm.elements.length; ++i) {
@@ -488,8 +344,8 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     for (let i = 0; i < filterType.elements.length; ++i) {
       filterType.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
-        const value = $event.target.value as OscillatorType;
-        this.setFilterType(value as BiquadFilterType);
+        const value = $event.target.value;
+        this.setFilterType(value);
       });
 
       const portamentoType = this.portamentoType().nativeElement;
@@ -512,8 +368,8 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
       for (let j = 0; j < modWaveForm.elements.length; ++j) {
         modWaveForm.elements[j].addEventListener('change', ($event) => {
           // @ts-ignore
-          const value = $event.target.value as OscillatorType;
-          this.lfo.type = value;
+          const value = $event.target.value;
+          this.fmSynthService.setFilterLFOWaveform(this.filterNumber(), value);
           this.proxySettings.modWaveform = value as modWaveforms;
         })
       }
@@ -521,11 +377,11 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    for (let i = 0; i < this.filters.length; i++) {
-
-      this.filters[i].destroy();
-      // @ts-ignore
-      this.filters[i] = undefined;
-    }
+    // for (let i = 0; i < this.filters.length; i++) {
+    //
+    //   this.filters[i].destroy();
+    //   // @ts-ignore
+    //   this.filters[i] = undefined;
+    // }
   }
 }

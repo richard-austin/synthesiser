@@ -1,0 +1,58 @@
+{
+  "name": "synthesiser-desktop",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron .",
+    "build:linux": "electron-builder --linux",
+    "build:win": "electron-builder --win"
+  },
+  "keywords": [],
+  "author": {
+    "name": "Richard Austin",
+    "email": "richard.david.austin@gmail.com"
+  },
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "electron": "^44.4.0",
+    "electron-builder": "^26.15.3"
+  },
+  "homepage": "https://github.com/richard-austin/synthesiser",
+  "build": {
+    "appId": "io.github.richard-austin.synthesiser",
+    "linux": {
+      "icon": "synth.png",
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    },
+    "toolsets": {
+      "appimage": "1.0.3"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "asar": true,
+    "asarUnpack": [
+      "jre/**",
+      "server/**",
+      "**/engine-module.js"
+    ]
+  }
+}

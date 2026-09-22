@@ -1,10 +1,11 @@
 import {AfterViewInit, Component, signal, viewChild, WritableSignal} from '@angular/core';
 import {SynthComponent} from './synth/synth-component';
 import {HomeComponent} from './home/home.component';
+import {NgOptimizedImage} from '@angular/common';
 
 @Component({
   selector: 'app-root',
-  imports: [SynthComponent, HomeComponent],
+  imports: [SynthComponent, HomeComponent, NgOptimizedImage],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })

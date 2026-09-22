@@ -41,11 +41,20 @@ tasks.register('buildClientDev', NpmTask) {
   args = ['run', 'buildDev']
 }
 
+tasks.register('compileSingleTs', NpxTask) {
+  group = 'build'
+  dependsOn 'npmInstall'
+  command = 'tsc'
+  args = ['src/app/modules/modulation/fm-synth-processor.ts', '--outDir', 'public/assets/wasm/', '--ignoreConfig']
+}
+
 tasks.register('buildClient', NpmTask) {
+  // Add the new task to the dependsOn list
   dependsOn(['npmInstall', ':oscillator-wasm:compileWasm'])
   group = 'build'
   description = 'Compile client side assets for production'
   args = ['run', 'build']
+  //finalizedBy copyToServer
 }
 
 tasks.register('buildClientWatch', NpmTask) {
@@ -53,4 +62,11 @@ tasks.register('buildClientWatch', NpmTask) {
   group = 'application'
   description = 'Builds and watches the client side assets for rebuilding'
   args = ['run', 'buildWatch']
+}
+
+tasks.register("copyToServerResources", Copy) {
+  dependsOn(['buildClient'])
+  delete file("${rootDir}/server/src/main/resources/static")
+  from file("${projectDir}/dist/synthesiser/browser")
+  into file("${rootDir}/server/src/main/resources/static")
 }

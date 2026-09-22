@@ -12,7 +12,7 @@
           <app-level-control #level label="Gain" [style]="dialStyle.blue" [radius]="50" [divisions]="10"
                              (setLevel)="setLevel($event)"></app-level-control>
           <app-level-control #wetDry label="Wet/Dry" [style]="dialStyle.yellow" [radius]="50" [plusMinus]="true"
-                             [divisions]="10" [factor]="1.0" [calAngle]="300" (setLevel)="setWetDry($event)">
+                             [divisions]="10" [factor]="2.0" [calAngle]="300" (setLevel)="setWetDry($event)">
           </app-level-control>
         </div>
         <div class="row">

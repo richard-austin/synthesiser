@@ -40,7 +40,7 @@
         <h2>Waveform</h2>
         <div style="height: 3px;"></div>
         <select #oscWaveform>
-          @for (detail of Oscillator.wavetables; track detail) {
+          @for (detail of WaveTables.wavetables; track detail) {
             <option [value]="detail.value">{{ detail.name }}</option>
           }
         </select>
@@ -130,7 +130,7 @@
                            [style]="dialStyle.red"
                            [radius]="50"
                            [divisions]="10"
-                           [factor]="6"
+                           [factor]="12"
                            (setLevel)="setDecayTime($event)"></app-level-control>
         <app-level-control #sustain
                            label="Sustain"
@@ -143,7 +143,7 @@
                            [style]="dialStyle.red"
                            [radius]="50"
                            [divisions]="10"
-                           [factor]="6"
+                           [factor]="12"
                            (setLevel)="setReleaseTime($event)"></app-level-control>
         <h4>Legato</h4>
         <form #legatoOnOffForm>
@@ -170,8 +170,8 @@
       <app-level-control #freqAttackLevel
                          label="Attack Level"
                          [style]="dialStyle.yellow"
-                         [divisions]="10"
-                         [factor]="2"
+                         [divisions]="24"
+                         [factor]="1"
                          [calAngle]="300"
                          [radius]="50"
                          [plusMinus]="true"
@@ -187,8 +187,8 @@
                          label="Sustain"
                          [radius]="50"
                          [style]="dialStyle.yellow"
-                         [divisions]="10"
-                         [factor]="2"
+                         [divisions]="24"
+                         [factor]="1"
                          [plusMinus]="true"
                          (setLevel)="setFreqSustainLevel($event)"></app-level-control>
       <app-level-control #freqRelease
@@ -199,9 +199,9 @@
                          [factor]="3"
                          (setLevel)="setFreqReleaseTime($event)"></app-level-control>
       <app-level-control #freqReleaseLevel label="Release Level" [style]="dialStyle.yellow" [radius]="50"
-                         [divisions]="10"
+                         [divisions]="24"
                          [plusMinus]="true"
-                         [factor]="2"
+                         [factor]="1"
                          (setLevel)="setFreqReleaseLevel($event)"></app-level-control>
       <form #freqEnveOnOffForm>
         <label><input type="radio" name="freqenvelope" value="on"><span>On</span></label>

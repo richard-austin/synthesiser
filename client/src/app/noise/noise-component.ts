@@ -5,19 +5,17 @@ import {
   OnDestroy,
   viewChild,
   output,
-  input
+  input, inject
 } from '@angular/core';
-import {WhiteNoise} from '../modules/noise/white-noise';
-import {PinkNoise} from '../modules/noise/pink-noise';
-import {BrownNoise} from '../modules/noise/brown-noise';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {FilterComponent} from '../filter/filter-component';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {NoiseSettings} from '../settings/noise';
 import {noiseOutputs, onOff} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
-import {Cookies} from '../settings/cookies/cookies';
-import DevicePoolManager from '../util-classes/device-pool-manager';
+import {envelopePhase} from '../oscillator/oscillator.component';
+import {FmSynthService} from '../services/fm-synth-service';
+import {IndexedDBService} from '../services/indexed-db-service';
 
 @Component({
   selector: 'app-noise',
@@ -28,13 +26,9 @@ import DevicePoolManager from '../util-classes/device-pool-manager';
   styleUrl: './noise-component.scss',
 })
 export class NoiseComponent implements AfterViewInit, OnDestroy {
-  private whiteNoise: WhiteNoise[] = [];
-  private pinkNoise: PinkNoise[] = [];
-  private brownNoise: BrownNoise[] = [];
   private proxySettings!: NoiseSettings;
-  private cookies!: Cookies;
-  private velocitySensitive: boolean = true;
-  private noisePoolMgr!: DevicePoolManager;
+
+ // private noisePoolMgr!: DevicePoolManager;
 
   readonly filters = input.required<FilterComponent | undefined>();
   readonly output = output<string>();
@@ -49,6 +43,9 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   readonly gainControl = viewChild.required<LevelControlComponent>('gainControl');
   readonly legatoOnOffForm = viewChild.required<ElementRef<HTMLFormElement>>('legatoOnOffForm');
   readonly velocityOnOffForm = viewChild.required<ElementRef<HTMLFormElement>>('velocity');
+
+  private readonly indexedDBService: IndexedDBService = inject(IndexedDBService);
+  readonly fmSynthService: FmSynthService = inject(FmSynthService);
   private started: boolean;
 
   constructor() {
@@ -57,17 +54,16 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
 
   async start(audioCtx: AudioContext, settings: NoiseSettings | null) {
     if(!this.started) {
-      for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-        this.whiteNoise.push(new WhiteNoise(audioCtx));
-        this.pinkNoise.push(new PinkNoise(audioCtx));
-        this.brownNoise.push(new BrownNoise(audioCtx));
-        await this.whiteNoise[i].start();
-        await this.pinkNoise[i].start();
-        await this.brownNoise[i].start();
-      }
+      // for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
+      //   this.whiteNoise.push(new WhiteNoise(audioCtx));
+      //   this.pinkNoise.push(new PinkNoise(audioCtx));
+      //   this.brownNoise.push(new BrownNoise(audioCtx));
+      //   await this.whiteNoise[i].start();
+      //   await this.pinkNoise[i].start();
+      //   await this.brownNoise[i].start();
+      // }
       this.started = true;
     }
-    this.cookies = new Cookies();
     this.applySettings(settings);
   }
 
@@ -76,33 +72,19 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     SetRadioButtons.set(this.noiseOutputToForm(), this.proxySettings.output);
   }
 
-  applySettings(settings: NoiseSettings | null) {
-    const cookieName = 'noise';
+  async applySettings(settings: NoiseSettings | null) {
+    const objectName = 'noise';
     if (!settings) {
       settings = new NoiseSettings();
-      const savedSettings = this.cookies.getSettings(cookieName, settings);
+      const savedSettings = await this.indexedDBService.getSynthObject(objectName);
 
-      if (Object.keys(savedSettings).length > 0) {
+      if (savedSettings && Object.keys(savedSettings).length > 0) {
         // Use values from cookie
         settings = savedSettings as NoiseSettings;
       }
       // else use default settings
     }
-    this.proxySettings = this.cookies.getSettingsProxy(settings, cookieName);
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      this.whiteNoise[i].setGain(settings.gain);
-      this.whiteNoise[i].setAmplitudeEnvelope(settings.adsr);
-      this.whiteNoise[i].legatoMode = settings.legatoMode === onOff.on;
-      this.pinkNoise[i].setGain(settings.gain);
-      this.pinkNoise[i].setAmplitudeEnvelope(settings.adsr);
-      this.pinkNoise[i].legatoMode = settings.legatoMode === onOff.on;
-      this.brownNoise[i].setGain(settings.gain);
-      this.brownNoise[i].setAmplitudeEnvelope(settings.adsr);
-      this.brownNoise[i].legatoMode = settings.legatoMode === onOff.on;
-    }
-    let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
-    this.noisePoolMgr = new DevicePoolManager(source, this.proxySettings);
-
+    this.proxySettings = this.indexedDBService.getSettingsProxy(settings, objectName);
     this.attack().setValue(this.proxySettings.adsr.attackTime);
     this.decay().setValue(this.proxySettings.adsr.decayTime);
     this.sustain().setValue(this.proxySettings.adsr.sustainLevel);
@@ -121,132 +103,61 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
 
   protected setGain(gain: number) {
     this.proxySettings.gain = gain;
-    const noiseType = this.proxySettings.type;
-
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
-      switch (noiseType) {
-        case 'white':
-          this.whiteNoise[i].setGain(gain);
-          break;
-        case 'pink':
-          this.pinkNoise[i].setGain(gain);
-          break;
-        case 'brown':
-          this.brownNoise[i].setGain(gain);
-          break;
-      }
-    }
+    this.fmSynthService.setNoiseGain(gain);
   }
 
   private setNoiseType(noiseType: any) {
     this.proxySettings.type = noiseType;
-    const gain = this.proxySettings.gain;
-
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      this.whiteNoise[i].setGain(0);
-      this.pinkNoise[i].setGain(0);
-      this.brownNoise[i].setGain(0);
-    }
-    const source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      source[i].setGain(gain);
-      source[i].legatoMode = this.proxySettings.legatoMode === onOff.on;
-    }
-    this.noisePoolMgr.updateDevices(this.noiseSource())
+    this.fmSynthService.setNoiseType(noiseType);
   }
 
-  connect(node: AudioNode) {
-    this.proxySettings.output = noiseOutputs.speaker;
-    this.whiteNoise[0].connect(node);
-    this.pinkNoise[0].connect(node);
-    this.brownNoise[0].connect(node);
-  }
-
-  /**
+   /**
    * connectToFilters: Connect to a group of filters
    */
   connectToFilters(): void {
     this.proxySettings.output = noiseOutputs.filter;
-    const filters = this.filters()?.filters;
-    if(filters) {
-      for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
-        this.whiteNoise[i].connect(filters[i].filter);
-        this.pinkNoise[i].connect(filters[i].filter);
-        this.brownNoise[i].connect(filters[i].filter);
-      }
-    }
+    this.fmSynthService.noiseConnectToFilter();
+   }
+
+  connectToPhaser() {
+    this.proxySettings.output = noiseOutputs.phaser;
+    this.fmSynthService.noiseConnectToPhaser();
   }
 
-  disconnect() {
-    this.proxySettings.output = noiseOutputs.off;
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
-      this.whiteNoise[i].disconnect();
-      this.pinkNoise[i].disconnect();
-      this.brownNoise[i].disconnect();
-    }
-  }
-
-  private noiseSource(): WhiteNoise[] | PinkNoise[] | BrownNoise[] {
-    let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.whiteNoise;
-    switch (this.proxySettings.type) {
-      case 'white':
-        source = this.whiteNoise;
-        break;
-      case 'pink':
-        source = this.pinkNoise;
-        break;
-      case 'brown':
-        source = this.brownNoise;
-        break;
-    }
-    return source;
+  noiseOff(isOff: boolean) {
+    this.proxySettings.output = isOff ? noiseOutputs.off : noiseOutputs.speaker;
+    this.fmSynthService.noiseOff(isOff);
   }
 
   legatoMode(legatoMode: boolean) {
     this.proxySettings.legatoMode = legatoMode ? onOff.on : onOff.off;
-    let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
-    for (let i = 0; i < DevicePoolManager.numberOfDevices; i++) {
-      source[i].legatoMode = legatoMode;
-    }
+   // let source: WhiteNoise[] | PinkNoise[] | BrownNoise[] = this.noiseSource();
+    this.fmSynthService.noiseEnvelope(envelopePhase.legato, legatoMode ? 1 : 0)
   }
 
-  useVelocitySensitive(velocitySensitive: boolean) {
+  setVelocitySensitive(velocitySensitive: boolean) {
     this.proxySettings.velocitySensitive = velocitySensitive ? onOff.on : onOff.off;
-    this.velocitySensitive = velocitySensitive;
-  }
-
-  keyDown(keyIndex: number, velocity: number) {
-    if (keyIndex >= 0) {
-      if (this.proxySettings.output === noiseOutputs.speaker)
-        keyIndex = 0;  // Wired straight to the output, so we only use a single channel to avoid overload
-      if (!this.velocitySensitive)
-        velocity = 0x7f;
-      this.noisePoolMgr.keyDown(keyIndex, velocity);
-    }
-  }
-
-  keyUp(keyIndex: number) {
-    if (keyIndex >= 0) {
-      if (this.proxySettings.output === noiseOutputs.speaker)
-        keyIndex = 0; // Wired straight to the output, so we only use a single channel to avoid overload
-      this.noisePoolMgr.keyUp(keyIndex);
-    }
+    this.fmSynthService.setNoiseVelocitySensitive(velocitySensitive);
   }
 
   protected setAttack($event: number) {
     this.proxySettings.adsr.attackTime = $event;
+    this.fmSynthService.noiseEnvelope(envelopePhase.attack, $event);
   }
 
   protected setDecayTime($event: number) {
     this.proxySettings.adsr.decayTime = $event;
+    this.fmSynthService.noiseEnvelope(envelopePhase.decay, $event);
   }
 
   protected setSustainLevel($event: number) {
     this.proxySettings.adsr.sustainLevel = $event;
+    this.fmSynthService.noiseEnvelope(envelopePhase.sustain, $event);
   }
 
   protected setReleaseTime($event: number) {
     this.proxySettings.adsr.releaseTime = $event;
+    this.fmSynthService.noiseEnvelope(envelopePhase.release, $event);
   }
 
   protected readonly dialStyle = dialStyle;
@@ -287,19 +198,11 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
       velocityOnOffForm.elements[i].addEventListener('change', ($event) => {
         // @ts-ignore
         const value = $event.target.value;
-        this.useVelocitySensitive(value === 'on');
+        this.setVelocitySensitive(value === 'on');
       });
     }
   }
 
   ngOnDestroy(): void {
-    this.whiteNoise[0].destroy();
-    this.pinkNoise[0].destroy();
-    this.brownNoise[0].destroy();
-    this.whiteNoise = [];
-    this.pinkNoise = [];
-    this.brownNoise = [];
-
-    WhiteNoise.theNode = PinkNoise.theNode = BrownNoise.theNode = undefined;
   }
 }

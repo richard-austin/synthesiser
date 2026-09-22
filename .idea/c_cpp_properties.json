@@ -1,0 +1,13 @@
+{
+    "configurations": [
+        {
+            "name": "CLion",
+            "includePath": [
+                "${workspaceFolder}/.komple/installs/emscripten/upstream/emscripten/system/include/**"
+            ],
+            "cStandard": "c17",
+            "cppStandard": "c++20"
+        }
+    ],
+    "version": 4
+}

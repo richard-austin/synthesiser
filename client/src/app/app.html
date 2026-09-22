@@ -2,9 +2,16 @@
   <div #home class="home-button">
     <button class="material-icons" (click)="showHomeForm()">home</button>
   </div>
+  <div class="splash">
+    <h3>FM Synthesiser version 1.0.0</h3>
+    <img alt="synth image" priority ngSrc="/synthSplash.png" height="239" width="422">
+    <button (click)="showHomeForm()">Start</button>
+  </div>
   @if (started) {
-    <app-synth-component [filename]="fileName" [homeComponentControl]="homeComponentControl"></app-synth-component>
-    <app-options [filename]="fileName" [homeComponentControl]="homeComponentControl"
-                 style="position: absolute; z-index: 10"></app-options>
+    <div class="synth-background">
+      <app-synth-component [filename]="fileName" [homeComponentControl]="homeComponentControl"></app-synth-component>
+      <app-options [filename]="fileName" [homeComponentControl]="homeComponentControl"
+                   style="position: absolute; z-index: 10"></app-options>
+    </div>
   }
 </div>
