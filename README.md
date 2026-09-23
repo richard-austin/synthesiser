@@ -1,6 +1,6 @@
 # FM Music Synthesiser
 This is a polyphonic music synthesiser which uses features of traditional subtractive synthesis 
-using harmonic rich waveforms run through filters, as well as additive synthesis using FM, or AM modulation.
+using harmonics-rich waveforms run through filters, as well as additive synthesis using FM, or AM modulation.
 
 The synthesiser is a web application using WebAudio. Most of the functionality is in a single audio worklet containing the following:-
 
@@ -38,20 +38,20 @@ The synthesiser may be either run in a browser, or built as an application for L
 
 1. Download from GitHub (git clone git@github.com:richard-austin/synthesiser.git))
 2. cd to project directory
-3. cd to client an type npm install
+3. cd to client and type npm install
 4. cd to electron-desktop and type npm install (on Linux dev environment only)
 5. cd to electron-desktop-win and type npm install. (on Windows dev environment only) (these npm install steps only need to be done
 on initial set up or if any node modules are changed/added/updated.)
 ### To build a Windows installer (amd_64)
-1. *This must be down from a Windows environment*
+1. *This must be done from a Windows environment*
 2. cd to the project directory 
-3. Type ./gradlew electron-desktop-win:buildWindowws
-#### The installer file will be at projectDir/electon-desktop-win/dist with a name similar to synthesiser-desktop-win Setup 1.0.0.exe
+3. Type ./gradlew electron-desktop-win:buildWindows
+#### The installer file will be at projectDir/electron-desktop-win/dist with a name similar to synthesiser-desktop-win Setup 1.0.0.exe
 ### To build a Debian deb installation file (amd_64)
 1. *This must be done from a Linux environment.*
 2. cd to project directory
 3. Type ./gradlew electron-desktop:buildLinux
-#### The installer file will be at projectDir/electon-desktop/dist with a name similar to synthesiser-desktop_1.0.0.deb
+#### The installer file will be at projectDir/electron-desktop/dist with a name similar to synthesiser-desktop_1.0.0.deb
 
 ## Using the synthesiser
 
@@ -87,7 +87,7 @@ In either the carriers column or modulators row.
 Each module has a set of output selector buttons which determine where the output from that module will go to.
 The speaker is selected on illustration. 
 These are the oscillator output buttons which enable directing the oscillator output to the speaker, filter, 
-ring modulator, reverb, phaser or having it set off. Note the for the oscillators and filters, each
+ring modulator, reverb, phaser or having it set off. Note for the oscillators and filters, each
 bank has its own output setting independent of the others.
 
 ![](README.images/outputs.png)
@@ -104,7 +104,7 @@ There are 4 banks of 12 oscillators giving up to four simultaneous settings with
 | Control  | Function                                                                                                                                                                                                                           |
 |----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Tuning   | Centered on zero where middle C will be in the expected place, this tunes the frequency up or down from nominal by up to 3 octaves. The dial numbers represent octaves up or down The resolution of course is finer than octaves. |
-| Detune   | Centred on zero where there is no offset, the dial scale allows detune by up to + or - 12 semitines                                                                                                                                |
+| Detune   | Centred on zero where there is no offset, the dial scale allows detune by up to + or - 12 semitones                                                                                                                                |
 | Gain     | Set the output level to between zero and 100% of full output.                                                                                                                                                                     |
 | Balance  | Adjust the left/right balance of the output. Note that this also applies to the filters in the same bank. The phaser and noise output balance is set by the  balance control on oscillator bank 1.                                 |
 | Waveform | This is a drop down control allowing the selection of waveform for the oscillator output                                                                                                                                           |
@@ -139,7 +139,7 @@ The drop down below it is from an earlier version and currently does nothing.
 This is a standard ADSR envelope shaper.
 #### Legato
 If legato mode is on, pressing a key will cause the envelope to rise to 100% and remain there for the decay time.
-Holding the key down will sustain this. After the decay time has elapse, the note will tail off in accordance with the release timing.
+Holding the key down will sustain this. After the decay time has elapsed, the note will tail off in accordance with the release timing.
 #### Velocity Sens
 Enable/disable velocity sensitivity.
 #### Freq Envelope
@@ -167,7 +167,7 @@ the point of oscillating.
 | Control  | Function                                                                                                                                                                                                                                                    |
 |----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Tuning   | Centered on zero where cutoff frequency corresponds to the oscillator frequency at zero, this tunes the frequency up or down from nominal by up to 3 octaves. The dial numbers represent octaves up or down The resolution of course is finer than octaves. |
-| Detune   | Centred on zero where there is no offset, the dial scale allows detune by up to + or - 12 semitines                                                                                                                                                         |
+| Detune   | Centred on zero where there is no offset, the dial scale allows detune by up to + or - 12 semitones                                                                                                                                                         |
 | Q Factor | Adjust the sharpness of the peak at cutoff frequency.                                                                                                                                                                                                       |
 | Gain     | Set the output level to between zero and 100% of full output.                                                                                                                                                                                               |
 
@@ -193,12 +193,12 @@ reverb or off.
 | Modulation | Select type from frequency or off (none)                                                                                            |
 
 #### Freq Envelope
-The pitch envelope is used to bend the pitch over time as the oscillator envelope does with output amplitude.
+The pitch envelope is used to bend the cutoff frequency over time as the oscillator envelope does with output amplitude.
 There are two additional controls as compared with the amplitude envelope, Attack Level and Release Level.
 When the pitch envelope is set on the sequence is as follows:-
-* The pitch starts at the release level when the key is pressed.
-* The pitch will change from the release level to the attack level at a rate determined by the attack time. If the key is released before the attack level is reached, the pitch will return to the release level at a rate determined by the release time.
+* The cutoff frequency starts at the release level when the key is pressed.
+* The cutoff frequency  will change from the release level to the attack level at a rate determined by the attack time. If the key is released before the attack level is reached, the pitch will return to the release level at a rate determined by the release time.
 * When the attack level is reached the pitch will then start to change to the sustain level at a rate determined by the decay setting.
-* The pitch will remain at the sustain level until the key is released.
-* On key release the pitch will change to the release level at a rate determined by the release setting.
+* The cutoff frequency  will remain at the sustain level until the key is released.
+* On key release the cutoff frequency  will change to the release level at a rate determined by the release setting.
 
