@@ -103,9 +103,9 @@ There are 4 banks of 12 oscillators giving up to four simultaneous settings with
 
 | Control  | Function                                                                                                                                                                                                                           |
 |----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Tuning   | Centered on zero where middle C will be in the expected place, this tunes the frequency up or down from nominal by up top 3 octaves. The dial numbers represent octaves up or down The resolution of course is finer than octaves. |
+| Tuning   | Centered on zero where middle C will be in the expected place, this tunes the frequency up or down from nominal by up to 3 octaves. The dial numbers represent octaves up or down The resolution of course is finer than octaves. |
 | Detune   | Centred on zero where there is no offset, the dial scale allows detune by up to + or - 12 semitines                                                                                                                                |
-| Gain     | Set the output level to between zerto and 100% of full output.                                                                                                                                                                     |
+| Gain     | Set the output level to between zero and 100% of full output.                                                                                                                                                                     |
 | Balance  | Adjust the left/right balance of the output. Note that this also applies to the filters in the same bank. The phaser and noise output balance is set by the  balance control on oscillator bank 1.                                 |
 | Waveform | This is a drop down control allowing the selection of waveform for the oscillator output                                                                                                                                           |
 | Output   | Select output target for the oscillator bank (Sere module outputs above)                                                                                                                                                           |
@@ -153,3 +153,52 @@ When the pitch envelope is set on the sequence is as follows:-
 * On key release the pitch will change to the release level at a rate determined by the release setting.
 
 The attack, sustain and release levels calibration is such that 3 is + 1 octave -3 is - 1 octave etc.
+### Filters
+There are four banks of 12 filters, each one in a bank corresponding to the same numbered oscillator in the same bank,
+so each oscillator has a single filter tuned proportionally to the corresponding oscillators frequency.
+
+Each of the (total 48) filters is a 4 pole state variable filter which can morph between low and high pass.
+They have a Q control which can change the response from fairly flat in the passband to sharply peaking to 
+the point of oscillating.
+
+<img height="608" alt="Filter" src="README.images/filter.png" width="328"/>
+
+#### Main Controls
+| Control  | Function                                                                                                                                                                                                                                                    |
+|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Tuning   | Centered on zero where cutoff frequency corresponds to the oscillator frequency at zero, this tunes the frequency up or down from nominal by up to 3 octaves. The dial numbers represent octaves up or down The resolution of course is finer than octaves. |
+| Detune   | Centred on zero where there is no offset, the dial scale allows detune by up to + or - 12 semitines                                                                                                                                                         |
+| Q Factor | Adjust the sharpness of the peak at cutoff frequency.                                                                                                                                                                                                       |
+| Gain     | Set the output level to between zero and 100% of full output.                                                                                                                                                                                               |
+
+
+#### Portamento
+This function is limited at the moment, and just gives a glide between the previous note and the next. Set to zero, there is no portamento.
+The drop down below it is from an earlier version and currently does nothing.
+
+#### Filter Morph Mode
+Five buttons which set the filter response in steps between low pass and high pass.
+
+#### Output
+Five Buttons which are used to set the filter output for the bank to speaker, ring modulator, phaser, 
+reverb or off.
+
+#### Filter Modulation
+
+| Control    | Function                                                                                                                                       |
+|------------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| LFO Frequency   | Frequency of the modulator. This works over a fairly wide range with an exponential law enabling it to range from an LFO to an audio modulator |
+| Mod Depth  | Modulation gain                                                                                                                                |
+| Waveform   | Select modulation waveform from sine, square sawtooth or triangular waves.                                                                     |
+| Modulation | Select type from frequency or off (none)                                                                                            |
+
+#### Freq Envelope
+The pitch envelope is used to bend the pitch over time as the oscillator envelope does with output amplitude.
+There are two additional controls as compared with the amplitude envelope, Attack Level and Release Level.
+When the pitch envelope is set on the sequence is as follows:-
+* The pitch starts at the release level when the key is pressed.
+* The pitch will change from the release level to the attack level at a rate determined by the attack time. If the key is released before the attack level is reached, the pitch will return to the release level at a rate determined by the release time.
+* When the attack level is reached the pitch will then start to change to the sustain level at a rate determined by the decay setting.
+* The pitch will remain at the sustain level until the key is released.
+* On key release the pitch will change to the release level at a rate determined by the release setting.
+
