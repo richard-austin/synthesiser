@@ -202,3 +202,46 @@ When the pitch envelope is set on the sequence is as follows:-
 * The cutoff frequency  will remain at the sustain level until the key is released.
 * On key release the cutoff frequency  will change to the release level at a rate determined by the release setting.
 
+### Operator Matrix
+The operator matrix enables setting any oscillator bank as a modulator for any other oscillator bank, including itself.
+
+<img height="500" src="README.images/operator-matrix2.png" alt="operator matrix in use" width="400"/>
+
+*Operator Matrix with oscillator bank 2 frequency modulating bank 1 at level 7.8 and oscillator bank 3 amplitude modulation bank 2 at level 3.9*
+
+When amplitude modulation (AM) is selected, the level dial goes purple and if frequency modulation (FM)
+is selected, the dial goes red. To modulate bank A with bank B, select the modulation type (AM or FM) on the control
+in row B and column A. Ensure that the carrier bank selected is going to the output you want (click on the modulator or carrier bank
+number in the operator matrix to select that bank). You can then press keys and ajust the modulation level for the sound you want.
+Modulators don't have to have their output  going anywhere, they will still modulate, but they can optionally be audible themselves.
+
+The relative frequencies of modulators and carriers are important so as not to have a very harsh sounding result!
+
+### Noise Generator
+
+<img height="500" src="README.images/noise.png" alt="Noise Generator" width="276"/>
+
+The noise generator is a white, pink or brown noise generator with amplitude envelope controlled output. The outpt
+can be to speaker, filter, reverb phaser of off. The amplitude envelope is a standard ADRS envelope as used in the oscillator banks.
+When Filter is selected for output, this will be filter bank 1, it cannot connect to other filter banks.
+
+### Ring Modulator
+
+<img height="500" src="README.images/ring-mod.png" width="196" alt="ring mod"/>
+
+The ring modulator is a AM modulator with the modulation frequency set from a dial and not tracking the oscillator 
+banks. This gives rise to dissonant sounds unlike when using the modulation matrix where modulator and carrier track each other.
+
+#### Controls
+
+| Control             | Function                                                                                       |
+|---------------------|------------------------------------------------------------------------------------------------|
+| Mod Freqs           | Sets the modulation frequency. This frequency is not affected by the Midi keyboard             |
+| Mod Depth           | The amplitude of the modulation signal                                                         |
+| Waveform            | Select modulating wavefrom from Sine, Square, Sawtooth, or Triangle                            |
+| Internal Modulation | Sets the modulating oscillator on or off. When off, no sound will come from the ring modulator |
+| Output              | Set where the ring modulator feeds to out of speaker, filter, reverb or off                    |
+
+### Reverb
+
+<img src="README.images/reverb.png" alt="reverb"/>
