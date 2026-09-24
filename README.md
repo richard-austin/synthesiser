@@ -245,3 +245,47 @@ banks. This gives rise to dissonant sounds unlike when using the modulation matr
 ### Reverb
 
 <img src="README.images/reverb.png" alt="reverb"/>
+
+The reverb unit consists of a convolver and delay module with a variable repeat loop. The two parts work in parallel, so
+adjustments to the convolver will not affect the delay line and vice versa. Additionally there is a pre-delay line which
+sits in front to the convolver and repeat echo delay line.
+
+The convolver uses a white nose attack and decay cycle as the refence impulse. 
+
+To prevent output from the convolver, set attack time and decay time to zero. To prevent output from the delay line,
+set repeat level to zero.
+
+| Control             | Function                                                                                                                                                                       |
+|---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Attack Time         | Sets the attack time of the convolver reference impulse.                                                                                                                       |
+| Decay Time          | Sets the decay time of the convolver reference impulse.                                                                                                                        |
+| Wet Dry             | This applies to both the covolver and delay line. Adjust between fully wet at -5 (all output from convolver and delay line), to fully dry at 5 (all output direct from input). |
+| Pre Delay           | The amount of delay on the signal going to the repeat echo line and/or convolver.                                                                                              |
+| Repeat Time         | The amount of time between echo repeats                                                                                                                                        |
+| Repeat Level        | The level of feedback from the repeat echo loop output back to the input. If set to zero, the output is muted, at 10 the repeat eco continues indefinitely                     |
+| Speaker/Off buttons | The output of the reverb unit can either go to the speaker or be off                                                                                                           |
+
+### Phaser
+<img src="README.images/phaser.png" alt="phaser"/>
+
+The phaser provides the classic sweeping phasing sound, working best with harmonics-rich sources.  It has a variable number of
+stages which can be between 1 and 61,
+
+| Control                       | Function                                                                                                                                                                                                                                                 |
+|-------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Frequency                     | Sets the cutoff frequency of the filter stages. Note that the LFO varies the cutoff frequency between the value set on this control and lower values dependent on the modulation depth.                                                                  |
+| Gain                          | The phaser output level.                                                                                                                                                                                                                                 |
+| Wet/Dry                       | Mixes the input and filter chain output between all input at -5 and all filter chain output at 5. The strongest phasing effect is at zero where they are equal.                                                                                          |
+| Q                             | The Q factor of the filter stages. The higher the Q, the sharper the phase transition will be                                                                                                                                                            |
+| Feedback                      | Variable between 5 (full positive feedback where oscillation will occur) zero (no feedback) and -5 (full negative feedback where oscillation will occur)                                                                                                 |
+| Speaker/Reverb/Off            | Set the phaser output to the speaker, the reverb unit or off                                                                                                                                                                                             |
+| LFO Frequency                 | The LFO gives a continuous up/down sweep of trhe phaser cutoff frequency, LFO frequency sets the rate of this change.                                                                                                                                    |
+| Mod Depth                     | The amount oeffect on the cutoff frequency the modulator will have. Note that this LFO only modulates the cutoff fdrequncy **down**. The cutoff frequency will vary between the cutoff set by the FRequency dial down to a level determined by Mod Depth |
+| Sine/Square/Sawtooth/Triangle | The LFO waveform.                                                                                                                                                                                                                                        |
+| On/Off                        | Sets the LFO on or off.                                                                                                                                                                                                                                  |
+
+
+### General
+
+![](README.images/general.png)
+
