@@ -25,7 +25,7 @@ div.options {
     }
   }
   max-width: 480px;
-  z-index: -1;
+  z-index: 2;
 }
 
 button.load-config {
@@ -34,12 +34,12 @@ button.load-config {
 
 button.delete-config {
   margin-top: 40px;
-  background: #f35e5e;
+  background: #fb8888;
   width: 200px;
 }
 
 button.rename-config {
-  background: #d39e4f;
+  background: #f8c26d;
   width: 200px;
 }
 

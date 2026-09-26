@@ -1,12 +1,10 @@
 import {
   AfterViewInit,
   Component, effect, EffectRef,
-  ElementRef, inject, input,
-  InputSignal,
+  ElementRef, inject,
   OnDestroy,
   Signal, signal, viewChild,
   viewChildren,
-  WritableSignal,
   ChangeDetectorRef
 } from '@angular/core';
 import {FilterComponent} from "../filter/filter-component";
@@ -26,6 +24,7 @@ import {SynthComponentSettings} from '../settings/synth-component-settings';
 import {MatrixComponent} from '../matrix/matrix-component';
 import {FmSynthService} from '../services/fm-synth-service';
 import {IndexedDBService} from '../services/indexed-db-service';
+import {SignalService} from '../services/signal-service';
 
 @Component({
   selector: 'app-synth-component',
@@ -60,11 +59,16 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   proxySettings!: SynthComponentSettings;
   fileNameEffectRef!: EffectRef;
   homeControlEffectRef!: EffectRef;
+  effectRef!: EffectRef;
+
   signalSelectOperator = signal<number>(0);
 
   private started = false;
 
   keydownHandler = (e: KeyboardEvent) => {
+    if(this.signalService.configFileComponentControl())
+      return; // Don't steal key presses when the config file dialogue is up
+
     const target = e.target as HTMLInputElement;
     if (target.id === 'configFile') {
       return;  // Allow input of config file name etc. to input element
@@ -76,14 +80,16 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   keyupHandler = (e: KeyboardEvent) => {
+    if(this.signalService.configFileComponentControl())
+      return; // Don't steal key presses when the config file dialogue is up
+
     if (/^[abcdefghijklmnopqrstuvwxyz,.\/]$/.test(e.key)) {
       e.preventDefault();
       this.computerKeyUp(e);
     }
   }
 
-  filename: InputSignal<WritableSignal<string>> = input.required<WritableSignal<string>>();
-  homeComponentControl: InputSignal<WritableSignal<boolean>> = input.required<WritableSignal<boolean>>();
+  signalService: SignalService = inject(SignalService);
 
   oscillatorsGrp: Signal<readonly OscillatorComponent[]> = viewChildren(OscillatorComponent);
   filtersGrp  = viewChildren(FilterComponent);
@@ -109,7 +115,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   constructor() {
     this.audioCtx = new AudioContext({sampleRate: 48000, latencyHint: "interactive"});
     this.fileNameEffectRef = effect(() => {
-      const fileName = this.filename()();
+      const fileName = this.signalService.fileName();
       if (fileName !== "") {
         this.rest.getSettings(fileName).subscribe({
           next: (v) => this.settings = v,
@@ -124,10 +130,10 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     });
 
     this.homeControlEffectRef = effect(() => {
-      this.homeComponentControl()();
+      this.signalService.configFileComponentControl();
       const synth = this.synth().nativeElement;
       if (synth) {
-        synth.setAttribute('style', 'opacity:' + (this.homeComponentControl()() ? "0.2" : "1") + '; pointer-events:' + (this.homeComponentControl()() ? "none" : "auto"));
+        synth.setAttribute('style', 'opacity:' + (this.signalService.configFileComponentControl() ? "0.2" : "1") + '; pointer-events:' + (this.signalService.configFileComponentControl() ? "none" : "auto"));
       }
     });
 
@@ -145,7 +151,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     if (!settings) {
       let synthComponentSettings = new SynthComponentSettings();
       const savedSettings = await this.indexedDBService.getSynthObject(objectName);
-
       if (savedSettings && Object.keys(savedSettings).length > 0) {
         // Use values from cookie
         synthComponentSettings = savedSettings as SynthComponentSettings;
@@ -605,8 +610,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
     } else
       document.body.style.zoom = "100%";
   }
-
-  effectRef!: EffectRef;
 
   async ngAfterViewInit(): Promise<void> {
     await this.start(null);

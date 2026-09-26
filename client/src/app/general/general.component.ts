@@ -6,7 +6,7 @@ import {
   OnDestroy,
   signal,
   viewChild,
-  ViewEncapsulation, inject
+  ViewEncapsulation, inject, effect, EffectRef
 } from '@angular/core';
 import {LevelControlComponent} from "../level-control/level-control.component";
 import {dialStyle} from '../level-control/levelControlParameters';
@@ -16,13 +16,14 @@ import {FormsModule} from '@angular/forms';
 import {SynthComponent} from '../synth/synth-component';
 import {RestfulApiService} from '../services/restful-api.service';
 import {IndexedDBService} from '../services/indexed-db-service';
+import {SignalService} from '../services/signal-service';
 
 
 @Component({
   selector: 'app-general',
   imports: [
     LevelControlComponent,
-    FormsModule
+    FormsModule,
   ],
   templateUrl: './general.component.html',
   styleUrl: './general.component.scss',
@@ -52,8 +53,19 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   animationEnter = signal('enter-animation');
   animationLeave = signal('leaving-animation');
   private readonly indexedDBService: IndexedDBService = inject(IndexedDBService);
+  private signalService: SignalService = inject(SignalService);
+  private renameEffectRef!:EffectRef;
 
   constructor(private cdr: ChangeDetectorRef, private parent: SynthComponent, private rest: RestfulApiService) {
+
+    this.renameEffectRef = effect(() => {
+      // @ts-ignore
+      if(this.signalService.rename() && this.proxySettings && this.signalService.rename().oldName === this.proxySettings.configFileName)
+      { // @ts-ignore
+        this.proxySettings.configFileName = this.signalService.rename().newName;
+      }
+    });
+
   }
 
   async start(audioCtx: AudioContext, settings: GeneralSettings | null): Promise<boolean> {
@@ -176,6 +188,10 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.volume.disconnect();
     window.removeEventListener('mousedown', () => this.clickAwayHandler);
+    this.renameEffectRef.destroy();
   }
 
+  protected showConfigLoadForm() {
+    this.signalService.configFileComponentControl.set(!this.signalService.configFileComponentControl());
+  }
 }

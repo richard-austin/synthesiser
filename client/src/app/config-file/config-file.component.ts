@@ -1,35 +1,39 @@
 import {
   AfterViewInit, ChangeDetectorRef,
   Component, effect, EffectRef,
-  ElementRef,
+  ElementRef, inject,
   input,
   OnDestroy,
   OnInit,
-  viewChild, WritableSignal
+  viewChild
 } from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {RestfulApiService} from '../services/restful-api.service';
 import {GeneralComponent} from '../general/general.component';
 import {SortPipePipe} from '../sort-pipe-pipe';
+import {SignalService} from '../services/signal-service';
+import {timer} from 'rxjs';
 
 @Component({
-  selector: 'app-options',
+  selector: 'app-config-file',
   imports: [
     FormsModule,
     SortPipePipe
   ],
-  templateUrl: './home.component.html',
-  styleUrl: './home.component.scss',
+  templateUrl: './config-file.component.html',
+  styleUrl: './config-file.component.scss',
 })
-export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
-  filename = input.required<WritableSignal<string>>();
-  homeComponentControl = input.required<WritableSignal<boolean>>();
+export class ConfigFileComponent implements OnInit, AfterViewInit, OnDestroy {
+  signalService: SignalService = inject(SignalService);
+
   disappearOnMouseOut = input<boolean>(false);
 
   html = viewChild.required<ElementRef<HTMLDivElement>>('html');
   configOptions = viewChild.required<ElementRef<HTMLSelectElement>>('configOptions');
+  loadButton = viewChild.required<ElementRef<HTMLButtonElement>>('loadButton');
+  renameButton = viewChild.required<ElementRef<HTMLButtonElement>>('renameButton');
+  deleteButton = viewChild.required<ElementRef<HTMLButtonElement>>('deleteButton');
 
-  protected selectedConfig: string = "";
   protected configFileList: string[] = [];
   protected _confirmDelete: boolean = false;
   protected _confirmRename: boolean = false;
@@ -42,7 +46,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   constructor(private cdr: ChangeDetectorRef, private rest: RestfulApiService) {
 
     this.homeControlEffectRef = effect(() => {
-      const visible = this.homeComponentControl()();
+      const visible = this.signalService.configFileComponentControl();
+      this.loadButton().nativeElement.disabled = this.deleteButton().nativeElement.disabled = this.renameButton().nativeElement.disabled = true;
       const display = visible ? 'block' : 'none';
       this.outerDiv?.setAttribute('style', 'display:'+display);
     });
@@ -52,7 +57,8 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     this.rest.getConfigFileList().subscribe({
       next: (v) => {
         this.configFileList = v
-        this.selectedConfig = '';
+        const selector = this.configOptions().nativeElement;
+        selector.value = '';
       },
       error: (e) => this.errorMessage = e,
       complete: () => {
@@ -64,7 +70,7 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  protected loadSelectedConfig() {
+ protected loadSelectedConfig() {
     const fileName = this.fileName();
     this.applySettingsFromFile(fileName);
   }
@@ -76,18 +82,21 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
 
   protected confirmRename() {
     this._confirmRename = true;
+    this.newName = "";
     const selector = this.configOptions().nativeElement;
     selector.disabled = true;
   }
 
   protected commitRename() {
-    this.rest.renameConfigFile(this.fileName(), this.newName).subscribe({
+    const fileName = this.fileName();
+    this.rest.renameConfigFile(fileName, this.newName).subscribe({
       next: (v: any) => {
         this.successMessage = v.message;
       },
       complete: () => {
         this.reset();
         this.cancel();
+        this.signalService.rename.set({oldName: fileName, newName: this.newName});
       },
       error: (e: any) => {
         this.errorMessage = e.error.message;
@@ -102,13 +111,26 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
     const selector = this.configOptions().nativeElement;
     selector.value = '';
     selector.disabled = false;
+
+    this.loadButton().nativeElement.disabled = true;
+    this.deleteButton().nativeElement.disabled = true;
+    this.renameButton().nativeElement.disabled = true;
+  }
+
+
+  protected cancelEditOp() {
+
+    this._confirmDelete = this._confirmRename = false;
+
+    const sub = timer(1000).subscribe(() =>{
+      this.signalService.configFileComponentControl.set(false);
+      this.cdr.detectChanges();
+      sub.unsubscribe();
+    });
   }
 
   protected fileName() {
-    const configOptions = this.configOptions().nativeElement;
-    // @ts-ignore
-    const fileNameElem = configOptions[configOptions.value];
-    return fileNameElem.textContent;
+    return this.configOptions().nativeElement.value;
   }
 
   protected delete() {
@@ -136,9 +158,9 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (e) => console.log(e),
       complete: () => {
         console.log("complete: settings loaded");
-        this.filename().set("");  // To ensure reload if filename not changed
-        this.filename().set(fileName);
-        this.homeComponentControl().set(false);
+        this.signalService.fileName.set("");  // To ensure reload if filename not changed
+        this.signalService.fileName.set(fileName);
+        this.signalService.configFileComponentControl.set(false);
       }
     });
   }
@@ -148,8 +170,22 @@ export class HomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
+    const loadButton = this.loadButton().nativeElement;
+    const deleteButton = this.deleteButton().nativeElement;
+    const renameButton = this.renameButton().nativeElement;
+
+    loadButton.disabled = true;
+    deleteButton.disabled = true;
+    renameButton.disabled = true;
+
     this.outerDiv = this.html().nativeElement;
     this.outerDiv.setAttribute('style', 'display:none');
+    this.configOptions().nativeElement.addEventListener("change", (e) => {
+      const disabled = this.configOptions().nativeElement.value === '';
+      loadButton.disabled = disabled;
+      deleteButton.disabled = disabled;
+      renameButton.disabled = disabled;
+     });
   }
 
   ngOnDestroy(): void {

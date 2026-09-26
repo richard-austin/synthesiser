@@ -2,28 +2,31 @@
      class="options">
   <div class="metallic-button">
     <h2>Select saved configuration</h2>
-    <select #configOptions [(ngModel)]="selectedConfig">
+    <select #configOptions>
       <option value="">Select configuration or click Last Config</option>
-      @for(fileName of configFileList | sortPipe; track fileName; let idx = $index) {
-        <option [value]="idx+1">{{fileName}}</option>
+      @for(fileName of configFileList | sortPipe; track fileName) {
+        <option [value]="fileName">{{fileName}}</option>
       }
     </select>
-    @if(!_confirmDelete && !_confirmRename) {
-      <button class="load-config" [disabled]="selectedConfig===''" (click)="loadSelectedConfig()">Load Selected Configuration</button>
-      <button class="delete-config" [disabled]="selectedConfig===''"  (click)="confirmDelete()">Delete Selected Configuration</button>
-      <button class="rename-config" [disabled]="selectedConfig===''"  (click)="confirmRename()">Rename Selected Configration</button>
-    } @else if (!_confirmRename) {
+    <div [style]="{'display': !_confirmDelete && !_confirmRename ? '' : 'none'}">
+      <button #loadButton class="load-config" (click)="loadSelectedConfig()">Load Selected Configuration</button>
+      <button #deleteButton class="delete-config" (click)="confirmDelete()">Delete Selected Configuration</button>
+      <button #renameButton class="rename-config" (click)="confirmRename()">Rename Selected Configration</button>
+      <button (click)="cancelEditOp()">Cancel</button>
+    </div>
+   <div [style]="{'display': !_confirmRename && _confirmDelete ? '' : 'none'}">
       Delete {{fileName()}}, are you sure?
       <button class="delete-config" (click)="delete()">Delete</button>
       <button (click)="cancel()">Cancel</button>
-    } @else if (!_confirmDelete){
+    </div>
+    <div [style]="{'display': !_confirmDelete && _confirmRename ? '' : 'none'}">
       <div class="rename">
         <label for="newName">New name</label>
         <input id="newName" [(ngModel)]="newName" autocomplete="off" placeholder="new config file name">
       </div>
       <button [disabled]="!configFileNameRegex.test(newName)" (click)="commitRename()">Confirm rename</button>
       <button (click)="cancel()">Cancel</button>
-    }
+    </div>
     @if(successMessage !== "") {
       <div class="success" (click)="successMessage=''">{{successMessage}}</div>
     } @else if(errorMessage !== "") {
