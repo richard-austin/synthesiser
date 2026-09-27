@@ -50,5 +50,5 @@ bootJar {
 }
 
 processResources {
-    dependsOn ":client:copyToServerResources"
+    dependsOn( [":client:buildClient", ":client:copyToServerResources"])
 }

@@ -95,7 +95,7 @@ bank has its own output setting independent of the others.
 ### Oscillators
 There are 4 banks of 12 oscillators giving up to four simultaneous settings with 12 note polyphony on each bank.
 
-![](README.images/oscillator.png)
+<img height="600" src="README.images/oscillator.png" width="353" alt="oscillator bank"/>
 
 *Oscillator bank 1*
 
@@ -287,5 +287,67 @@ stages which can be between 1 and 61,
 
 ### General
 
-![](README.images/general.png)
+<img height="300" src="README.images/general.png" width="248" alt="general"/>
 
+#### General functions
+
+* Save the current configuration to a file, including updating existing configurations by making adjustments then saving under the same name.
+* Load a saved configuration to the synthesiser.
+* Rename a configuration.
+* Delete a configuration.
+
+###### Save configuration
+
+* Click on Save Configuration on the General module
+
+<img height="" src="README.images/save-config.png" width="" alt="save-config"/>
+
+* Enter or edit the config file name (leave the same if updating a configuration)
+* Click on Confirm to save or Cancel to back out.
+
+###### Load Configuration
+* Click on Load or Manage Config Files
+
+![](README.images/select.png)
+
+* Click on Select Configuration to show the available configuration files in a drop down list.
+* Select the required config file.
+ 
+![](README.images/selected.png)
+
+* Click on Load Selected Configuration, or to back out, click on Cancel.
+
+###### Delete Configuration
+
+* Click on Load or Manage Config Files on the General Module.
+* Click on Select Configuration to show the available configuration files in a drop down list.
+* Select the required config file.
+* Click on Delete Selected Configuration
+
+![](README.images/delete.png)
+* Click on Delete Selected Configuration, or to back out, click on Cancel.
+
+###### Rename Configuration
+
+* Click on Load or Manage Config Files on the General Module.
+* Click on Select Configuration to show the available configuration files in a drop down list.
+* Select the required config file.
+* Click in Rename Selected Configuration.
+
+![](README.images/rename.png)
+* Type in the required new name and click Confirm rename, or to back out click on Cancel.
+
+### Analyser
+
+![](README.images/analyser.png)
+
+*Analyser in oscilloscope mode*
+
+The analyser gives a view of the sound output of the synthesiser in the time domain (oscilloscope) or frequency domain
+(spectrum analyser).
+* With oscilloscope selected, the TrigLevel, Y Scale and X Scale controls are displayed. These work just as on a
+conventional oscilloscope.
+
+![](README.images/spectrum.png)
+
+*Analyser in spectrum analyser mode*

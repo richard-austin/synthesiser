@@ -3,7 +3,7 @@
   <div class="metallic-button">
     <h2>Select saved configuration</h2>
     <select #configOptions>
-      <option value="">Select configuration or click Last Config</option>
+      <option value="">Select configuration</option>
       @for(fileName of configFileList | sortPipe; track fileName) {
         <option [value]="fileName">{{fileName}}</option>
       }
@@ -11,7 +11,7 @@
     <div [style]="{'display': !_confirmDelete && !_confirmRename ? '' : 'none'}">
       <button #loadButton class="load-config" (click)="loadSelectedConfig()">Load Selected Configuration</button>
       <button #deleteButton class="delete-config" (click)="confirmDelete()">Delete Selected Configuration</button>
-      <button #renameButton class="rename-config" (click)="confirmRename()">Rename Selected Configration</button>
+      <button #renameButton class="rename-config" (click)="confirmRename()">Rename Selected Configuration</button>
       <button (click)="cancelEditOp()">Cancel</button>
     </div>
    <div [style]="{'display': !_confirmRename && _confirmDelete ? '' : 'none'}">
