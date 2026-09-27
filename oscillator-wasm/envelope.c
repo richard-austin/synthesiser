@@ -70,7 +70,7 @@ void envelope_sustain_time(Envelope *env) {
 void envelope_advance_to_sustain(Envelope *env, float frequency) {
     float vel = (float) env->envelopeData->velocity / 127.0f;
     EnvelopeData *envData = env->envelopeData;
-    const float smallestTime = 4.0f / frequency;
+    const float smallestTime = 0.5f / frequency;
     if (env->keyDown) {
         float attackTarget = envData->velocitySensitive ? vel : 1.0f;
         if (!envData->legato) {
@@ -87,7 +87,8 @@ void envelope_advance_to_sustain(Envelope *env, float frequency) {
                 env->level = envelope_ramp(env);
                 if (env->targetReached) {
                     env->phase = ENV_DECAY;
-                    envelope_set_timing(env, envData->sustainLevel, envData->decay + smallestTime);
+                    const float sustainLevel = envData->velocitySensitive ? envData->sustainLevel * vel : envData->sustainLevel;
+                    envelope_set_timing(env, sustainLevel, envData->decay + smallestTime);
                 }
             } else if (env->phase == ENV_DECAY) {
                 env->level = envelope_ramp(env);

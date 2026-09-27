@@ -105,9 +105,8 @@ void triggerNoteOn(int key, int velocity) {
     // STEP 1: Strict Global Co-indexing Lookup. Is this key already active?
     for (int o = 0; o < g_oscillatorsPerBank; o++) {
         for (int b = 0; b < g_numberOfBanks; b++) {
-            BankData *bd = &g_banks[b];
-
-            if (g_oscData[b][o].env.inUse && g_oscData[b][o].key == key) {
+            OscillatorData* od = &g_oscData[b][o];
+            if (od->env.inUse && !od->env.keyDown && od->key == key) {
                 foundIdx = o;
                 break;
             }
@@ -119,9 +118,12 @@ void triggerNoteOn(int key, int velocity) {
     // STEP 2: If it's a completely fresh note, assign next global slot
     bool isRetrigger = (foundIdx != -1);
     if (!isRetrigger) {
-        foundIdx = g_roundRobinIndex++;
-        if (g_roundRobinIndex >= g_oscillatorsPerBank)
-            g_roundRobinIndex = 0;
+        do {
+            foundIdx = g_roundRobinIndex++;
+            if (g_roundRobinIndex >= g_oscillatorsPerBank)
+                g_roundRobinIndex = 0;
+        }
+        while (g_oscData[0][foundIdx].env.keyDown); // Don't let the round robin bomb a held down key
     }
 
     // STEP 3: Map parameters identically across all multi-bank nodes

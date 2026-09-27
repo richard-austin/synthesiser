@@ -425,7 +425,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
   }
 
   private modLevel(value: number) {
-    value *= 300 / 127;
+    value *= 0.2 / 127;
     this.oscillatorsGrp().forEach(osc => osc.midiModLevel(value));
     this.filtersGrp().forEach(filter => filter.midiModLevel(value));
   }
