@@ -8,7 +8,7 @@ The synthesiser is a web application using WebAudio. Most of the functionality i
 * 4 banks of 12 filters which can be morphed between low and high pass with variable Q. Oscillators each feed into a corresponding filter
  with so that the filter effect on each note is consistent.
 * Operator Matrix which enables any oscillator bank to modulate any other, including themselves.
-* Phaser which can have between 1 and 61 all pass stages,and has feedback, Q and wet/dry control
+* Phaser which can have between 1 and 61 all pass stages, and has feedback, Q and wet/dry control
 * Noise generator which can produce white, pink or brown noise.
 * ADSR envelopes for oscillator banks and noise generator.
 * Pitch envelope for oscillator banks and filter
@@ -20,7 +20,7 @@ The audio worklet uses a WebAssembly compiled from C code with Emscripten.
 
 Additional modules are:-
 
-* Reverb unit which comprises a convolver with settable echo attack and decay times and a repeat echo
+* Reverb unit which comprises a convolver with adjustable echo attack and decay times and a repeat echo
 loop with variable delay and pre-delay.
 * Ring modulator.
 * Analyser with a graphical display which can show the audio in the time (oscilloscope) or frequency
@@ -31,12 +31,12 @@ loop with variable delay and pre-delay.
 
 The synthesiser may be either run in a browser, or built as an application for Linux or Windows as Electron Desktop apps.
 
-![View of the whole control panel](README.images/synth.png "FM Synthesiser")
+![The Complete synthesiser control panel](README.images/synth.png)
 
 *The Complete synthesiser control panel*
 ## Building the project for installation on Linux (Debian/Ubuntu) or Windows
 
-1. Download from GitHub (git clone git@github.com:richard-austin/synthesiser.git))
+1. Download from GitHub (git clone git@github.com:richard-austin/synthesiser.git)
 2. cd to project directory
 3. cd to client and type npm install
 4. cd to electron-desktop and type npm install (on Linux dev environment only)
@@ -75,7 +75,7 @@ The most ubiquitous object on the main panel are the control dials.
 
 * To increase or decrease the setting on a control dial, hold the mouse button down and drag up to increase the setting, down to decrease it.
 * To set a dial to zero, click on it then press ESC.
-* To set a dial to a particular number on the dial, click on the dial so the cursor above it turns red and press F*n* where *n* is the required number. 
+* To set a dial to a particular number on the dial, click on the dial so the cursor above it turns red and press the F key matching the required number. 
 * Some of the dials have negative settings, To go straight to these, click on the dial so the cursor above it turns red then press the shift key along 
 with the appropriate F key. 
 
@@ -85,7 +85,7 @@ a vacant oscillator is selected to play that note* At the same time the filter s
 corresponding bank will be the filter that corresponds to that oscillator, and it will be assigned the same base frequency
 as the oscillator.
 
-\* If an oscillator is still actively playing a note just played again (i.e. during the release phase of the envelope)
+\* if an oscillator is still actively playing a note just played again (i.e. during the release phase of the envelope)
 It will be selected again ahead of any vacant oscillators and retriggered on that note.
 
 * On the Operator Matrix panel, an oscillator/filter bank pair can be selected by clicking on the number of the bank you want 
@@ -104,6 +104,8 @@ ring modulator, reverb, phaser or having it set off. Note for the oscillators an
 bank has its own output setting independent of the others.
 
 ![](README.images/outputs.png)
+
+*Output Selection*
 
 ### Oscillators
 There are 4 banks of 12 oscillators giving up to four simultaneous settings with 12 note polyphony on each bank.
@@ -140,7 +142,7 @@ the main oscillator when selected as a modulator in the Operator Matrix.
 | Setting  | Result                                                                                                                                           |
 |----------|--------------------------------------------------------------------------------------------------------------------------------------------------|
 | Direct   | The oscillator output is applied for modulation without envelope shaping, i.e. at the contant level selected by the dial on the operator matrix. |
-| Envelope | The oscillator output is time dependent as set by the ASDR envelope, with overall modulation gain set by the dial on the operator matrix         |
+| Envelope | The oscillator output is time dependent as set by the ADSR envelope, with overall modulation gain set by the dial on the operator matrix         |
 
 
 #### Portamento
@@ -225,7 +227,7 @@ The operator matrix enables setting any oscillator bank as a modulator for any o
 When amplitude modulation (AM) is selected, the level dial goes purple and if frequency modulation (FM)
 is selected, the dial goes red. To modulate bank A with bank B, select the modulation type (AM or FM) on the control
 in row B and column A. Ensure that the carrier bank selected is going to the output you want (click on the modulator or carrier bank
-number in the operator matrix to select that bank). You can then press keys and ajust the modulation level for the sound you want.
+number in the operator matrix to select that bank). You can then press keys and adjust the modulation level for the sound you want.
 Modulators don't have to have their output  going anywhere, they will still modulate, but they can optionally be audible themselves.
 
 The relative frequencies of modulators and carriers are important so as not to have a very harsh sounding result!
@@ -234,7 +236,7 @@ The relative frequencies of modulators and carriers are important so as not to h
 
 <img height="500" src="README.images/noise.png" alt="Noise Generator" width="276"/>
 
-The noise generator is a white, pink or brown noise generator with amplitude envelope controlled output. The outpt
+The noise generator is a white, pink or brown noise generator with amplitude envelope controlled output. The output
 can be to speaker, filter, reverb phaser of off. The amplitude envelope is a standard ADRS envelope as used in the oscillator banks.
 When Filter is selected for output, this will be filter bank 1, it cannot connect to other filter banks.
 
@@ -251,7 +253,7 @@ banks. This gives rise to dissonant sounds unlike when using the modulation matr
 |---------------------|------------------------------------------------------------------------------------------------|
 | Mod Freqs           | Sets the modulation frequency. This frequency is not affected by the Midi keyboard             |
 | Mod Depth           | The amplitude of the modulation signal                                                         |
-| Waveform            | Select modulating wavefrom from Sine, Square, Sawtooth, or Triangle                            |
+| Waveform            | Select modulating waveform from Sine, Square, Sawtooth, or Triangle                            |
 | Internal Modulation | Sets the modulating oscillator on or off. When off, no sound will come from the ring modulator |
 | Output              | Set where the ring modulator feeds to out of speaker, filter, reverb or off                    |
 
@@ -263,20 +265,20 @@ The reverb unit consists of a convolver and delay module with a variable repeat 
 adjustments to the convolver will not affect the delay line and vice versa. Additionally there is a pre-delay line which
 sits in front to the convolver and repeat echo delay line.
 
-The convolver uses a white nose attack and decay cycle as the refence impulse. 
+The convolver uses a white noise attack and decay cycle as the refence impulse. 
 
 To prevent output from the convolver, set attack time and decay time to zero. To prevent output from the delay line,
 set repeat level to zero.
 
-| Control             | Function                                                                                                                                                                       |
-|---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Attack Time         | Sets the attack time of the convolver reference impulse.                                                                                                                       |
-| Decay Time          | Sets the decay time of the convolver reference impulse.                                                                                                                        |
-| Wet Dry             | This applies to both the covolver and delay line. Adjust between fully wet at -5 (all output from convolver and delay line), to fully dry at 5 (all output direct from input). |
-| Pre Delay           | The amount of delay on the signal going to the repeat echo line and/or convolver.                                                                                              |
-| Repeat Time         | The amount of time between echo repeats                                                                                                                                        |
-| Repeat Level        | The level of feedback from the repeat echo loop output back to the input. If set to zero, the output is muted, at 10 the repeat eco continues indefinitely                     |
-| Speaker/Off buttons | The output of the reverb unit can either go to the speaker or be off                                                                                                           |
+| Control             | Function                                                                                                                                                                        |
+|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Attack Time         | Sets the attack time of the convolver reference impulse.                                                                                                                        |
+| Decay Time          | Sets the decay time of the convolver reference impulse.                                                                                                                         |
+| Wet Dry             | This applies to both the convolver and delay line. Adjust between fully wet at -5 (all output from convolver and delay line), to fully dry at 5 (all output direct from input). |
+| Pre Delay           | The amount of delay on the signal going to the repeat echo line and/or convolver.                                                                                               |
+| Repeat Time         | The amount of time between echo repeats                                                                                                                                         |
+| Repeat Level        | The level of feedback from the repeat echo loop output back to the input. If set to zero, the output is muted, at 10 the repeat echo continues indefinitely                      |
+| Speaker/Off buttons | The output of the reverb unit can either go to the speaker or be off                                                                                                            |
 
 ### Phaser
 <img src="README.images/phaser.png" alt="phaser"/>
@@ -284,18 +286,18 @@ set repeat level to zero.
 The phaser provides the classic sweeping phasing sound, working best with harmonics-rich sources.  It has a variable number of
 stages which can be between 1 and 61,
 
-| Control                       | Function                                                                                                                                                                                                                                                 |
-|-------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Frequency                     | Sets the cutoff frequency of the filter stages. Note that the LFO varies the cutoff frequency between the value set on this control and lower values dependent on the modulation depth.                                                                  |
-| Gain                          | The phaser output level.                                                                                                                                                                                                                                 |
-| Wet/Dry                       | Mixes the input and filter chain output between all input at -5 and all filter chain output at 5. The strongest phasing effect is at zero where they are equal.                                                                                          |
-| Q                             | The Q factor of the filter stages. The higher the Q, the sharper the phase transition will be                                                                                                                                                            |
-| Feedback                      | Variable between 5 (full positive feedback where oscillation will occur) zero (no feedback) and -5 (full negative feedback where oscillation will occur)                                                                                                 |
-| Speaker/Reverb/Off            | Set the phaser output to the speaker, the reverb unit or off                                                                                                                                                                                             |
-| LFO Frequency                 | The LFO gives a continuous up/down sweep of trhe phaser cutoff frequency, LFO frequency sets the rate of this change.                                                                                                                                    |
-| Mod Depth                     | The amount oeffect on the cutoff frequency the modulator will have. Note that this LFO only modulates the cutoff fdrequncy **down**. The cutoff frequency will vary between the cutoff set by the FRequency dial down to a level determined by Mod Depth |
-| Sine/Square/Sawtooth/Triangle | The LFO waveform.                                                                                                                                                                                                                                        |
-| On/Off                        | Sets the LFO on or off.                                                                                                                                                                                                                                  |
+| Control                       | Function                                                                                                                                                                                                                                                  |
+|-------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Frequency                     | Sets the cutoff frequency of the filter stages. Note that the LFO varies the cutoff frequency between the value set on this control and lower values dependent on the modulation depth.                                                                   |
+| Gain                          | The phaser output level.                                                                                                                                                                                                                                  |
+| Wet/Dry                       | Mixes the input and filter chain output between all input at -5 and all filter chain output at 5. The strongest phasing effect is at zero where they are equal.                                                                                           |
+| Q                             | The Q factor of the filter stages. The higher the Q, the sharper the phase transition will be                                                                                                                                                             |
+| Feedback                      | Variable between 5 (full positive feedback where oscillation will occur) zero (no feedback) and -5 (full negative feedback where oscillation will occur)                                                                                                  |
+| Speaker/Reverb/Off            | Set the phaser output to the speaker, the reverb unit or off                                                                                                                                                                                              |
+| LFO Frequency                 | The LFO gives a continuous up/down sweep of trhe phaser cutoff frequency, LFO frequency sets the rate of this change.                                                                                                                                     |
+| Mod Depth                     | The amount of effect on the cutoff frequency the modulator will have. Note that this LFO only modulates the cutoff frequncy **down**. The cutoff frequency will vary between the cutoff set by the Frequency dial down to a level determined by Mod Depth |
+| Sine/Square/Sawtooth/Triangle | The LFO waveform.                                                                                                                                                                                                                                         |
+| On/Off                        | Sets the LFO on or off.                                                                                                                                                                                                                                   |
 
 
 ### General
