@@ -297,7 +297,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   midiModLevel(value: number) {
-    this.modLevel().setValue(value);
+    this.fmSynthService.setLFOLevel(this.oscNumber(), this.proxySettings.modLevel * value);
   }
 
   protected setAttack($event: number) {

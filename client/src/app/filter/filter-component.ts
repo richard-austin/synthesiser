@@ -263,7 +263,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   midiModLevel(value: number) {
-    this.modLevel().setValue(value);
+    this.fmSynthService.setFilterLFOLevel(this.filterNumber(), this.proxySettings.modLevel * value);
   }
 
   protected readonly dialStyle = dialStyle;

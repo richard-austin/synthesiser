@@ -52,6 +52,19 @@ on initial set up or if any node modules are changed/added/updated.)
 2. cd to project directory
 3. Type ./gradlew electron-desktop:buildLinux
 #### The installer file will be at projectDir/electron-desktop/dist with a name similar to synthesiser-desktop_1.0.0.deb
+A Linux build will also produce an AppImage file which is run directly as an executable and should run on most (amd_64) Linux platforms.
+The AppImage file will be named similarly to **synthesiser-desktop-1.0.0.AppImage** and is at the same location as the .deb file.
+
+### Running on any platform
+A .jar file is produced at projectDir/server/build/libs named similarly to server-0.0.1-SNAPSHOT.jar, which has an embedded web server
+and can be run on any platform with a suitable desktop and running Java 25 or later.
+* Move the .jar file to a suitable location.
+* Start the server with the command java -jar server-0.0.1-SNAPSHOT.jar
+* Ensure your MIDI keyboard is connected.
+* Start a browser (preferably a Chromium based browser) and go to the URL localhost:8080.
+* The synthesiser application will start in the browser.
+* Click the Start button on the start up splash.
+* If the browser asks permission to use the MIDI keyboard, click on "Allow".
 
 ## Using the synthesiser
 
