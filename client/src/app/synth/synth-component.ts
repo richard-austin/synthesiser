@@ -432,7 +432,7 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
   private setMasterVolume(value: number) {
     value /= 127;
-    this.masterVolume().setVolume(value);
+    this.masterVolume().setVolume(value / 3);
   }
 
   protected setOscOutputTarget($event: string, oscNumber: number) {
