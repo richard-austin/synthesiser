@@ -114,19 +114,23 @@ void triggerNoteOn(int key, int velocity) {
         if (foundIdx != -1)
             break;
     }
-
     // STEP 2: If it's a completely fresh note, assign next global slot
     bool isRetrigger = (foundIdx != -1);
     if (!isRetrigger) {
+        const int initialIndex = g_roundRobinIndex;
         do {
             foundIdx = g_roundRobinIndex++;
             if (g_roundRobinIndex >= g_oscillatorsPerBank)
                 g_roundRobinIndex = 0;
         }
-        while (g_oscData[0][foundIdx].env.keyDown); // Don't let the round robin bomb a held down key
+        while (g_roundRobinIndex != initialIndex && g_oscData[0][foundIdx].env.keyDown); // Don't let the round robin bomb a held down key
+
+        if (g_roundRobinIndex == initialIndex) {
+            foundIdx = initialIndex;  // Use the oldest index if absolutely none yet available.
+        }
     }
 
-    // STEP 3: Map parameters identically across all multi-bank nodes
+   // STEP 3: Map parameters identically across all multi-bank nodes
     for (int b = 0; b < g_numberOfBanks; b++) {
         OscillatorData *od = &g_oscData[b][foundIdx];
         const BankData *bd = &g_banks[b];
@@ -153,10 +157,8 @@ void triggerNoteOn(int key, int velocity) {
             od->filterFrequency = filter_key_to_frequency(key, b);
 
         od->key = key;
-        od->env.keyDown = true;
-        od->env.inUse = true;
-        od->env.t = 0.0f; // Clear layout ramp clock timers
-        od->env.envelopeData->velocity = velocity;
+
+        envelope_prepare_to_start(&od->env, velocity);
 
         // Set oscillator and filter pitch envelope times to 0
         od->pitchEnv.t = 0.0f;
@@ -425,6 +427,7 @@ void processBlock(float **outputBuffers, int numSamples) {
                         band = bd->numBands - 1;
 
                     signal = render_sample_from_phase(b, band, currentPhase) * matrixA;
+                    envelope_detect_zero_crossing(env, signal);
                 }
                 float modSignal = (bd_modOutput == 2) ? (signal * ampEnvelope) : signal;
 
@@ -433,8 +436,10 @@ void processBlock(float **outputBuffers, int numSamples) {
                 if (bd->lfoData.modType == LFO_AMPLITUDE) {
                     signal *= (1.0f + render_lfo_sample(&bd->lfoData));
                 }
-                if (g_noise_output != OFF)
+                if (g_noise_output != OFF) {
                     noiseSample = noise(g_noise, osc);
+                    envelope_detect_zero_crossing(&g_noise->envelopes[osc], noiseSample);
+                }
 
                 float finalOutputSample = signal * bd->oscillatorLevel * ampEnvelope;
                 float filterInputSample = 0.0f;

@@ -6,9 +6,12 @@
 // --- Enumerations ---
 typedef enum {
     ENV_INACTIVE = 0,
+    ENV_PENDING_ATTACK,
     ENV_ATTACK,
+    ENV_PENDING_DECAY,
     ENV_DECAY,
     ENV_SUSTAIN,
+    ENV_PENDING_RELEASE,
     ENV_RELEASE,
     ENV_RETRIGGER,
 } envelopePhase;

@@ -27,6 +27,13 @@ void envelope_init(Envelope *env, EnvelopeData *data) {
     env->keyDown = false;
 }
 
+void envelope_prepare_to_start(Envelope *env, int velocity) {
+    env->t = 0.0f; // Clear layout ramp clock timers
+    env->envelopeData->velocity = velocity;
+    env->keyDown = true;
+    env->inUse = true;
+}
+
 void envelope_set_timing(Envelope *env, float value, float time) {
     // FIX: Prevent env->v0 from being 0 or lower than env->lowestLevel
     float currentLevel = env->level;
@@ -67,29 +74,36 @@ void envelope_sustain_time(Envelope *env) {
     }
 }
 
+void envelope_detect_zero_crossing(Envelope *env, float signal) {
+    if (env->phase == ENV_PENDING_ATTACK && fabs(signal) < 0.005f) {
+        env->phase = ENV_ATTACK;
+    } else if (env->phase == ENV_PENDING_DECAY && fabs(signal) < 0.005f) {
+        env->phase = ENV_DECAY;
+    } else if (env->phase == ENV_PENDING_RELEASE && fabs(signal) < 0.005f) {
+        env->phase = ENV_RELEASE;
+    }
+}
+
 void envelope_advance_to_sustain(Envelope *env, float frequency) {
     float vel = (float) env->envelopeData->velocity / 127.0f;
     EnvelopeData *envData = env->envelopeData;
-    const float smallestTime = 0.5f / frequency;
     if (env->keyDown) {
         float attackTarget = envData->velocitySensitive ? vel : 1.0f;
         if (!envData->legato) {
             const float sustainLevel = envData->velocitySensitive ? envData->sustainLevel * vel : envData->sustainLevel;
 
-            if (env->phase != ENV_ATTACK && env->phase != ENV_DECAY && env->phase != ENV_SUSTAIN) {
+            if (env->phase != ENV_PENDING_ATTACK && env->phase != ENV_ATTACK && env->phase != ENV_PENDING_DECAY && env->phase != ENV_DECAY && env->phase != ENV_SUSTAIN) {
                 env->inUse = true;
                 float attackTime = envData->attack;
-                if (env->phase == ENV_RETRIGGER)
-                    attackTime += smallestTime; // Reduce clicks on retrigger
                 if (env->level < envData->justAudible)
                     env->level = envData->justAudible;
                 envelope_set_timing(env, attackTarget, attackTime);
-                env->phase = ENV_ATTACK;
+                env->phase = ENV_PENDING_ATTACK;
             } else if (env->phase == ENV_ATTACK) {
                 env->level = envelope_ramp(env);
                 if (env->targetReached) {
-                    env->phase = ENV_DECAY;
-                    envelope_set_timing(env, sustainLevel, envData->decay + smallestTime);
+                    env->phase = ENV_PENDING_DECAY;
+                    envelope_set_timing(env, sustainLevel, envData->decay);
                 }
             } else if (env->phase == ENV_DECAY) {
                 env->level = envelope_ramp(env);
@@ -99,13 +113,11 @@ void envelope_advance_to_sustain(Envelope *env, float frequency) {
                 }
             }
         } else {
-            if (env->phase != ENV_ATTACK && env->phase != ENV_DECAY) {
+            if (env->phase != ENV_PENDING_ATTACK && env->phase != ENV_ATTACK && env->phase != ENV_DECAY) {
                 env->inUse = true;
                 float attackTime = envData->attack;
-                if (env->phase == ENV_RETRIGGER)
-                    attackTime += smallestTime; // Reduce clicks on retrigger
                 envelope_set_timing(env, attackTarget, attackTime);
-                env->phase = ENV_ATTACK;
+                env->phase = ENV_PENDING_ATTACK;
             } else if (env->phase == ENV_ATTACK) {
                 env->level = envelope_ramp(env);
                 if (env->targetReached) {
@@ -119,12 +131,11 @@ void envelope_advance_to_sustain(Envelope *env, float frequency) {
 
 void envelope_advance_to_zero(Envelope *env, float frequency) {
     EnvelopeData *envData = env->envelopeData;
-    const float smallestTime  = 4.0f / frequency;  // To reduce clicks on sharp envelope transitions
     if (!env->keyDown) {
         if (!envData->legato) {
-            if (env->phase != ENV_RELEASE && env->phase != ENV_INACTIVE) {
-                env->phase = ENV_RELEASE;
-                envelope_set_timing(env, env->lowestLevel, envData->release+smallestTime);
+            if (env->phase != ENV_PENDING_RELEASE && env->phase != ENV_RELEASE && env->phase != ENV_INACTIVE) {
+                env->phase = ENV_PENDING_RELEASE;
+                envelope_set_timing(env, env->lowestLevel, envData->release);
             } else if (env->phase == ENV_RELEASE) {
                 env->level = envelope_ramp(env);
                 if (env->targetReached) {
@@ -134,14 +145,14 @@ void envelope_advance_to_zero(Envelope *env, float frequency) {
                 }
             }
         } else {
-            if (env->phase != ENV_SUSTAIN && env->phase != ENV_RELEASE && env->phase != ENV_INACTIVE) {
+            if (env->phase != ENV_SUSTAIN && env->phase != ENV_PENDING_RELEASE && env->phase != ENV_RELEASE && env->phase != ENV_INACTIVE) {
                 envelope_set_timing(env, env->lowestLevel, envData->decay);
                 env->phase = ENV_SUSTAIN;
             } else if (env->phase == ENV_SUSTAIN) {
                 envelope_sustain_time(env);
                 if (env->targetReached) {
-                    env->phase = ENV_RELEASE;
-                    envelope_set_timing(env, env->lowestLevel, envData->release+smallestTime);
+                    env->phase = ENV_PENDING_RELEASE;
+                    envelope_set_timing(env, env->lowestLevel, envData->release);
                 }
             } else if (env->phase == ENV_RELEASE) {
                 env->level = envelope_ramp(env);

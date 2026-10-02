@@ -352,24 +352,24 @@ if (typeof globalThis.registerProcessor === 'function') {
         }
       }
 
-      const time = (Date.now() - start);
-      this.totalTime += time
-      this.iterationCount++;
-      if (time > this.maxTime)
-        this.maxTime = time;
-      if (time < this.minTime)
-        this.minTime = time;
-      //  Send an average performance report every 500 blocks (~1.5 seconds)
-      if (this.iterationCount >= 500) {
-        const averageMsPerBlock = this.totalTime / this.iterationCount;
-        console.log("averageMsPerBlock = " + averageMsPerBlock + " maxTime = " + this.maxTime + " minTime = " + this.minTime);
-        //this.port.postMessage({ type: 'perf-report', averageMsPerBlock });
-
-        this.totalTime = 0;
-        this.iterationCount = 0;
-        this.maxTime = 0;
-        this.minTime = 100;
-      }
+      // const time = (Date.now() - start);
+      // this.totalTime += time
+      // this.iterationCount++;
+      // if (time > this.maxTime)
+      //   this.maxTime = time;
+      // if (time < this.minTime)
+      //   this.minTime = time;
+      // //  Send an average performance report every 500 blocks (~1.5 seconds)
+      // if (this.iterationCount >= 500) {
+      //   const averageMsPerBlock = this.totalTime / this.iterationCount;
+      //   console.log("averageMsPerBlock = " + averageMsPerBlock + " maxTime = " + this.maxTime + " minTime = " + this.minTime);
+      //   //this.port.postMessage({ type: 'perf-report', averageMsPerBlock });
+      //
+      //   this.totalTime = 0;
+      //   this.iterationCount = 0;
+      //   this.maxTime = 0;
+      //   this.minTime = 100;
+      //}
 
       return true;
     }

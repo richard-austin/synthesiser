@@ -8,7 +8,11 @@ void envelope_data_init(EnvelopeData *ed);
 // --- Envelope Phase Traversal Mathematics ---
 void envelope_init(Envelope *env, EnvelopeData *data);
 
+void envelope_prepare_to_start(Envelope *env, int velocity);
+
 void envelope_set_timing(Envelope *env, float value, float time);
+
+void envelope_detect_zero_crossing(Envelope *env, float signal);
 
 float envelope_ramp(Envelope *env);
 
