@@ -29,7 +29,7 @@ export class FilterSettings {
               deTune: number = 0,
               qFactor: number = 20,
               gain: number = .4,
-              filterType: number = 0.0,
+              filterType: number = 0,
               output: filterOutputs = filterOutputs.off,
               modFreq: number = 2,
               modLevel: number=.4,

@@ -47,14 +47,14 @@ export class MatrixControlComponent implements AfterViewInit {
   levelControl: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('level');
   fmSynthService: FmSynthService = inject(FmSynthService);
 
-  start(ctrlSettings: MatrixControlSettings, modIndex: number, carrierIndex: number) {
+  start(ctrlSettings: MatrixControlSettings) {
     this.ctlSettings = ctrlSettings;
     this.setModType(ctrlSettings.setting);
     this.levelControl().setValue(ctrlSettings.level);
   }
 
   protected setModLevel(modIndex: number, carrierIndex: number, level: number) {
-    this.fmSynthService.setModLevel(modIndex, carrierIndex, level * 0.1);
+    this.fmSynthService.setModLevel(modIndex, carrierIndex, level * 0.8);
     this.ctlSettings.level = level;
   }
 

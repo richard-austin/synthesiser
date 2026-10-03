@@ -50,7 +50,7 @@ export class MatrixComponent implements AfterViewInit {
     this.proxySettings.matrix.forEach((row, carrierIdx) => {
     row.forEach((mtxCtl, modIdx) => {
       const control = this.matrixControls()[carrierIdx*this.proxySettings.size + modIdx] as MatrixControlComponent;
-      control.start(mtxCtl, modIdx, carrierIdx);
+      control.start(mtxCtl);
     })});
   }
 

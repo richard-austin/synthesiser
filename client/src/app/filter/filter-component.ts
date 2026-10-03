@@ -190,9 +190,6 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   private setFilterType(value: number) {
     this.proxySettings.filterType = value;
     this.fmSynthService.setFilterMorphMode(this.filterNumber(), value);
-    // for (let i = 0; i < this.numberOfFilters; ++i) {
-    //   this.filters[i].setType(value);
-    // }
   }
 
   private setPortamentoType(value: PortamentoType) {
@@ -315,14 +312,6 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
 
   ngAfterViewInit(): void {
-    // this.devicePoolManagerService.notifyKeydown[this.filterNumber()] = (keys: DeviceKeys) => {
-    //   this.deviceKeyDown(keys);
-    // }
-    //
-    // this.devicePoolManagerService.notifyKeyup[this.filterNumber()] = (keys: DeviceKeys) => {
-    //   this.deviceKeyUp(keys);
-    // }
-
     const filterOutForm = this.filterOutputTo().nativeElement;
     for (let i = 0; i < filterOutForm.elements.length; ++i) {
       filterOutForm.elements[i].addEventListener('change', ($event) => {
@@ -377,11 +366,5 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // for (let i = 0; i < this.filters.length; i++) {
-    //
-    //   this.filters[i].destroy();
-    //   // @ts-ignore
-    //   this.filters[i] = undefined;
-    // }
   }
 }
