@@ -27,27 +27,12 @@ if (envProperty instanceof Provider) {
 def emcc = "emcc"
 
 OperatingSystem os = DefaultNativePlatform.currentOperatingSystem
-if(os.toFamilyName() == 'windows')
+if (os.toFamilyName() == 'windows')
     emcc = "emcc.bat"
 
 // 3. Directly target the confirmed emcc executable relative to the root layout context
 File emccExecutable = rootProject.layout.projectDirectory.file(".komple/installs/emscripten/upstream/emscripten/$emcc").asFile
 String absoluteEmccPath = emccExecutable.absolutePath
-
-// 4. Pre-compute primitive file layouts to satisfy the Configuration Cache completely
-File processorSourceFile = layout.projectDirectory.file('processor.c').asFile
-File portamentoSourceFile = layout.projectDirectory.file('portamento.c').asFile
-File envelopeSourceFile = layout.projectDirectory.file('envelope.c').asFile
-File pitchEnvelopeSourceFile = layout.projectDirectory.file('pitch_envelope.c').asFile
-File lfoSourceFile = layout.projectDirectory.file('lfo.c').asFile
-File filterSourceFile = layout.projectDirectory.file('filter.c').asFile
-File filter4SourceFile = layout.projectDirectory.file('svf4_filter.c').asFile
-File butterworthSourceFile = layout.projectDirectory.file('butterworth_filter.c').asFile
-File setupFromControlsSourceFile = layout.projectDirectory.file('setup_from_controls.c').asFile
-File keyToFrequencySourceFile = layout.projectDirectory.file('key_to_frequency.c').asFile
-File globalsSourceFile = layout.projectDirectory.file('globals.c').asFile
-File noiseSourceFile = layout.projectDirectory.file('noise.c').asFile
-File phaserSourceFile = layout.projectDirectory.file('phaser.c').asFile
 
 File outputDirectory = new File(rootDir, '/client/public/assets/wasm') //layout.buildDirectory.dir('wasm').get().asFile
 String outputJsPath = new File(outputDirectory, 'engine-module.js').absolutePath
@@ -69,13 +54,6 @@ tasks.register('checkWasmVersion', Exec) {
             absoluteEmccPath,
             "--version"
     ).toString())
-
-//    if (emccPath) {
-//        commandLine emccPath.toString(), "--version"
-//    } else {
-//        // Fallback placeholder to prevent task initialization errors if config is missing
-//        commandLine "echo", "ERROR: Could not find the 'komple' Emscripten tool configuration!"
-//    }
 }
 
 tasks.register('clean', Delete) {
@@ -85,24 +63,11 @@ tasks.register('clean', Delete) {
 
 // 5. Register the final cache-compliant automated execution task
 tasks.register('compileWasm', Exec) {
-    dependsOn('clean')
     group = 'build'
     description = 'Compiles processor.c into WebAssembly using Emscripten.'
 
     // Ensure the task automatically triggers if your C source modifications change
-    inputs.file(processorSourceFile)
-    inputs.file(portamentoSourceFile)
-    inputs.file(envelopeSourceFile)
-    inputs.file(pitchEnvelopeSourceFile)
-    inputs.file(lfoSourceFile)
-    inputs.file(filterSourceFile)
-    inputs.file(filter4SourceFile)
-    inputs.file(butterworthSourceFile)
-    inputs.file(setupFromControlsSourceFile)
-    inputs.file(keyToFrequencySourceFile)
-    inputs.file(globalsSourceFile)
-    inputs.file(noiseSourceFile)
-    inputs.file(phaserSourceFile)
+    inputs.files fileTree(dir: layout.projectDirectory, include: '*.c')
 
     outputs.dir(outputDirectory)
 
@@ -119,23 +84,8 @@ tasks.register('compileWasm', Exec) {
         }
     }
 
-   // emcc processor.c -O3 -flto -msimd128 -ffast-math -o processor.js -s WASM=1 -s AUDIO_WORKLET=1 -s WASM_WORKERS=1 -s STANDALONE_WASM -s EXPORTED_FUNCTIONS=['_initProcessor','_setMatrixGain','_setBankEnvelopeParams','_triggerNoteOn','_triggerNoteOff','_getBankOutputBufferPtr','_processBlock'] --no-entry
-    // Call the verified absolute path direct from the .komple tracking home
-    commandLine(
-            absoluteEmccPath,
-            processorSourceFile.absolutePath,
-            portamentoSourceFile.absolutePath,
-            envelopeSourceFile.absolutePath,
-            pitchEnvelopeSourceFile.absolutePath,
-            filterSourceFile.absolutePath,
-            filter4SourceFile.absolutePath,
-            lfoSourceFile.absolutePath,
-            butterworthSourceFile.absolutePath,
-            setupFromControlsSourceFile.absolutePath,
-            keyToFrequencySourceFile.absolutePath,
-            globalsSourceFile.absolutePath,
-            noiseSourceFile.absolutePath,
-            phaserSourceFile.absolutePath,
+    // 2. Define your compiler flags and options
+    def emccArgs = [
             "-O3",
             "-flto",
             "-msimd128",
@@ -146,10 +96,19 @@ tasks.register('compileWasm', Exec) {
             "-s", "SINGLE_FILE=1",
             "-s", "ALLOW_MEMORY_GROWTH=1",
             "-s", "EXPORTED_RUNTIME_METHODS=['HEAP32','HEAPF32']",
-            // MANDATORY: Forces Emscripten to check and execute our custom callback hook
+            // MANDATORY: Forces Emscripten to check and execute custom callback hook
             "-s", "INCOMING_MODULE_JS_API=['onRuntimeInitialized']",
             "--post-js", "${rootDir}/client/public/assets/wasm/audio-hooks.js",
             "-s", 'EXPORTED_FUNCTIONS=["_malloc","_free"]',
             "--no-entry"
-    )
+    ]
+
+    // 3. Combine everything dynamically into the command line
+    // Construct the list smoothly without '+' or 'addAll' methods
+    def cmd = []
+    cmd << absoluteEmccPath
+    cmd.addAll(inputs.files.files*.absolutePath as Object[]) // Cast to bypass JetBrains type inspection
+    cmd.addAll(emccArgs)
+
+    commandLine = cmd
 }
