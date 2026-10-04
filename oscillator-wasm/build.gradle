@@ -48,7 +48,7 @@ File outputDirectory = new File(rootDir, '/client/public/assets/wasm') //layout.
 String outputJsPath = new File(outputDirectory, 'engine-module.js').absolutePath
 
 // 1. The Diagnostic Version Check Task
-tasks.register('checkWasmVersion', Exec) {
+tasks.register('checkEmscriptenVersion', Exec) {
     def kompleExtension = rootProject.extensions.findByName('komple')
     def emccPath = kompleExtension?.tools?.emscripten
 
@@ -123,15 +123,3 @@ tasks.register('compileWasm', Exec) {
     commandLine = cmd
 }
 
-// Due to emscriptenInstall being run unnecessarily on Windows (combined with extreme slowness doing that),
-//  disable emscriptenInstall and emscriptenInstall if the emcc.bat executable is in place.
-if (os.toFamilyName() == 'windows') {
-    def emccBinary = file("${projectDir}/.komple/emscripten/upstream/emscripten/emcc.bat")
-    if (emccBinary.exists()) {
-        tasks.configureEach { task ->
-            if (task.name == 'emscriptenInstall' || task.name == 'emscriptenExtract') {
-                task.enabled = false
-            }
-        }
-    }
-}
