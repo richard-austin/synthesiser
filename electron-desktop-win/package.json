@@ -1,6 +1,6 @@
 {
   "name": "synthesiser-desktop-win",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Windows Desktop Wrapper for Synthesiser",
   "main": "main.js",
   "scripts": {

@@ -16,7 +16,7 @@
             <option value="$PROJECT_DIR$/server" />
           </set>
         </option>
-        <option name="myGradleHome" value="/opt/gradle/gradle-7.4.2" />
+        <option name="myGradleHome" value="\opt\gradle\gradle-7.4.2" />
       </GradleProjectSettings>
     </option>
   </component>
