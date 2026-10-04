@@ -48,7 +48,7 @@ File outputDirectory = new File(rootDir, '/client/public/assets/wasm') //layout.
 String outputJsPath = new File(outputDirectory, 'engine-module.js').absolutePath
 
 // 1. The Diagnostic Version Check Task
-tasks.register('checkWasmVersion', Exec) {
+tasks.register('checkEmscriptenVersion', Exec) {
     def kompleExtension = rootProject.extensions.findByName('komple')
     def emccPath = kompleExtension?.tools?.emscripten
 
