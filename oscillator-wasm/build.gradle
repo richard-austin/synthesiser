@@ -17,51 +17,37 @@ repositories {
     }
 }
 
-// 1. Safe configuration-time retrieval of the tool extension
-def emscriptenTool = rootProject.extensions.findByName('komple')?.tools?.emscripten
-if (emscriptenTool == null) {
-    throw new GradleException("The 'komple' extension or 'emscripten' toolchain is missing from your root build.gradle.")
-}
-
-// 2. Reflectively capture the environment map fields
-Map<String, String> finalEnvMap = [:]
-def envProperty = emscriptenTool.properties['env'] ?: emscriptenTool.properties['environment']
-if (envProperty instanceof Provider) {
-    finalEnvMap = envProperty.get() as Map<String, String>
-} else if (envProperty instanceof Map) {
-    finalEnvMap = (Map<String, String>) envProperty
-} else {
-    finalEnvMap = emscriptenTool.getProperties().getOrDefault('env', [:]) as Map
-}
-
-def emcc = "emcc"
+def emscriptenLocation = "$rootDir/.emscripten"
+def emscriptenVersion = "5.0.7"
+String emsdkCmd = "$emscriptenLocation/emsdk-$emscriptenVersion/emsdk"
 
 OperatingSystem os = DefaultNativePlatform.currentOperatingSystem
 if (os.toFamilyName() == 'windows')
-    emcc = "emcc.bat"
+    emsdkCmd += ".bat"
 
-// 3. Directly target the confirmed emcc executable relative to the root layout context
-File emccExecutable = rootProject.layout.projectDirectory.file(".komple/installs/emscripten/upstream/emscripten/$emcc").asFile
-String absoluteEmccPath = emccExecutable.absolutePath
+String emccCmd = "$emscriptenLocation/emsdk-$emscriptenVersion/upstream/emscripten/emcc"
+if (os.toFamilyName() == 'windows') {
+    emsdkCmd += ".bat"
+    emccCmd += ".bat"
+}
 
 File outputDirectory = new File(rootDir, '/client/public/assets/wasm') //layout.buildDirectory.dir('wasm').get().asFile
 String outputJsPath = new File(outputDirectory, 'engine-module.js').absolutePath
 
 // 1. The Diagnostic Version Check Task
 tasks.register('checkEmscriptenVersion', Exec) {
-    def kompleExtension = rootProject.extensions.findByName('komple')
-    def emccPath = kompleExtension?.tools?.emscripten
+    dependsOn("emscriptenActivate")
 
     doFirst {
         println "========================================="
         println "   EMSCRIPTEN COMPILER DIAGNOSTICS"
         println "========================================="
-        println "Gradle toolchain path: ${emccPath}"
+        println "Gradle toolchain path: ${emccCmd}"
         println "========================================="
     }
 
     println(commandLine(
-            absoluteEmccPath,
+            emccCmd,
             "--version"
     ).toString())
 }
@@ -82,10 +68,10 @@ tasks.register('compileWasm', Exec) {
     outputs.dir(outputDirectory)
 
     // Ensure the plugin installation executes before this compilation runs
-    dependsOn rootProject.tasks.named('emscriptenInstall')
+    dependsOn('emscriptenActivate')
 
-    // Inject the toolchain environment
-    environment finalEnvMap
+//    // Inject the toolchain environment
+//    environment finalEnvMap
 
     doFirst {
         // Ensure the output directory exists before compiling
@@ -116,10 +102,52 @@ tasks.register('compileWasm', Exec) {
     // 3. Combine everything dynamically into the command line
     // Construct the list smoothly without '+' or 'addAll' methods
     def cmd = []
-    cmd << absoluteEmccPath
+    cmd << emccCmd
     cmd.addAll(inputs.files.files*.absolutePath as Object[]) // Cast to bypass JetBrains type inspection
     cmd.addAll(emccArgs)
 
     commandLine = cmd
 }
 
+tasks.register('downloadEmscripten', Copy) {
+    mkdir("$emscriptenLocation/download")
+
+    def fileName = "$emscriptenVersion" + ".zip"
+    File f = new File("$emscriptenLocation/download/$fileName")
+    if (!f.exists()) {
+        new URI("https://github.com/emscripten-core/emsdk/archive/refs/tags/$fileName").toURL().withInputStream { i -> f.withOutputStream { it << i } }
+        from(zipTree("$emscriptenLocation/download/$fileName"))
+        into("$emscriptenLocation/")
+    }
+}
+
+tasks.register("emscriptenInstall", Exec) {
+    dependsOn('downloadEmscripten')
+    onlyIf {
+        File f = new File(emccCmd)
+        !f.exists()
+    }
+    commandLine(
+            emsdkCmd,
+            "install",
+            "latest"
+    )
+}
+
+tasks.register("emscriptenActivate", Exec) {
+    dependsOn("emscriptenInstall")
+
+    onlyIf {
+        // Emscripten is only "ready" if the config file exists
+        File configFile = new File(project.file(emsdkCmd).parentFile, ".emscripten")
+        File f = new File(emccCmd)
+
+        !f.exists() || !configFile.exists()
+    }
+
+    commandLine(
+            emsdkCmd,
+            "activate",
+            "latest"
+    )
+}
