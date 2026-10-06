@@ -19,5 +19,5 @@ tasks.register("runAppImage", Exec) {
 
     workingDir "$projectDir/dist"
 
-    executable "./synthesiser-desktop-1.0.0.AppImage"
+    executable "./synthesiser-desktop-1.0.2.AppImage"
 }

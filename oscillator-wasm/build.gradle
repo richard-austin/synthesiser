@@ -112,9 +112,11 @@ tasks.register('compileWasm', Exec) {
     // 3. Combine everything dynamically into the command line
     // Construct the list smoothly without '+' or 'addAll' methods
     def cmd = []
-    cmd.addAll(["cmd", "/c"])
-    cmd.add(emsdkEnvCmd)
-    cmd.add("&&")
+    if(os.toFamilyName() == 'windows') {
+        cmd.addAll(["cmd", "/c"])
+        cmd.add(emsdkEnvCmd)
+        cmd.add("&&")
+    }
     cmd.add(emccCmd)
     cmd.addAll(inputs.files.files*.absolutePath as Object[]) // Cast to bypass JetBrains type inspection
     cmd.addAll(emccArgs)
