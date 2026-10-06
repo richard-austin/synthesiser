@@ -158,7 +158,7 @@ void triggerNoteOn(int key, int velocity) {
 
         od->key = key;
 
-        envelope_prepare_to_start(&od->env, velocity);
+        envelope_prepare_to_start(&od->env, velocity, od->frequency);
 
         // Set oscillator and filter pitch envelope times to 0
         od->pitchEnv.t = 0.0f;
@@ -353,18 +353,18 @@ void processBlock(float **outputBuffers, int numSamples) {
                         pitch_envelope_advance_to_sustain(&od->pitchEnv);
                     if (bd_useFilterPitchEnvelope)
                         pitch_envelope_advance_to_sustain(&od->filterPitchEnv);
-                    envelope_advance_to_sustain(env, od->frequency);
+                    envelope_advance_to_sustain(env);
                     if (g_noise_output != OFF) {
-                        envelope_advance_to_sustain(&g_noise->envelopes[osc], 10000.0f);
+                        envelope_advance_to_sustain(&g_noise->envelopes[osc]);
                     }
                 } else {
                     if (bd_usePitchEnvelope)
                         pitch_envelope_advance_to_release_level(&od->pitchEnv);
                     if (bd_useFilterPitchEnvelope)
                         pitch_envelope_advance_to_release_level(&od->filterPitchEnv);
-                    envelope_advance_to_zero(env, od->frequency);
+                    envelope_advance_to_zero(env);
                     if (g_noise_output != OFF) {
-                        envelope_advance_to_zero(&g_noise->envelopes[osc], 10000.0f);
+                        envelope_advance_to_zero(&g_noise->envelopes[osc]);
                     }
                 }
 
@@ -427,7 +427,7 @@ void processBlock(float **outputBuffers, int numSamples) {
                         band = bd->numBands - 1;
 
                     signal = render_sample_from_phase(b, band, currentPhase) * matrixA;
-                    envelope_detect_zero_crossing(env, signal);
+                    envelope_detect_signal_near_zero(env, signal);
                 }
                 float modSignal = (bd_modOutput == 2) ? (signal * ampEnvelope) : signal;
 
@@ -438,7 +438,7 @@ void processBlock(float **outputBuffers, int numSamples) {
                 }
                 if (g_noise_output != OFF) {
                     noiseSample = noise(g_noise, osc);
-                    envelope_detect_zero_crossing(&g_noise->envelopes[osc], noiseSample);
+                    envelope_detect_signal_near_zero(&g_noise->envelopes[osc], noiseSample);
                 }
 
                 float finalOutputSample = signal * bd->oscillatorLevel * ampEnvelope;

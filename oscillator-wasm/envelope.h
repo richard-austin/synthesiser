@@ -8,19 +8,19 @@ void envelope_data_init(EnvelopeData *ed);
 // --- Envelope Phase Traversal Mathematics ---
 void envelope_init(Envelope *env, EnvelopeData *data);
 
-void envelope_prepare_to_start(Envelope *env, int velocity);
+void envelope_prepare_to_start(Envelope *env, int velocity, float frequency);
 
 void envelope_set_timing(Envelope *env, float value, float time);
 
-void envelope_detect_zero_crossing(Envelope *env, float signal);
+void envelope_detect_signal_near_zero(Envelope *env, float signal);
 
 float envelope_ramp(Envelope *env);
 
 void envelope_sustain_time(Envelope *env);
 
-void envelope_advance_to_sustain(Envelope *env, float frequency);
+void envelope_advance_to_sustain(Envelope *env);
 
-void envelope_advance_to_zero(Envelope *env, float frequency);
+void envelope_advance_to_zero(Envelope *env);
 
 
 #endif

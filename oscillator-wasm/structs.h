@@ -56,6 +56,8 @@ typedef struct {
     envelopePhase phase;
     bool inUse;
     bool keyDown;
+    float maxSamplesBeforeTrigger;
+    int samplesAfterPhaseChange;
 } Envelope;
 
 typedef struct {

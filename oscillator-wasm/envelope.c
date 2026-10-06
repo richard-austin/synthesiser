@@ -27,9 +27,11 @@ void envelope_init(Envelope *env, EnvelopeData *data) {
     env->keyDown = false;
 }
 
-void envelope_prepare_to_start(Envelope *env, int velocity) {
+void envelope_prepare_to_start(Envelope *env, int velocity, float frequency) {
     env->t = 0.0f; // Clear layout ramp clock timers
     env->envelopeData->velocity = velocity;
+    env->maxSamplesBeforeTrigger = g_sampleRate / frequency / 2.0f;
+    env->samplesAfterPhaseChange = 0;
     env->keyDown = true;
     env->inUse = true;
 }
@@ -74,17 +76,21 @@ void envelope_sustain_time(Envelope *env) {
     }
 }
 
-void envelope_detect_zero_crossing(Envelope *env, float signal) {
-    if (env->phase == ENV_PENDING_ATTACK && fabs(signal) < 0.005f) {
+void envelope_detect_signal_near_zero(Envelope *env, float signal) {
+    ++env->samplesAfterPhaseChange;
+    if (env->phase == ENV_PENDING_ATTACK && (fabs(signal) < 0.005f || env->samplesAfterPhaseChange >= env->maxSamplesBeforeTrigger)) {
+        env->samplesAfterPhaseChange = 0;
         env->phase = ENV_ATTACK;
-    } else if (env->phase == ENV_PENDING_DECAY && fabs(signal) < 0.005f) {
+    } else if (env->phase == ENV_PENDING_DECAY && (fabs(signal) < 0.005f || env->samplesAfterPhaseChange >= env->maxSamplesBeforeTrigger)) {
+        env->samplesAfterPhaseChange = 0;
         env->phase = ENV_DECAY;
-    } else if (env->phase == ENV_PENDING_RELEASE && fabs(signal) < 0.005f) {
+    } else if (env->phase == ENV_PENDING_RELEASE && (fabs(signal) < 0.005f || env->samplesAfterPhaseChange >= env->maxSamplesBeforeTrigger)) {
+        env->samplesAfterPhaseChange = 0;
         env->phase = ENV_RELEASE;
     }
 }
 
-void envelope_advance_to_sustain(Envelope *env, float frequency) {
+void envelope_advance_to_sustain(Envelope *env) {
     float vel = (float) env->envelopeData->velocity / 127.0f;
     EnvelopeData *envData = env->envelopeData;
     if (env->keyDown) {
@@ -129,7 +135,7 @@ void envelope_advance_to_sustain(Envelope *env, float frequency) {
     }
 }
 
-void envelope_advance_to_zero(Envelope *env, float frequency) {
+void envelope_advance_to_zero(Envelope *env) {
     EnvelopeData *envData = env->envelopeData;
     if (!env->keyDown) {
         if (!envData->legato) {
