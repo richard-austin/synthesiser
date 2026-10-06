@@ -1,7 +1,9 @@
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
+import com.pswidersk.gradle.python.uv.*
 
 plugins {
     id "com.github.node-gradle.node" version "7.1.0"
+    id "com.pswidersk.python-uv-plugin" version "0.4.29"
 }
 
 node {
@@ -18,17 +20,16 @@ repositories {
 }
 
 def emscriptenLocation = "$rootDir/.emscripten"
-def emscriptenVersion = "5.0.7"
+def emscriptenVersion = "6.0.11"
 String emsdkCmd = "$emscriptenLocation/emsdk-$emscriptenVersion/emsdk"
-
+String emsdkEnvCmd = "$emscriptenLocation/emsdk-$emscriptenVersion/emsdk_env"
 OperatingSystem os = DefaultNativePlatform.currentOperatingSystem
-if (os.toFamilyName() == 'windows')
-    emsdkCmd += ".bat"
 
 String emccCmd = "$emscriptenLocation/emsdk-$emscriptenVersion/upstream/emscripten/emcc"
 if (os.toFamilyName() == 'windows') {
     emsdkCmd += ".bat"
-    emccCmd += ".bat"
+    emccCmd += ".exe"
+    emsdkEnvCmd += ".bat"
 }
 
 File outputDirectory = new File(rootDir, '/client/public/assets/wasm') //layout.buildDirectory.dir('wasm').get().asFile
@@ -37,7 +38,6 @@ String outputJsPath = new File(outputDirectory, 'engine-module.js').absolutePath
 // 1. The Diagnostic Version Check Task
 tasks.register('checkEmscriptenVersion', Exec) {
     dependsOn("emscriptenActivate")
-
     doFirst {
         println "========================================="
         println "   EMSCRIPTEN COMPILER DIAGNOSTICS"
@@ -46,10 +46,22 @@ tasks.register('checkEmscriptenVersion', Exec) {
         println "========================================="
     }
 
-    println(commandLine(
-            emccCmd,
-            "--version"
-    ).toString())
+    if(os.toFamilyName() == "windows") {
+        def emccPath = file(emccCmd).absolutePath
+        environment("EMSDK_QUIET", 1)
+        println(commandLine(
+                'cmd',
+                '/c',
+                "$emsdkEnvCmd && $emccPath",
+                "--version"
+        ).toString())
+
+    } else {
+        println(commandLine(
+                emccCmd,
+                "--version"
+        ).toString())
+    }
 }
 
 tasks.register('clean', Delete) {
@@ -69,9 +81,7 @@ tasks.register('compileWasm', Exec) {
 
     // Ensure the plugin installation executes before this compilation runs
     dependsOn('emscriptenActivate')
-
-//    // Inject the toolchain environment
-//    environment finalEnvMap
+    environment("EMSDK_QUIET", 1) // Prevent emsdkEnvCmd from listing all the environment variables
 
     doFirst {
         // Ensure the output directory exists before compiling
@@ -102,7 +112,12 @@ tasks.register('compileWasm', Exec) {
     // 3. Combine everything dynamically into the command line
     // Construct the list smoothly without '+' or 'addAll' methods
     def cmd = []
-    cmd << emccCmd
+    if(os.toFamilyName() == 'windows') {
+        cmd.addAll(["cmd", "/c"])
+        cmd.add(emsdkEnvCmd)
+        cmd.add("&&")
+    }
+    cmd.add(emccCmd)
     cmd.addAll(inputs.files.files*.absolutePath as Object[]) // Cast to bypass JetBrains type inspection
     cmd.addAll(emccArgs)
 
@@ -121,18 +136,26 @@ tasks.register('downloadEmscripten', Copy) {
     }
 }
 
-tasks.register("emscriptenInstall", Exec) {
+//noinspection GroovyAssignabilityCheck
+tasks.register("emscriptenInstall", UvTask) {
     dependsOn('downloadEmscripten')
+
+    workingDir "$rootDir/.emscripten/emsdk-$emscriptenVersion"
     onlyIf {
         File f = new File(emccCmd)
         !f.exists()
     }
-    commandLine(
-            emsdkCmd,
-            "install",
-            "latest"
-    )
-}
+
+    // Python ios required for installing emscripten
+    // 'uv run' will seamlessly download, isolate, and execute using a portable Python 3 runtime
+    // without requiring it on your host system.
+    args = [
+            'run',
+            '--no-project',
+            '--python', '3.14',
+            'emsdk.py', 'install', 'latest'
+    ]
+ }
 
 tasks.register("emscriptenActivate", Exec) {
     dependsOn("emscriptenInstall")
@@ -145,6 +168,7 @@ tasks.register("emscriptenActivate", Exec) {
         !f.exists() || !configFile.exists()
     }
 
+    // Python not needed here, we can use a normal Exec task
     commandLine(
             emsdkCmd,
             "activate",
