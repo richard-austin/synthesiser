@@ -5,19 +5,25 @@
  * Learn more about Gradle by exploring our Samples at https://docs.gradle.org/9.6.1/samples
  */
 
+tasks.register('setVersion', Exec) {
+    group='build'
+    executable "npm"
+    args = ["version", providers.gradleProperty('synthesiserVersion').get(), "-allow-same-version"]
+}
+
 tasks.register('buildLinux', Exec) {
     group='build'
-    dependsOn ":server:bootJar"
+    dependsOn ":server:bootJar", ":electron-desktop:setVersion"
 
     workingDir "$projectDir"
-
     executable "npm"
     args = ["run", "build:linux"]
 }
+
 tasks.register("runAppImage", Exec) {
     group='application'
 
     workingDir "$projectDir/dist"
 
-    executable "./synthesiser-desktop-1.0.2.AppImage"
+    executable "./synthesiser-desktop-${providers.gradleProperty('synthesiserVersion').get()}.AppImage"
 }

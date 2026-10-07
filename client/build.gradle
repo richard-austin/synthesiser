@@ -67,6 +67,10 @@ tasks.register('buildClientWatch', NpmTask) {
 tasks.register("copyToServerResources", Copy) {
   dependsOn(['buildClient'])
   delete file("${rootDir}/server/src/main/resources/static")
+  doFirst {
+    File version = new File("${rootDir}/server/src/main/resources/static/version.txt")
+    version.write(synthesiserVersion)
+  }
   from file("${projectDir}/dist/synthesiser/browser")
   into file("${rootDir}/server/src/main/resources/static")
 }

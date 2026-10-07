@@ -291,11 +291,11 @@ void processBlock(float **outputBuffers, int numSamples) {
 
     const enum noiseOutput g_noise_output = g_noise->output;
 
-    float *noiseOutLeft = outputBuffers[g_numberOfBanks * 4];
-    float *noiseOutRight = outputBuffers[g_numberOfBanks * 4 + 1];
+    float *noiseOutLeft = outputBuffers[g_numberOfBanks * g_numberOfBanks];
+    float *noiseOutRight = outputBuffers[g_numberOfBanks * g_numberOfBanks + 1];
 
-    float *phaserOutLeft = outputBuffers[g_numberOfBanks * 4 + 2];
-    float *phaserOutRight = outputBuffers[g_numberOfBanks * 4 + 2 + 1];
+    float *phaserOutLeft = outputBuffers[g_numberOfBanks * g_numberOfBanks + 2];
+    float *phaserOutRight = outputBuffers[g_numberOfBanks * g_numberOfBanks + 2 + 1];
 
 
     // 4. MAIN RENDERING ENGINE

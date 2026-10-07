@@ -39,4 +39,8 @@ export class RestfulApiService {
     const params = {oldName: oldName, newName: newName};
     return this.http.post<{}>('syn/renameConfigFile', JSON.stringify(params), this.httpJsonOptions);
   }
+
+  getVersion(): Observable<{version: string}> {
+    return this.http.post<{version: string}>('/syn/getVersion', '', this.httpJsonOptions);
+  }
 }

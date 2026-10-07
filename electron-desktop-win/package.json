@@ -1,6 +1,6 @@
 {
   "name": "synthesiser-desktop-win",
-  "version": "1.0.2",
+  "version": "1.0.579",
   "description": "Windows Desktop Wrapper for Synthesiser",
   "main": "main.js",
   "scripts": {
@@ -33,7 +33,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "requestedExecutionLevel": "asInvoker",
@@ -41,12 +43,16 @@
         {
           "from": "jre-win",
           "to": "resources/jre-win",
-          "filter": ["**/*"]
+          "filter": [
+            "**/*"
+          ]
         },
         {
           "from": "server",
           "to": "resources/server",
-          "filter": ["**/*"]
+          "filter": [
+            "**/*"
+          ]
         }
       ]
     },

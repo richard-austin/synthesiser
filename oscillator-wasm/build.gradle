@@ -3,7 +3,7 @@ import com.pswidersk.gradle.python.uv.*
 
 plugins {
     id "com.github.node-gradle.node" version "7.1.0"
-    id "com.pswidersk.python-uv-plugin" version "0.4.29"
+    id "com.pswidersk.python-uv-plugin" version "0.4.30"
 }
 
 node {
