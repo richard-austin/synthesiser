@@ -1,6 +1,6 @@
 {
   "name": "synthesiser-desktop",
-  "version": "1.0.2",
+  "version": "1.0.1",
   "description": "",
   "main": "main.js",
   "scripts": {
@@ -37,7 +37,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "requestedExecutionLevel": "asInvoker"
