@@ -13,14 +13,9 @@ tasks.register('setVersion', Exec) {
 
 tasks.register('buildWindows', Exec) {
     group='build'
-    dependsOn ":server:bootJar", "electron-desktop-win:setVersion"
+    dependsOn ":server:bootJar", ":electron-desktop-win:setVersion"
 
     workingDir "$projectDir"
-
-    doFirst {
-        executable "npm"
-        args = ["version", providers.gradleProperty('synthesiserVersion').get(), "-allow-same-version"]
-    }
 
     executable "npm"
     args = ["run", "build:win"]
