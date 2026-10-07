@@ -131,12 +131,14 @@ tasks.register('downloadEmscripten', Copy) {
     File f = new File("$emscriptenLocation/download/$fileName")
     if (!f.exists()) {
         new URI("https://github.com/emscripten-core/emsdk/archive/refs/tags/$fileName").toURL().withInputStream { i -> f.withOutputStream { it << i } }
+    }
+    def fEmSdkCmd = new File(emsdkCmd)
+    if(!fEmSdkCmd.exists()) {
         from(zipTree("$emscriptenLocation/download/$fileName"))
         into("$emscriptenLocation/")
     }
 }
 
-//noinspection GroovyAssignabilityCheck
 tasks.register("emscriptenInstall", UvTask) {
     dependsOn('downloadEmscripten')
 
