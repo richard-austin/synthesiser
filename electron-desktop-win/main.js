@@ -89,12 +89,35 @@ app.whenReady().then(() => {
     createWindow();
 });
 
+// Ensure the Spring Boot backend cleanly terminates when Electron quits
+function killBackend() {
+    if (springBootProcess) {
+        console.log('[Electron Shell] Shutting down Spring Boot server...');
+
+        if (process.platform === 'win32') {
+            // Windows: /F forces termination, /T kills the process and child processes
+            // Note: Executing via exec or ensuring correct array arguments for spawn
+            spawn('taskkill', ['/F', '/T', '/PID', springBootProcess.pid.toString()], {
+                detached: true,
+                stdio: 'ignore'
+            });
+        } else {
+            // Unix/macOS: Send SIGTERM to the process group if detached, or directly
+            springBootProcess.kill('SIGTERM');
+        }
+
+        springBootProcess = null;
+    }
+}
+
+// Triggered when Electron begins closing its windows
+app.on('before-quit', () => {
+    killBackend();
+});
+
+// Your existing window management logic
 app.on('window-all-closed', () => {
-    if (springBootProcess && springBootProcess.pid) {
-        exec(`taskkill /pid ${springBootProcess.pid} /f /t`, () => {
-            app.quit();
-        });
-    } else {
+    if (process.platform !== 'darwin') {
         app.quit();
     }
 });
