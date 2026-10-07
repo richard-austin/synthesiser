@@ -41,7 +41,6 @@ typedef struct {
     float release;
     bool legato;
     bool velocitySensitive;
-    int velocity;
     float justAudible;  // Just audible level to start attack phase at, so that slow attacks don't have a silent period at the the start
 } EnvelopeData;
 
@@ -56,6 +55,7 @@ typedef struct {
     envelopePhase phase;
     bool inUse;
     bool keyDown;
+    int velocity;
     float maxSamplesBeforeTrigger;
     int samplesAfterPhaseChange;
 } Envelope;

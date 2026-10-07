@@ -8,7 +8,6 @@ void envelope_data_init(EnvelopeData *ed) {
     ed->sustainLevel = 0.0f;
     ed->release = 0.5f;
     ed->legato = false;
-    ed->velocity = 0x7f;
     ed->velocitySensitive = false;
     ed->justAudible = 0.003f;
 }
@@ -25,11 +24,12 @@ void envelope_init(Envelope *env, EnvelopeData *data) {
     env->phase = ENV_INACTIVE;
     env->inUse = false;
     env->keyDown = false;
+    env->velocity = 0x7f;
 }
 
 void envelope_prepare_to_start(Envelope *env, int velocity, float frequency) {
     env->t = 0.0f; // Clear layout ramp clock timers
-    env->envelopeData->velocity = velocity;
+    env->velocity = velocity;
     env->maxSamplesBeforeTrigger = g_sampleRate / frequency / 2.0f;
     env->samplesAfterPhaseChange = 0;
     env->keyDown = true;
@@ -91,7 +91,7 @@ void envelope_detect_signal_near_zero(Envelope *env, float signal) {
 }
 
 void envelope_advance_to_sustain(Envelope *env) {
-    float vel = (float) env->envelopeData->velocity / 127.0f;
+    float vel = (float) env->velocity / 127.0f;
     EnvelopeData *envData = env->envelopeData;
     if (env->keyDown) {
         float attackTarget = envData->velocitySensitive ? vel : 1.0f;

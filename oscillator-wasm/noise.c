@@ -30,7 +30,7 @@ void noise_init_envelope(Noise *n, int oscIndex, float velocity) {
     Envelope *envelope = &n->envelopes[oscIndex];
 
     envelope->t = 0.0f;
-    n->envelopeData.velocity = velocity;
+    envelope->velocity = velocity;
     envelope->keyDown = true;
     envelope->inUse = true;
     envelope->phase = ENV_INACTIVE;;
