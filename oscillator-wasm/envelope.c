@@ -30,7 +30,7 @@ void envelope_init(Envelope *env, EnvelopeData *data) {
 void envelope_prepare_to_start(Envelope *env, int velocity, float frequency) {
     env->t = 0.0f; // Clear layout ramp clock timers
     env->velocity = velocity;
-    env->maxSamplesBeforeTrigger = g_sampleRate / frequency / 2.0f;
+    env->maxSamplesBeforeTrigger = 2*g_sampleRate / frequency;
     env->samplesAfterPhaseChange = 0;
     env->keyDown = true;
     env->inUse = true;
@@ -76,15 +76,27 @@ void envelope_sustain_time(Envelope *env) {
     }
 }
 
+const static float smallSigValue = 0.02f;  // Small enough waveform value to start envelope on without clicks
 void envelope_detect_signal_near_zero(Envelope *env, float signal) {
-    ++env->samplesAfterPhaseChange;
-    if (env->phase == ENV_PENDING_ATTACK && (fabs(signal) < 0.005f || env->samplesAfterPhaseChange >= env->maxSamplesBeforeTrigger)) {
+    if (env->phase == ENV_PENDING_ATTACK || env->phase == ENV_PENDING_DECAY || env->phase == ENV_PENDING_RELEASE)
+        ++env->samplesAfterPhaseChange;
+
+    if (env->phase == ENV_PENDING_ATTACK && (fabs(signal) < smallSigValue || env->samplesAfterPhaseChange >= env->maxSamplesBeforeTrigger)) {
+        // if (fabs(signal) > smallSigValue) {
+        //     emscripten_console_logf("To attack %f samplesAfterPhaseChange = %d maxSamplesBeforeTrigger = %f", signal, env->samplesAfterPhaseChange, env->maxSamplesBeforeTrigger);
+        // }
         env->samplesAfterPhaseChange = 0;
         env->phase = ENV_ATTACK;
-    } else if (env->phase == ENV_PENDING_DECAY && (fabs(signal) < 0.005f || env->samplesAfterPhaseChange >= env->maxSamplesBeforeTrigger)) {
+    } else if (env->phase == ENV_PENDING_DECAY && (fabs(signal) < smallSigValue || env->samplesAfterPhaseChange >= env->maxSamplesBeforeTrigger)) {
+        // if (fabs(signal) > smallSigValue) {
+        //     emscripten_console_logf("To decay %f samplesAfterPhaseChange = %d maxSamplesBeforeTrigger = %f", signal, env->samplesAfterPhaseChange, env->maxSamplesBeforeTrigger);
+        // }
         env->samplesAfterPhaseChange = 0;
         env->phase = ENV_DECAY;
-    } else if (env->phase == ENV_PENDING_RELEASE && (fabs(signal) < 0.005f || env->samplesAfterPhaseChange >= env->maxSamplesBeforeTrigger)) {
+    } else if (env->phase == ENV_PENDING_RELEASE && (fabs(signal) < smallSigValue || env->samplesAfterPhaseChange >= env->maxSamplesBeforeTrigger)) {
+        // if (fabs(signal) > smallSigValue) {
+        //     emscripten_console_logf("To release %f samplesAfterPhaseChange = %d maxSamplesBeforeTrigger = %f", signal, env->samplesAfterPhaseChange, env->maxSamplesBeforeTrigger);
+        // }
         env->samplesAfterPhaseChange = 0;
         env->phase = ENV_RELEASE;
     }
