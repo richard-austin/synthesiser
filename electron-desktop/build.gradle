@@ -4,6 +4,14 @@
  * This is a general purpose Gradle build.
  * Learn more about Gradle by exploring our Samples at https://docs.gradle.org/9.6.1/samples
  */
+plugins {
+    id "com.github.node-gradle.node" version "7.1.0"
+}
+
+node {
+    version = '24.21.0'
+    download = true
+}
 
 tasks.register('setVersion', Exec) {
     group='build'
@@ -13,7 +21,7 @@ tasks.register('setVersion', Exec) {
 
 tasks.register('buildLinux', Exec) {
     group='build'
-    dependsOn ":server:bootJar", ":electron-desktop:setVersion"
+    dependsOn ":server:bootJar", ":electron-desktop:setVersion", "npmInstall"
 
     workingDir "$projectDir"
     executable "npm"
