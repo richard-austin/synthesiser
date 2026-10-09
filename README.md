@@ -38,7 +38,6 @@ The synthesiser may be either run in a browser, or built as an application for L
 ## Running in the development environment
 1. Download from GitHub (git clone git@github.com:richard-austin/synthesiser.git) if not already done.
 2. cd to project directory
-3. cd to client and type npm install (only needed if not already run).
 4. cd back to root project directory and type ./gradlew client:bootRun
 5. Open another command line terminal and cd to the root project directory.
 6. Type ./gradlew server:bootRun
@@ -49,11 +48,6 @@ The synthesiser may be either run in a browser, or built as an application for L
 
 ## Building the project for installation on Linux (Debian/Ubuntu) or Windows
 1. Download from GitHub (git clone git@github.com:richard-austin/synthesiser.git) if not already done.
-2. cd to project directory
-3. cd to client and type npm install (only needed if not already built).
-4. cd to electron-desktop and type npm install (on Linux dev environment only), (only needed if not already built).
-5. cd to electron-desktop-win and type npm install. (on Windows dev environment only)  (only needed if not already built).
-on initial set up or if any node modules are changed/added/updated.)
 ### To build a Windows installer (amd_64)
 1. *This must be done from a Windows environment*
 2. cd to the project directory 
