@@ -24,7 +24,7 @@ tasks.register('setVersion', NpmTask) {
 //noinspection GroovyAssignabilityCheck
 tasks.register('buildWindows', NpmTask) {
     group='build'
-    dependsOn ":server:bootJar", ":electron-desktop-win:setVersion"
+    dependsOn ":server:bootJar", ":electron-desktop-win:setVersion", "npmInstall"
 
  //   workingDir = projectDir
 
