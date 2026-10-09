@@ -34,23 +34,36 @@ The synthesiser may be either run in a browser, or built as an application for L
 ![The Complete synthesiser control panel](README.images/synth.png)
 
 *The Complete synthesiser control panel*
-## Building the project for installation on Linux (Debian/Ubuntu) or Windows
 
-1. Download from GitHub (git clone git@github.com:richard-austin/synthesiser.git)
+## Running in the development environment
+1. Download from GitHub (git clone git@github.com:richard-austin/synthesiser.git) if not already done.
 2. cd to project directory
-3. cd to client and type npm install
-4. cd to electron-desktop and type npm install (on Linux dev environment only)
-5. cd to electron-desktop-win and type npm install. (on Windows dev environment only) (these npm install steps only need to be done
+3. cd to client and type npm install (only needed if not already run).
+4. cd back to root project directory and type ./gradlew client:bootRun
+5. Open another command line terminal and cd to the root project directory.
+6. Type ./gradlew server:bootRun
+7. Start a browser (preferably a chromium based browser as Firefox does not render the user interface perfectly).
+8. Type localhost:4200 in the url box to start the application.
+
+*This will work on Linux or Windows, but you will need to use .\gradlew on Windows*
+
+## Building the project for installation on Linux (Debian/Ubuntu) or Windows
+1. Download from GitHub (git clone git@github.com:richard-austin/synthesiser.git) if not already done.
+2. cd to project directory
+3. cd to client and type npm install (only needed if not already built).
+4. cd to electron-desktop and type npm install (on Linux dev environment only), (only needed if not already built).
+5. cd to electron-desktop-win and type npm install. (on Windows dev environment only)  (only needed if not already built).
 on initial set up or if any node modules are changed/added/updated.)
 ### To build a Windows installer (amd_64)
 1. *This must be done from a Windows environment*
 2. cd to the project directory 
-3. Type ./gradlew electron-desktop-win:buildWindows
+3. Type .\gradlew electron-desktop-win:buildWindows
 #### The installer file will be at projectDir/electron-desktop-win/dist with a name similar to synthesiser-desktop-win Setup 1.0.0.exe
 ### To build a Debian deb installation file (amd_64)
 1. *This must be done from a Linux environment.*
 2. cd to project directory
 3. Type ./gradlew electron-desktop:buildLinux
+
 #### The installer file will be at projectDir/electron-desktop/dist with a name similar to synthesiser-desktop_1.0.0.deb
 A Linux build will also produce an AppImage file which is run directly as an executable and should run on most (amd_64) Linux platforms.
 The AppImage file will be named similarly to **synthesiser-desktop-1.0.0.AppImage** and is at the same location as the .deb file.
