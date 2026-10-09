@@ -5,18 +5,28 @@
  * Learn more about Gradle by exploring our Samples at https://docs.gradle.org/9.6.1/samples
  */
 
-tasks.register('setVersion', Exec) {
-    group='build'
-    executable "npm"
-    args = ["version", providers.gradleProperty('synthesiserVersion').get(), "-allow-same-version"]
+import com.github.gradle.node.npm.task.NpmTask
+
+plugins {
+    id "com.github.node-gradle.node" version "7.1.0"
 }
 
-tasks.register('buildWindows', Exec) {
+node {
+    version = '24.21.0'
+    download = true
+}
+
+//noinspection GroovyAssignabilityCheck
+tasks.register('setVersion', NpmTask) {
+    group='build'
+    args = ["version", providers.gradleProperty('synthesiserVersion').get(), "-allow-same-version"]
+}
+//noinspection GroovyAssignabilityCheck
+tasks.register('buildWindows', NpmTask) {
     group='build'
     dependsOn ":server:bootJar", ":electron-desktop-win:setVersion"
 
-    workingDir "$projectDir"
+ //   workingDir = projectDir
 
-    executable "npm"
     args = ["run", "build:win"]
 }
