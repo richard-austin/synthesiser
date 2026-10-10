@@ -36,6 +36,8 @@ The synthesiser may be either run in a browser, or built as an application for L
 *The Complete synthesiser control panel*
 
 ## Running in the development environment
+
+*Note that to run in development or build the project, you should have Java 21 or later installed on your system*
 1. Download from GitHub (git clone git@github.com:richard-austin/synthesiser.git) if not already done.
 2. cd to project directory
 4. cd back to root project directory and type ./gradlew client:bootRun
