@@ -1,11 +1,17 @@
 pluginManagement {
     repositories {
-        mavenLocal()     // Looks here first for your local plugin
-        gradlePluginPortal() // Default portal for public plugins
+        mavenLocal()     
+        gradlePluginPortal() 
         mavenCentral()
     }
+}
+
+plugins {
+     // Upgrade this to 1.0.0 to fix the Gradle compatibility crash
+     id "org.gradle.toolchains.foojay-resolver-convention" version "1.0.0"
 }
 
 rootProject.name = 'synthesiser'
 
 include 'client', 'server', 'electron-desktop', 'electron-desktop-win', 'oscillator-wasm'
+
