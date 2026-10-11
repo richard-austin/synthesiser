@@ -39,12 +39,11 @@ The synthesiser may be either run in a browser, or built as an application for L
 
 *Note that to run in development or build the project, you should have Java 21 or later installed on your system*
 1. Download from GitHub (git clone git@github.com:richard-austin/synthesiser.git) if not already done.
-2. cd to project directory
-4. cd back to root project directory and type ./gradlew client:bootRun
-5. Open another command line terminal and cd to the root project directory.
-6. Type ./gradlew server:bootRun
-7. Start a browser (preferably a chromium based browser as Firefox does not render the user interface perfectly).
-8. Type localhost:4200 in the url box to start the application.
+2. cd to root project directory and type ./gradlew client:bootRun
+3. Open another command line terminal and cd to the root project directory.
+4. Type ./gradlew server:bootRun
+5. Start a browser (preferably a chromium based browser as Firefox does not render the user interface perfectly).
+6. Type localhost:4200 in the url box to start the application.
 
 *This will work on Linux or Windows, but you will need to use .\gradlew on Windows*
 
