@@ -56,8 +56,8 @@ typedef struct {
     bool inUse;
     bool keyDown;
     int velocity;
-    float maxSamplesBeforeTrigger;
-    int samplesAfterPhaseChange;
+    int lastSignum;
+    bool signumSet;
 } Envelope;
 
 typedef struct {
