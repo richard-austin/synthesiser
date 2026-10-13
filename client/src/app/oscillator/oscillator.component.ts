@@ -75,6 +75,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   sustain: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('sustain');
   release: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('release');
   envelopeSignal!: WritableSignal<ADSRValues>;
+  envelopeGraphicsEnabled = signal<boolean>(false);
 
   readonly freqAttack = viewChild.required<LevelControlComponent>('freqAttack');
   readonly freqAttackLevel = viewChild.required<LevelControlComponent>('freqAttackLevel');
@@ -107,9 +108,11 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   cd: ChangeDetectorRef = inject(ChangeDetectorRef);
 
   async start(audioCtx: AudioContext, settings: OscillatorSettings | null): Promise<void> {
+    this.envelopeGraphicsEnabled.set(false);  // Disable envelope graphics while setting up values
     this.audioCtx = audioCtx;
    // this.wasmBinary = wasmBinary;
     await this.applySettings(settings);
+    timer(20).subscribe(() => this.envelopeGraphicsEnabled.set(true));
   }
 
   async applySettings(settings: OscillatorSettings | null) {

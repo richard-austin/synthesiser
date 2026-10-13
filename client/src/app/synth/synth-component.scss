@@ -11,27 +11,6 @@ div.analyser {
   }
 }
 
-@mixin scrollable-window {
-  height: 979px;
-  overflow: hidden;
-  > div {
-    width: 200px;
-    top: 930px;
-    left: 300px;
-    position: absolute;
-  }
-}
-
-div.oscillator-window {
-  min-width: 591.11px;
-  @include scrollable-window();
-}
-
-div.filter-window {
-  min-width: 525.51px;
-  @include scrollable-window();
-}
-
 div.reverb-row {
   display: flex;
   flex-direction: row;

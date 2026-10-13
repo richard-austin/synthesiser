@@ -1,4 +1,4 @@
-<div #oscPanel class="group-container metallic-button">
+<div #oscPanel style="overflow: visible" class="group-container metallic-button">
   <h1>Oscillators {{ params().settingsId }}</h1>
   <div class="group">
     <div class="column">
@@ -146,7 +146,7 @@
                            [factor]="12"
                            (setLevel)="setReleaseTime($event)"></app-level-control>
         @if(proxySettings) {
-          <app-envelope-graph-component [envelope]="envelopeSignal" [pitchEnvelope]="proxySettings.freqBend"></app-envelope-graph-component>
+          <app-envelope-graph-component [enabled]="envelopeGraphicsEnabled()" [envelope]="envelopeSignal" [pitchEnvelope]="proxySettings.freqBend"></app-envelope-graph-component>
         }
         <h4>Legato</h4>
         <form #legatoOnOffForm>

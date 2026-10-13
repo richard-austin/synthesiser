@@ -1,1 +1,13 @@
-<p style="display: none">envelope-graph-component works!</p>
+<div class="display" >
+  @if (showGraph()) {
+    <div #configEditor
+         style="background-color: black"
+         [animate.enter]="'fade-in'"
+         [animate.leave]="'fade-out'">
+      <canvas #canvas width="500" height="300"></canvas>
+      <div class="graph-content">
+        Graph Metadata & Interactive UI
+      </div>
+    </div>
+  }
+</div>
