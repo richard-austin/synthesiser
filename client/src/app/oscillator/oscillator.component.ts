@@ -5,7 +5,7 @@ import {
   inject, input, output,
   InputSignal,
   OnDestroy,
-  OutputEmitterRef, viewChild, Signal
+  OutputEmitterRef, viewChild, Signal, signal, WritableSignal
 } from '@angular/core';
 import {OscillatorParams} from '../modules/oscillator';
 import {LevelControlComponent} from '../level-control/level-control.component';
@@ -22,6 +22,8 @@ import {ClipboardService} from './clipboard-service';
 import {FmSynthService} from '../services/fm-synth-service';
 import {WaveTables} from '../modules/wavetables';
 import {IndexedDBService} from '../services/indexed-db-service';
+import {EnvelopeGraphComponent} from '../envelope-graph/envelope-graph-component';
+import {ADSRValues} from '../util-classes/adsrvalues';
 export enum envelopePhase {inactive, attack, decay, sustain, release, retrigger, legato }
 export enum pitchEnvelopePhase {inactive, attack, attackLevel, decay, sustainLevel, release, releaseLevel, retrigger}
 
@@ -39,7 +41,8 @@ export type PortamentoType =
 @Component({
   selector: 'app-oscillators',
   imports: [
-    LevelControlComponent
+    LevelControlComponent,
+    EnvelopeGraphComponent
   ],
   templateUrl: './oscillator.component.html',
   styleUrl: './oscillator.component.scss',
@@ -49,7 +52,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   protected tuningDivisions = 6;
   private audioCtx!: AudioContext;
  // private wasmBinary!: ArrayBuffer;
-  private proxySettings!: OscillatorSettings;
+  protected proxySettings!: OscillatorSettings;
 
   filters: InputSignal<FilterComponent> = input.required<FilterComponent>();
   ringMod: InputSignal<RingModulatorComponent> = input.required<RingModulatorComponent>();
@@ -71,7 +74,8 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   decay: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('decay');
   sustain: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('sustain');
   release: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('release');
-
+  envelopeSignal!: WritableSignal<ADSRValues>;
+  envelopeGraphicsEnabled = signal<boolean>(false);
 
   readonly freqAttack = viewChild.required<LevelControlComponent>('freqAttack');
   readonly freqAttackLevel = viewChild.required<LevelControlComponent>('freqAttackLevel');
@@ -96,7 +100,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   readonly modLevel = viewChild.required<LevelControlComponent>('modDepth');
   readonly lfoWaveForm = viewChild.required<ElementRef<HTMLFormElement>>('modWaveForm');
 
-  readonly  indexedDBService: IndexedDBService = inject(IndexedDBService);
+  readonly indexedDBService: IndexedDBService = inject(IndexedDBService);
 
   readonly fmSynthService: FmSynthService = inject(FmSynthService);
 
@@ -104,9 +108,11 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   cd: ChangeDetectorRef = inject(ChangeDetectorRef);
 
   async start(audioCtx: AudioContext, settings: OscillatorSettings | null): Promise<void> {
+    this.envelopeGraphicsEnabled.set(false);  // Disable envelope graphics while setting up values
     this.audioCtx = audioCtx;
    // this.wasmBinary = wasmBinary;
     await this.applySettings(settings);
+    timer(20).subscribe(() => this.envelopeGraphicsEnabled.set(true));
   }
 
   async applySettings(settings: OscillatorSettings | null) {
@@ -136,6 +142,8 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.decay().setValue(this.proxySettings.adsr.decayTime);
     this.sustain().setValue(this.proxySettings.adsr.sustainLevel);
     this.release().setValue(this.proxySettings.adsr.releaseTime);
+
+    this.envelopeSignal = signal<ADSRValues>(this.proxySettings.adsr);
 
     // Set up default frequency bend envelope values
     this.freqAttack().setValue(this.proxySettings.freqBend.attackTime);
@@ -300,23 +308,31 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.fmSynthService.setLFOLevel(this.oscNumber(), this.proxySettings.modLevel * value);
   }
 
+  private setEnvelopeSig(adsr: ADSRValues) {
+    this.envelopeSignal?.set(new ADSRValues(adsr.attackTime, adsr.decayTime, adsr.sustainLevel, adsr.releaseTime, adsr.isExponential));
+  }
+
   protected setAttack($event: number) {
     this.proxySettings.adsr.attackTime = $event;
+    this.setEnvelopeSig(this.proxySettings.adsr);
     this.fmSynthService.envelope(this.oscNumber(), envelopePhase.attack, $event)
   }
 
   protected setDecayTime($event: number) {
     this.proxySettings.adsr.decayTime = $event;
+    this.setEnvelopeSig(this.proxySettings.adsr);
     this.fmSynthService.envelope(this.oscNumber(), envelopePhase.decay, $event)
   }
 
   protected setSustainLevel($event: number) {
     this.proxySettings.adsr.sustainLevel = $event;
+    this.setEnvelopeSig(this.proxySettings.adsr);
     this.fmSynthService.envelope(this.oscNumber(), envelopePhase.sustain, $event)
   }
 
   protected setReleaseTime($event: number) {
     this.proxySettings.adsr.releaseTime = $event;
+    this.setEnvelopeSig(this.proxySettings.adsr);
     this.fmSynthService.envelope(this.oscNumber(), envelopePhase.release, $event)
   }
 

@@ -1,0 +1,54 @@
+div.display {
+  position: relative;
+  overflow: visible;
+
+  /* Target the container mapped inside the @if block */
+  > div {
+    position: absolute;
+    z-index: 2;
+    border-radius: 1em;
+    filter: drop-shadow(-2px 5px 11px #000000);
+
+    width: fit-content;
+    > canvas {
+      margin: 25px;
+    }
+  }
+}
+
+/* 1. ENTER STATE: Fires immediately when Angular inserts the element into the DOM */
+.fade-in {
+  animation: fadeInTimeline 0.4s ease-out forwards;
+  pointer-events: auto; /* Activates internal link/click tracking */
+}
+
+@keyframes fadeInTimeline {
+  0% {
+    opacity: 0;
+    transform: translateY(10px); /* Smooth subtle lift effect */
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 2. LEAVE STATE: Fires when the @if block evaluates to false */
+.fade-out {
+  animation: fadeOutTimeline 0.4s ease-in forwards;
+
+  /* CRITICAL: Instantly drops layer registration so clicks pass straight
+     through to underlying parent controls the exact moment frame fading begins */
+  pointer-events: none;
+}
+
+@keyframes fadeOutTimeline {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}

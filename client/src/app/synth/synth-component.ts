@@ -1,11 +1,10 @@
 import {
-  AfterViewInit,
   Component, effect, EffectRef,
   ElementRef, inject,
   OnDestroy,
   Signal, signal, viewChild,
   viewChildren,
-  ChangeDetectorRef
+  afterNextRender, afterEveryRender
 } from '@angular/core';
 import {FilterComponent} from "../filter/filter-component";
 import {OscillatorComponent} from "../oscillator/oscillator.component";
@@ -42,7 +41,7 @@ import {SignalService} from '../services/signal-service';
   templateUrl: `./synth-component.html`,
   styleUrl: './synth-component.scss',
 })
-export class SynthComponent implements AfterViewInit, OnDestroy {
+export class SynthComponent implements OnDestroy {
   audioCtx!: AudioContext;
   public static readonly oscillatorParams: OscillatorParams[] = [
     new OscillatorParams("signal", 1),
@@ -110,7 +109,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
 
   fmSynthService: FmSynthService = inject(FmSynthService);
   private rest: RestfulApiService = inject(RestfulApiService);
-  private changeDetectorRef: ChangeDetectorRef = inject(ChangeDetectorRef);
 
   constructor() {
     this.audioCtx = new AudioContext({sampleRate: 48000, latencyHint: "interactive"});
@@ -142,6 +140,26 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
       this.selectedOscillator = value;
       if(this.proxySettings)  // Prevent error on start up
         this.proxySettings.selectedOscillator = (value + 1).toString();
+    });
+
+    afterNextRender({
+      write: async () => {
+        await this.start(null);
+        await this.requestWakeLock()
+        this.scaleToFitSmallWindow();
+        window.onresize = () => {
+          this.scaleToFitSmallWindow();
+          this.isRendered = true;
+        }
+        this.isRendered = true;
+     //   this.changeDetectorRef.detectChanges();
+      }
+    });
+
+    afterEveryRender(
+    {
+     write: () => {
+      }
     });
   }
 
@@ -609,18 +627,6 @@ export class SynthComponent implements AfterViewInit, OnDestroy {
         document.body.style.zoom = (100 * vh / requiredHeight).toString() + "%";
     } else
       document.body.style.zoom = "100%";
-  }
-
-  async ngAfterViewInit(): Promise<void> {
-    await this.start(null);
-    await this.requestWakeLock()
-    this.scaleToFitSmallWindow();
-    window.onresize = () => {
-      this.scaleToFitSmallWindow();
-      this.isRendered = true;
-    }
-   this.isRendered = true;
-    this.changeDetectorRef.detectChanges();
   }
 
   async ngOnDestroy(): Promise<void> {

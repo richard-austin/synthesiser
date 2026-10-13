@@ -30,8 +30,8 @@ void envelope_init(Envelope *env, EnvelopeData *data) {
 void envelope_prepare_to_start(Envelope *env, int velocity, float frequency) {
     env->t = 0.0f; // Clear layout ramp clock timers
     env->velocity = velocity;
-    env->maxSamplesBeforeTrigger = 2*g_sampleRate / frequency;
-    env->samplesAfterPhaseChange = 0;
+    env->lastSignum = 0;
+    env->signumSet = false;
     env->keyDown = true;
     env->inUse = true;
 }
@@ -78,27 +78,28 @@ void envelope_sustain_time(Envelope *env) {
 
 const static float smallSigValue = 0.02f;  // Small enough waveform value to start envelope on without clicks
 void envelope_detect_signal_near_zero(Envelope *env, float signal) {
-    if (env->phase == ENV_PENDING_ATTACK || env->phase == ENV_PENDING_DECAY || env->phase == ENV_PENDING_RELEASE)
-        ++env->samplesAfterPhaseChange;
-
-    if (env->phase == ENV_PENDING_ATTACK && (fabs(signal) < smallSigValue || env->samplesAfterPhaseChange >= env->maxSamplesBeforeTrigger)) {
+    const int thisSignum =  (signal > 0.0f) - (signal < 0.0f);
+       if (env->phase == ENV_PENDING_ATTACK && (fabs(signal) < smallSigValue || (env->signumSet && env->lastSignum != thisSignum))) {
         // if (fabs(signal) > smallSigValue) {
-        //     emscripten_console_logf("To attack %f samplesAfterPhaseChange = %d maxSamplesBeforeTrigger = %f", signal, env->samplesAfterPhaseChange, env->maxSamplesBeforeTrigger);
+        //     emscripten_console_logf("To attack %f lastSignum %d thisSignum %d", signal, env->lastSignum, thisSignum);
         // }
-        env->samplesAfterPhaseChange = 0;
         env->phase = ENV_ATTACK;
-    } else if (env->phase == ENV_PENDING_DECAY && (fabs(signal) < smallSigValue || env->samplesAfterPhaseChange >= env->maxSamplesBeforeTrigger)) {
+        env->signumSet = false;
+    } else if (env->phase == ENV_PENDING_DECAY && (fabs(signal) < smallSigValue || (env->signumSet && env->lastSignum != thisSignum))) {
         // if (fabs(signal) > smallSigValue) {
-        //     emscripten_console_logf("To decay %f samplesAfterPhaseChange = %d maxSamplesBeforeTrigger = %f", signal, env->samplesAfterPhaseChange, env->maxSamplesBeforeTrigger);
+        //     emscripten_console_logf("To decay %f lastSignum %d thisSignum %d", signal, env->lastSignum, thisSignum);
         // }
-        env->samplesAfterPhaseChange = 0;
         env->phase = ENV_DECAY;
-    } else if (env->phase == ENV_PENDING_RELEASE && (fabs(signal) < smallSigValue || env->samplesAfterPhaseChange >= env->maxSamplesBeforeTrigger)) {
+        env->signumSet = false;
+    } else if (env->phase == ENV_PENDING_RELEASE && (fabs(signal) < smallSigValue || (env->signumSet && env->lastSignum != thisSignum))) {
         // if (fabs(signal) > smallSigValue) {
-        //     emscripten_console_logf("To release %f samplesAfterPhaseChange = %d maxSamplesBeforeTrigger = %f", signal, env->samplesAfterPhaseChange, env->maxSamplesBeforeTrigger);
+        //     emscripten_console_logf("To release %f lastSignum %d thisSignum %d", signal, env->lastSignum, thisSignum);
         // }
-        env->samplesAfterPhaseChange = 0;
         env->phase = ENV_RELEASE;
+        env->signumSet = false;    }
+    if ((env->phase == ENV_PENDING_ATTACK || env->phase == ENV_PENDING_DECAY || env->phase == ENV_PENDING_RELEASE) && !env->signumSet) {
+        env->lastSignum = thisSignum;
+        env->signumSet = true;
     }
 }
 

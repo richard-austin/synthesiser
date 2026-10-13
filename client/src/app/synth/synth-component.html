@@ -1,6 +1,6 @@
 <div #synth  [style]="{'display' : isRendered ? '' : 'none'}">
   <div style="display: flex; flex-direction: row">
-    <div class="oscillator-window">
+    <div>
       @for (osc of _oscillatorParams; let i = $index; track osc) {
         <app-oscillators  [style]="selectedOscillator !== i ? {'display': 'none'} : {'display': 'block'}" [oscNumber]="i"
                            [params]="_oscillatorParams[i]"
@@ -12,7 +12,7 @@
           </app-oscillators>
       }
     </div>
-    <div class="filter-window">
+    <div>
       @for (filter of _oscillatorParams; let i = $index; track filter) {
           <app-filters [style]="selectedOscillator !== i ? {'display': 'none'} : {'display': 'block'}" [filterNumber]="i"
                        [ringMod]="ringMod"
