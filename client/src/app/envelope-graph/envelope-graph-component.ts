@@ -10,13 +10,13 @@ import {Subscription, timer} from 'rxjs';
 })
 export class EnvelopeGraphComponent {
   readonly canvasWidth: number = 500;
-  readonly canvasHeight: number = 350;
-  readonly fullScaleTime: number = 27;
+  readonly canvasHeight: number = 225;
+  readonly fullScaleTime: number = 35;
   envelope = input.required<Signal<ADSRValues>>();
   pitchEnvelope = input.required<FreqBendValues>();
   enabled = input.required<boolean>();
   canvas = viewChild<ElementRef<HTMLCanvasElement>>('canvas');
-
+  adsrGraph = viewChild<ElementRef<HTMLDivElement>>('adsrGraph');
   graphicsEnabled: boolean = false;
 
   private adsr!: ADSRValues;
@@ -32,8 +32,17 @@ export class EnvelopeGraphComponent {
     })
 
     effect(() => {
-      this.adsr = this.envelope()();
+      if(this.adsrGraph) {
+        const adsrGraph = this.adsrGraph()?.nativeElement;
+        if(adsrGraph) {
+          adsrGraph.style.top = '-550px';
+          adsrGraph.style.left = '130px';
+        }
+      }
+    });
 
+    effect(() => {
+      this.adsr = this.envelope()();
       if (this.graphicsEnabled) {
         this.showGraph.set(true);
         if (this.sub)
@@ -45,7 +54,6 @@ export class EnvelopeGraphComponent {
         });
       }
         requestAnimationFrame(this.draw);
-       //  console.log(adsr.attackTime, adsr.decayTime, adsr.sustainLevel, adsr.releaseTime);
     })
   }
 
@@ -55,13 +63,14 @@ export class EnvelopeGraphComponent {
     if (ctx) {
       this.drawGraph(this.adsr, ctx);
     }
-    requestAnimationFrame(this.draw)
   }
 
   drawGraph(adsr: ADSRValues, ctx: CanvasRenderingContext2D) {
-    const sustainSpan = this.fullScaleTime - adsr.attackTime - adsr.decayTime - adsr.releaseTime;
+
     const xScale = this.canvasWidth / this.fullScaleTime;
     const yScale = this.canvasHeight;
+    const attackTime = adsr.attackTime * 8;
+    const sustainSpan = this.fullScaleTime - attackTime - adsr.decayTime - adsr.releaseTime;
 
     ctx.rect(0, 0, this.canvasWidth, this.canvasHeight);
     ctx.fillStyle = 'rgba(0, 20, 0, 0.1)';
@@ -70,10 +79,10 @@ export class EnvelopeGraphComponent {
     ctx.strokeStyle = 'rgb(0, 200, 0)';
     ctx.beginPath();
     ctx.moveTo(0, this.canvasHeight);
-    ctx.lineTo(adsr.attackTime * xScale, 0);
-    ctx.lineTo(xScale * (adsr.attackTime + adsr.decayTime), yScale * (1-adsr.sustainLevel));
-    ctx.lineTo(xScale * (adsr.attackTime + adsr.decayTime + sustainSpan), yScale * (1 -adsr.sustainLevel));
-    ctx.lineTo(xScale * this.fullScaleTime, this.canvasHeight);
+    ctx.lineTo(attackTime * xScale, 0);
+    ctx.lineTo(xScale * (attackTime + adsr.decayTime), yScale * (1-adsr.sustainLevel));
+    ctx.lineTo(xScale * (attackTime + adsr.decayTime + sustainSpan), yScale * (1 -adsr.sustainLevel));
+    ctx.lineTo(xScale * this.fullScaleTime, yScale);
     ctx.stroke();
     ctx.closePath();
   }

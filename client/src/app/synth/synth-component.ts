@@ -4,7 +4,7 @@ import {
   OnDestroy,
   Signal, signal, viewChild,
   viewChildren,
-  ChangeDetectorRef, afterNextRender, afterEveryRender
+  afterNextRender, afterEveryRender
 } from '@angular/core';
 import {FilterComponent} from "../filter/filter-component";
 import {OscillatorComponent} from "../oscillator/oscillator.component";
@@ -153,14 +153,12 @@ export class SynthComponent implements OnDestroy {
         }
         this.isRendered = true;
      //   this.changeDetectorRef.detectChanges();
-        console.log("afterNextRender");
       }
     });
 
     afterEveryRender(
     {
      write: () => {
-        console.log("afterEveryRender");
       }
     });
   }

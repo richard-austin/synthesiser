@@ -1,13 +1,9 @@
-<div class="display" >
+<div class="display">
   @if (showGraph()) {
-    <div #configEditor
-         style="background-color: black"
+    <div #adsrGraph class="group-container metallic-button"
          [animate.enter]="'fade-in'"
          [animate.leave]="'fade-out'">
       <canvas #canvas [width]="canvasWidth" [height]="canvasHeight"></canvas>
-      <div class="graph-content">
-        Graph Metadata & Interactive UI
-      </div>
     </div>
   }
 </div>
