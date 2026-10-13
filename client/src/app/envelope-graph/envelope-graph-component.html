@@ -4,7 +4,7 @@
          style="background-color: black"
          [animate.enter]="'fade-in'"
          [animate.leave]="'fade-out'">
-      <canvas #canvas width="500" height="300"></canvas>
+      <canvas #canvas [width]="canvasWidth" [height]="canvasHeight"></canvas>
       <div class="graph-content">
         Graph Metadata & Interactive UI
       </div>
