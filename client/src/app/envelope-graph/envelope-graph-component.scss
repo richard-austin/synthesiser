@@ -11,7 +11,9 @@ div.display {
 
     width: fit-content;
     > canvas {
-      margin: 25px;
+      margin-top: 5px;
+      margin-left: -5px;
+      margin-right: -5px;
     }
   }
 }

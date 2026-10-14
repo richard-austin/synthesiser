@@ -101,7 +101,7 @@ export class AnalyserComponent implements AfterViewInit {
 
     analyser.getByteFrequencyData(freqData);
 
-    ctx.fillStyle = 'rgba(0, 20, 0, 0.1)';
+    ctx.fillStyle = 'rgba(0, 20, 0)';
     ctx.fillRect(0, 0, width, height);
 
     ctx.lineWidth = 2;

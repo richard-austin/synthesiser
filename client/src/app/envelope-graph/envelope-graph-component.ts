@@ -53,8 +53,8 @@ export class EnvelopeGraphComponent {
           this.showGraph.set(false);
         });
       }
-        requestAnimationFrame(this.draw);
-    })
+      requestAnimationFrame(this.draw);
+    });
   }
 
   draw = () => {
@@ -65,24 +65,46 @@ export class EnvelopeGraphComponent {
     }
   }
 
-  drawGraph(adsr: ADSRValues, ctx: CanvasRenderingContext2D) {
+  private readonly xScale = this.canvasWidth / this.fullScaleTime;
+  private readonly yScale = -this.canvasHeight+4;
+  private readonly yOffset = this.canvasHeight;
+  private readonly lowestV = 0.01;
+  envelopeRamp(numPoints: number, v0:number, v1:number, t0:number, t1: number, ctx:CanvasRenderingContext2D) {
+    if((t1 - t0) === 0) {
+     // ctx.lineTo(v0, t0);
+      ctx.lineTo(this.xScale * t1, this.yScale * v1 + this.yOffset);
+    } else {
+      if(v1 < this.lowestV)
+         v1 = this.lowestV;
+      if(v0 < this.lowestV)
+        v0 = this.lowestV;
 
-    const xScale = this.canvasWidth / this.fullScaleTime;
-    const yScale = this.canvasHeight;
+      const inc = (t1 -t0) / numPoints;
+      let t = t0;
+      while(t < t1) {
+        ctx.lineTo(t * this.xScale, this.yScale * v0 * Math.pow(v1/v0, (t-t0)/(t1-t0)) +this.yOffset);
+        t += inc;
+      }
+      ctx.lineTo(this.xScale * t1, this.yScale * v1 + this.yOffset);
+    }
+  }
+
+  drawGraph(adsr: ADSRValues, ctx: CanvasRenderingContext2D) {
+    const numberOfPoints = 100;
     const attackTime = adsr.attackTime * 8;
     const sustainSpan = this.fullScaleTime - attackTime - adsr.decayTime - adsr.releaseTime;
-
-    ctx.rect(0, 0, this.canvasWidth, this.canvasHeight);
-    ctx.fillStyle = 'rgba(0, 20, 0, 0.1)';
+    const sustainLevel = adsr.sustainLevel > this.lowestV ? adsr.sustainLevel : this.lowestV;
+   // ctx.rect(0, 0, this.canvasWidth, this.canvasHeight);
+    ctx.fillStyle = 'rgba(0, 20, 0)';
     ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
     ctx.lineWidth = 2;
     ctx.strokeStyle = 'rgb(0, 200, 0)';
     ctx.beginPath();
-    ctx.moveTo(0, this.canvasHeight);
-    ctx.lineTo(attackTime * xScale, 0);
-    ctx.lineTo(xScale * (attackTime + adsr.decayTime), yScale * (1-adsr.sustainLevel));
-    ctx.lineTo(xScale * (attackTime + adsr.decayTime + sustainSpan), yScale * (1 -adsr.sustainLevel));
-    ctx.lineTo(xScale * this.fullScaleTime, yScale);
+    ctx.moveTo(0, this.yOffset);
+    this.envelopeRamp(numberOfPoints, 0, 1, 0, attackTime, ctx);
+    this.envelopeRamp(numberOfPoints, 1, sustainLevel, attackTime, attackTime + adsr.decayTime, ctx);
+    ctx.lineTo(this.xScale * (attackTime + adsr.decayTime + sustainSpan), this.yScale * sustainLevel + this.yOffset);
+    this.envelopeRamp(numberOfPoints, sustainLevel, 0, attackTime + adsr.decayTime +sustainSpan, attackTime + adsr.decayTime +sustainSpan+adsr.releaseTime, ctx);
     ctx.stroke();
     ctx.closePath();
   }
