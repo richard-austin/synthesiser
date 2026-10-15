@@ -142,8 +142,12 @@ export class EnvelopeGraphComponent {
     // console.log(pitchEnv.attackLevel, pitchEnv.attackTime, pitchEnv.decayTime, pitchEnv.sustainLevel, pitchEnv.releaseTime, pitchEnv.releaseLevel);
     const gc = this.pitchEnvGraphConstants;
     const numberOfPoints = 100;
-    const attackTime = pitchEnv.attackTime * 8;
-    const sustainSpan = this.fullScaleTime - attackTime - pitchEnv.decayTime - pitchEnv.releaseTime;
+    const timeStretch =3;
+    const attackTime = pitchEnv.attackTime * timeStretch;
+    const decayTime = pitchEnv.decayTime * timeStretch;
+    const releaseTime = pitchEnv.releaseTime * timeStretch;
+
+    const sustainSpan = this.fullScaleTime - attackTime - decayTime - releaseTime;
     const sustainLevel = pitchEnv.sustainLevel;
     // ctx.rect(0, 0, this.canvasWidth, this.canvasHeight);
     ctx.fillStyle = 'rgba(0, 20, 0)';
@@ -153,9 +157,9 @@ export class EnvelopeGraphComponent {
     ctx.beginPath();
     ctx.moveTo(0, pitchEnv.releaseLevel * gc.yScale + gc.yOffset);
     this.envelopeRamp(numberOfPoints, pitchEnv.releaseLevel, pitchEnv.attackLevel, 0, attackTime, gc, ctx);
-    this.envelopeRamp(numberOfPoints, pitchEnv.attackLevel, sustainLevel, attackTime, attackTime + pitchEnv.decayTime, gc, ctx);
-    ctx.lineTo(gc.xScale * (attackTime + pitchEnv.decayTime + sustainSpan), gc.yScale * (sustainLevel + this.offsetForPitchEnvelope) + gc.yOffset);
-    this.envelopeRamp(numberOfPoints, sustainLevel, pitchEnv.releaseLevel, attackTime + pitchEnv.decayTime + sustainSpan, attackTime + pitchEnv.decayTime + sustainSpan + pitchEnv.releaseTime, gc, ctx);
+    this.envelopeRamp(numberOfPoints, pitchEnv.attackLevel, sustainLevel, attackTime, attackTime + decayTime, gc, ctx);
+    ctx.lineTo(gc.xScale * (attackTime + decayTime + sustainSpan), gc.yScale * (sustainLevel + this.offsetForPitchEnvelope) + gc.yOffset);
+    this.envelopeRamp(numberOfPoints, sustainLevel, pitchEnv.releaseLevel, attackTime + decayTime + sustainSpan, attackTime + decayTime + sustainSpan + releaseTime, gc, ctx);
     ctx.stroke();
     ctx.closePath();
   }
