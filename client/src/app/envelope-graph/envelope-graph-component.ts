@@ -44,22 +44,27 @@ export class EnvelopeGraphComponent {
 
     effect(() => {
       this.adsr = this.envelope()();
+      if (this.sub)
+        this.sub.unsubscribe();
+
       if (this.graphicsEnabled) {
-        this.showGraph.set(true);
-        if (this.sub)
-          this.sub.unsubscribe();
+        untracked(() => this.showGraph.set(true));
+        const sub = timer(0).subscribe(() => {
+        sub.unsubscribe();
 
-        this.sub = timer(3000).subscribe(() => {
-          this.sub.unsubscribe();
-          this.showGraph.set(false);
-        });
-      }
-      const adsrGraph = untracked(() => this.adsrGraph())?.nativeElement;
+          this.sub = timer(3000).subscribe(() => {
+            this.sub.unsubscribe();
+            untracked(() => this.showGraph.set(false));
+          });
 
-      if (adsrGraph) {
-        adsrGraph.style.top = yOffset + 'px';
-        adsrGraph.style.left = xOffset + 'px';
-        requestAnimationFrame(this.draw);
+          const adsrGraph = untracked(() => this.adsrGraph())?.nativeElement;
+
+          if (adsrGraph) {
+            adsrGraph.style.top = yOffset + 'px';
+            adsrGraph.style.left = xOffset + 'px';
+            requestAnimationFrame(this.draw);
+          }
+      });
       }
     });
   }

@@ -4,8 +4,7 @@ import {
   ElementRef,
   inject, input, output,
   InputSignal,
-  OutputEmitterRef, viewChild, Signal, signal, WritableSignal, afterNextRender, afterEveryRender
-} from '@angular/core';
+  OutputEmitterRef, viewChild, Signal, signal, afterNextRender} from '@angular/core';
 import {OscillatorParams} from '../modules/oscillator';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
