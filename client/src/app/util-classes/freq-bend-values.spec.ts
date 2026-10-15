@@ -1,7 +1,7 @@
-import { FreqBendValues } from './freq-bend-values';
+import { PitchEnvValues } from './pitch-env-values';
 
 describe('FreqBendValues', () => {
   it('should create an instance', () => {
-    expect(new FreqBendValues()).toBeTruthy();
+    expect(new PitchEnvValues()).toBeTruthy();
   });
 });

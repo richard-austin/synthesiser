@@ -1,4 +1,4 @@
-import {FreqBendValues} from '../util-classes/freq-bend-values';
+import {PitchEnvValues} from '../util-classes/pitch-env-values';
 import {
   filterModType,
   filterOutputs,
@@ -8,7 +8,7 @@ import {
 import {PortamentoType} from '../oscillator/oscillator.component';
 
 export class FilterSettings {
-  freqBend: FreqBendValues;
+  freqBend: PitchEnvValues;
   frequency: number;
   qFactor: number;
   gain: number;
@@ -23,7 +23,7 @@ export class FilterSettings {
   portamento: number
   portamentoType: PortamentoType;
 
-  constructor(freqBend: FreqBendValues = new FreqBendValues(0, 1, 2, 0.5, 0.1, 0.0),
+  constructor(freqBend: PitchEnvValues = new PitchEnvValues(0, 1, 2, 0.5, 0.1, 0.0),
               useFrequencyEnvelope: onOff = onOff.off,
               frequency: number = 0,
               deTune: number = 0,
