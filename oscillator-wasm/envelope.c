@@ -97,7 +97,7 @@ void envelope_detect_signal_near_zero(Envelope *env, float signal) {
         // }
         env->phase = ENV_RELEASE;
         env->signumSet = false;    }
-    if ((env->phase == ENV_PENDING_ATTACK || env->phase == ENV_PENDING_DECAY || env->phase == ENV_PENDING_RELEASE) && !env->signumSet) {
+    if (!env->signumSet && (env->phase == ENV_PENDING_ATTACK || env->phase == ENV_PENDING_DECAY || env->phase == ENV_PENDING_RELEASE)) {
         env->lastSignum = thisSignum;
         env->signumSet = true;
     }
