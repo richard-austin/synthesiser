@@ -1,4 +1,4 @@
-<div #synth  [style]="{'display' : isRendered ? '' : 'none'}">
+<div #synth  [style]="{'display' : isRendered() ? '' : 'none'}">
   <div style="display: flex; flex-direction: row">
     <div>
       @for (osc of _oscillatorParams; let i = $index; track osc) {

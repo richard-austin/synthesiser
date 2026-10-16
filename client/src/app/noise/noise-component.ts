@@ -138,7 +138,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   }
 
   private setEnvelopeSig(adsr: ADSRValues) {
-    this.graphPositionOffset.set({xOffset: 130, yOffset: -550});
+    this.graphPositionOffset.set({xOffset: -530, yOffset: -550});
     this.envelopeSignal?.set(new ADSRValues(adsr.attackTime, adsr.decayTime, adsr.sustainLevel, adsr.releaseTime, adsr.isExponential));
   }
 

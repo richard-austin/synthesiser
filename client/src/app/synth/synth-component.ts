@@ -51,7 +51,7 @@ export class SynthComponent implements OnDestroy {
   ];
   protected _oscillatorParams = SynthComponent.oscillatorParams;
   protected readonly FilterComponent = FilterComponent;
-  protected isRendered: boolean = false;
+  protected isRendered = signal<boolean>(false);
 
   midiInputs: MIDIInput[] = [];
   settings: SynthSettings | null = null;
@@ -149,9 +149,9 @@ export class SynthComponent implements OnDestroy {
         this.scaleToFitSmallWindow();
         window.onresize = () => {
           this.scaleToFitSmallWindow();
-          this.isRendered = true;
+          this.isRendered.set(true);
         }
-        this.isRendered = true;
+        this.isRendered.set(true);
      //   this.changeDetectorRef.detectChanges();
       }
     });
