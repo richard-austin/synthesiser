@@ -186,6 +186,7 @@ When the pitch envelope is set on the sequence is as follows:-
 The attack, sustain and release levels calibration is such that 3 is + 1 octave -3 is - 1 octave etc.
 Like the amplitude envelope, a graph of the current pitch envelope settings is faded in when the pitch envelope
 settings are changed.
+
 ![](./README.images/pitch-envelope.png)
 
 **The pitch envelope curve illustrating the attack, attack level, decay, sustain level, release and release level**
