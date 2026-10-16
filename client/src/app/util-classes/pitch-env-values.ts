@@ -1,6 +1,6 @@
 import {ADSRValues} from './adsrvalues';
 
-export class FreqBendValues extends ADSRValues {
+export class PitchEnvValues extends ADSRValues {
   attackLevel: number;
   releaseLevel: number;
   constructor(attackTime: number,
@@ -11,9 +11,9 @@ export class FreqBendValues extends ADSRValues {
               releaseLevel: number,
               isExponential: boolean = false) {
     super(attackTime, decayTime, sustainLevel, releaseTime, isExponential);
-    if(attackLevel < sustainLevel) {
-      throw new DOMException("attackLevel must be >= sustainLevel");
-    }
+    // if(attackLevel < sustainLevel) {
+    //   throw new DOMException("attackLevel must be >= sustainLevel");
+    // }
     this.attackLevel = attackLevel;
     this.releaseLevel = releaseLevel;
   }

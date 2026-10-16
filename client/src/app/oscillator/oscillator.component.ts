@@ -1,12 +1,10 @@
 import {
-  AfterViewInit, ChangeDetectorRef,
+  ChangeDetectorRef,
   Component,
   ElementRef,
   inject, input, output,
   InputSignal,
-  OnDestroy,
-  OutputEmitterRef, viewChild, Signal, signal, WritableSignal
-} from '@angular/core';
+  OutputEmitterRef, viewChild, Signal, signal, afterNextRender} from '@angular/core';
 import {OscillatorParams} from '../modules/oscillator';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
@@ -24,7 +22,10 @@ import {WaveTables} from '../modules/wavetables';
 import {IndexedDBService} from '../services/indexed-db-service';
 import {EnvelopeGraphComponent} from '../envelope-graph/envelope-graph-component';
 import {ADSRValues} from '../util-classes/adsrvalues';
+import {PitchEnvValues} from '../util-classes/pitch-env-values';
+
 export enum envelopePhase {inactive, attack, decay, sustain, release, retrigger, legato }
+
 export enum pitchEnvelopePhase {inactive, attack, attackLevel, decay, sustainLevel, release, releaseLevel, retrigger}
 
 export type PortamentoType =
@@ -48,10 +49,10 @@ export type PortamentoType =
   styleUrl: './oscillator.component.scss',
   standalone: true
 })
-export class OscillatorComponent implements AfterViewInit, OnDestroy {
+export class OscillatorComponent  {
   protected tuningDivisions = 6;
   private audioCtx!: AudioContext;
- // private wasmBinary!: ArrayBuffer;
+  // private wasmBinary!: ArrayBuffer;
   protected proxySettings!: OscillatorSettings;
 
   filters: InputSignal<FilterComponent> = input.required<FilterComponent>();
@@ -74,8 +75,9 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   decay: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('decay');
   sustain: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('sustain');
   release: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('release');
-  envelopeSignal!: WritableSignal<ADSRValues>;
+  envelopeSignal  = signal<ADSRValues>(new ADSRValues(0,0,0,0, true));
   envelopeGraphicsEnabled = signal<boolean>(false);
+  graphPositionOffset = signal<{xOffset:number, yOffset:number}>({xOffset:0,yOffset: 0});
 
   readonly freqAttack = viewChild.required<LevelControlComponent>('freqAttack');
   readonly freqAttackLevel = viewChild.required<LevelControlComponent>('freqAttackLevel');
@@ -107,15 +109,131 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   clipboard: ClipboardService = inject(ClipboardService);
   cd: ChangeDetectorRef = inject(ChangeDetectorRef);
 
+  constructor() {
+//    this.envelopeGraphicsEnabled.set(false);  // Disable envelope graphics while setting up values
+    afterNextRender({
+      write: async () => {
+        console.log('afterNextRender');
+        window.addEventListener("mousedown", (e) => {
+          if (!this.contextMenu().nativeElement.contains(e.target as Node)) {
+            const contextMenu = this.contextMenu().nativeElement;
+            contextMenu.style.visibility = "hidden";
+            const pasteElement = contextMenu.getElementsByTagName('li')[1];
+            const style = pasteElement.style;
+            if (this.clipboard.source === this.params().settingsId || this.clipboard.config === undefined || this.clipboard.type !== "oscillator") {
+              style.fontWeight = "lighter";
+              style.fontStyle = "italic";
+              style.color = "#b5a8a8";
+              style.cursor = "default";
+              style.pointerEvents = "none";
+            } else {
+              style.fontWeight = "bold";
+              style.fontStyle = "normal";
+              style.color = "black";
+              style.cursor = "pointer";
+              style.pointerEvents = "all";
+            }
+          }
+        });
+
+        const oscPanel = this.oscPanel().nativeElement;
+        oscPanel.addEventListener('contextmenu', async (e) => {
+          e.preventDefault();
+          await this.ctxMenu(e);
+        }, false);
+
+        const oscOutForm = this.oscOutputToForm().nativeElement;
+        for (let i = 0; i < oscOutForm.elements.length; ++i) {
+          oscOutForm.elements[i].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value;
+            const sub = timer(10).subscribe(() => {
+              sub.unsubscribe();
+              this.output.emit(value);
+              this.proxySettings.output = value;
+            });
+          });
+        }
+
+        const freqEnveOnOffForm = this.freqEnveOnOffForm().nativeElement;
+        for (let i = 0; i < freqEnveOnOffForm.elements.length; ++i) {
+          freqEnveOnOffForm.elements[i].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value;
+            this.usePitchEnvelope(value === 'on')
+          })
+        }
+        const legatoOnOffForm = this.legatoOnOffForm().nativeElement;
+        for (let i = 0; i < legatoOnOffForm.elements.length; ++i) {
+          legatoOnOffForm.elements[i].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value;
+            this.legatoMode(value === 'on');
+          });
+        }
+        const velocityOnOffForm = this.velocityOnOffForm().nativeElement;
+        for (let i = 0; i < velocityOnOffForm.elements.length; ++i) {
+          velocityOnOffForm.elements[i].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value;
+            this.setVelocitySensitive(value === 'on');
+          });
+        }
+        const waveform = this.oscWaveForm().nativeElement;
+        waveform.addEventListener('change', ($event) => {
+          // @ts-ignore
+          const value = $event.target.value as OscillatorType;
+          this.setWaveForm(value as OscillatorType);
+        });
+
+        const portamentoType = this.portamentoType().nativeElement;
+        portamentoType.addEventListener('change', ($event) => {
+          // @ts-ignore
+          const value = $event.target.value as PortamentoType
+          this.setPortamentoType(value as PortamentoType);
+        });
+
+        const modSettingsForm = this.modSettingsForm().nativeElement;
+        for (let j = 0; j < modSettingsForm.elements.length; ++j) {
+          modSettingsForm.elements[j].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value as modulationType;
+            this.fmSynthService.setLFOModType(this.oscNumber(), value);
+            this.proxySettings.modType = value;
+          });
+        }
+
+        const oscModOutputForm = this.oscModOutputForm().nativeElement;
+        for (let j = 0; j < oscModOutputForm.elements.length; ++j) {
+          oscModOutputForm.elements[j].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value as oscModOutput;
+            this.setModOutput(value);
+            this.proxySettings.modOutput = value;
+          });
+        }
+
+        const modWaveForm = this.lfoWaveForm().nativeElement;
+        for (let j = 0; j < modWaveForm.elements.length; ++j) {
+          modWaveForm.elements[j].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value as modWaveforms;
+            this.fmSynthService.setLFOWaveform(this.oscNumber(), value);
+            this.proxySettings.modWaveform = value as modWaveforms;
+          })
+        }
+      }
+    });
+  }
+
   async start(audioCtx: AudioContext, settings: OscillatorSettings | null): Promise<void> {
-    this.envelopeGraphicsEnabled.set(false);  // Disable envelope graphics while setting up values
     this.audioCtx = audioCtx;
-   // this.wasmBinary = wasmBinary;
     await this.applySettings(settings);
-    timer(20).subscribe(() => this.envelopeGraphicsEnabled.set(true));
+    timer(0).subscribe(() => this.envelopeGraphicsEnabled.set(true));
   }
 
   async applySettings(settings: OscillatorSettings | null) {
+    this.envelopeGraphicsEnabled.set(false);
     const objectName = "oscillator" + this.params().settingsId;
     if (!settings) {  // If no settings supplied, create default and check if previously saved in cookie
       settings = new OscillatorSettings();
@@ -143,7 +261,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     this.sustain().setValue(this.proxySettings.adsr.sustainLevel);
     this.release().setValue(this.proxySettings.adsr.releaseTime);
 
-    this.envelopeSignal = signal<ADSRValues>(this.proxySettings.adsr);
+    this.envelopeSignal.set(this.proxySettings.adsr);
 
     // Set up default frequency bend envelope values
     this.freqAttack().setValue(this.proxySettings.freqBend.attackTime);
@@ -309,6 +427,7 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
   }
 
   private setEnvelopeSig(adsr: ADSRValues) {
+    this.graphPositionOffset.set({xOffset: 130, yOffset: -550});
     this.envelopeSignal?.set(new ADSRValues(adsr.attackTime, adsr.decayTime, adsr.sustainLevel, adsr.releaseTime, adsr.isExponential));
   }
 
@@ -338,33 +457,44 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
 
   protected readonly dialStyle = dialStyle;
 
+  private setPitchEnvelopeSig(pitchEnvelope: PitchEnvValues) {
+    this.graphPositionOffset.set({xOffset: 280, yOffset: -550});
+    this.envelopeSignal?.set(new PitchEnvValues(pitchEnvelope.attackTime, pitchEnvelope.attackLevel, pitchEnvelope.decayTime, pitchEnvelope.sustainLevel, pitchEnvelope.releaseTime, pitchEnvelope.releaseLevel, pitchEnvelope.isExponential));
+  }
+
   protected setFreqAttack($event: number) {
     this.proxySettings.freqBend.attackTime = $event;
+    this.setPitchEnvelopeSig(this.proxySettings.freqBend);
     this.fmSynthService.pitchEnvelope(this.oscNumber(), pitchEnvelopePhase.attack, $event);
   }
 
   protected setFreqAttackLevel($event: number) {
     this.proxySettings.freqBend.attackLevel = $event;
+    this.setPitchEnvelopeSig(this.proxySettings.freqBend);
     this.fmSynthService.pitchEnvelope(this.oscNumber(), pitchEnvelopePhase.attackLevel, $event);
   }
 
   protected setFreqDecayTime($event: number) {
     this.proxySettings.freqBend.decayTime = $event;
+    this.setPitchEnvelopeSig(this.proxySettings.freqBend);
     this.fmSynthService.pitchEnvelope(this.oscNumber(), pitchEnvelopePhase.decay, $event);
   }
 
   protected setFreqSustainLevel($event: number) {
     this.proxySettings.freqBend.sustainLevel = $event;
+    this.setPitchEnvelopeSig(this.proxySettings.freqBend);
     this.fmSynthService.pitchEnvelope(this.oscNumber(), pitchEnvelopePhase.sustainLevel, $event);
   }
 
   protected setFreqReleaseTime($event: number) {
     this.proxySettings.freqBend.releaseTime = $event;
+    this.setPitchEnvelopeSig(this.proxySettings.freqBend);
     this.fmSynthService.pitchEnvelope(this.oscNumber(), pitchEnvelopePhase.release, $event);
   }
 
   protected setFreqReleaseLevel($event: number) {
     this.proxySettings.freqBend.releaseLevel = $event;
+    this.setPitchEnvelopeSig(this.proxySettings.freqBend);
     this.fmSynthService.pitchEnvelope(this.oscNumber(), pitchEnvelopePhase.releaseLevel, $event);
   }
 
@@ -406,122 +536,6 @@ export class OscillatorComponent implements AfterViewInit, OnDestroy {
     const contextMenu = this.contextMenu().nativeElement;
     contextMenu.style.visibility = "hidden";
   }
-
-  ngAfterViewInit(): void {
-    window.addEventListener("mousedown", (e) => {
-      if (!this.contextMenu().nativeElement.contains(e.target as Node)) {
-        const contextMenu = this.contextMenu().nativeElement;
-        contextMenu.style.visibility = "hidden";
-        const pasteElement = contextMenu.getElementsByTagName('li')[1];
-        const style = pasteElement.style;
-        if (this.clipboard.source === this.params().settingsId || this.clipboard.config === undefined || this.clipboard.type !== "oscillator") {
-          style.fontWeight = "lighter";
-          style.fontStyle = "italic";
-          style.color = "#b5a8a8";
-          style.cursor = "default";
-          style.pointerEvents = "none";
-        } else {
-          style.fontWeight = "bold";
-          style.fontStyle = "normal";
-          style.color = "black";
-          style.cursor = "pointer";
-          style.pointerEvents = "all";
-        }
-      }
-    });
-
-    const oscPanel = this.oscPanel().nativeElement;
-    oscPanel.addEventListener('contextmenu', async (e) => {
-      e.preventDefault();
-      await this.ctxMenu(e);
-    }, false);
-
-    const oscOutForm = this.oscOutputToForm().nativeElement;
-    for (let i = 0; i < oscOutForm.elements.length; ++i) {
-      oscOutForm.elements[i].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value;
-        const sub = timer(10).subscribe(() => {
-          sub.unsubscribe();
-          this.output.emit(value);
-          this.proxySettings.output = value;
-        });
-      });
-    }
-
-    const freqEnveOnOffForm = this.freqEnveOnOffForm().nativeElement;
-    for (let i = 0; i < freqEnveOnOffForm.elements.length; ++i) {
-      freqEnveOnOffForm.elements[i].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value;
-        this.usePitchEnvelope(value === 'on')
-      })
-    }
-    const legatoOnOffForm = this.legatoOnOffForm().nativeElement;
-    for (let i = 0; i < legatoOnOffForm.elements.length; ++i) {
-      legatoOnOffForm.elements[i].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value;
-        this.legatoMode(value === 'on');
-      });
-    }
-    const velocityOnOffForm = this.velocityOnOffForm().nativeElement;
-    for (let i = 0; i < velocityOnOffForm.elements.length; ++i) {
-      velocityOnOffForm.elements[i].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value;
-        this.setVelocitySensitive(value === 'on');
-      });
-    }
-    const waveform = this.oscWaveForm().nativeElement;
-    waveform.addEventListener('change', ($event) => {
-      // @ts-ignore
-      const value = $event.target.value as OscillatorType;
-      this.setWaveForm(value as OscillatorType);
-    });
-
-    const portamentoType = this.portamentoType().nativeElement;
-    portamentoType.addEventListener('change', ($event) => {
-      // @ts-ignore
-      const value = $event.target.value as PortamentoType
-      this.setPortamentoType(value as PortamentoType);
-    });
-
-    const modSettingsForm = this.modSettingsForm().nativeElement;
-    for (let j = 0; j < modSettingsForm.elements.length; ++j) {
-      modSettingsForm.elements[j].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value as modulationType;
-        this.fmSynthService.setLFOModType(this.oscNumber(), value);
-        this.proxySettings.modType = value;
-      });
-    }
-
-    const oscModOutputForm = this.oscModOutputForm().nativeElement;
-    for (let j = 0; j < oscModOutputForm.elements.length; ++j) {
-      oscModOutputForm.elements[j].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value as oscModOutput;
-        this.setModOutput(value);
-        this.proxySettings.modOutput = value;
-      });
-    }
-
-    const modWaveForm = this.lfoWaveForm().nativeElement;
-    for (let j = 0; j < modWaveForm.elements.length; ++j) {
-      modWaveForm.elements[j].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value as modWaveforms;
-        this.fmSynthService.setLFOWaveform(this.oscNumber(),value);
-        this.proxySettings.modWaveform = value as modWaveforms;
-      })
-    }
-  }
-
-  ngOnDestroy(): void {
-  }
-
-  showWaveformSelector = false;
 
   protected readonly WaveTables = WaveTables;
 }

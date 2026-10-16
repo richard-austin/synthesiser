@@ -1,11 +1,11 @@
 import {ADSRValues} from '../util-classes/adsrvalues';
-import {FreqBendValues} from '../util-classes/freq-bend-values';
+import {PitchEnvValues} from '../util-classes/pitch-env-values';
 import {modWaveforms, onOff, oscModOutput, oscModType, oscOutputs, oscWaveforms} from '../enums/enums';
 import {PortamentoType} from '../oscillator/oscillator.component';
 
 export class OscillatorSettings {
   adsr: ADSRValues;
-  freqBend: FreqBendValues;
+  freqBend: PitchEnvValues;
   frequency: number;
   deTune: number;
   gain: number;
@@ -24,7 +24,7 @@ export class OscillatorSettings {
   portamentoType: PortamentoType;
 
   constructor(adsr: ADSRValues= new ADSRValues(0.0, 3, .4, 3),
-              freqBend: FreqBendValues = new FreqBendValues(0, 0.2, .2, 0, .2, 0.0),
+              freqBend: PitchEnvValues = new PitchEnvValues(0, 0.2, .2, 0, .2, 0.0),
               legatoMode: onOff = onOff.off,
               velocitySensitive: onOff = onOff.on,
               useFrequencyEnvelope: onOff = onOff.off,
