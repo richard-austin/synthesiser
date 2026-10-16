@@ -146,7 +146,7 @@
                            [factor]="12"
                            (setLevel)="setReleaseTime($event)"></app-level-control>
         @if(proxySettings) {
-          <app-envelope-graph-component [enabled]="envelopeGraphicsEnabled()" [envelope]="envelopeSignal" [positionOffset]="graphPositionOffset()" [pitchEnvelope]="proxySettings.freqBend"></app-envelope-graph-component>
+          <app-envelope-graph-component [enabled]="envelopeGraphicsEnabled()" [envelope]="envelopeSignal" [positionOffset]="graphPositionOffset()"></app-envelope-graph-component>
         }
         <h4>Legato</h4>
         <form #legatoOnOffForm>

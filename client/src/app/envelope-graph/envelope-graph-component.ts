@@ -14,7 +14,6 @@ export class EnvelopeGraphComponent {
   readonly canvasHeight: number = 225;
   readonly fullScaleTime: number = 35;
   envelope = input.required<Signal<ADSRValues | PitchEnvValues>>();
-  pitchEnvelope = input.required<PitchEnvValues>();
   enabled = input.required<boolean>();
   positionOffset = input.required<{ xOffset: number, yOffset: number }>();
   canvas = viewChild<ElementRef<HTMLCanvasElement>>('canvas');

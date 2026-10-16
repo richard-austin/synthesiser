@@ -63,6 +63,9 @@
                            [factor]="6"
                            (setLevel)="setReleaseTime($event)">
         </app-level-control>
+        @if(proxySettings) {
+          <app-envelope-graph-component [enabled]="envelopeGraphicsEnabled()" [envelope]="envelopeSignal" [positionOffset]="graphPositionOffset()"></app-envelope-graph-component>
+        }
         <h4>Legato</h4>
         <form #legatoOnOffForm>
           <label><input type="radio" name="envelope" value="on"><span>On</span></label>

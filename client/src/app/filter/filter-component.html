@@ -160,6 +160,9 @@
                          [plusMinus]="true"
                          (setLevel)="setFreqReleaseLevel($event)">
       </app-level-control>
+      @if(proxySettings) {
+        <app-envelope-graph-component [enabled]="envelopeGraphicsEnabled()" [envelope]="envelopeSignal" [positionOffset]="graphPositionOffset()"></app-envelope-graph-component>
+      }
       <form #freqEnveOnOffForm>
         <label><input type="radio" name="freqenvelope" value="on"><span>On</span></label>
         <label><input type="radio" name="freqenvelope" value="off" checked><span>Off</span></label>
