@@ -33,6 +33,7 @@
       "target": [
         {
           "target": "nsis",
+          "sign": false,
           "arch": [
             "x64"
           ]

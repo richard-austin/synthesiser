@@ -1,7 +1,8 @@
 {
   "name": "synthesiser-desktop",
   "version": "1.0.4",
-  "description": "",
+  "desktopName": "com.synthesiser.desktop",
+  "description": "FM Synthesiser using WebAudio",
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -28,7 +29,8 @@
       "target": [
         "AppImage",
         "deb"
-      ]
+      ],
+      "category": "AudioVideo"
     },
     "toolsets": {
       "appimage": "1.0.3"
