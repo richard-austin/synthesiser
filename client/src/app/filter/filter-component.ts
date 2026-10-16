@@ -6,7 +6,7 @@ import {
   InputSignal,
   OnDestroy,
   output,
-  OutputEmitterRef, Signal, viewChild
+  OutputEmitterRef, signal, Signal, viewChild
 } from '@angular/core';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {LevelControlComponent} from '../level-control/level-control.component';
@@ -20,11 +20,16 @@ import {FilterSettings} from '../settings/filter';
 import {pitchEnvelopePhase, PortamentoType} from '../oscillator/oscillator.component';
 import {FmSynthService} from '../services/fm-synth-service';
 import {IndexedDBService} from '../services/indexed-db-service';
+import {EnvelopeGraphComponent} from '../envelope-graph/envelope-graph-component';
+import {ADSRValues} from '../util-classes/adsrvalues';
+import {PitchEnvValues} from '../util-classes/pitch-env-values';
+import {timer} from 'rxjs';
 
 @Component({
   selector: 'app-filters',
   imports: [
-    LevelControlComponent
+    LevelControlComponent,
+    EnvelopeGraphComponent
   ],
   templateUrl: './filter-component.html',
   styleUrl: './filter-component.scss',
@@ -57,6 +62,10 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   readonly portamento = viewChild.required<LevelControlComponent>('portamento');
   readonly portamentoType = viewChild.required<ElementRef<HTMLSelectElement>>('portamentoType');
 
+  envelopeSignal  = signal<ADSRValues>(new ADSRValues(0,0,0,0, true));
+  envelopeGraphicsEnabled = signal<boolean>(false);
+  graphPositionOffset = signal<{xOffset:number, yOffset:number}>({xOffset:0,yOffset: 0});
+
   readonly filterOutputTo = viewChild.required<ElementRef<HTMLFormElement>>('filterOutputToForm');
 
   readonly freqEnveOnOff = viewChild.required<ElementRef<HTMLFormElement>>('freqEnveOnOffForm');
@@ -79,6 +88,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     if (this.numberOfFilters && !this.started) {
     }
     await this.applySettings(settings);
+    timer(0).subscribe(() => this.envelopeGraphicsEnabled.set(true));
     return ok;
   }
 
@@ -88,7 +98,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   async applySettings(settings: FilterSettings | null) {
-    const objectName = 'filter' + this.filterNumber();
+    this.envelopeGraphicsEnabled.set(false);    const objectName = 'filter' + this.filterNumber();
     if (!settings) {
       settings = new FilterSettings();
       const savedSettings = await this.indexedDBService.getSynthObject(objectName);
@@ -115,15 +125,6 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.release, this.proxySettings.freqBend.releaseTime);
     this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.releaseLevel, this.proxySettings.freqBend.releaseLevel);
 
-    // this.filters.forEach((filter, i) => {
-    //   filter.setFrequency(this.keyToFrequency(i));
-    //   filter.setDetune(this.proxySettings.deTune);
-    //   filter.setFreqBendEnvelope(this.proxySettings.freqBend);
-    //   filter.useFreqBendEnvelope(this.proxySettings.useFrequencyEnvelope === onOff.off);
-    //   filter.setType(this.proxySettings.filterType);
-    //   filter.clearModulation();  // Remove any preexisting mod settings
-    // });
-
     this.frequency().setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
     this.deTune().setValue(this.proxySettings.deTune);
     this.gain().setValue(this.proxySettings.gain);
@@ -141,7 +142,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     this.freqSustain().setValue(this.proxySettings.freqBend.sustainLevel);
     this.freqRelease().setValue(this.proxySettings.freqBend.releaseTime);
     this.freqReleaseLevel().setValue(this.proxySettings.freqBend.releaseLevel);
-
+    this.envelopeSignal.set(this.proxySettings.freqBend);
     // Set up LFO default values
     this.modFreq().setValue(this.proxySettings.modFreq);  // Set dial
     this.modLevel().setValue(this.proxySettings.modLevel);  // Set dial
@@ -265,33 +266,44 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   protected readonly dialStyle = dialStyle;
 
+  private setEnvelopeSig(pev: PitchEnvValues) {
+    this.graphPositionOffset.set({xOffset: 130, yOffset: -550});
+    this.envelopeSignal?.set(new PitchEnvValues(pev.attackTime, pev.attackLevel/2, pev.decayTime, pev.sustainLevel/2, pev.releaseTime, pev.releaseLevel/2,  pev.isExponential));
+  }
+
   protected setFreqAttack($event: number) {
     this.proxySettings.freqBend.attackTime = $event;
+    this.setEnvelopeSig(this.proxySettings.freqBend);
     this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.attack, $event);
   }
 
   protected setFreqAttackLevel($event: number) {
     this.proxySettings.freqBend.attackLevel = $event;
+    this.setEnvelopeSig(this.proxySettings.freqBend);
     this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.attackLevel, $event);
   }
 
   protected setFreqDecayTime($event: number) {
     this.proxySettings.freqBend.decayTime = $event;
+    this.setEnvelopeSig(this.proxySettings.freqBend);
     this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.decay, $event);
   }
 
   protected setFreqSustainLevel($event: number) {
     this.proxySettings.freqBend.sustainLevel = $event;
+    this.setEnvelopeSig(this.proxySettings.freqBend);
     this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.sustainLevel, $event);
   }
 
   protected setFreqReleaseTime($event: number) {
     this.proxySettings.freqBend.releaseTime = $event;
+    this.setEnvelopeSig(this.proxySettings.freqBend);
     this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.release, $event);
   }
 
   protected setFreqReleaseLevel($event: number) {
     this.proxySettings.freqBend.releaseLevel = $event;
+    this.setEnvelopeSig(this.proxySettings.freqBend);
     this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.releaseLevel, $event);
   }
 

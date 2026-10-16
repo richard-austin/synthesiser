@@ -5,7 +5,7 @@ import {
   OnDestroy,
   viewChild,
   output,
-  input, inject
+  input, inject, signal
 } from '@angular/core';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {FilterComponent} from '../filter/filter-component';
@@ -16,17 +16,21 @@ import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {envelopePhase} from '../oscillator/oscillator.component';
 import {FmSynthService} from '../services/fm-synth-service';
 import {IndexedDBService} from '../services/indexed-db-service';
+import {EnvelopeGraphComponent} from '../envelope-graph/envelope-graph-component';
+import {ADSRValues} from '../util-classes/adsrvalues';
+import {timer} from 'rxjs';
 
 @Component({
   selector: 'app-noise',
   imports: [
-    LevelControlComponent
+    LevelControlComponent,
+    EnvelopeGraphComponent
   ],
   templateUrl: './noise-component.html',
   styleUrl: './noise-component.scss',
 })
 export class NoiseComponent implements AfterViewInit, OnDestroy {
-  private proxySettings!: NoiseSettings;
+  protected proxySettings!: NoiseSettings;
 
  // private noisePoolMgr!: DevicePoolManager;
 
@@ -37,6 +41,9 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   readonly decay = viewChild.required<LevelControlComponent>('decay');
   readonly sustain = viewChild.required<LevelControlComponent>('sustain');
   readonly release = viewChild.required<LevelControlComponent>('release');
+  envelopeSignal  = signal<ADSRValues>(new ADSRValues(0,0,0,0, true));
+  envelopeGraphicsEnabled = signal<boolean>(false);
+  graphPositionOffset = signal<{xOffset:number, yOffset:number}>({xOffset:0,yOffset: 0});
 
   readonly noiseTypeForm = viewChild.required<ElementRef<HTMLFormElement>>('noiseTypeForm');
   readonly noiseOutputToForm = viewChild.required<ElementRef<HTMLFormElement>>('noiseOutputToForm');
@@ -46,25 +53,13 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
 
   private readonly indexedDBService: IndexedDBService = inject(IndexedDBService);
   readonly fmSynthService: FmSynthService = inject(FmSynthService);
-  private started: boolean;
 
   constructor() {
-    this.started = false;
   }
 
   async start(audioCtx: AudioContext, settings: NoiseSettings | null) {
-    if(!this.started) {
-      // for (let i = 0; i < DevicePoolManager.numberOfDevices; ++i) {
-      //   this.whiteNoise.push(new WhiteNoise(audioCtx));
-      //   this.pinkNoise.push(new PinkNoise(audioCtx));
-      //   this.brownNoise.push(new BrownNoise(audioCtx));
-      //   await this.whiteNoise[i].start();
-      //   await this.pinkNoise[i].start();
-      //   await this.brownNoise[i].start();
-      // }
-      this.started = true;
-    }
-    this.applySettings(settings);
+    await this.applySettings(settings);
+    timer(0).subscribe(() => this.envelopeGraphicsEnabled.set(true));
   }
 
   // Called after all synth components have been started
@@ -73,6 +68,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   }
 
   async applySettings(settings: NoiseSettings | null) {
+    this.envelopeGraphicsEnabled.set(false);
     const objectName = 'noise';
     if (!settings) {
       settings = new NoiseSettings();
@@ -89,6 +85,7 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     this.decay().setValue(this.proxySettings.adsr.decayTime);
     this.sustain().setValue(this.proxySettings.adsr.sustainLevel);
     this.release().setValue(this.proxySettings.adsr.releaseTime);
+    this.envelopeSignal.set(this.proxySettings.adsr);
     this.gainControl().setValue(settings.gain);
 
     //  SetRadioButtons.set(this.noiseOutputToForm, this.settings.output);
@@ -140,23 +137,32 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
     this.fmSynthService.setNoiseVelocitySensitive(velocitySensitive);
   }
 
+  private setEnvelopeSig(adsr: ADSRValues) {
+    this.graphPositionOffset.set({xOffset: 130, yOffset: -550});
+    this.envelopeSignal?.set(new ADSRValues(adsr.attackTime, adsr.decayTime, adsr.sustainLevel, adsr.releaseTime, adsr.isExponential));
+  }
+
   protected setAttack($event: number) {
     this.proxySettings.adsr.attackTime = $event;
+    this.setEnvelopeSig(this.proxySettings.adsr);
     this.fmSynthService.noiseEnvelope(envelopePhase.attack, $event);
   }
 
   protected setDecayTime($event: number) {
     this.proxySettings.adsr.decayTime = $event;
+    this.setEnvelopeSig(this.proxySettings.adsr);
     this.fmSynthService.noiseEnvelope(envelopePhase.decay, $event);
   }
 
   protected setSustainLevel($event: number) {
     this.proxySettings.adsr.sustainLevel = $event;
+    this.setEnvelopeSig(this.proxySettings.adsr);
     this.fmSynthService.noiseEnvelope(envelopePhase.sustain, $event);
   }
 
   protected setReleaseTime($event: number) {
     this.proxySettings.adsr.releaseTime = $event;
+    this.setEnvelopeSig(this.proxySettings.adsr);
     this.fmSynthService.noiseEnvelope(envelopePhase.release, $event);
   }
 

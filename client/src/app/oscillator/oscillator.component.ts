@@ -110,7 +110,6 @@ export class OscillatorComponent  {
   cd: ChangeDetectorRef = inject(ChangeDetectorRef);
 
   constructor() {
-//    this.envelopeGraphicsEnabled.set(false);  // Disable envelope graphics while setting up values
     afterNextRender({
       write: async () => {
         console.log('afterNextRender');

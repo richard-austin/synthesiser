@@ -157,9 +157,17 @@ the main oscillator when selected as a modulator in the Operator Matrix.
 This function is limited at the moment, and just gives a glide between the previous note and the next. Set to zero, there is no portamento.
 The drop down below it is from an earlier version and currently does nothing.
 
-#### Envelope
+#### Amplitude Envelope
 
-This is a standard ADSR envelope shaper.
+This is a standard ADSR envelope shaper. The Attack Decay Sustain and Release control settings are illustrated on a graph which fades in
+when any of those settings are changed.
+
+![](./README.images/adsr.png)
+
+**ADSR Envelope graph**
+
+This graph fades out a few seconds after the last change is made to the ADSR settings.
+
 #### Legato
 If legato mode is on, pressing a key will cause the envelope to rise to 100% and remain there for the decay time.
 Holding the key down will sustain this. After the decay time has elapsed, the note will tail off in accordance with the release timing.
@@ -176,6 +184,15 @@ When the pitch envelope is set on the sequence is as follows:-
 * On key release the pitch will change to the release level at a rate determined by the release setting.
 
 The attack, sustain and release levels calibration is such that 3 is + 1 octave -3 is - 1 octave etc.
+Like the amplitude envelope, a graph of the current pitch envelope settings is faded in when the pitch envelope
+settings are changed.
+
+![](./README.images/pitch-envelope.png)
+
+**The pitch envelope curve illustrating the attack, attack level, decay, sustain level, release and release level**
+
+The curve starts and finishes at the release level. The graph fades a few seconds after you have finished adjusting the pitch envelope settings.
+
 ### Filters
 There are four banks of 12 filters, each one in a bank corresponding to the same numbered oscillator in the same bank,
 so each oscillator has a single filter tuned proportionally to the corresponding oscillators frequency.
@@ -225,6 +242,7 @@ When the pitch envelope is set on the sequence is as follows:-
 * The cutoff frequency  will remain at the sustain level until the key is released.
 * On key release the cutoff frequency  will change to the release level at a rate determined by the release setting.
 
+The pitch envelope graph is displayed while adjustments are made to the pitch envelope. (See the oscillator section).
 ### Operator Matrix
 The operator matrix enables setting any oscillator bank as a modulator for any other oscillator bank, including itself.
 
@@ -246,6 +264,7 @@ The relative frequencies of modulators and carriers are important so as not to h
 
 The noise generator is a white, pink or brown noise generator with amplitude envelope controlled output. The output
 can be to speaker, filter, reverb phaser of off. The amplitude envelope is a standard ADRS envelope as used in the oscillator banks.
+The ADSR filter graph will be shown when the envelope controls are adjusted (see the ADSR graph in the oscillator section).
 When Filter is selected for output, this will be filter bank 1, it cannot connect to other filter banks.
 
 ### Ring Modulator
