@@ -18,7 +18,6 @@ export class EnvelopeGraphComponent {
   positionOffset = input.required<{ xOffset: number, yOffset: number }>();
   canvas = viewChild<ElementRef<HTMLCanvasElement>>('canvas');
   adsrGraph = viewChild<ElementRef<HTMLDivElement>>('adsrGraph');
-  graphicsEnabled: boolean = false;
 
   private adsr!: ADSRValues | PitchEnvValues;
 
@@ -28,10 +27,6 @@ export class EnvelopeGraphComponent {
 
 
   constructor() {
-    effect(() => {
-      this.graphicsEnabled = this.enabled();
-    })
-
     let yOffset = -550;
     let xOffset = 130;
 
@@ -46,7 +41,7 @@ export class EnvelopeGraphComponent {
       if (this.sub)
         this.sub.unsubscribe();
 
-      if (this.graphicsEnabled) {
+      if (untracked(() => this.enabled())) {
         untracked(() => this.showGraph.set(true));
         const sub = timer(0).subscribe(() => {
         sub.unsubscribe();
