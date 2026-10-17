@@ -84,13 +84,12 @@ export class EnvelopeGraphComponent {
   envelopeRamp(numPoints: number, v0: number, v1: number, t0: number, t1: number, gc: EnvelopeGraphConstants, ctx: CanvasRenderingContext2D) {
     const pitchEnv = this.adsr instanceof PitchEnvValues;
     const inc = (t1 - t0) / numPoints;
-    const smallestAllowedInc = 0.00001;
-    if (inc <= smallestAllowedInc) {  // Prevent inc getting so small that it can't advance t in the loop
+    if ((t0 + inc)  === t0) {  // Prevent inc getting so small that it can't advance t in the loop
       if (pitchEnv) {
-        ctx.lineTo(gc.xScale * t0, gc.yScale * (v0 + this.offsetForPitchEnvelope) + gc.yOffset);
+        ctx.moveTo(gc.xScale * t0, gc.yScale * (v0 + this.offsetForPitchEnvelope) + gc.yOffset);
         ctx.lineTo(gc.xScale * t1, gc.yScale * (v1 + this.offsetForPitchEnvelope) + gc.yOffset);
       } else {
-        ctx.lineTo(gc.xScale * t0, gc.yScale * v0 + gc.yOffset);
+        ctx.moveTo(gc.xScale * t0, gc.yScale * v0 + gc.yOffset);
         ctx.lineTo(gc.xScale * t1, gc.yScale * v1 + gc.yOffset);
       }
     } else {
