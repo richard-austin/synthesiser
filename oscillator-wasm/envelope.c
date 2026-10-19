@@ -96,7 +96,8 @@ void envelope_detect_signal_near_zero(Envelope *env, float signal) {
         //     emscripten_console_logf("To release %f lastSignum %d thisSignum %d", signal, env->lastSignum, thisSignum);
         // }
         env->phase = ENV_RELEASE;
-        env->signumSet = false;    }
+        env->signumSet = false;
+    }
     if (!env->signumSet && (env->phase == ENV_PENDING_ATTACK || env->phase == ENV_PENDING_DECAY || env->phase == ENV_PENDING_RELEASE)) {
         env->lastSignum = thisSignum;
         env->signumSet = true;
