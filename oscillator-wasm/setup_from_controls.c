@@ -98,8 +98,7 @@ EMSCRIPTEN_KEEPALIVE
 
 void setPortamento(int bank, float time) {
     PortamentoData *pd = &g_banks[bank].portamentoData;
-    pd->time = time;
-
+    pd->glideTime = time;
     pd->inUse = time != 0.0f;
 }
 
@@ -140,8 +139,8 @@ EMSCRIPTEN_KEEPALIVE
 
 void setFilterPortamento(int bank, float time) {
     PortamentoData *pd = &g_banks[bank].filterPortamentoData;
-    pd->time = time;
-
+    pd->glideTime = time;
+    emscripten_console_logf("bank = %d glideTime = %f", bank, pd->glideTime);
     pd->inUse = time != 0.0f;
 }
 
@@ -273,13 +272,6 @@ void setVelocitySensitive(int bank, bool isVelocitySensitive) {
         OscillatorData *od = &g_oscData[bank][o];
         od->env.envelopeData->velocitySensitive = isVelocitySensitive;
     }
-}
-
-EMSCRIPTEN_KEEPALIVE
-
-void setPortamentoTime(int bank, float time) {
-    BankData *bd = &g_banks[bank];
-    bd->portamentoData.time = time;
 }
 
 EMSCRIPTEN_KEEPALIVE

@@ -81,27 +81,31 @@ typedef struct {
     bool inUse;
 } PitchEnvelope;
 
-#define CAPACITY 12
-
-// Structure representing the circular queue
-typedef struct {
-    float items[CAPACITY];
-    int front;
-    int rear;
-    int size;
-} CircularQueue;
+#ifndef CAPACITY
+#define CAPACITY 24
+#endif
 
 typedef struct {
-    CircularQueue queue;
-    float previousFrequency;
-    float time;
+    struct Note {float frequency; int noteIndex;} notes [CAPACITY];
+    int noteCount;
+} Notes;
+
+typedef struct {
+    Notes notes1;
+    Notes notes2;
+    Notes *previousNotes;
+    Notes *currentNotes;
+    int timer;
+    int timerTarget;
+    bool timerRunning;
+    float glideTime;
     bool inUse;
 } PortamentoData;
 
 typedef struct {
     PortamentoData *portamentoData;
     float lowestTime;
-    float lowestLevel;
+    float lowestFx;
     float t0, t1, t;
     float v0, v1;
     float frequency;

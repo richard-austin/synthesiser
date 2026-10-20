@@ -133,7 +133,7 @@ void triggerNoteOn(int key, int velocity) {
    // STEP 3: Map parameters identically across all multi-bank nodes
     for (int b = 0; b < g_numberOfBanks; b++) {
         OscillatorData *od = &g_oscData[b][foundIdx];
-        const BankData *bd = &g_banks[b];
+        BankData *bd = &g_banks[b];
 
         // If an allocation collision happens with an existing active different note,
         // force clear it to prevent old dead note values from lingering.
@@ -144,15 +144,15 @@ void triggerNoteOn(int key, int velocity) {
 
         if (bd->portamentoData.inUse) {
             const float targetFrequency = key_to_frequency(key, b);
-            portamento_set_timing(&od->portamento, targetFrequency, bd->portamentoData.time);
-            od->frequency = targetFrequency;
+            portamento_chord_capture(&bd->portamentoData, targetFrequency, foundIdx);
+            od->frequency = bd->portamentoData.previousNotes->noteCount == 0 ? targetFrequency : 0.0f;  // Prevent brief glitch at target frequency just before glide starts
         } else
             od->frequency = key_to_frequency(key, b);
 
         if (bd->filterPortamentoData.inUse) {
             const float targetFrequency = filter_key_to_frequency(key, b);
-            portamento_set_timing(&od->filterPortamento, targetFrequency, bd->filterPortamentoData.time);
-            od->filterFrequency = targetFrequency;
+            portamento_chord_capture(&bd->filterPortamentoData, targetFrequency, foundIdx);
+            od->filterFrequency = bd->filterPortamentoData.previousNotes->noteCount == 0 ? targetFrequency : 0.0f;  // Prevent brief glitch at target frequency just before glide starts
         } else
             od->filterFrequency = filter_key_to_frequency(key, b);
 
@@ -263,7 +263,8 @@ float render_sample_from_phase(int bank, int table_index, float phase) {
     return sample_a + fraction * (sample_b - sample_a);
 }
 
-long count = 0;;
+long count = 0;
+
 EMSCRIPTEN_KEEPALIVE
 
 void processBlock(float **outputBuffers, int numSamples) {
@@ -341,7 +342,8 @@ void processBlock(float **outputBuffers, int numSamples) {
             bool bd_outputToFilter = bd->outputToFilter;
             float *bd_periodicWaveData = bd->periodicWaveData;
             int bd_modOutput = bd->modOutput;
-
+            portamento_process(&bd->portamentoData, b, false);
+            portamento_process(&bd->filterPortamentoData, b, true);
             for (int osc = 0; osc < g_oscillatorsPerBank; osc++) {
                 OscillatorData *od = &g_oscData[b][osc];
                 Envelope *env = &od->env;
@@ -371,7 +373,7 @@ void processBlock(float **outputBuffers, int numSamples) {
                 float f = od->frequency;
 
                 if (od->portamento.portamentoData->inUse)
-                    f = portamentoGlide(&od->portamento, f);
+                    f = od->frequency = portamentoGlide(&od->portamento, f);
                 if (bd_usePitchEnvelope)
                     f *= od->pitchEnv.level;
                 f *= bd->detuneFactor;
@@ -381,9 +383,8 @@ void processBlock(float **outputBuffers, int numSamples) {
                 if (bd_useFilter || g_noise->output == FILTER) {
                     float filterFx = od->filterFrequency;
                     if (od->filterPortamento.portamentoData->inUse)
-                        filterFx = portamentoGlide(&od->filterPortamento, filterFx);
+                        filterFx = od->filterFrequency = portamentoGlide(&od->filterPortamento, filterFx);
                     filterFx *= bd->filterDetuneFactor;
-
                     if (bd_useFilterPitchEnvelope)
                         filterFx *= od->filterPitchEnv.level;
                     if (bd->filterLfoData.modType == LFO_FREQUENCY)

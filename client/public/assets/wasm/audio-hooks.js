@@ -110,9 +110,6 @@ if (typeof globalThis.registerProcessor === 'function') {
           case "setVelocitySensitive":
             Module._setVelocitySensitive(data.bank, data.velocitySensitive);
             break;
-          case 'setPortamentoTime':
-            Module._setPortamentoTime(data.bank, data.time);
-            break;
           case 'envelope':
             Module._setBankEnvelopeParams(data.bank, data.phase, data.value);
             break;

@@ -1,104 +1,113 @@
 #include <emscripten/console.h>
 #include "portamento.h"
 #include <math.h>
-
-//#include "../.emscripten/emsdk-5.0.7/upstream/emscripten/system/lib/libunwind/src/shadow_stack_unwind.h"
-
-// Initialize the queue
-void initQueue(CircularQueue *q) {
-    q->front = 0;
-    q->rear = -1;
-    q->size = 0;
-}
-
-// Check if the queue is full
-bool isFull(CircularQueue *q) {
-    return (q->size == CAPACITY);
-}
-
-// Check if the queue is empty
-bool isEmpty(CircularQueue *q) {
-    return (q->size == 0);
-}
-
-// Add an element to the rear of the queue (Enqueue)
-bool enqueue(CircularQueue *q, float value) {
-    if (isFull(q)) {
-        emscripten_console_logf("Queue Overflow! Cannot enqueue %f.\n", value);
-        return false;
-    }
-
-    // Circularly increment the rear index
-    q->rear = (q->rear + 1) % CAPACITY;
-    q->items[q->rear] = value;
-    q->size++;
-    emscripten_console_logf("enqueue size %d\n", q->size);
-    return true;
-}
-
-// Remove and return the front element of the queue (Dequeue)
-float dequeue(CircularQueue *q) {
-    if (isEmpty(q)) {
-        emscripten_console_logf("Queue Underflow! Cannot dequeue.\n");
-        return -1.0f; // Error flag indicating empty queue
-    }
-
-    int dequeuedValue = q->items[q->front];
-
-    // Circularly increment the front index
-    q->front = (q->front + 1) % CAPACITY;
-    q->size--;
-    emscripten_console_logf("dequeued size %d\n", q->size);
-    return dequeuedValue;
-}
-
-int queueSize(CircularQueue *q) {
-    return q->size;
-}
-
-// View the front element without removing it (Peek)
-float peek(CircularQueue *q) {
-    if (isEmpty(q)) {
-        emscripten_console_logf("Queue is empty! Nothing to peek.\n");
-        return -1.0f;
-    }
-    return q->items[q->front];
-}
+#include <stdlib.h>
 
 void initPortamentoData(PortamentoData *data) {
-    data->previousFrequency = -1.0f;
-    //initQueue(&data->queue);
-    data->time = 0.0f;
+    data->glideTime = 0.0f;
     data->inUse = false;
+    data->notes1.noteCount = data->notes2.noteCount = 0;
+    data->previousNotes = &data->notes1;
+    data->currentNotes = &data->notes2;
+    data->timer = 0;
+    data->timerTarget = g_sampleRate * 0.03;  // 30mS capture window
+    data->timerRunning = false;
 }
+
+void portamento_chord_capture(PortamentoData *data, float frequency, int noteIndex) {
+    Notes* notes = data->currentNotes;
+    if (notes->noteCount == 0) {
+        data->timer = 0;
+        data->timerRunning = true;
+    }
+    struct Note* note = &notes->notes[notes->noteCount++];
+    emscripten_console_logf("Captured %d notes", notes->noteCount);
+    note->frequency = frequency;
+    note->noteIndex = noteIndex;
+}
+
+void switchNoteBanks(PortamentoData *data) {
+    Notes* temp = data->previousNotes;
+    data->previousNotes = data->currentNotes;
+    data->currentNotes = temp;
+    data->currentNotes->noteCount = 0;  // Reset the notes count ready for the next chord.
+}
+
+float noteAverage(const Notes* notes) {
+    float notesAverage = 0.0f;
+
+    for (int i = 0; i < notes->noteCount; i++) {
+        notesAverage += notes->notes[i].frequency;
+    }
+
+    notesAverage /= notes->noteCount;
+    return notesAverage;
+}
+
+int notesCompare(const void* a, const void* b) {
+    int x = *(const int *)a;
+    int y = *(const int *)b;
+
+    if (x < y)
+        return -1;
+    if (x > y)
+        return 1;
+    return 0;
+ }
+
+void portamento_set_timing(Portamento *porta, float startFrequency, float targetFrequency) {
+    PortamentoData* pd = porta->portamentoData;
+
+    porta->frequency = startFrequency;
+    if (porta->frequency == -1.0f)
+        porta->frequency = targetFrequency;
+    // FIX: Prevent porta->v0 from being 0 or lower than porta->lowestLevel
+    float startFx = porta->frequency;
+    if (startFx < porta->lowestFx) {
+        startFx = porta->lowestFx;
+    }
+
+    porta->v0 = startFx;
+    porta->v1 = targetFrequency + porta->lowestFx;
+    porta->t0 = porta->t;
+    porta->t1 = porta->t0 + pd->glideTime + porta->lowestTime;
+    emscripten_console_logf("glideTime = %f t0 = %f t1 = %f v0 = %f v0 = %f", pd->glideTime, porta->t0, porta->t1, porta->v0, porta->v1);
+    porta->targetReached = false;
+}
+
+void portamento_process(PortamentoData *pd, int bank, bool isFilter) {
+    if (pd->timerRunning && ++pd->timer >= pd->timerTarget) {
+        pd->timer = 0;
+        pd->timerRunning = false;
+        Notes* currentNotes = pd->currentNotes;
+        Notes* previousNotes = pd->previousNotes;
+        qsort(currentNotes->notes, currentNotes->noteCount, sizeof(currentNotes->notes[0]), notesCompare);
+        bool glideUp = noteAverage(currentNotes) > noteAverage(pd->previousNotes);
+        emscripten_console_logf("noteAverage(currentNotes) = %f noteAverage(previousNotes) = %f currentNotes = %d previousNotes %d", noteAverage(currentNotes), noteAverage(previousNotes), currentNotes->noteCount, previousNotes->noteCount);
+        if (true || glideUp) {
+            for (int i = 0; i < currentNotes->noteCount && i < previousNotes->noteCount; i++) {
+                OscillatorData* od = &g_oscData[bank][currentNotes->notes[i].noteIndex];
+                Portamento* portamento = isFilter ? &od->filterPortamento : &od->portamento;
+                portamento_set_timing(portamento, previousNotes->notes[i].frequency, currentNotes->notes[i].frequency);
+            }
+            if (currentNotes->noteCount > previousNotes->noteCount && previousNotes->noteCount > 0) {
+                for (int i = previousNotes->noteCount; i < currentNotes->noteCount; i++) {
+                    OscillatorData* od = &g_oscData[bank][currentNotes->notes[i].noteIndex];
+                    Portamento* portamento =isFilter ? &od->filterPortamento : &od->portamento;
+                    const float startFrequency = previousNotes->notes[previousNotes->noteCount-1].frequency * currentNotes->notes[i].frequency / currentNotes->notes[i-1].frequency;
+                    portamento_set_timing(portamento, startFrequency, currentNotes->notes[i].frequency);
+                }
+            }
+        }
+        switchNoteBanks(pd);
+    }}
 
 void portamento_init(Portamento *porta, PortamentoData *data) {
     porta->portamentoData = data;
     porta->lowestTime = 0.0001f;
-    porta->lowestLevel = 0.0000001f;
-    porta->v0 = porta->lowestLevel;
-    porta->v1 = porta->lowestLevel;
-    porta->frequency = porta->lowestLevel;
-    porta->targetReached = false;
-}
-
-void portamento_set_timing(Portamento *porta, float value, float time) {
-    PortamentoData* pd = porta->portamentoData;
-
-    porta->frequency =  pd->previousFrequency != -1.0f ? pd->previousFrequency : value; //dequeue(&porta->portamentoData->queue);  // Get least recent note frequency to start portamento from
-    pd->previousFrequency = value;
-    if (porta->frequency == -1.0f)
-        porta->frequency = value;
-    // FIX: Prevent porta->v0 from being 0 or lower than porta->lowestLevel
-    float currentLevel = porta->frequency;
-    if (currentLevel < porta->lowestLevel) {
-        currentLevel = porta->lowestLevel;
-    }
-
-    porta->v0 = currentLevel;
-    porta->v1 = value + porta->lowestLevel;
-    porta->t0 = porta->t;
-    porta->t1 = porta->t0 + time + porta->lowestTime;
+    porta->lowestFx = 0.0000001f;
+    porta->v0 = porta->lowestFx;
+    porta->v1 = porta->lowestFx;
     porta->targetReached = false;
 }
 
@@ -115,7 +124,6 @@ float portamentoGlide(Portamento *porta, float currentFx) {
         if (porta->t >= porta->t1 && !porta->targetReached) {
             porta->targetReached = true;
             porta->frequency = porta->v1;
-            //enqueue(&porta->portamentoData->queue, porta->frequency);
         }
     }
     return !porta->targetReached ? porta->frequency : currentFx;  // Use current frequency when target reached to allow tuning

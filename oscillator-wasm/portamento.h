@@ -1,38 +1,16 @@
-#include <stdbool.h>
-#include "globals.h"
-
 #ifndef PORTAMENTO_H
 #define PORTAMENTO_H
 
-#ifndef CAPACITY
-#define CAPACITY 12
-#endif
+#include "globals.h"
 
-// Initialize the queue
-void initQueue(CircularQueue *q);
-
-// Check if the queue is full
-bool isFull(CircularQueue *q);
-
-// Check if the queue is empty
-bool isEmpty(CircularQueue *q);
-
-// Add an element to the rear of the queue (Enqueue)
-bool enqueue(CircularQueue *q, float value);
-
-// Remove and return the front element of the queue (Dequeue)
-float dequeue(CircularQueue *q);
-
-int queueSize(CircularQueue *q);
-
-// View the front element without removing it (Peek)
-float peek(CircularQueue *q);
 
 void initPortamentoData(PortamentoData *data);
 
-void portamento_init(Portamento *porta, PortamentoData *data);
+void portamento_chord_capture(PortamentoData *data, float frequency, int noteIndex);
 
-void portamento_set_timing(Portamento *porta, float value, float time);
+void portamento_process(PortamentoData *pd, int bank, bool isFilter);
+
+void portamento_init(Portamento *porta, PortamentoData *data);
 
 float portamentoGlide(Portamento *porta, float currentFx);
 
