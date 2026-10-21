@@ -21,7 +21,6 @@ void portamento_chord_capture(PortamentoData *data, float frequency, int noteInd
         data->timerRunning = true;
     }
     struct Note* note = &notes->notes[notes->noteCount++];
-    emscripten_console_logf("Captured %d notes", notes->noteCount);
     note->frequency = frequency;
     note->noteIndex = noteIndex;
 }
@@ -71,7 +70,7 @@ void portamento_set_timing(Portamento *porta, float startFrequency, float target
     porta->v1 = targetFrequency + porta->lowestFx;
     porta->t0 = porta->t;
     porta->t1 = porta->t0 + pd->glideTime + porta->lowestTime;
-    emscripten_console_logf("glideTime = %f t0 = %f t1 = %f v0 = %f v0 = %f", pd->glideTime, porta->t0, porta->t1, porta->v0, porta->v1);
+  //  emscripten_console_logf("glideTime = %f t0 = %f t1 = %f v0 = %f v0 = %f", pd->glideTime, porta->t0, porta->t1, porta->v0, porta->v1);
     porta->targetReached = false;
 }
 
@@ -83,7 +82,7 @@ void portamento_process(PortamentoData *pd, int bank, bool isFilter) {
         Notes* previousNotes = pd->previousNotes;
         qsort(currentNotes->notes, currentNotes->noteCount, sizeof(currentNotes->notes[0]), notesCompare);
         bool glideUp = noteAverage(currentNotes) > noteAverage(pd->previousNotes);
-        emscripten_console_logf("noteAverage(currentNotes) = %f noteAverage(previousNotes) = %f currentNotes = %d previousNotes %d", noteAverage(currentNotes), noteAverage(previousNotes), currentNotes->noteCount, previousNotes->noteCount);
+       // emscripten_console_logf("noteAverage(currentNotes) = %f noteAverage(previousNotes) = %f currentNotes = %d previousNotes %d", noteAverage(currentNotes), noteAverage(previousNotes), currentNotes->noteCount, previousNotes->noteCount);
         if (true || glideUp) {
             for (int i = 0; i < currentNotes->noteCount && i < previousNotes->noteCount; i++) {
                 OscillatorData* od = &g_oscData[bank][currentNotes->notes[i].noteIndex];
@@ -93,7 +92,7 @@ void portamento_process(PortamentoData *pd, int bank, bool isFilter) {
             if (currentNotes->noteCount > previousNotes->noteCount && previousNotes->noteCount > 0) {
                 for (int i = previousNotes->noteCount; i < currentNotes->noteCount; i++) {
                     OscillatorData* od = &g_oscData[bank][currentNotes->notes[i].noteIndex];
-                    Portamento* portamento =isFilter ? &od->filterPortamento : &od->portamento;
+                    Portamento* portamento = isFilter ? &od->filterPortamento : &od->portamento;
                     const float startFrequency = previousNotes->notes[previousNotes->noteCount-1].frequency * currentNotes->notes[i].frequency / currentNotes->notes[i-1].frequency;
                     portamento_set_timing(portamento, startFrequency, currentNotes->notes[i].frequency);
                 }

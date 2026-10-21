@@ -144,15 +144,17 @@ void triggerNoteOn(int key, int velocity) {
 
         if (bd->portamentoData.inUse) {
             const float targetFrequency = key_to_frequency(key, b);
+            const float preGlideFrequency = /*isRetrigger ? */od->frequency /*: 0.0*/;
             portamento_chord_capture(&bd->portamentoData, targetFrequency, foundIdx);
-            od->frequency = bd->portamentoData.previousNotes->noteCount == 0 ? targetFrequency : 0.0f;  // Prevent brief glitch at target frequency just before glide starts
+            od->frequency = bd->portamentoData.previousNotes->noteCount == 0 ? targetFrequency : preGlideFrequency;  // Prevent brief glitch at target frequency just before glide starts
         } else
             od->frequency = key_to_frequency(key, b);
 
         if (bd->filterPortamentoData.inUse) {
             const float targetFrequency = filter_key_to_frequency(key, b);
+            const float preGlideFrequency = isRetrigger ? od->filterFrequency : 0.0f;
             portamento_chord_capture(&bd->filterPortamentoData, targetFrequency, foundIdx);
-            od->filterFrequency = bd->filterPortamentoData.previousNotes->noteCount == 0 ? targetFrequency : 0.0f;  // Prevent brief glitch at target frequency just before glide starts
+            od->filterFrequency = bd->filterPortamentoData.previousNotes->noteCount == 0 ? targetFrequency : preGlideFrequency;  // Prevent brief glitch at target frequency just before glide starts
         } else
             od->filterFrequency = filter_key_to_frequency(key, b);
 
@@ -389,8 +391,11 @@ void processBlock(float **outputBuffers, int numSamples) {
                         filterFx *= od->filterPitchEnv.level;
                     if (bd->filterLfoData.modType == LFO_FREQUENCY)
                         filterFx *= (1.0f + render_lfo_sample(&bd->filterLfoData));
-
-                    svf4_set_params(&od->svf, filterFx, bd->resonanceBankFactor);
+                    const bool filterPortamentoInUse = od->portamento.portamentoData->inUse;
+                    // If filter portamento in use, don't use filter while chord capture in progress as the start frequency is not yet known and  it may cause a sudden
+                    //  change in the set cutoff frequency which would result in audio artifacts.
+                    if ((filterPortamentoInUse || (filterPortamentoInUse && !od->filterPortamento.portamentoData->timerRunning)))
+                        svf4_set_params(&od->svf, filterFx, bd->resonanceBankFactor);
                 }
 
                 // Gather AM & FM accumulators
@@ -428,7 +433,11 @@ void processBlock(float **outputBuffers, int numSamples) {
                         band = bd->numBands - 1;
 
                     signal = render_sample_from_phase(b, band, currentPhase) * matrixA;
-                    envelope_detect_signal_near_zero(env, signal);
+                    const bool portamentoInUse = od->portamento.portamentoData->inUse;
+
+                  //  Don't let envelope start during the portamento chord capture phase
+                   if (!portamentoInUse || (portamentoInUse && !od->portamento.portamentoData->timerRunning))
+                        envelope_detect_signal_near_zero(env, signal);
                 }
                 float modSignal = (bd_modOutput == 2) ? (signal * ampEnvelope) : signal;
 
