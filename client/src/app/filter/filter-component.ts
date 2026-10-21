@@ -125,6 +125,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.sustainLevel, this.proxySettings.freqBend.sustainLevel);
     this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.release, this.proxySettings.freqBend.releaseTime);
     this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.releaseLevel, this.proxySettings.freqBend.releaseLevel);
+    this.fmSynthService.setFilterPortamentoType(this.filterNumber(), this.proxySettings.portamentoType);
 
     this.frequency().setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
     this.deTune().setValue(this.proxySettings.deTune);
@@ -243,7 +244,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   protected setPortamento($event: number) {
     this.proxySettings.portamento = $event;
-    if (this.proxySettings.portamentoType === 'on')
+    if (this.proxySettings.portamentoType !== 'off')
       this.fmSynthService.setFilterPortamento(this.filterNumber(), $event);
 
     if ($event > 0) {
@@ -260,6 +261,8 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
       this.fmSynthService.setFilterPortamento(this.filterNumber(), 0);
     else
       this.fmSynthService.setFilterPortamento(this.filterNumber(), this.proxySettings.portamento);
+
+    this.fmSynthService.setFilterPortamentoType(this.filterNumber(), value);
   }
 
   midiPitchBend(value: number) {

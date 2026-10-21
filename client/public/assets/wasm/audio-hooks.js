@@ -116,9 +116,21 @@ if (typeof globalThis.registerProcessor === 'function') {
           case 'portamento':
             Module._setPortamento(data.bank, data.time);
             break;
+          case 'portamentoType': {
+            const t = data.portamentoType;
+            const type = t === 'off' ? 0 : t === 'chord' ? 1 : t === 'plus12' ? 2 : t === 'plus24' ? 3 : t === 'minus12' ? 4 : t === 'minus24' ? 5 : 0;
+            Module._setPortamentoType(data.bank, type);
+            break;
+          }
           case 'filterPortamento':
             Module._setFilterPortamento(data.bank, data.time);
             break;
+          case 'filterPortamentoType': {
+            const t = data.portamentoType;
+            const type = t === 'off' ? 0 : t === 'chord' ? 1 : t === 'plus12' ? 2 : t === 'plus24' ? 3 : t === 'minus12' ? 4 : t === 'minus24' ? 5 : 0;
+            Module._setFilterPortamentoType(data.bank, type);
+            break;
+          }
           case 'pitchEnvelope':
             Module._setBankPitchEnvelopeParams(data.bank, data.phase, data.value);
             break;

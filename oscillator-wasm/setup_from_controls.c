@@ -104,6 +104,13 @@ void setPortamento(int bank, float time) {
 
 EMSCRIPTEN_KEEPALIVE
 
+void setPortamentoType(int bank, int type)  {
+    PortamentoData *pd = &g_banks[bank].portamentoData;
+    pd->type = type;
+}
+
+EMSCRIPTEN_KEEPALIVE
+
 void setBankPitchEnvelopeParams(int bank, int phase, float value) {
     PitchEnvelopeData *env = &g_banks[bank].pitchEnvelopeData;
 
@@ -142,6 +149,13 @@ void setFilterPortamento(int bank, float time) {
     pd->glideTime = time;
     emscripten_console_logf("bank = %d glideTime = %f", bank, pd->glideTime);
     pd->inUse = time != 0.0f;
+}
+
+EMSCRIPTEN_KEEPALIVE
+
+void setFilterPortamentoType(int bank, int type)  {
+    PortamentoData *pd = &g_banks[bank].filterPortamentoData;
+    pd->type = type;
 }
 
 EMSCRIPTEN_KEEPALIVE

@@ -29,9 +29,7 @@ export enum envelopePhase {inactive, attack, decay, sustain, release, retrigger,
 export enum pitchEnvelopePhase {inactive, attack, attackLevel, decay, sustainLevel, release, releaseLevel, retrigger}
 
 export type PortamentoType =
-  'off' | 'on'
-
-@Component({
+  'off' | 'chord' | 'plus12' | 'plus24' | 'minus12' | 'minus24';@Component({
   selector: 'app-oscillators',
   imports: [
     LevelControlComponent,
@@ -401,7 +399,7 @@ export class OscillatorComponent  {
       this.proxySettings.useFrequencyEnvelope = onOff.off;
       SetRadioButtons.set(this.freqEnveOnOffForm(), this.proxySettings.useFrequencyEnvelope);
     }
-    if (this.proxySettings.portamentoType === 'on')
+    if (this.proxySettings.portamentoType !== 'off')
       this.fmSynthService.setPortamento(this.oscNumber(), $event);
   }
 
@@ -412,6 +410,8 @@ export class OscillatorComponent  {
       this.fmSynthService.setPortamento(this.oscNumber(), 0);
     else
       this.fmSynthService.setPortamento(this.oscNumber(), this.proxySettings.portamento);
+
+    this.fmSynthService.setPortamentoType(this.oscNumber(), value);
   }
 
   midiPitchBend(value: number) {

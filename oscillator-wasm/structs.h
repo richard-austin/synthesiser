@@ -33,6 +33,15 @@ typedef enum {
     LFO_OFF = 3
 } lfoModType;
 
+typedef enum {
+    PORTAMENTO_OFF,
+    PORTAMENTO_CHORD,
+    PORTAMENTO_PLUS_12,
+    PORTAMENTO_PLUS_24,
+    PORTAMENTO_MINUS_12,
+    PORTAMENTO_MINUS_24,
+} portamentoType;
+
 // --- Struct Definitions ---
 typedef struct {
     float attack;
@@ -95,6 +104,7 @@ typedef struct {
     Notes notes2;
     Notes *previousNotes;
     Notes *currentNotes;
+    portamentoType type;
     int timer;
     int timerTarget;
     bool timerRunning;

@@ -142,6 +142,10 @@ export class FmSynthService {
     this.port?.postMessage({type: 'portamento', bank, time});
   }
 
+  setPortamentoType(bank: number, portamentoType: string) {
+    this.port?.postMessage({type: 'portamentoType', bank, portamentoType})
+  }
+
   public pitchEnvelope(bank: number, phase: number, value: number): void {
     if (phase === pitchEnvelopePhase.attackLevel || phase === pitchEnvelopePhase.sustainLevel || phase === pitchEnvelopePhase.releaseLevel) {
       value = Math.pow(this.sixthRoot2, value * 48);
@@ -176,6 +180,10 @@ export class FmSynthService {
 
   setFilterPortamento(bank: number,time: number) {
     this.port?.postMessage({type: 'filterPortamento', bank, time});
+  }
+
+  setFilterPortamentoType(bank: number, portamentoType: string) {
+    this.port?.postMessage({type: 'filterPortamentoType', bank, portamentoType})
   }
 
   public useFilterPitchEnvelope(bank: number, value: boolean): void {
@@ -329,9 +337,10 @@ export class FmSynthService {
     this.envelope(bank, envelopePhase.sustain, proxySettings.adsr.sustainLevel);
     this.envelope(bank, envelopePhase.release, proxySettings.adsr.releaseTime);
     this.envelope(bank, envelopePhase.legato, proxySettings.legatoMode ? 1 : 0)
-    //  this.setFreqBendEnvelope(proxySettings.freqBend);
+    //this.setFreqBendEnvelope(proxySettings.freqBend);
     //  this.useFreqBendEnvelope(proxySettings.useFrequencyEnvelope === onOff.on);
     this.setOutputWaveform(proxySettings.waveForm, bank);
+    this.setPortamentoType(bank, proxySettings.portamentoType);
     // this.clearModulation();  // Remove any preexisting mod settings
   }
 
