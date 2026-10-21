@@ -394,7 +394,7 @@ void processBlock(float **outputBuffers, int numSamples) {
                     const bool filterPortamentoInUse = od->portamento.portamentoData->inUse;
                     // If filter portamento in use, don't use filter while chord capture in progress as the start frequency is not yet known and  it may cause a sudden
                     //  change in the set cutoff frequency which would result in audio artifacts.
-                    if ((filterPortamentoInUse || (filterPortamentoInUse && !od->filterPortamento.portamentoData->timerRunning)))
+                    if (!filterPortamentoInUse || (filterPortamentoInUse && !od->filterPortamento.portamentoData->timerRunning))
                         svf4_set_params(&od->svf, filterFx, bd->resonanceBankFactor);
                 }
 
