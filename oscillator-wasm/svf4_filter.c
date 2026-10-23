@@ -10,7 +10,7 @@ void svf4_init(SVF4Filter *f, float sampleRate) {
     svf_init(f->stage1, sampleRate);
     svf_init(f->stage2, sampleRate);
     envelope_init(&f->envelope, &f->envelopeData);
-    f->envelopeData.attack = 0.0f;
+    f->envelopeData.attack = 0.03f;
     f->envelopeData.decay = 0.0f;
     f->envelopeData.sustainLevel = 1.0f;
     f->envelopeData.release = 0.0f;
