@@ -99,7 +99,6 @@ EMSCRIPTEN_KEEPALIVE
 void setPortamento(int bank, float time) {
     PortamentoData *pd = &g_banks[bank].portamentoData;
     pd->glideTime = time;
-    pd->inUse = time != 0.0f;
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -147,8 +146,6 @@ EMSCRIPTEN_KEEPALIVE
 void setFilterPortamento(int bank, float time) {
     PortamentoData *pd = &g_banks[bank].filterPortamentoData;
     pd->glideTime = time;
-    emscripten_console_logf("bank = %d glideTime = %f", bank, pd->glideTime);
-    pd->inUse = time != 0.0f;
 }
 
 EMSCRIPTEN_KEEPALIVE

@@ -109,7 +109,6 @@ typedef struct {
     int timerTarget;
     bool timerRunning;
     float glideTime;
-    bool inUse;
 } PortamentoData;
 
 typedef struct {

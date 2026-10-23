@@ -5,7 +5,6 @@
 
 void initPortamentoData(PortamentoData *data) {
     data->glideTime = 0.0f;
-    data->inUse = false;
     data->notes1.noteCount = data->notes2.noteCount = 0;
     data->previousNotes = &data->notes1;
     data->currentNotes = &data->notes2;
@@ -75,14 +74,26 @@ void portamento_set_timing(Portamento *porta, float startFrequency, float target
     porta->targetReached = false;
 }
 
+bool portamento_in_use(const PortamentoData *pd) {
+    return pd->type != PORTAMENTO_OFF && pd->glideTime != 0.0f;
+}
+
 void portamento_process(PortamentoData *pd, int bank, bool isFilter) {
-    if (pd->timerRunning && ++pd->timer >= pd->timerTarget) {
+    if (pd->glideTime != 0.0f && pd->timerRunning && ++pd->timer >= pd->timerTarget) {
         pd->timer = 0;
         pd->timerRunning = false;
         Notes *currentNotes = pd->currentNotes;
         Notes *previousNotes = pd->previousNotes;
         const portamentoType t = pd->type;
-        float factor = t == PORTAMENTO_PLUS_12 ? 2.0f : t == PORTAMENTO_PLUS_24 ? 4.0f : t == PORTAMENTO_MINUS_12 ? 0.5f : t == PORTAMENTO_MINUS_24 ? 0.25f : 1.0f;
+        float factor = t == PORTAMENTO_PLUS_12
+                           ? 2.0f
+                           : t == PORTAMENTO_PLUS_24
+                                 ? 4.0f
+                                 : t == PORTAMENTO_MINUS_12
+                                       ? 0.5f
+                                       : t == PORTAMENTO_MINUS_24
+                                             ? 0.25f
+                                             : 1.0f;
         switch (pd->type) {
             case PORTAMENTO_OFF:
                 break;
