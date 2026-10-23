@@ -147,6 +147,8 @@ typedef struct {
 typedef struct {
     SVFFilter* stage1;
     SVFFilter* stage2;
+    EnvelopeData envelopeData;
+    Envelope envelope;
 } SVF4Filter;
 
 typedef struct {

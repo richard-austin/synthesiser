@@ -27,7 +27,7 @@ void envelope_init(Envelope *env, EnvelopeData *data) {
     env->velocity = 0x7f;
 }
 
-void envelope_prepare_to_start(Envelope *env, int velocity, float frequency) {
+void envelope_prepare_to_start(Envelope *env, int velocity) {
     env->t = 0.0f; // Clear layout ramp clock timers
     env->velocity = velocity;
     env->lastSignum = 0;

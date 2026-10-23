@@ -40,6 +40,7 @@ EMSCRIPTEN_KEEPALIVE
 
 void setBankEnvelopeParams(int bank, int phase, float value) {
     EnvelopeData *env = &g_banks[bank].envelopeData;
+    EnvelopeData *noiseEnvData = &g_noise->envelopeData;
     switch (phase) {
         case 1:
             env->attack = value;
@@ -52,6 +53,16 @@ void setBankEnvelopeParams(int bank, int phase, float value) {
             break;
         case 4:
             env->release = value;
+            // On bank 0, use the largest of noise and oscillator release times for filter release time
+            OscillatorData *od = g_oscData[bank];
+            if (bank == 0 && value > noiseEnvData->release) {
+                for (int i = 0; i < g_oscillatorsPerBank; ++i)
+                    od[i].svf.envelopeData.release = value;
+            }
+            else if (bank > 0) {
+                for (int i = 0; i < g_oscillatorsPerBank; ++i)
+                    od[i].svf.envelopeData.release = value;
+            }
             break;
         case 6:
             env->legato = (value > 0.0f);
@@ -65,22 +76,29 @@ void setBankEnvelopeParams(int bank, int phase, float value) {
 EMSCRIPTEN_KEEPALIVE
 
 void setNoiseEnvelopeParams(int phase, float value) {
-    EnvelopeData *env = &g_noise->envelopeData;
+    EnvelopeData *noiseEnvData = &g_noise->envelopeData;
+    EnvelopeData *env = &g_banks[0].envelopeData;
+
     switch (phase) {
         case 1:
-            env->attack = value;
+            noiseEnvData->attack = value;
             break;
         case 2:
-            env->decay = value;
+            noiseEnvData->decay = value;
             break;
         case 3:
-            env->sustainLevel = value;
+            noiseEnvData->sustainLevel = value;
             break;
         case 4:
-            env->release = value;
+            // Use the largest of noise and oscillator release times for filter release time
+            noiseEnvData->release = value;
+            OscillatorData *od = g_oscData[0];
+            if (value > env->release)
+                for (int i = 0; i < g_oscillatorsPerBank; ++i)
+                    od[i].svf.envelopeData.release = value;
             break;
         case 6:
-            env->legato = (value > 0.0f);
+            noiseEnvData->legato = (value > 0.0f);
             break;
         default:
             emscripten_console_errorf("Unknown noise envelope phase: %d", phase);

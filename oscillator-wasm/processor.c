@@ -160,7 +160,8 @@ void triggerNoteOn(int key, int velocity) {
 
         od->key = key;
 
-        envelope_prepare_to_start(&od->env, velocity, od->frequency);
+        envelope_prepare_to_start(&od->env, velocity);
+        envelope_prepare_to_start(&od->svf.envelope, velocity);
 
         // Set oscillator and filter pitch envelope times to 0
         od->pitchEnv.t = 0.0f;
@@ -187,6 +188,7 @@ void triggerNoteOff(int key) {
                 OscillatorData *od = &g_oscData[b][o];
                 od->env.keyDown = false;
                 g_noise->envelopes[o].keyDown = false;
+                od->svf.envelope.keyDown = false;
 
                 // if (!od->env.envelopeData->legato) {
                 //     // If the voice was caught mid-retrigger or processing anomaly,
@@ -365,6 +367,10 @@ void processBlock(float **outputBuffers, int numSamples) {
                     if (g_noise_output != OFF) {
                         envelope_advance_to_sustain(noiseEnvelope);
                     }
+
+                    if (bd_useFilter || (g_noise_output == FILTER && b == 0))
+                        envelope_advance_to_sustain(&od->svf.envelope);
+
                 } else {
                     if (bd_usePitchEnvelope)
                         pitch_envelope_advance_to_release_level(&od->pitchEnv);
@@ -374,6 +380,8 @@ void processBlock(float **outputBuffers, int numSamples) {
                     if (g_noise_output != OFF) {
                         envelope_advance_to_zero(noiseEnvelope);
                     }
+                    if (bd_useFilter || (g_noise_output == FILTER && b == 0))
+                        envelope_advance_to_zero(&od->svf.envelope);
                 }
 
                 float f = od->frequency;
@@ -385,10 +393,10 @@ void processBlock(float **outputBuffers, int numSamples) {
                 f *= bd->detuneFactor;
                 if (f > nyquist)
                     f = nyquist;
-
+                bool filterPortamentoInUse = false;
                 if (bd_useFilter || g_noise->output == FILTER) {
                     float filterFx = od->filterFrequency;
-                    const bool filterPortamentoInUse = portamento_in_use(od->filterPortamento.portamentoData);
+                    filterPortamentoInUse = portamento_in_use(od->filterPortamento.portamentoData);
                     if (filterPortamentoInUse)
                         filterFx = od->filterFrequency = portamentoGlide(&od->filterPortamento, filterFx);
                     filterFx *= bd->filterDetuneFactor;
@@ -468,6 +476,11 @@ void processBlock(float **outputBuffers, int numSamples) {
 
                 if (bd_outputToFilter || (g_noise_output == FILTER && b == 0)) {
                     float filterSample = svf4_process_morph(&od->svf, filterInputSample) * bd->filterLevel;
+
+                    envelope_detect_signal_near_zero(&od->svf.envelope, filterSample);
+
+                    filterSample *= od->svf.envelope.level;
+
                     // Mirroring the exact same source to Left and Right channel blocks
                     if (bd->filterConnectToPhaser)
                         bd->phaserInputs += filterSample;
