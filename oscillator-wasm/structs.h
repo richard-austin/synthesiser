@@ -152,6 +152,26 @@ typedef struct {
 } SVF4Filter;
 
 typedef struct {
+    float fs;                 // Host sample rate
+    float g;                  // Tuning coefficient
+    float res;                // Resonance (0.0f to 1.0f)
+    float gain_compensation;   // Dynamic make-up gain factor
+
+    // Internal stage states
+    float y_a;
+    float y_b;
+    float y_c;
+    float y_d;
+    float y_d_prev;
+
+    // History state for internal upsampling interpolation
+    float x_prev;
+    EnvelopeData envelopeData;
+    Envelope envelope;
+    float cutoffHz;
+} MoogLadderFilter;
+
+typedef struct {
     float frequency;
     int band;
     float phase;
@@ -170,7 +190,8 @@ typedef struct {
     float phase;
     ButterworthFilter butterworthFilter;
     float filterFrequency;
-    SVF4Filter svf;
+    //SVF4Filter svf;
+    MoogLadderFilter svf;
     Portamento portamento;
     Portamento filterPortamento;
 } OscillatorData;

@@ -6,6 +6,7 @@
 
 #include "svf4_filter.h"
 #include "key_to_frequency.h"
+#include "moog_ladder.h"
 #include "phaser.h"
 
 EMSCRIPTEN_KEEPALIVE
@@ -290,7 +291,8 @@ void setFilterQFactor(int bank, float qFactor) {
     for (int o = 0; o < g_oscillatorsPerBank; ++o) {
         OscillatorData *od = &g_oscData[bank][o];
         // Pass the raw 0.0 -> 1.0 value directly down
-        svf4_set_params(&od->svf, od->svf.stage1->cutoffHz, rawQ);
+        moog_set_params(&od->svf, od->svf.
+            cutoffHz, rawQ);
     }
 }
 
@@ -401,7 +403,7 @@ void setFilterMorphMode(int bank, float morphMode) {
     OscillatorData *oscData = g_oscData[bank];
     for (int o = 0; o < g_oscillatorsPerBank; ++o) {
         OscillatorData *od = &oscData[o];
-        svf4_set_morph(&od->svf, morphMode);
+       // svf4_set_morph(&od->svf, morphMode);
     }
 }
 

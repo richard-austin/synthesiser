@@ -13,6 +13,7 @@
 #include "svf4_filter.h"
 #include "butterworth_filter.h"
 #include "key_to_frequency.h"
+#include "moog_ladder.h"
 #include "noise.h"
 #include "phaser.h"
 
@@ -92,7 +93,7 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, int numBand
             pitch_envelope_init(&g_oscData[b][o].pitchEnv, &bd->pitchEnvelopeData);
             pitch_envelope_init(&g_oscData[b][o].filterPitchEnv, &bd->filterPitchEnvelopeData);
             butterworth_calculate_coefficients(&g_oscData[b][o].butterworthFilter, 1000.0f, sampleRate);
-            svf4_init(&g_oscData[b][o].svf, sampleRate);
+            moog_init(&g_oscData[b][o].svf, sampleRate);
         }
     }
 }
@@ -405,7 +406,7 @@ void processBlock(float **outputBuffers, int numSamples) {
                     if (bd->filterLfoData.modType == LFO_FREQUENCY)
                         filterFx *= (1.0f + render_lfo_sample(&bd->filterLfoData));
 
-                    svf4_set_params(&od->svf, filterFx, bd->resonanceBankFactor);
+                    moog_set_params(&od->svf, filterFx, bd->resonanceBankFactor);
                 }
 
                 // Gather AM & FM accumulators
@@ -475,7 +476,7 @@ void processBlock(float **outputBuffers, int numSamples) {
                     bd->phaserInputs += noiseSample;
 
                 if (bd_outputToFilter || (g_noise_output == FILTER && b == 0)) {
-                    float filterSample = svf4_process_morph(&od->svf, filterInputSample) * bd->filterLevel;
+                    float filterSample = moog_process_sample(&od->svf, filterInputSample) * bd->filterLevel;
 
                     envelope_detect_signal_near_zero(&od->svf.envelope, filterSample);
 
