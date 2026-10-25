@@ -10,9 +10,9 @@
 #include "envelope.h"
 #include "pitch_envelope.h"
 #include "lfo.h"
-#include "svf4_filter.h"
 #include "butterworth_filter.h"
 #include "key_to_frequency.h"
+#include "filter.h"
 #include "noise.h"
 #include "phaser.h"
 
@@ -92,7 +92,7 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, int numBand
             pitch_envelope_init(&g_oscData[b][o].pitchEnv, &bd->pitchEnvelopeData);
             pitch_envelope_init(&g_oscData[b][o].filterPitchEnv, &bd->filterPitchEnvelopeData);
             butterworth_calculate_coefficients(&g_oscData[b][o].butterworthFilter, 1000.0f, sampleRate);
-            svf4_init(&g_oscData[b][o].svf, sampleRate);
+            filter_init(&g_oscData[b][o].filter, sampleRate);
         }
     }
 }
@@ -133,7 +133,7 @@ void triggerNoteOn(int key, int velocity) {
    // STEP 3: Map parameters identically across all multi-bank nodes
     for (int b = 0; b < g_numberOfBanks; b++) {
         OscillatorData *od = &g_oscData[b][foundIdx];
-        const BankData *bd = &g_banks[b];
+        BankData *bd = &g_banks[b];
 
         // If an allocation collision happens with an existing active different note,
         // force clear it to prevent old dead note values from lingering.
@@ -142,23 +142,26 @@ void triggerNoteOn(int key, int velocity) {
             od->env.phase = ENV_INACTIVE;
         }
 
-        if (bd->portamentoData.inUse) {
+        if (portamento_in_use(&bd->portamentoData)) {
             const float targetFrequency = key_to_frequency(key, b);
-            portamento_set_timing(&od->portamento, targetFrequency, bd->portamentoData.time);
-            od->frequency = targetFrequency;
+            const float preGlideFrequency = /*isRetrigger ? */od->frequency /*: 0.0*/;
+            portamento_chord_capture(&bd->portamentoData, targetFrequency, foundIdx);
+            od->frequency = bd->portamentoData.previousNotes->noteCount == 0 ? targetFrequency : preGlideFrequency;  // Prevent brief glitch at target frequency just before glide starts
         } else
             od->frequency = key_to_frequency(key, b);
 
-        if (bd->filterPortamentoData.inUse) {
+        if (portamento_in_use(&bd->filterPortamentoData)) {
             const float targetFrequency = filter_key_to_frequency(key, b);
-            portamento_set_timing(&od->filterPortamento, targetFrequency, bd->filterPortamentoData.time);
-            od->filterFrequency = targetFrequency;
+            const float preGlideFrequency = isRetrigger ? od->filterFrequency : 0.0f;
+            portamento_chord_capture(&bd->filterPortamentoData, targetFrequency, foundIdx);
+            od->filterFrequency = bd->filterPortamentoData.previousNotes->noteCount == 0 ? targetFrequency : preGlideFrequency;  // Prevent brief glitch at target frequency just before glide starts
         } else
             od->filterFrequency = filter_key_to_frequency(key, b);
 
         od->key = key;
 
-        envelope_prepare_to_start(&od->env, velocity, od->frequency);
+        envelope_prepare_to_start(&od->env, velocity);
+        envelope_prepare_to_start(&od->filter.envelope, velocity);
 
         // Set oscillator and filter pitch envelope times to 0
         od->pitchEnv.t = 0.0f;
@@ -185,6 +188,7 @@ void triggerNoteOff(int key) {
                 OscillatorData *od = &g_oscData[b][o];
                 od->env.keyDown = false;
                 g_noise->envelopes[o].keyDown = false;
+                od->filter.envelope.keyDown = false;
 
                 // if (!od->env.envelopeData->legato) {
                 //     // If the voice was caught mid-retrigger or processing anomaly,
@@ -263,7 +267,8 @@ float render_sample_from_phase(int bank, int table_index, float phase) {
     return sample_a + fraction * (sample_b - sample_a);
 }
 
-long count = 0;;
+long count = 0;
+
 EMSCRIPTEN_KEEPALIVE
 
 void processBlock(float **outputBuffers, int numSamples) {
@@ -341,11 +346,16 @@ void processBlock(float **outputBuffers, int numSamples) {
             bool bd_outputToFilter = bd->outputToFilter;
             float *bd_periodicWaveData = bd->periodicWaveData;
             int bd_modOutput = bd->modOutput;
+            if (portamento_in_use(&bd->portamentoData))
+                portamento_process(&bd->portamentoData, b, false);
+            if (portamento_in_use(&bd->filterPortamentoData))
+                portamento_process(&bd->filterPortamentoData, b, true);
 
             for (int osc = 0; osc < g_oscillatorsPerBank; osc++) {
                 OscillatorData *od = &g_oscData[b][osc];
-                Envelope *env = &od->env;
-                if (!env->inUse && !is_modulating(bd, osc))
+                Envelope* env = &od->env;
+                Envelope* noiseEnvelope = &g_noise->envelopes[osc];
+                if (!env->inUse && !is_modulating(bd, osc) && !noiseEnvelope->inUse)
                     continue;
 
                 if (env->keyDown) {
@@ -355,8 +365,12 @@ void processBlock(float **outputBuffers, int numSamples) {
                         pitch_envelope_advance_to_sustain(&od->filterPitchEnv);
                     envelope_advance_to_sustain(env);
                     if (g_noise_output != OFF) {
-                        envelope_advance_to_sustain(&g_noise->envelopes[osc]);
+                        envelope_advance_to_sustain(noiseEnvelope);
                     }
+
+                    if (bd_useFilter || (g_noise_output == FILTER && b == 0))
+                        envelope_advance_to_sustain(&od->filter.envelope);
+
                 } else {
                     if (bd_usePitchEnvelope)
                         pitch_envelope_advance_to_release_level(&od->pitchEnv);
@@ -364,32 +378,34 @@ void processBlock(float **outputBuffers, int numSamples) {
                         pitch_envelope_advance_to_release_level(&od->filterPitchEnv);
                     envelope_advance_to_zero(env);
                     if (g_noise_output != OFF) {
-                        envelope_advance_to_zero(&g_noise->envelopes[osc]);
+                        envelope_advance_to_zero(noiseEnvelope);
                     }
+                    if (bd_useFilter || (g_noise_output == FILTER && b == 0))
+                        envelope_advance_to_zero(&od->filter.envelope);
                 }
 
                 float f = od->frequency;
-
-                if (od->portamento.portamentoData->inUse)
-                    f = portamentoGlide(&od->portamento, f);
+                const PortamentoData* pd = od->portamento.portamentoData;
+                if (portamento_in_use(pd))
+                    f = od->frequency = portamentoGlide(&od->portamento, f);
                 if (bd_usePitchEnvelope)
                     f *= od->pitchEnv.level;
                 f *= bd->detuneFactor;
                 if (f > nyquist)
                     f = nyquist;
-
+                bool filterPortamentoInUse = false;
                 if (bd_useFilter || g_noise->output == FILTER) {
                     float filterFx = od->filterFrequency;
-                    if (od->filterPortamento.portamentoData->inUse)
-                        filterFx = portamentoGlide(&od->filterPortamento, filterFx);
+                    filterPortamentoInUse = portamento_in_use(od->filterPortamento.portamentoData);
+                    if (filterPortamentoInUse)
+                        filterFx = od->filterFrequency = portamentoGlide(&od->filterPortamento, filterFx);
                     filterFx *= bd->filterDetuneFactor;
-
                     if (bd_useFilterPitchEnvelope)
                         filterFx *= od->filterPitchEnv.level;
                     if (bd->filterLfoData.modType == LFO_FREQUENCY)
                         filterFx *= (1.0f + render_lfo_sample(&bd->filterLfoData));
 
-                    svf4_set_params(&od->svf, filterFx, bd->resonanceBankFactor);
+                    filter_set_params(&od->filter, filterFx, bd->resonanceBankFactor);
                 }
 
                 // Gather AM & FM accumulators
@@ -427,7 +443,11 @@ void processBlock(float **outputBuffers, int numSamples) {
                         band = bd->numBands - 1;
 
                     signal = render_sample_from_phase(b, band, currentPhase) * matrixA;
-                    envelope_detect_signal_near_zero(env, signal);
+                    const bool portamentoInUse = portamento_in_use(od->portamento.portamentoData);
+
+                  //  Don't let envelope start during the portamento chord capture phase
+                   if (!portamentoInUse || (portamentoInUse && !od->portamento.portamentoData->timerRunning))
+                        envelope_detect_signal_near_zero(env, signal);
                 }
                 float modSignal = (bd_modOutput == 2) ? (signal * ampEnvelope) : signal;
 
@@ -455,7 +475,12 @@ void processBlock(float **outputBuffers, int numSamples) {
                     bd->phaserInputs += noiseSample;
 
                 if (bd_outputToFilter || (g_noise_output == FILTER && b == 0)) {
-                    float filterSample = svf4_process_morph(&od->svf, filterInputSample) * bd->filterLevel;
+                    float filterSample = filter_process(&od->filter, filterInputSample) * bd->filterLevel;
+
+                    envelope_detect_signal_near_zero(&od->filter.envelope, filterSample);
+
+                    filterSample *= od->filter.envelope.level;
+
                     // Mirroring the exact same source to Left and Right channel blocks
                     if (bd->filterConnectToPhaser)
                         bd->phaserInputs += filterSample;

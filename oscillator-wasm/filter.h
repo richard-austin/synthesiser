@@ -1,13 +1,17 @@
-#ifndef __FILTER
-#define __FILTER
-#include "globals.h"
+//
+// Created by richard on 25/10/2026.
+//
 
-void svf_init(SVFFilter *f, float sampleRate);
+#ifndef SYNTHESISER_FILTER_H
+#define SYNTHESISER_FILTER_H
+#include "structs.h"
 
-void svf_set_params(SVFFilter *f, float cutoffHz, float qFactor);
+void filter_init(Filter* filter, int sampleRate);
 
-void svf_set_morph(SVFFilter *f, float morphValue);
+void filter_set_params(Filter* filter, float cutoffHz, float qFactor);
 
-float svf_process_morph(SVFFilter *f, float input);
+float filter_process(Filter* filter, float sample);
 
-#endif
+void filter_set_morph(Filter* filter, float morphValue);
+
+#endif //SYNTHESISER_FILTER_H

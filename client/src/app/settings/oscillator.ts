@@ -39,7 +39,7 @@ export class OscillatorSettings {
               modWaveForm: modWaveforms = modWaveforms.sine,
               modType: oscModType = oscModType.off,
               portamento: number = 0,
-              portamentoType: PortamentoType = 'last',
+              portamentoType: PortamentoType = 'off',
               modOutput: oscModOutput = oscModOutput.direct)
   {
     this.adsr = adsr;

@@ -6,6 +6,7 @@
 
 #include "svf4_filter.h"
 #include "key_to_frequency.h"
+#include "filter.h"
 #include "phaser.h"
 
 EMSCRIPTEN_KEEPALIVE
@@ -40,6 +41,7 @@ EMSCRIPTEN_KEEPALIVE
 
 void setBankEnvelopeParams(int bank, int phase, float value) {
     EnvelopeData *env = &g_banks[bank].envelopeData;
+    EnvelopeData *noiseEnvData = &g_noise->envelopeData;
     switch (phase) {
         case 1:
             env->attack = value;
@@ -52,6 +54,15 @@ void setBankEnvelopeParams(int bank, int phase, float value) {
             break;
         case 4:
             env->release = value;
+            // On bank 0, use the largest of noise and oscillator release times for filter release time
+            OscillatorData *od = g_oscData[bank];
+            if (bank == 0 && value > noiseEnvData->release) {
+                for (int i = 0; i < g_oscillatorsPerBank; ++i)
+                    od[i].filter.envelopeData.release = value;
+            } else if (bank > 0) {
+                for (int i = 0; i < g_oscillatorsPerBank; ++i)
+                    od[i].filter.envelopeData.release = value;
+            }
             break;
         case 6:
             env->legato = (value > 0.0f);
@@ -65,22 +76,29 @@ void setBankEnvelopeParams(int bank, int phase, float value) {
 EMSCRIPTEN_KEEPALIVE
 
 void setNoiseEnvelopeParams(int phase, float value) {
-    EnvelopeData *env = &g_noise->envelopeData;
+    EnvelopeData *noiseEnvData = &g_noise->envelopeData;
+    EnvelopeData *env = &g_banks[0].envelopeData;
+
     switch (phase) {
         case 1:
-            env->attack = value;
+            noiseEnvData->attack = value;
             break;
         case 2:
-            env->decay = value;
+            noiseEnvData->decay = value;
             break;
         case 3:
-            env->sustainLevel = value;
+            noiseEnvData->sustainLevel = value;
             break;
         case 4:
-            env->release = value;
+            // Use the largest of noise and oscillator release times for filter release time
+            noiseEnvData->release = value;
+            OscillatorData *od = g_oscData[0];
+            if (value > env->release)
+                for (int i = 0; i < g_oscillatorsPerBank; ++i)
+                    od[i].filter.envelopeData.release = value;
             break;
         case 6:
-            env->legato = (value > 0.0f);
+            noiseEnvData->legato = (value > 0.0f);
             break;
         default:
             emscripten_console_errorf("Unknown noise envelope phase: %d", phase);
@@ -98,9 +116,14 @@ EMSCRIPTEN_KEEPALIVE
 
 void setPortamento(int bank, float time) {
     PortamentoData *pd = &g_banks[bank].portamentoData;
-    pd->time = time;
+    pd->glideTime = time;
+}
 
-    pd->inUse = time != 0.0f;
+EMSCRIPTEN_KEEPALIVE
+
+void setPortamentoType(int bank, int type) {
+    PortamentoData *pd = &g_banks[bank].portamentoData;
+    pd->type = type;
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -140,9 +163,14 @@ EMSCRIPTEN_KEEPALIVE
 
 void setFilterPortamento(int bank, float time) {
     PortamentoData *pd = &g_banks[bank].filterPortamentoData;
-    pd->time = time;
+    pd->glideTime = time;
+}
 
-    pd->inUse = time != 0.0f;
+EMSCRIPTEN_KEEPALIVE
+
+void setFilterPortamentoType(int bank, int type) {
+    PortamentoData *pd = &g_banks[bank].filterPortamentoData;
+    pd->type = type;
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -262,7 +290,8 @@ void setFilterQFactor(int bank, float qFactor) {
     for (int o = 0; o < g_oscillatorsPerBank; ++o) {
         OscillatorData *od = &g_oscData[bank][o];
         // Pass the raw 0.0 -> 1.0 value directly down
-        svf4_set_params(&od->svf, od->svf.stage1->cutoffHz, rawQ);
+        filter_set_params(&od->filter, od->filter.
+                          cutoffHz, rawQ);
     }
 }
 
@@ -273,13 +302,6 @@ void setVelocitySensitive(int bank, bool isVelocitySensitive) {
         OscillatorData *od = &g_oscData[bank][o];
         od->env.envelopeData->velocitySensitive = isVelocitySensitive;
     }
-}
-
-EMSCRIPTEN_KEEPALIVE
-
-void setPortamentoTime(int bank, float time) {
-    BankData *bd = &g_banks[bank];
-    bd->portamentoData.time = time;
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -378,9 +400,17 @@ EMSCRIPTEN_KEEPALIVE
 
 void setFilterMorphMode(int bank, float morphMode) {
     OscillatorData *oscData = g_oscData[bank];
-    for (int o = 0; o < g_oscillatorsPerBank; ++o) {
-        OscillatorData *od = &oscData[o];
-        svf4_set_morph(&od->svf, morphMode);
+    if (morphMode == -1.0f) {
+        for (int o = 0; o < g_oscillatorsPerBank; ++o) {
+            OscillatorData *od = &oscData[o];
+            od->filter.useMoog = true;
+        }
+    } else {
+        for (int o = 0; o < g_oscillatorsPerBank; ++o) {
+            OscillatorData *od = &oscData[o];
+            od->filter.useMoog = false;
+            filter_set_morph(&od->filter, morphMode);
+        }
     }
 }
 

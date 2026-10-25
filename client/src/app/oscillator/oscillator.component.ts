@@ -29,17 +29,7 @@ export enum envelopePhase {inactive, attack, decay, sustain, release, retrigger,
 export enum pitchEnvelopePhase {inactive, attack, attackLevel, decay, sustainLevel, release, releaseLevel, retrigger}
 
 export type PortamentoType =
-  'chord'
-  | 'last'
-  | 'first'
-  | 'lowest'
-  | 'highest'
-  | 'plus12'
-  | 'plus24'
-  | 'minus12'
-  | 'minus24';
-
-@Component({
+  'off' | 'chord' | 'plus12' | 'plus24' | 'minus12' | 'minus24';@Component({
   selector: 'app-oscillators',
   imports: [
     LevelControlComponent,
@@ -52,7 +42,6 @@ export type PortamentoType =
 export class OscillatorComponent  {
   protected tuningDivisions = 6;
   private audioCtx!: AudioContext;
-  // private wasmBinary!: ArrayBuffer;
   protected proxySettings!: OscillatorSettings;
 
   filters: InputSignal<FilterComponent> = input.required<FilterComponent>();
@@ -336,10 +325,6 @@ export class OscillatorComponent  {
     this.fmSynthService.setOutputWaveform(value, this.oscNumber());
   }
 
-  private setPortamentoType(value: PortamentoType) {
-    this.proxySettings.portamentoType = value as PortamentoType;
-  }
-
   protected setModOutput(modOutput: oscModOutput) {
     this.fmSynthService.setModOutput(this.oscNumber(), modOutput);
   }
@@ -414,7 +399,19 @@ export class OscillatorComponent  {
       this.proxySettings.useFrequencyEnvelope = onOff.off;
       SetRadioButtons.set(this.freqEnveOnOffForm(), this.proxySettings.useFrequencyEnvelope);
     }
-    this.fmSynthService.setPortamento(this.oscNumber(), $event);
+    if (this.proxySettings.portamentoType !== 'off')
+      this.fmSynthService.setPortamento(this.oscNumber(), $event);
+  }
+
+  private setPortamentoType(value: PortamentoType) {
+    this.proxySettings.portamentoType = value as PortamentoType;
+
+    if (value === 'off')
+      this.fmSynthService.setPortamento(this.oscNumber(), 0);
+    else
+      this.fmSynthService.setPortamento(this.oscNumber(), this.proxySettings.portamento);
+
+    this.fmSynthService.setPortamentoType(this.oscNumber(), value);
   }
 
   midiPitchBend(value: number) {

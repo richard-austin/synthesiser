@@ -62,9 +62,9 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   readonly portamento = viewChild.required<LevelControlComponent>('portamento');
   readonly portamentoType = viewChild.required<ElementRef<HTMLSelectElement>>('portamentoType');
 
-  envelopeSignal  = signal<ADSRValues>(new ADSRValues(0,0,0,0, true));
+  envelopeSignal = signal<ADSRValues>(new ADSRValues(0, 0, 0, 0, true));
   envelopeGraphicsEnabled = signal<boolean>(false);
-  graphPositionOffset = signal<{xOffset:number, yOffset:number}>({xOffset:0,yOffset: 0});
+  graphPositionOffset = signal<{ xOffset: number, yOffset: number }>({xOffset: 0, yOffset: 0});
 
   readonly filterOutputTo = viewChild.required<ElementRef<HTMLFormElement>>('filterOutputToForm');
 
@@ -98,7 +98,8 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   }
 
   async applySettings(settings: FilterSettings | null) {
-    this.envelopeGraphicsEnabled.set(false);    const objectName = 'filter' + this.filterNumber();
+    this.envelopeGraphicsEnabled.set(false);
+    const objectName = 'filter' + this.filterNumber();
     if (!settings) {
       settings = new FilterSettings();
       const savedSettings = await this.indexedDBService.getSynthObject(objectName);
@@ -124,6 +125,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.sustainLevel, this.proxySettings.freqBend.sustainLevel);
     this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.release, this.proxySettings.freqBend.releaseTime);
     this.fmSynthService.filterPitchEnvelope(this.filterNumber(), pitchEnvelopePhase.releaseLevel, this.proxySettings.freqBend.releaseLevel);
+    this.fmSynthService.setFilterPortamentoType(this.filterNumber(), this.proxySettings.portamentoType);
 
     this.frequency().setValue(this.proxySettings.frequency);  // Set frequency dial initial value.
     this.deTune().setValue(this.proxySettings.deTune);
@@ -193,11 +195,6 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     this.fmSynthService.setFilterMorphMode(this.filterNumber(), value);
   }
 
-  private setPortamentoType(value: PortamentoType) {
-    this.proxySettings.portamentoType = value as PortamentoType;
-  }
-
-
   /**
    * connect: Connect all filters in this group to a single node (i.e. gain node).
    * @param node
@@ -236,7 +233,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     if (reverb) {
       ok = true;
       this.fmSynthService.connectFilter(reverb.input, this.filterNumber());
-     }
+    }
     return ok;
   }
 
@@ -247,13 +244,25 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   protected setPortamento($event: number) {
     this.proxySettings.portamento = $event;
-    this.fmSynthService.setFilterPortamento(this.filterNumber(), $event);
+    if (this.proxySettings.portamentoType !== 'off')
+      this.fmSynthService.setFilterPortamento(this.filterNumber(), $event);
 
     if ($event > 0) {
       // Can't use frequency bend envelope with portamento
       this.proxySettings.useFrequencyEnvelope = onOff.off;
       SetRadioButtons.set(this.freqEnveOnOff(), this.proxySettings.useFrequencyEnvelope);
     }
+  }
+
+  private setPortamentoType(value: PortamentoType) {
+    this.proxySettings.portamentoType = value as PortamentoType;
+
+    if (value === 'off')
+      this.fmSynthService.setFilterPortamento(this.filterNumber(), 0);
+    else
+      this.fmSynthService.setFilterPortamento(this.filterNumber(), this.proxySettings.portamento);
+
+    this.fmSynthService.setFilterPortamentoType(this.filterNumber(), value);
   }
 
   midiPitchBend(value: number) {
@@ -268,7 +277,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   private setEnvelopeSig(pev: PitchEnvValues) {
     this.graphPositionOffset.set({xOffset: 130, yOffset: -550});
-    this.envelopeSignal?.set(new PitchEnvValues(pev.attackTime, pev.attackLevel/2, pev.decayTime, pev.sustainLevel/2, pev.releaseTime, pev.releaseLevel/2,  pev.isExponential));
+    this.envelopeSignal?.set(new PitchEnvValues(pev.attackTime, pev.attackLevel / 2, pev.decayTime, pev.sustainLevel / 2, pev.releaseTime, pev.releaseLevel / 2, pev.isExponential));
   }
 
   protected setFreqAttack($event: number) {

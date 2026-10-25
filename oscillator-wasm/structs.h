@@ -33,6 +33,15 @@ typedef enum {
     LFO_OFF = 3
 } lfoModType;
 
+typedef enum {
+    PORTAMENTO_OFF,
+    PORTAMENTO_CHORD,
+    PORTAMENTO_PLUS_12,
+    PORTAMENTO_PLUS_24,
+    PORTAMENTO_MINUS_12,
+    PORTAMENTO_MINUS_24,
+} portamentoType;
+
 // --- Struct Definitions ---
 typedef struct {
     float attack;
@@ -81,27 +90,31 @@ typedef struct {
     bool inUse;
 } PitchEnvelope;
 
-#define CAPACITY 12
-
-// Structure representing the circular queue
-typedef struct {
-    float items[CAPACITY];
-    int front;
-    int rear;
-    int size;
-} CircularQueue;
+#ifndef CAPACITY
+#define CAPACITY 24
+#endif
 
 typedef struct {
-    CircularQueue queue;
-    float previousFrequency;
-    float time;
-    bool inUse;
+    struct Note {float frequency; int noteIndex;} notes [CAPACITY];
+    int noteCount;
+} Notes;
+
+typedef struct {
+    Notes notes1;
+    Notes notes2;
+    Notes *previousNotes;
+    Notes *currentNotes;
+    portamentoType type;
+    int timer;
+    int timerTarget;
+    bool timerRunning;
+    float glideTime;
 } PortamentoData;
 
 typedef struct {
     PortamentoData *portamentoData;
     float lowestTime;
-    float lowestLevel;
+    float lowestFx;
     float t0, t1, t;
     float v0, v1;
     float frequency;
@@ -134,7 +147,37 @@ typedef struct {
 typedef struct {
     SVFFilter* stage1;
     SVFFilter* stage2;
+    EnvelopeData envelopeData;
+    Envelope envelope;
 } SVF4Filter;
+
+typedef struct {
+    float fs;                 // Host sample rate
+    float g;                  // Tuning coefficient
+    float res;                // Resonance (0.0f to 1.0f)
+    float gain_compensation;   // Dynamic make-up gain factor
+
+    // Internal stage states
+    float y_a;
+    float y_b;
+    float y_c;
+    float y_d;
+    float y_d_prev;
+
+    // History state for internal upsampling interpolation
+    float x_prev;
+} MoogLadderFilter;
+
+typedef struct {
+    bool useMoog;
+    MoogLadderFilter moog;
+    SVF4Filter svf;
+
+    EnvelopeData envelopeData;
+    Envelope envelope;
+    float cutoffHz;
+    float qFactor;
+} Filter;
 
 typedef struct {
     float frequency;
@@ -155,7 +198,7 @@ typedef struct {
     float phase;
     ButterworthFilter butterworthFilter;
     float filterFrequency;
-    SVF4Filter svf;
+    Filter filter;
     Portamento portamento;
     Portamento filterPortamento;
 } OscillatorData;

@@ -36,7 +36,7 @@ export class FilterSettings {
               modWaveForm: modWaveforms = modWaveforms.sine,
               modType: filterModType = filterModType.off,
               portamento: number = 0,
-              portamentoType: PortamentoType = 'last')
+              portamentoType: PortamentoType = 'off')
   {
     this.freqBend = freqBend;
     this.useFrequencyEnvelope = useFrequencyEnvelope;
