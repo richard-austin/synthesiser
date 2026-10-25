@@ -4,8 +4,8 @@
 #include "envelope.h"
 #include "emscripten/console.h"
 
-static inline float safe_tanhf(float x) {
-    if (x != x) return 0.0f;
+static float safe_tanhf(float x) {
+    if (x == 0.0f) return 0.0f;
     if (x <= -3.0f) return -1.0f;
     if (x >= 3.0f)  return 1.0f;
 
@@ -24,12 +24,6 @@ void moog_init(MoogLadderFilter* filter, float sample_rate) {
     filter->gain_compensation = 1.0f;
 
     moog_set_params(filter, 1000.0f, 0.0f);
-    envelope_init(&filter->envelope, &filter->envelopeData);
-    filter->envelopeData.attack = 0.03f;
-    filter->envelopeData.decay = 0.0f;
-    filter->envelopeData.sustainLevel = 1.0f;
-    filter->envelopeData.release = 0.0f;
-
 }
 
 void moog_set_params(MoogLadderFilter* filter, float cutoff_hz, float resonance) {

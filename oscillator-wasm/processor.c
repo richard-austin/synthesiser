@@ -10,10 +10,9 @@
 #include "envelope.h"
 #include "pitch_envelope.h"
 #include "lfo.h"
-#include "svf4_filter.h"
 #include "butterworth_filter.h"
 #include "key_to_frequency.h"
-#include "moog_ladder.h"
+#include "filter.h"
 #include "noise.h"
 #include "phaser.h"
 
@@ -93,7 +92,7 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, int numBand
             pitch_envelope_init(&g_oscData[b][o].pitchEnv, &bd->pitchEnvelopeData);
             pitch_envelope_init(&g_oscData[b][o].filterPitchEnv, &bd->filterPitchEnvelopeData);
             butterworth_calculate_coefficients(&g_oscData[b][o].butterworthFilter, 1000.0f, sampleRate);
-            moog_init(&g_oscData[b][o].svf, sampleRate);
+            filter_init(&g_oscData[b][o].filter, sampleRate);
         }
     }
 }
@@ -162,7 +161,7 @@ void triggerNoteOn(int key, int velocity) {
         od->key = key;
 
         envelope_prepare_to_start(&od->env, velocity);
-        envelope_prepare_to_start(&od->svf.envelope, velocity);
+        envelope_prepare_to_start(&od->filter.envelope, velocity);
 
         // Set oscillator and filter pitch envelope times to 0
         od->pitchEnv.t = 0.0f;
@@ -189,7 +188,7 @@ void triggerNoteOff(int key) {
                 OscillatorData *od = &g_oscData[b][o];
                 od->env.keyDown = false;
                 g_noise->envelopes[o].keyDown = false;
-                od->svf.envelope.keyDown = false;
+                od->filter.envelope.keyDown = false;
 
                 // if (!od->env.envelopeData->legato) {
                 //     // If the voice was caught mid-retrigger or processing anomaly,
@@ -370,7 +369,7 @@ void processBlock(float **outputBuffers, int numSamples) {
                     }
 
                     if (bd_useFilter || (g_noise_output == FILTER && b == 0))
-                        envelope_advance_to_sustain(&od->svf.envelope);
+                        envelope_advance_to_sustain(&od->filter.envelope);
 
                 } else {
                     if (bd_usePitchEnvelope)
@@ -382,7 +381,7 @@ void processBlock(float **outputBuffers, int numSamples) {
                         envelope_advance_to_zero(noiseEnvelope);
                     }
                     if (bd_useFilter || (g_noise_output == FILTER && b == 0))
-                        envelope_advance_to_zero(&od->svf.envelope);
+                        envelope_advance_to_zero(&od->filter.envelope);
                 }
 
                 float f = od->frequency;
@@ -406,7 +405,7 @@ void processBlock(float **outputBuffers, int numSamples) {
                     if (bd->filterLfoData.modType == LFO_FREQUENCY)
                         filterFx *= (1.0f + render_lfo_sample(&bd->filterLfoData));
 
-                    moog_set_params(&od->svf, filterFx, bd->resonanceBankFactor);
+                    filter_set_params(&od->filter, filterFx, bd->resonanceBankFactor);
                 }
 
                 // Gather AM & FM accumulators
@@ -476,11 +475,11 @@ void processBlock(float **outputBuffers, int numSamples) {
                     bd->phaserInputs += noiseSample;
 
                 if (bd_outputToFilter || (g_noise_output == FILTER && b == 0)) {
-                    float filterSample = moog_process_sample(&od->svf, filterInputSample) * bd->filterLevel;
+                    float filterSample = filter_process(&od->filter, filterInputSample) * bd->filterLevel;
 
-                    envelope_detect_signal_near_zero(&od->svf.envelope, filterSample);
+                    envelope_detect_signal_near_zero(&od->filter.envelope, filterSample);
 
-                    filterSample *= od->svf.envelope.level;
+                    filterSample *= od->filter.envelope.level;
 
                     // Mirroring the exact same source to Left and Right channel blocks
                     if (bd->filterConnectToPhaser)

@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include "structs.h"
 
-#include "filter.h"
+#include "svf.h"
 #include "envelope.h"
 
 void svf4_init(SVF4Filter *f, float sampleRate) {

@@ -6,7 +6,7 @@
 
 #include "svf4_filter.h"
 #include "key_to_frequency.h"
-#include "moog_ladder.h"
+#include "filter.h"
 #include "phaser.h"
 
 EMSCRIPTEN_KEEPALIVE
@@ -58,11 +58,10 @@ void setBankEnvelopeParams(int bank, int phase, float value) {
             OscillatorData *od = g_oscData[bank];
             if (bank == 0 && value > noiseEnvData->release) {
                 for (int i = 0; i < g_oscillatorsPerBank; ++i)
-                    od[i].svf.envelopeData.release = value;
-            }
-            else if (bank > 0) {
+                    od[i].filter.envelopeData.release = value;
+            } else if (bank > 0) {
                 for (int i = 0; i < g_oscillatorsPerBank; ++i)
-                    od[i].svf.envelopeData.release = value;
+                    od[i].filter.envelopeData.release = value;
             }
             break;
         case 6:
@@ -96,7 +95,7 @@ void setNoiseEnvelopeParams(int phase, float value) {
             OscillatorData *od = g_oscData[0];
             if (value > env->release)
                 for (int i = 0; i < g_oscillatorsPerBank; ++i)
-                    od[i].svf.envelopeData.release = value;
+                    od[i].filter.envelopeData.release = value;
             break;
         case 6:
             noiseEnvData->legato = (value > 0.0f);
@@ -122,7 +121,7 @@ void setPortamento(int bank, float time) {
 
 EMSCRIPTEN_KEEPALIVE
 
-void setPortamentoType(int bank, int type)  {
+void setPortamentoType(int bank, int type) {
     PortamentoData *pd = &g_banks[bank].portamentoData;
     pd->type = type;
 }
@@ -169,7 +168,7 @@ void setFilterPortamento(int bank, float time) {
 
 EMSCRIPTEN_KEEPALIVE
 
-void setFilterPortamentoType(int bank, int type)  {
+void setFilterPortamentoType(int bank, int type) {
     PortamentoData *pd = &g_banks[bank].filterPortamentoData;
     pd->type = type;
 }
@@ -291,8 +290,8 @@ void setFilterQFactor(int bank, float qFactor) {
     for (int o = 0; o < g_oscillatorsPerBank; ++o) {
         OscillatorData *od = &g_oscData[bank][o];
         // Pass the raw 0.0 -> 1.0 value directly down
-        moog_set_params(&od->svf, od->svf.
-            cutoffHz, rawQ);
+        filter_set_params(&od->filter, od->filter.
+                          cutoffHz, rawQ);
     }
 }
 
@@ -401,9 +400,17 @@ EMSCRIPTEN_KEEPALIVE
 
 void setFilterMorphMode(int bank, float morphMode) {
     OscillatorData *oscData = g_oscData[bank];
-    for (int o = 0; o < g_oscillatorsPerBank; ++o) {
-        OscillatorData *od = &oscData[o];
-       // svf4_set_morph(&od->svf, morphMode);
+    if (morphMode == -1.0f) {
+        for (int o = 0; o < g_oscillatorsPerBank; ++o) {
+            OscillatorData *od = &oscData[o];
+            od->filter.useMoog = true;
+        }
+    } else {
+        for (int o = 0; o < g_oscillatorsPerBank; ++o) {
+            OscillatorData *od = &oscData[o];
+            od->filter.useMoog = false;
+            filter_set_morph(&od->filter, morphMode);
+        }
     }
 }
 

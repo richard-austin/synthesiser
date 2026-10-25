@@ -166,10 +166,18 @@ typedef struct {
 
     // History state for internal upsampling interpolation
     float x_prev;
+} MoogLadderFilter;
+
+typedef struct {
+    bool useMoog;
+    MoogLadderFilter moog;
+    SVF4Filter svf;
+
     EnvelopeData envelopeData;
     Envelope envelope;
     float cutoffHz;
-} MoogLadderFilter;
+    float qFactor;
+} Filter;
 
 typedef struct {
     float frequency;
@@ -190,8 +198,7 @@ typedef struct {
     float phase;
     ButterworthFilter butterworthFilter;
     float filterFrequency;
-    //SVF4Filter svf;
-    MoogLadderFilter svf;
+    Filter filter;
     Portamento portamento;
     Portamento filterPortamento;
 } OscillatorData;
