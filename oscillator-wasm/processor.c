@@ -168,14 +168,6 @@ void triggerNoteOn(int key, int velocity) {
         od->filterPitchEnv.t = 0.0f;
         if (g_noise->output != OFF)
             noise_init_envelope(g_noise, foundIdx, velocity);
-        if (isRetrigger)
-            od->env.phase = ENV_RETRIGGER;
-        else {
-            // FIX: Set to ENV_INACTIVE so envelope_advance_to_sustain()
-            // triggers cleanly on the first block iteration cycle.
-            od->env.phase = ENV_INACTIVE;
-            od->phase = 0.0f; // Clear standard oscillator cycle phase accumulator
-        }
     }
 }
 
@@ -358,32 +350,6 @@ void processBlock(float **outputBuffers, int numSamples) {
                 if (!env->inUse && !is_modulating(bd, osc) && !noiseEnvelope->inUse)
                     continue;
 
-                if (env->keyDown) {
-                    if (bd_usePitchEnvelope)
-                        pitch_envelope_advance_to_sustain(&od->pitchEnv);
-                    if (bd_useFilterPitchEnvelope)
-                        pitch_envelope_advance_to_sustain(&od->filterPitchEnv);
-                    envelope_advance_to_sustain(env);
-                    if (g_noise_output != OFF) {
-                        envelope_advance_to_sustain(noiseEnvelope);
-                    }
-
-                    if (bd_useFilter || (g_noise_output == FILTER && b == 0))
-                        envelope_advance_to_sustain(&od->filter.envelope);
-
-                } else {
-                    if (bd_usePitchEnvelope)
-                        pitch_envelope_advance_to_release_level(&od->pitchEnv);
-                    if (bd_useFilterPitchEnvelope)
-                        pitch_envelope_advance_to_release_level(&od->filterPitchEnv);
-                    envelope_advance_to_zero(env);
-                    if (g_noise_output != OFF) {
-                        envelope_advance_to_zero(noiseEnvelope);
-                    }
-                    if (bd_useFilter || (g_noise_output == FILTER && b == 0))
-                        envelope_advance_to_zero(&od->filter.envelope);
-                }
-
                 float f = od->frequency;
                 const PortamentoData* pd = od->portamento.portamentoData;
                 if (portamento_in_use(pd))
@@ -449,16 +415,39 @@ void processBlock(float **outputBuffers, int numSamples) {
                    if (!portamentoInUse || (portamentoInUse && !od->portamento.portamentoData->timerRunning))
                         envelope_detect_signal_near_zero(env, signal);
                 }
+
+                if (g_noise_output != OFF) {
+                    noiseSample = noise(g_noise, osc);
+                    envelope_detect_signal_near_zero(&g_noise->envelopes[osc], noiseSample);
+                }
+
+                if (env->keyDown) {
+                    if (bd_usePitchEnvelope)
+                        pitch_envelope_advance_to_sustain(&od->pitchEnv);
+                    if (bd_useFilterPitchEnvelope)
+                        pitch_envelope_advance_to_sustain(&od->filterPitchEnv);
+                    envelope_advance_to_sustain(env);
+                    if (g_noise_output != OFF) {
+                        envelope_advance_to_sustain(noiseEnvelope);
+                    }
+                } else {
+                    if (bd_usePitchEnvelope)
+                        pitch_envelope_advance_to_release_level(&od->pitchEnv);
+                    if (bd_useFilterPitchEnvelope)
+                        pitch_envelope_advance_to_release_level(&od->filterPitchEnv);
+                    envelope_advance_to_zero(env);
+                    if (g_noise_output != OFF) {
+                        envelope_advance_to_zero(noiseEnvelope);
+                    }
+                }
+
+
                 float modSignal = (bd_modOutput == 2) ? (signal * ampEnvelope) : signal;
 
                 matrix_apply_modulation(bd, osc, modSignal);
 
                 if (bd->lfoData.modType == LFO_AMPLITUDE) {
                     signal *= (1.0f + render_lfo_sample(&bd->lfoData));
-                }
-                if (g_noise_output != OFF) {
-                    noiseSample = noise(g_noise, osc);
-                    envelope_detect_signal_near_zero(&g_noise->envelopes[osc], noiseSample);
                 }
 
                 float finalOutputSample = signal * bd->oscillatorLevel * ampEnvelope;
@@ -478,6 +467,12 @@ void processBlock(float **outputBuffers, int numSamples) {
                     float filterSample = filter_process(&od->filter, filterInputSample) * bd->filterLevel;
 
                     envelope_detect_signal_near_zero(&od->filter.envelope, filterSample);
+
+                    if (env->keyDown) {
+                        envelope_advance_to_sustain(&od->filter.envelope);
+                    } else {
+                        envelope_advance_to_zero(&od->filter.envelope);
+                    }
 
                     filterSample *= od->filter.envelope.level;
 

@@ -33,6 +33,7 @@ void envelope_prepare_to_start(Envelope *env, int velocity) {
     env->lastSignum = 0;
     env->signumSet = false;
     env->keyDown = true;
+    env->phase = ENV_INACTIVE;
     env->inUse = true;
 }
 
