@@ -557,3 +557,11 @@ float *allocatePhaserLFOWaveTableMemory() {
         ld->periodicWaveData = calloc(ld->waveTableSize * 21, sizeof(float));
     return ld->periodicWaveData;
 }
+
+extern bool g_slop;
+
+EMSCRIPTEN_KEEPALIVE
+
+void setSlop(bool slop) {
+    g_slop = slop;
+}
