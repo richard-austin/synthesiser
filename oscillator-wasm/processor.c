@@ -178,9 +178,9 @@ void triggerNoteOff(int key) {
         for (int o = 0; o < g_oscillatorsPerBank; o++) {
             if (g_oscData[b][o].env.inUse && g_oscData[b][o].key == key) {
                 OscillatorData *od = &g_oscData[b][o];
-                od->env.keyDown = false;
-                g_noise->envelopes[o].keyDown = false;
-                od->filter.envelope.keyDown = false;
+                envelope_prepare_to_stop(&od->env);
+                envelope_prepare_to_stop(&g_noise->envelopes[o]);
+                envelope_prepare_to_stop(&od->filter.envelope);
 
                 // if (!od->env.envelopeData->legato) {
                 //     // If the voice was caught mid-retrigger or processing anomaly,
@@ -440,7 +440,9 @@ void processBlock(float **outputBuffers, int numSamples) {
                         envelope_advance_to_zero(noiseEnvelope);
                     }
                 }
-
+                /*** debug, check if loop running */
+                if (count++ % 300000 == 0)
+                    emscripten_console_logf("Running");
 
                 float modSignal = (bd_modOutput == 2) ? (signal * ampEnvelope) : signal;
 

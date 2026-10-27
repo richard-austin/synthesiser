@@ -37,6 +37,14 @@ void envelope_prepare_to_start(Envelope *env, int velocity) {
     env->inUse = true;
 }
 
+void envelope_prepare_to_stop(Envelope *env) {
+    env->t = 0.0f;
+    env->lastSignum = 0;
+    env->signumSet = false;
+    env->keyDown = false;
+    env->phase = ENV_DECAY;  // It will go from decal, to pending release
+}
+
 void envelope_set_timing(Envelope *env, float value, float time) {
     // FIX: Prevent env->v0 from being 0 or lower than env->lowestLevel
     float currentLevel = env->level;

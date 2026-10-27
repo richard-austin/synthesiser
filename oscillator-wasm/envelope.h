@@ -10,6 +10,8 @@ void envelope_init(Envelope *env, EnvelopeData *data);
 
 void envelope_prepare_to_start(Envelope *env, int velocity);
 
+void envelope_prepare_to_stop(Envelope *env);
+
 void envelope_set_timing(Envelope *env, float value, float time);
 
 void envelope_detect_signal_near_zero(Envelope *env, float signal);
