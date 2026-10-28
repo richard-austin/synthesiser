@@ -17,7 +17,7 @@ import {filterModType, modWaveforms, onOff} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {FilterSettings} from '../settings/filter';
 
-import {pitchEnvelopePhase, PortamentoType} from '../oscillator/oscillator.component';
+import {OscillatorComponent, pitchEnvelopePhase, PortamentoType} from '../oscillator/oscillator.component';
 import {FmSynthService} from '../services/fm-synth-service';
 import {IndexedDBService} from '../services/indexed-db-service';
 import {EnvelopeGraphComponent} from '../envelope-graph/envelope-graph-component';
@@ -134,9 +134,12 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     this.gain().setValue(this.proxySettings.gain);
 
     this.portamento().setValue(this.proxySettings.portamento);
-    this.portamentoType().nativeElement.value = this.proxySettings.portamentoType;
 
-    this.qfactor().setValue(this.proxySettings.qFactor);
+    // This parameter was added after many config files already existed which did not include this parameter
+    if(OscillatorComponent.portamentoTypes.find((t) => t === this.proxySettings.portamentoType))
+      this.portamentoType().nativeElement.value = this.proxySettings.portamentoType;
+    else
+      this.portamentoType().nativeElement.value = 'off';
 
     // Set up default frequency bend e=velope values
     this.freqAttack().setValue(this.proxySettings.freqBend.attackTime);

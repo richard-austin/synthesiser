@@ -105,7 +105,8 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
     this.proxySettings = this.indexedDBService.getSettingsProxy(settings, objectName);
     this.configFileName = this.proxySettings.configFileName;
     this.masterVolume().setValue(this.proxySettings.level);
-    SetRadioButtons.set(this.synthesiserModeForm(), this.proxySettings.synthesiserMode);
+    const synthesiserMode = this.proxySettings.synthesiserMode === undefined ? 'poly' : this.proxySettings.synthesiserMode;
+    SetRadioButtons.set(this.synthesiserModeForm(), synthesiserMode);
   }
 
   public getSettings(): GeneralSettings {

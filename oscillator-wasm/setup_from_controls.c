@@ -570,14 +570,17 @@ EMSCRIPTEN_KEEPALIVE
 
 void setSynthesiserMode(int mode) {
     g_workingOscillatorsPerBank = mode == 0 ? g_oscillatorsPerBank : 1;
+    g_roundRobinIndex = mode == 0 ? g_roundRobinIndex : 0;
     // Clear all envelopes down when changing mode otherwise oscillators can be left running
     for (int bank = 0; bank < g_numberOfBanks; ++bank) {
         for (int osc = 0; osc < g_workingOscillatorsPerBank; osc++) {
             OscillatorData* od = &g_oscData[bank][osc];
             od->env.inUse = false;
             od->env.level = 0.0f;
+            od->env.keyDown = false;
             od->filter.envelope.inUse = false;
             od->filter.envelope.level = 0.0f;
+            od->filter.envelope.keyDown = false;
         }
     }
 }

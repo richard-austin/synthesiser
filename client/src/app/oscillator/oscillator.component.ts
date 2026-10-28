@@ -44,6 +44,7 @@ export class OscillatorComponent  {
   protected tuningDivisions = 6;
   private audioCtx!: AudioContext;
   protected proxySettings!: OscillatorSettings;
+  static readonly portamentoTypes: string[] = ["off","chord","plus12","plus24","minus12","minus24"];
 
   filters: InputSignal<FilterComponent> = input.required<FilterComponent>();
   ringMod: InputSignal<RingModulatorComponent> = input.required<RingModulatorComponent>();
@@ -267,7 +268,12 @@ export class OscillatorComponent  {
 
     // Set up the buttons and selectors
     this.oscWaveForm().nativeElement.value = this.proxySettings.waveForm;
-    this.portamentoType().nativeElement.value = this.proxySettings.portamentoType;
+
+    // This parameter was added after many config files already existed which did not include this parameter
+    if(OscillatorComponent.portamentoTypes.find((t) => t === this.proxySettings.portamentoType))
+      this.portamentoType().nativeElement.value = this.proxySettings.portamentoType;
+    else
+      this.portamentoType().nativeElement.value = 'off';
 
     SetRadioButtons.set(this.legatoOnOffForm(), this.proxySettings.legatoMode);
     SetRadioButtons.set(this.velocityOnOffForm(), this.proxySettings.velocitySensitive);
