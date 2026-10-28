@@ -164,8 +164,8 @@ void triggerNoteOn(int key, int velocity) {
         envelope_prepare_to_start(&od->filter.envelope, velocity);
 
         // Set oscillator and filter pitch envelope times to 0
-        od->pitchEnv.t = 0.0f;
-        od->filterPitchEnv.t = 0.0f;
+        pitch_envelope_prepare_to_start(&od->pitchEnv);
+        pitch_envelope_prepare_to_start(&od->filterPitchEnv);
         if (g_noise->output != OFF)
             noise_init_envelope(g_noise, foundIdx, velocity);
     }
