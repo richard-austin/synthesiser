@@ -5,6 +5,7 @@
 
 // --- Global Engine Core Context Variables ---
 extern int g_numberOfBanks;
+extern int g_workingOscillatorsPerBank;
 extern int g_oscillatorsPerBank;
 extern int g_waveTableSize;
 extern float g_startFx;

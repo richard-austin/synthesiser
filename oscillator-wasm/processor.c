@@ -59,7 +59,7 @@ EMSCRIPTEN_KEEPALIVE
 void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, int numBands, float startFx, float sampleRate) {
     log2Root2 = log2f(root2);
     g_numberOfBanks = numBanks;
-    g_oscillatorsPerBank = oscsPerBank;
+    g_workingOscillatorsPerBank = g_oscillatorsPerBank = oscsPerBank;
     g_waveTableSize = waveTableSize;
     g_startFx = startFx;
     g_sampleRate = sampleRate;
@@ -103,7 +103,7 @@ void triggerNoteOn(int key, int velocity) {
     int foundIdx = -1;
 
     // STEP 1: Strict Global Co-indexing Lookup. Is this key already active?
-    for (int o = 0; o < g_oscillatorsPerBank; o++) {
+    for (int o = 0; o < g_workingOscillatorsPerBank; o++) {
         for (int b = 0; b < g_numberOfBanks; b++) {
             OscillatorData* od = &g_oscData[b][o];
             if (od->env.inUse && !od->env.keyDown && od->key == key) {
@@ -120,7 +120,7 @@ void triggerNoteOn(int key, int velocity) {
         const int initialIndex = g_roundRobinIndex;
         do {
             foundIdx = g_roundRobinIndex++;
-            if (g_roundRobinIndex >= g_oscillatorsPerBank)
+            if (g_roundRobinIndex >= g_workingOscillatorsPerBank)
                 g_roundRobinIndex = 0;
         }
         while (g_roundRobinIndex != initialIndex && g_oscData[0][foundIdx].env.keyDown); // Don't let the round robin bomb a held down key
@@ -175,7 +175,7 @@ EMSCRIPTEN_KEEPALIVE
 
 void triggerNoteOff(int key) {
     for (int b = 0; b < g_numberOfBanks; b++) {
-        for (int o = 0; o < g_oscillatorsPerBank; o++) {
+        for (int o = 0; o < g_workingOscillatorsPerBank; o++) {
             if (g_oscData[b][o].env.inUse && g_oscData[b][o].key == key) {
                 OscillatorData *od = &g_oscData[b][o];
                 envelope_prepare_to_stop(&od->env);
@@ -211,7 +211,7 @@ bool is_modulating(BankData *bd, int osc) {
 void matrix_apply_modulation(const BankData *bd, int osc, float modSignal) {
     for (int cB = 0; cB < g_numberOfBanks; cB++) {
         ModSettings *ms = bd->modMatrix + cB;
-        int targetIdx = cB * g_oscillatorsPerBank + osc;
+        int targetIdx = cB * g_workingOscillatorsPerBank + osc;
         if (ms->modType == MOD_FREQUENCY) {
             g_fmAccumulators[targetIdx] += modSignal * ms->level;
         } else if (ms->modType == MOD_AMPLITUDE) {
@@ -274,7 +274,7 @@ void processBlock(float **outputBuffers, int numSamples) {
     // 2. Structural Active Audio Check
     bool activeAudioEngine = false;
     for (int b = 0; b < g_numberOfBanks; b++) {
-        for (int osc = 0; osc < g_oscillatorsPerBank; osc++) {
+        for (int osc = 0; osc < g_workingOscillatorsPerBank; osc++) {
             if (g_oscData[b][osc].env.inUse || g_noise->envelopes[osc].inUse) {
                 activeAudioEngine = true;
                 break;
@@ -343,7 +343,7 @@ void processBlock(float **outputBuffers, int numSamples) {
             if (portamento_in_use(&bd->filterPortamentoData))
                 portamento_process(&bd->filterPortamentoData, b, true);
 
-            for (int osc = 0; osc < g_oscillatorsPerBank; osc++) {
+            for (int osc = 0; osc < g_workingOscillatorsPerBank; osc++) {
                 OscillatorData *od = &g_oscData[b][osc];
                 Envelope* env = &od->env;
                 Envelope* noiseEnvelope = &g_noise->envelopes[osc];
@@ -375,7 +375,7 @@ void processBlock(float **outputBuffers, int numSamples) {
                 }
 
                 // Gather AM & FM accumulators
-                int idx = b * g_oscillatorsPerBank + osc;
+                int idx = b * g_workingOscillatorsPerBank + osc;
                 float matrixF = g_fmAccumulators[idx];
                 g_fmAccumulators[idx] = 0.0f; // Clear layout cleanly
 

@@ -9,7 +9,7 @@ void noise_init(Noise *n, int oscillatorsPerBank) {
     n->output = OFF;
     envelope_data_init(&n->envelopeData);
     n->oscillatorsPerBank = oscillatorsPerBank;
-    n->envelopes = calloc(g_oscillatorsPerBank, sizeof(Envelope));
+    n->envelopes = calloc(g_workingOscillatorsPerBank, sizeof(Envelope));
     for (int e = 0; e < oscillatorsPerBank; ++e)
         envelope_init(&n->envelopes[e], &n->envelopeData);
 

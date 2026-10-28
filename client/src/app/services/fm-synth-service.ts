@@ -443,6 +443,10 @@ export class FmSynthService {
     this.port.postMessage({type: 'setPhaserLFOLevel', level});
   }
 
+  setSynthMode(mode: "mono" | "poly") {
+    this.port.postMessage({type: 'setSynthMode', mode});
+  }
+
   addKeyDownHandler(handler: (bank: number, device: number, key: number, velocity: number) => void) {
     if (!this.keyDownHandlers.find(h => h === handler)) {
       this.keyDownHandlers.push(handler);
@@ -472,5 +476,4 @@ export class FmSynthService {
     this.port.postMessage({type: "shutDown"});
     this.synthNode.disconnect();
   }
-
 }

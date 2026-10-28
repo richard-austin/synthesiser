@@ -3,6 +3,7 @@
 
 // --- Global Engine Core Context Variables ---
 int g_numberOfBanks = 0;
+int g_workingOscillatorsPerBank = 0;
 int g_oscillatorsPerBank = 0;
 int g_waveTableSize = 2048;
 float g_startFx = 20.0f;

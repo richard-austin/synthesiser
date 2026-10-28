@@ -118,7 +118,7 @@ if (typeof globalThis.registerProcessor === 'function') {
             break;
           case 'portamentoType': {
             const t = data.portamentoType;
-            const type = t === 'off' ? 0 : t === 'chord' ? 1 : t === 'plus12' ? 2 : t === 'plus24' ? 3 : t === 'minus12' ? 4 : t === 'minus24' ? 5 : 0;
+            const type = t === 'off' ? 0 : t === 'chord' ? 1 : t === 'plus12' ? 2 : t === 'plus24' ? 3 : t === 'minus12' ? 4 : t === 'minus24' ? 5 : t === 'mono' ? 6 : 0;
             Module._setPortamentoType(data.bank, type);
             break;
           }
@@ -308,6 +308,11 @@ if (typeof globalThis.registerProcessor === 'function') {
           case 'setPhaserLFOFrequency': {
             const frequency = data.frequency;
             Module._setPhaserLFOFrequency(frequency);
+          }
+            break;
+          case 'setSynthMode': {
+            let mode = data.mode === 'poly' ? 0 : 1;
+            Module._setSynthesiserMode(mode);
           }
             break;
           default:

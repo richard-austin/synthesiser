@@ -23,13 +23,14 @@ import {IndexedDBService} from '../services/indexed-db-service';
 import {EnvelopeGraphComponent} from '../envelope-graph/envelope-graph-component';
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {PitchEnvValues} from '../util-classes/pitch-env-values';
+import {SignalService} from '../services/signal-service';
 
 export enum envelopePhase {inactive, attack, decay, sustain, release, retrigger, legato }
 
 export enum pitchEnvelopePhase {inactive, attack, attackLevel, decay, sustainLevel, release, releaseLevel, retrigger}
 
-export type PortamentoType =
-  'off' | 'chord' | 'plus12' | 'plus24' | 'minus12' | 'minus24';@Component({
+export type PortamentoType = 'off' | 'chord' | 'plus12' | 'plus24' | 'minus12' | 'minus24'
+@Component({
   selector: 'app-oscillators',
   imports: [
     LevelControlComponent,
@@ -92,7 +93,7 @@ export class OscillatorComponent  {
   readonly lfoWaveForm = viewChild.required<ElementRef<HTMLFormElement>>('modWaveForm');
 
   readonly indexedDBService: IndexedDBService = inject(IndexedDBService);
-
+  readonly signalService: SignalService = inject(SignalService);
   readonly fmSynthService: FmSynthService = inject(FmSynthService);
 
   clipboard: ClipboardService = inject(ClipboardService);

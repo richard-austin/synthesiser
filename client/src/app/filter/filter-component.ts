@@ -24,6 +24,7 @@ import {EnvelopeGraphComponent} from '../envelope-graph/envelope-graph-component
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {PitchEnvValues} from '../util-classes/pitch-env-values';
 import {timer} from 'rxjs';
+import {SignalService} from '../services/signal-service';
 
 @Component({
   selector: 'app-filters',
@@ -78,6 +79,7 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   private readonly indexedDBService = inject(IndexedDBService);
   private fmSynthService: FmSynthService = inject(FmSynthService);
+  readonly signalService: SignalService = inject(SignalService);
 
   private started = false;
 
