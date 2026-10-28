@@ -141,6 +141,8 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     else
       this.portamentoType().nativeElement.value = 'off';
 
+    this.qfactor().setValue(this.proxySettings.qFactor);
+
     // Set up default frequency bend e=velope values
     this.freqAttack().setValue(this.proxySettings.freqBend.attackTime);
     this.freqAttackLevel().setValue(this.proxySettings.freqBend.attackLevel);
