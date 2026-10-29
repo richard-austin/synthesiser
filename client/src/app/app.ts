@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, effect, EffectRef, inject, signal, viewChild} from '@angular/core';
+import {Component, effect, EffectRef, inject, signal, viewChild} from '@angular/core';
 import {SynthComponent} from './synth/synth-component';
 import {NgOptimizedImage} from '@angular/common';
 import {ConfigFileComponent} from './config-file/config-file.component';

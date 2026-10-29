@@ -1,7 +1,5 @@
 import {
   afterNextRender,
-  AfterViewInit,
-  ChangeDetectorRef,
   Component,
   ElementRef,
   inject, signal,

@@ -1,11 +1,9 @@
 import {
   afterNextRender,
-  AfterViewInit, ChangeDetectorRef,
+  ChangeDetectorRef,
   Component, DestroyRef, effect, EffectRef,
   ElementRef, inject,
   input,
-  OnDestroy,
-  OnInit,
   viewChild
 } from '@angular/core';
 import {FormsModule} from '@angular/forms';

@@ -1,6 +1,5 @@
 import {
   afterNextRender,
-  AfterViewInit,
   Component,
   ElementRef, inject,
   input,
