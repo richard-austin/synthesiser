@@ -1,4 +1,5 @@
 import {
+  afterNextRender,
   AfterViewInit,
   Component,
   ElementRef, inject,
@@ -33,7 +34,7 @@ export interface ModLevel {
   templateUrl: './matrix-control-component.html',
   styleUrl: './matrix-control-component.scss',
 })
-export class MatrixControlComponent implements AfterViewInit {
+export class MatrixControlComponent {
   protected dialStyle: dialStyle = dialStyle.green;
   private ctlSettings!: MatrixControlSettings;
   carrierNum: InputSignal<number> = input.required<number>();
@@ -46,6 +47,25 @@ export class MatrixControlComponent implements AfterViewInit {
   modSelect: Signal<ElementRef<HTMLFormElement>> = viewChild.required<ElementRef<HTMLFormElement>>('modSelect');
   levelControl: Signal<LevelControlComponent> = viewChild.required<LevelControlComponent>('level');
   fmSynthService: FmSynthService = inject(FmSynthService);
+
+  constructor() {
+    afterNextRender({
+      write: () => {
+        const modSelect = this.modSelect().nativeElement;
+        for (let j = 0; j < modSelect.elements.length; ++j) {
+          modSelect.elements[j].addEventListener('change', ($event) => {
+            const target = $event.target as HTMLInputElement;
+            const checked = target.checked;
+            const value: oscModType = checked ? target.value as oscModType : oscModType.off;
+            const otherCheckBox = (j + 1) % 2;
+            if (checked)
+              (modSelect.elements[otherCheckBox] as HTMLInputElement).checked = false;
+            this._setModType(value);
+          });
+        }
+      }
+    });
+  }
 
   start(ctrlSettings: MatrixControlSettings) {
     this.ctlSettings = ctrlSettings;
@@ -85,20 +105,4 @@ export class MatrixControlComponent implements AfterViewInit {
   protected selectOperator(modulatorNum: number) {
     this.signalSelectOperator().set(modulatorNum);
   }
-
-  ngAfterViewInit(): void {
-    const modSelect = this.modSelect().nativeElement;
-    for (let j = 0; j < modSelect.elements.length; ++j) {
-      modSelect.elements[j].addEventListener('change', ($event) => {
-        const target = $event.target as HTMLInputElement;
-        const checked = target.checked;
-        const value: oscModType = checked ? target.value as oscModType : oscModType.off;
-        const otherCheckBox = (j + 1) % 2;
-        if (checked)
-          (modSelect.elements[otherCheckBox] as HTMLInputElement).checked = false;
-        this._setModType(value);
-      });
-    }
-  }
-
 }

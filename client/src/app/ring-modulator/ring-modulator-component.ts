@@ -6,7 +6,7 @@ import {
   viewChild,
   output,
   input,
-  OutputEmitterRef, inject
+  OutputEmitterRef, inject, afterNextRender, DestroyRef
 } from '@angular/core';
 import {RingModulator} from '../modules/ring-modulator';
 import {LevelControlComponent} from '../level-control/level-control.component';
@@ -26,7 +26,7 @@ import {IndexedDBService} from '../services/indexed-db-service';
   templateUrl: './ring-modulator-component.html',
   styleUrl: './ring-modulator-component.scss',
 })
-export class RingModulatorComponent implements AfterViewInit, OnDestroy {
+export class RingModulatorComponent {
   ringMod!: RingModulator;
   proxySettings!: RingModSettings;
 
@@ -40,6 +40,44 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
   readonly internalModForm = viewChild.required<ElementRef<HTMLFormElement>>('internalModForm');
   readonly outputToForm = viewChild.required<ElementRef<HTMLFormElement>>('outputToForm');
   private readonly indexedDBService: IndexedDBService = inject(IndexedDBService);
+  private destroyRef = inject(DestroyRef);
+
+  constructor() {
+    afterNextRender({
+      write: ()=> {
+        const internalModForm = this.internalModForm().nativeElement;
+        for (let j = 0; j < internalModForm.elements.length; ++j) {
+          internalModForm.elements[j].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value as string;
+            this.proxySettings.internalMod = value as onOff;
+            this.ringMod.internalMod(value === 'on');
+          });
+        }
+        const modWaveForm = this.modWaveForm().nativeElement;
+        for (let j = 0; j < modWaveForm.elements.length; ++j) {
+          modWaveForm.elements[j].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value as OscillatorType;
+            this.proxySettings.modWaveform = value as modWaveforms;
+            this.ringMod.setModWaveform(value);
+          });
+        }
+        const outputToForm = this.outputToForm().nativeElement;
+        for (let j = 0; j < outputToForm.elements.length; ++j) {
+          outputToForm.elements[j].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value as string;
+            this.proxySettings.output = value as ringModOutput;
+            this.output.emit(value);
+          });
+        }
+      }
+    });
+    this.destroyRef.onDestroy(() => {
+      this.ringMod.destroy();
+    });
+  }
 
   async start(audioCtx: AudioContext, settings: RingModSettings | null) {
     this.ringMod = new RingModulator(audioCtx);
@@ -129,42 +167,8 @@ export class RingModulatorComponent implements AfterViewInit, OnDestroy {
     return ok;
   }
 
-
   disconnect() {
     this.ringMod.disconnect();
   }
 
-  ngAfterViewInit(): void {
-    const internalModForm = this.internalModForm().nativeElement;
-    for (let j = 0; j < internalModForm.elements.length; ++j) {
-      internalModForm.elements[j].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value as string;
-        this.proxySettings.internalMod = value as onOff;
-        this.ringMod.internalMod(value === 'on');
-      });
-    }
-    const modWaveForm = this.modWaveForm().nativeElement;
-    for (let j = 0; j < modWaveForm.elements.length; ++j) {
-      modWaveForm.elements[j].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value as OscillatorType;
-        this.proxySettings.modWaveform = value as modWaveforms;
-        this.ringMod.setModWaveform(value);
-      });
-    }
-    const outputToForm = this.outputToForm().nativeElement;
-    for (let j = 0; j < outputToForm.elements.length; ++j) {
-      outputToForm.elements[j].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value as string;
-        this.proxySettings.output = value as ringModOutput;
-        this.output.emit(value);
-      });
-    }
-  }
-
-  ngOnDestroy(): void {
-    this.ringMod.destroy();
-  }
 }

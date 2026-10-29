@@ -5,7 +5,7 @@ import {
   OnDestroy,
   viewChild,
   output,
-  input, inject, signal
+  input, inject, signal, afterNextRender
 } from '@angular/core';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {FilterComponent} from '../filter/filter-component';
@@ -29,7 +29,7 @@ import {timer} from 'rxjs';
   templateUrl: './noise-component.html',
   styleUrl: './noise-component.scss',
 })
-export class NoiseComponent implements AfterViewInit, OnDestroy {
+export class NoiseComponent {
   protected proxySettings!: NoiseSettings;
 
  // private noisePoolMgr!: DevicePoolManager;
@@ -55,6 +55,48 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   readonly fmSynthService: FmSynthService = inject(FmSynthService);
 
   constructor() {
+    afterNextRender({
+      write: () => {
+        const noiseOutputToForm = this.noiseOutputToForm().nativeElement;
+        for (let i = 0; i < noiseOutputToForm.elements.length; ++i) {
+          noiseOutputToForm.elements[i].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value;
+            this.output.emit(value);
+            this.proxySettings.output = value;
+          });
+        }
+
+        const noiseTypeForm = this.noiseTypeForm().nativeElement;
+        for (let i = 0; i < noiseTypeForm.elements.length; ++i) {
+          noiseTypeForm.elements[i].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value;
+            this.setNoiseType(value);
+            this.proxySettings.type = value;
+          });
+        }
+
+        const legatoOnOffForm = this.legatoOnOffForm().nativeElement;
+        for (let i = 0; i < legatoOnOffForm.elements.length; ++i) {
+          legatoOnOffForm.elements[i].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value;
+            this.legatoMode(value === 'on');
+            this.proxySettings.legatoMode = value;
+          });
+        }
+
+        const velocityOnOffForm = this.velocityOnOffForm().nativeElement;
+        for (let i = 0; i < velocityOnOffForm.elements.length; ++i) {
+          velocityOnOffForm.elements[i].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value;
+            this.setVelocitySensitive(value === 'on');
+          });
+        }
+      }
+    })
   }
 
   async start(audioCtx: AudioContext, settings: NoiseSettings | null) {
@@ -167,48 +209,4 @@ export class NoiseComponent implements AfterViewInit, OnDestroy {
   }
 
   protected readonly dialStyle = dialStyle;
-
-  ngAfterViewInit(): void {
-    const noiseOutputToForm = this.noiseOutputToForm().nativeElement;
-    for (let i = 0; i < noiseOutputToForm.elements.length; ++i) {
-      noiseOutputToForm.elements[i].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value;
-        this.output.emit(value);
-        this.proxySettings.output = value;
-      });
-    }
-
-    const noiseTypeForm = this.noiseTypeForm().nativeElement;
-    for (let i = 0; i < noiseTypeForm.elements.length; ++i) {
-      noiseTypeForm.elements[i].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value;
-        this.setNoiseType(value);
-        this.proxySettings.type = value;
-      });
-    }
-
-    const legatoOnOffForm = this.legatoOnOffForm().nativeElement;
-    for (let i = 0; i < legatoOnOffForm.elements.length; ++i) {
-      legatoOnOffForm.elements[i].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value;
-        this.legatoMode(value === 'on');
-        this.proxySettings.legatoMode = value;
-      });
-    }
-
-    const velocityOnOffForm = this.velocityOnOffForm().nativeElement;
-    for (let i = 0; i < velocityOnOffForm.elements.length; ++i) {
-      velocityOnOffForm.elements[i].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value;
-        this.setVelocitySensitive(value === 'on');
-      });
-    }
-  }
-
-  ngOnDestroy(): void {
-  }
 }

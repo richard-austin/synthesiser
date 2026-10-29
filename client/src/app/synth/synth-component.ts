@@ -180,7 +180,7 @@ export class SynthComponent implements OnDestroy {
 
 
     // Start the module components
-    this.filtersGrp().forEach((filter, i) => filter.start(this.audioCtx, settings ? settings.filterSettings[i] : settings));
+    this.filtersGrp().forEach((filter, i) => filter.start(settings ? settings.filterSettings[i] : settings));
 
     await this.noise().start(this.audioCtx, settings ? settings.noiseSettings : settings);
     await this.ringModulator().start(this.audioCtx, settings ? settings.ringModSettings : settings);

@@ -6,7 +6,7 @@ import {
   OnDestroy,
   signal,
   viewChild,
-  ViewEncapsulation, inject, effect, EffectRef
+  ViewEncapsulation, inject, effect, EffectRef, afterNextRender, DestroyRef
 } from '@angular/core';
 import {LevelControlComponent} from "../level-control/level-control.component";
 import {dialStyle} from '../level-control/levelControlParameters';
@@ -32,7 +32,7 @@ import {SetRadioButtons} from '../settings/set-radio-buttons';
   encapsulation: ViewEncapsulation.None,
   standalone: true
 })
-export class GeneralComponent implements AfterViewInit, OnDestroy {
+export class GeneralComponent {
   protected readonly dialStyle = dialStyle;
   private compressor!: DynamicsCompressorNode;
   private volume!: GainNode;
@@ -59,6 +59,8 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   private readonly indexedDBService: IndexedDBService = inject(IndexedDBService);
   private signalService: SignalService = inject(SignalService);
   private fmSynthService = inject(FmSynthService);
+  private destroyRef = inject(DestroyRef);
+
   private renameEffectRef!:EffectRef;
 
   constructor(private cdr: ChangeDetectorRef, private parent: SynthComponent, private rest: RestfulApiService) {
@@ -69,6 +71,28 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
       { // @ts-ignore
         this.proxySettings.configFileName = this.signalService.rename().newName;
       }
+    });
+
+    afterNextRender({
+      write: () => {
+          window.addEventListener('mousedown', (evt) => this.clickAwayHandler(evt));
+          const synthModeForm = this.synthesiserModeForm().nativeElement;
+          for (let j = 0; j < synthModeForm.elements.length; ++j) {
+
+          synthModeForm.elements[j].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value;
+            this.setSynthMode(value);
+            this.proxySettings.synthesiserMode = value;
+          });
+        }
+      }
+    });
+
+    this.destroyRef.onDestroy(() => {
+      this.volume.disconnect();
+      window.removeEventListener('mousedown', () => this.clickAwayHandler);
+      this.renameEffectRef.destroy();
     });
   }
 
@@ -196,24 +220,4 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
     this.signalService.synthModeSignal.set(mode);
     this.proxySettings.synthesiserMode = mode;
   }
-
-  ngAfterViewInit(): void {
-    window.addEventListener('mousedown', (evt) => this.clickAwayHandler(evt));
-    const synthModeForm = this.synthesiserModeForm().nativeElement;
-    for (let j = 0; j < synthModeForm.elements.length; ++j) {
-      synthModeForm.elements[j].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value;
-        this.setSynthMode(value);
-        this.proxySettings.synthesiserMode = value;
-      });
-    }
-  }
-
-  ngOnDestroy(): void {
-    this.volume.disconnect();
-    window.removeEventListener('mousedown', () => this.clickAwayHandler);
-    this.renameEffectRef.destroy();
-  }
-
 }
