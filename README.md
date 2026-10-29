@@ -213,8 +213,27 @@ the point of oscillating.
 
 
 #### Portamento
-This function is limited at the moment, and just gives a glide between the previous note and the next. Set to zero, there is no portamento.
-The drop down below it is from an earlier version and currently does nothing.
+Portamento is the effect where keys pressed cause the note to glide from the notes from the previous 
+key(s) pressed to those for the current key(s). The simplest portamento is where the synthesiser mode is 
+monophonic. In this case the single note glides between the frequencies set by the keys pressed. 
+
+In polyphonic mode, it's a bit more complicated, where there can be several gliding notes determined by
+the strategy used. 
+
+The glide speed is set by the Glide control. The time between any two notes will be the same, regardless of how far apart they are.
+The glide will move at a musically uniform rate (i.e. constant time per octave).
+
+The settings, selected from the drop down, are detailed in the table below
+
+| Portamento Mode              | Effect                                                                                                                                                                                                                                                |
+|------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Off                          | No portamento, notes are played without any preceding glide                                                                                                                                                                                           |
+| Chord (Polyphonic mode only) | Notes glide from their corresponding note in the previous chord. If there is no corresponding note in the previous chord, it will start from a note with the same musical interval from neighbouring notes in the previous chord as in the new choed. |
+| Glide (Monophonic only)      | The single note will glide from the previous single note.                                                                                                                                                                                             |
+| +12                          | Each note glides down from an octave up.                                                                                                                                                                                                              |
+| +24                          | Each note glides down from two octaves up.                                                                                                                                                                                                            |
+| -12                          | Each note glides up from an octave down.                                                                                                                                                                                                              |
+| -24                          | Each note glides up from two octaves down.                                                                                                                                                                                                            |
 
 #### Filter Morph Mode
 Five buttons which set the filter response in steps between low pass and high pass.
@@ -337,6 +356,7 @@ stages which can be between 1 and 61,
 * Load a saved configuration to the synthesiser.
 * Rename a configuration.
 * Delete a configuration.
+* Switch synthesiser mode between monophonic and polyphonic .
 
 ###### Save configuration
 
