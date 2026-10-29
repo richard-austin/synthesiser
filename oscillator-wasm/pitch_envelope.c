@@ -15,6 +15,12 @@ void pitch_envelope_init(PitchEnvelope *env, PitchEnvelopeData *data) {
     env->inUse = false;
 }
 
+void pitch_envelope_prepare_to_start(PitchEnvelope *env) {
+    env->t = 0.0f; // Clear layout ramp clock timers
+    env->phase = ENV_INACTIVE;
+    env->inUse = true;
+}
+
 void pitch_envelope_set_timing(PitchEnvelope *env, float value, float time) {
     // FIX: Prevent env->v0 from being 0 or lower than env->lowestLevel
     float currentLevel = env->level;

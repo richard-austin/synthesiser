@@ -1,4 +1,11 @@
-import {AfterViewInit, Component, ElementRef, OnDestroy, viewChild, output, inject} from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  viewChild,
+  output,
+  inject,
+  afterNextRender
+} from '@angular/core';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
 import {PhasorSettings} from '../settings/phasor';
@@ -19,7 +26,7 @@ import {IndexedDBService} from '../services/indexed-db-service';
   templateUrl: './phaser.component.html',
   styleUrl: './phaser.component.scss',
 })
-export class PhaserComponent implements AfterViewInit, OnDestroy {
+export class PhaserComponent {
   proxySettings!: PhasorSettings;
   protected stages!: number;
 
@@ -28,7 +35,6 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
   protected readonly maxStages: number = 61;
   protected readonly isFirefox: boolean;
 
-  private started = false;
   readonly output = output<string>();
 
   readonly phasorOnOffForm = viewChild.required<ElementRef<HTMLFormElement>>('phasorOnOffForm');
@@ -47,6 +53,39 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
 
   constructor() {
     this.isFirefox = navigator.userAgent.indexOf('Firefox') != -1;
+
+    afterNextRender({
+      write: ()=> {
+        const phasorOnOff = this.phasorOnOffForm().nativeElement;
+        for (let i = 0; i < phasorOnOff.elements.length; ++i) {
+          phasorOnOff.elements[i].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value;
+            this.output.emit(value);
+            this.proxySettings.output = value as phasorOutputs;
+          });
+        }
+
+        const lfoWaveForm = this.lfoWaveForm().nativeElement;
+        for (let j = 0; j < lfoWaveForm.elements.length; ++j) {
+          lfoWaveForm.elements[j].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value as OscillatorType;
+            this.fmSynthService.setPhaserLFOWaveform(value as modWaveforms);
+            this.proxySettings.modWaveform = value as modWaveforms;
+          });
+        }
+        const modOnOff = this.modOnOff().nativeElement;
+        for (let j = 0; j < modOnOff.elements.length; ++j) {
+          modOnOff.elements[j].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value: onOff = $event.target.value as onOff;
+            this.fmSynthService.setPhaserLFOModType(value)
+            this.proxySettings.modulation = value;
+          });
+        }
+      }
+    });
   }
 
   async setUp(settings: PhasorSettings | null) {
@@ -72,11 +111,6 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
     }
 
     this.proxySettings = this.indexedDBService.getSettingsProxy(settings, objectName);
-
-    // Set up LFO default values
-    // this.modGain.connect(this.phaser.modInput);
-    // this.modGain2.connect(this.phaser2.modInput);
-    this.started = true;
 
     // Set up the dials
     this.modFreq().setValue(settings.lfoFrequency);
@@ -139,40 +173,5 @@ export class PhaserComponent implements AfterViewInit, OnDestroy {
     this.proxySettings.modDepth = $event;
     this.lastLevel = $event;
     this.fmSynthService.setPhaserLFOLevel($event);
-  }
-
-  ngAfterViewInit(): void {
-    const phasorOnOff = this.phasorOnOffForm().nativeElement;
-    for (let i = 0; i < phasorOnOff.elements.length; ++i) {
-      phasorOnOff.elements[i].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value;
-        this.output.emit(value);
-        this.proxySettings.output = value as phasorOutputs;
-      });
-    }
-
-    const lfoWaveForm = this.lfoWaveForm().nativeElement;
-    for (let j = 0; j < lfoWaveForm.elements.length; ++j) {
-      lfoWaveForm.elements[j].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value as OscillatorType;
-        this.fmSynthService.setPhaserLFOWaveform(value as modWaveforms);
-        this.proxySettings.modWaveform = value as modWaveforms;
-      });
-    }
-    const modOnOff = this.modOnOff().nativeElement;
-    for (let j = 0; j < modOnOff.elements.length; ++j) {
-      modOnOff.elements[j].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value: onOff = $event.target.value as onOff;
-          this.fmSynthService.setPhaserLFOModType(value)
-        this.proxySettings.modulation = value;
-      });
-    }
-  }
-
-  ngOnDestroy(): void {
-    //this.fmSynthService.phaserDestroy();
   }
 }

@@ -10,6 +10,8 @@ void pitch_envelope_set_timing(PitchEnvelope *env, float value, float time);
 
 void pitch_envelope_data_init(PitchEnvelopeData *ped);
 
+void pitch_envelope_prepare_to_start(PitchEnvelope *env);
+
 float pitch_envelope_ramp(PitchEnvelope *env);
 
 void pitch_envelope_sustain_time(PitchEnvelope *env);

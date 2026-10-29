@@ -57,10 +57,10 @@ void setBankEnvelopeParams(int bank, int phase, float value) {
             // On bank 0, use the largest of noise and oscillator release times for filter release time
             OscillatorData *od = g_oscData[bank];
             if (bank == 0 && value > noiseEnvData->release) {
-                for (int i = 0; i < g_oscillatorsPerBank; ++i)
+                for (int i = 0; i < g_workingOscillatorsPerBank; ++i)
                     od[i].filter.envelopeData.release = value;
             } else if (bank > 0) {
-                for (int i = 0; i < g_oscillatorsPerBank; ++i)
+                for (int i = 0; i < g_workingOscillatorsPerBank; ++i)
                     od[i].filter.envelopeData.release = value;
             }
             break;
@@ -94,7 +94,7 @@ void setNoiseEnvelopeParams(int phase, float value) {
             noiseEnvData->release = value;
             OscillatorData *od = g_oscData[0];
             if (value > env->release)
-                for (int i = 0; i < g_oscillatorsPerBank; ++i)
+                for (int i = 0; i < g_workingOscillatorsPerBank; ++i)
                     od[i].filter.envelopeData.release = value;
             break;
         case 6:
@@ -150,7 +150,7 @@ void setBankPitchEnvelopeParams(int bank, int phase, float value) {
         case 6:
             env->releaseLevel = value;
             OscillatorData *od = g_oscData[bank];
-            for (int o = 0; o < g_oscillatorsPerBank; ++o)
+            for (int o = 0; o < g_workingOscillatorsPerBank; ++o)
                 od[o].pitchEnv.level = value;
             break;
         default:
@@ -196,7 +196,7 @@ void setBankFilterPitchEnvelopeParams(int bank, int phase, float value) {
         case 6:
             env->releaseLevel = value;
             OscillatorData *od = g_oscData[bank];
-            for (int o = 0; o < g_oscillatorsPerBank; ++o)
+            for (int o = 0; o < g_workingOscillatorsPerBank; ++o)
                 od[o].filterPitchEnv.level = value;
             break;
         default:
@@ -246,7 +246,7 @@ EMSCRIPTEN_KEEPALIVE
 
 void setBankTuning(int bank, float tuning) {
     g_banks[bank].tuning = tuning;
-    for (int o = 0; o < g_oscillatorsPerBank; ++o) {
+    for (int o = 0; o < g_workingOscillatorsPerBank; ++o) {
         OscillatorData *od = &g_oscData[bank][o];
         if (!od->env.inUse)
             continue;
@@ -258,7 +258,7 @@ EMSCRIPTEN_KEEPALIVE
 
 void setFilterTuning(int bank, float tuning) {
     g_banks[bank].filterTuning = tuning;
-    for (int o = 0; o < g_oscillatorsPerBank; ++o) {
+    for (int o = 0; o < g_workingOscillatorsPerBank; ++o) {
         OscillatorData *od = &g_oscData[bank][o];
         if (!od->env.inUse)
             continue;
@@ -287,7 +287,7 @@ void setFilterQFactor(int bank, float qFactor) {
     // Store it on your bank data if you track it there
     g_banks[bank].resonanceBankFactor = rawQ;
 
-    for (int o = 0; o < g_oscillatorsPerBank; ++o) {
+    for (int o = 0; o < g_workingOscillatorsPerBank; ++o) {
         OscillatorData *od = &g_oscData[bank][o];
         // Pass the raw 0.0 -> 1.0 value directly down
         filter_set_params(&od->filter, od->filter.
@@ -298,7 +298,7 @@ void setFilterQFactor(int bank, float qFactor) {
 EMSCRIPTEN_KEEPALIVE
 
 void setVelocitySensitive(int bank, bool isVelocitySensitive) {
-    for (int o = 0; o < g_oscillatorsPerBank; ++o) {
+    for (int o = 0; o < g_workingOscillatorsPerBank; ++o) {
         OscillatorData *od = &g_oscData[bank][o];
         od->env.envelopeData->velocitySensitive = isVelocitySensitive;
     }
@@ -401,12 +401,12 @@ EMSCRIPTEN_KEEPALIVE
 void setFilterMorphMode(int bank, float morphMode) {
     OscillatorData *oscData = g_oscData[bank];
     if (morphMode == -1.0f) {
-        for (int o = 0; o < g_oscillatorsPerBank; ++o) {
+        for (int o = 0; o < g_workingOscillatorsPerBank; ++o) {
             OscillatorData *od = &oscData[o];
             od->filter.useMoog = true;
         }
     } else {
-        for (int o = 0; o < g_oscillatorsPerBank; ++o) {
+        for (int o = 0; o < g_workingOscillatorsPerBank; ++o) {
             OscillatorData *od = &oscData[o];
             od->filter.useMoog = false;
             filter_set_morph(&od->filter, morphMode);
@@ -564,4 +564,23 @@ EMSCRIPTEN_KEEPALIVE
 
 void setSlop(bool slop) {
     g_slop = slop;
+}
+
+EMSCRIPTEN_KEEPALIVE
+
+void setSynthesiserMode(int mode) {
+    g_workingOscillatorsPerBank = mode == 0 ? g_oscillatorsPerBank : 1;
+    g_roundRobinIndex = mode == 0 ? g_roundRobinIndex : 0;
+    // Clear all envelopes down when changing mode otherwise oscillators can be left running
+    for (int bank = 0; bank < g_numberOfBanks; ++bank) {
+        for (int osc = 0; osc < g_workingOscillatorsPerBank; osc++) {
+            OscillatorData* od = &g_oscData[bank][osc];
+            od->env.inUse = false;
+            od->env.level = 0.0f;
+            od->env.keyDown = false;
+            od->filter.envelope.inUse = false;
+            od->filter.envelope.level = 0.0f;
+            od->filter.envelope.keyDown = false;
+        }
+    }
 }

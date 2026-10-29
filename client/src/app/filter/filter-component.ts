@@ -1,10 +1,9 @@
 import {
-  AfterViewInit,
+  afterNextRender,
   Component,
   ElementRef,
   inject, input,
   InputSignal,
-  OnDestroy,
   output,
   OutputEmitterRef, signal, Signal, viewChild
 } from '@angular/core';
@@ -17,13 +16,14 @@ import {filterModType, modWaveforms, onOff} from '../enums/enums';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
 import {FilterSettings} from '../settings/filter';
 
-import {pitchEnvelopePhase, PortamentoType} from '../oscillator/oscillator.component';
+import {OscillatorComponent, pitchEnvelopePhase, PortamentoType} from '../oscillator/oscillator.component';
 import {FmSynthService} from '../services/fm-synth-service';
 import {IndexedDBService} from '../services/indexed-db-service';
 import {EnvelopeGraphComponent} from '../envelope-graph/envelope-graph-component';
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {PitchEnvValues} from '../util-classes/pitch-env-values';
 import {timer} from 'rxjs';
+import {SignalService} from '../services/signal-service';
 
 @Component({
   selector: 'app-filters',
@@ -34,9 +34,8 @@ import {timer} from 'rxjs';
   templateUrl: './filter-component.html',
   styleUrl: './filter-component.scss',
 })
-export class FilterComponent implements AfterViewInit, OnDestroy {
+export class FilterComponent {
   protected tuningDivisions = 6;
-  private audioCtx!: AudioContext;
   proxySettings!: FilterSettings
 
   // One set for oscillator1, one set for oscillator2 and one for the noise source
@@ -78,12 +77,69 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
 
   private readonly indexedDBService = inject(IndexedDBService);
   private fmSynthService: FmSynthService = inject(FmSynthService);
+  readonly signalService: SignalService = inject(SignalService);
 
   private started = false;
 
-  async start(audioCtx: AudioContext, settings: FilterSettings | null): Promise<boolean> {
+  constructor() {
+    afterNextRender({
+      write: () => {
+        const filterOutForm = this.filterOutputTo().nativeElement;
+        for (let i = 0; i < filterOutForm.elements.length; ++i) {
+          filterOutForm.elements[i].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value;
+            this.output.emit(value);
+            this.proxySettings.output = value;
+          });
+        }
+        const freqEnveOnOffForm = this.freqEnveOnOff().nativeElement;
+        for (let i = 0; i < freqEnveOnOffForm.elements.length; ++i) {
+          freqEnveOnOffForm.elements[i].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value;
+            this.useFreqBendEnvelope(value === 'on')
+          })
+        }
+        const filterType = this.filterType().nativeElement;
+        for (let i = 0; i < filterType.elements.length; ++i) {
+          filterType.elements[i].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value;
+            this.setFilterType(value);
+          });
 
-    this.audioCtx = audioCtx;
+          const portamentoType = this.portamentoType().nativeElement;
+          portamentoType.addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value as PortamentoType
+            this.setPortamentoType(value as PortamentoType);
+          });
+
+          const modSettingsForm = this.modSettingsForm().nativeElement;
+          for (let j = 0; j < modSettingsForm.elements.length; ++j) {
+            modSettingsForm.elements[j].addEventListener('change', ($event) => {
+              // @ts-ignore
+              const value = $event.target.value as modulationType;
+              this.setModType(value);
+            });
+          }
+
+          const modWaveForm = this.lfoWaveForm().nativeElement;
+          for (let j = 0; j < modWaveForm.elements.length; ++j) {
+            modWaveForm.elements[j].addEventListener('change', ($event) => {
+              // @ts-ignore
+              const value = $event.target.value;
+              this.fmSynthService.setFilterLFOWaveform(this.filterNumber(), value);
+              this.proxySettings.modWaveform = value as modWaveforms;
+            })
+          }
+        }
+      }
+    });
+  }
+  async start(settings: FilterSettings | null): Promise<boolean> {
+
     let ok = false;
     if (this.numberOfFilters && !this.started) {
     }
@@ -132,7 +188,12 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
     this.gain().setValue(this.proxySettings.gain);
 
     this.portamento().setValue(this.proxySettings.portamento);
-    this.portamentoType().nativeElement.value = this.proxySettings.portamentoType;
+
+    // This parameter was added after many config files already existed which did not include this parameter
+    if(OscillatorComponent.portamentoTypes.find((t) => t === this.proxySettings.portamentoType))
+      this.portamentoType().nativeElement.value = this.proxySettings.portamentoType;
+    else
+      this.portamentoType().nativeElement.value = 'off';
 
     this.qfactor().setValue(this.proxySettings.qFactor);
 
@@ -329,63 +390,5 @@ export class FilterComponent implements AfterViewInit, OnDestroy {
   protected setModType(type: filterModType) {
     this.proxySettings.modType = type;
     this.fmSynthService.setFilterLFOModType(this.filterNumber(), type);
-  }
-
-
-  ngAfterViewInit(): void {
-    const filterOutForm = this.filterOutputTo().nativeElement;
-    for (let i = 0; i < filterOutForm.elements.length; ++i) {
-      filterOutForm.elements[i].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value;
-        this.output.emit(value);
-        this.proxySettings.output = value;
-      });
-    }
-    const freqEnveOnOffForm = this.freqEnveOnOff().nativeElement;
-    for (let i = 0; i < freqEnveOnOffForm.elements.length; ++i) {
-      freqEnveOnOffForm.elements[i].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value;
-        this.useFreqBendEnvelope(value === 'on')
-      })
-    }
-    const filterType = this.filterType().nativeElement;
-    for (let i = 0; i < filterType.elements.length; ++i) {
-      filterType.elements[i].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value;
-        this.setFilterType(value);
-      });
-
-      const portamentoType = this.portamentoType().nativeElement;
-      portamentoType.addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value as PortamentoType
-        this.setPortamentoType(value as PortamentoType);
-      });
-
-      const modSettingsForm = this.modSettingsForm().nativeElement;
-      for (let j = 0; j < modSettingsForm.elements.length; ++j) {
-        modSettingsForm.elements[j].addEventListener('change', ($event) => {
-          // @ts-ignore
-          const value = $event.target.value as modulationType;
-          this.setModType(value);
-        });
-      }
-
-      const modWaveForm = this.lfoWaveForm().nativeElement;
-      for (let j = 0; j < modWaveForm.elements.length; ++j) {
-        modWaveForm.elements[j].addEventListener('change', ($event) => {
-          // @ts-ignore
-          const value = $event.target.value;
-          this.fmSynthService.setFilterLFOWaveform(this.filterNumber(), value);
-          this.proxySettings.modWaveform = value as modWaveforms;
-        })
-      }
-    }
-  }
-
-  ngOnDestroy(): void {
   }
 }

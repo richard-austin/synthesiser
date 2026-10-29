@@ -1,12 +1,10 @@
 import {
-  AfterViewInit,
   Component,
   ElementRef,
-  OnDestroy,
   viewChild,
   output,
   OutputEmitterRef,
-  inject
+  inject, afterNextRender, DestroyRef
 } from '@angular/core';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
@@ -24,7 +22,7 @@ import {IndexedDBService} from '../services/indexed-db-service';
   templateUrl: './reverb-component.html',
   styleUrl: './reverb-component.scss',
 })
-export class ReverbComponent implements AfterViewInit, OnDestroy {
+export class ReverbComponent {
   audioCtx!: AudioContext;
   reverb!: Reverb;
   gain!: GainNode;
@@ -44,6 +42,27 @@ export class ReverbComponent implements AfterViewInit, OnDestroy {
   private readonly indexedDBService = inject(IndexedDBService);
   protected readonly dialStyle = dialStyle;
   private started = false;
+  private destroyRef = inject(DestroyRef);
+
+  constructor() {
+    afterNextRender({
+      write: () => {
+        const reverbOnOff = this.reverbOnOffForm().nativeElement;
+        for (let i = 0; i < reverbOnOff.elements.length; ++i) {
+          reverbOnOff.elements[i].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value;
+            this.proxySettings.output = value as onOff;
+            this.output.emit(value);
+          });
+        }
+      }
+    });
+
+    this.destroyRef.onDestroy(() => {
+      this.disconnect();
+    });
+  }
 
   async start(audioCtx: AudioContext, settings: ReverbSettings | null) {
     if(!this.started) {
@@ -130,20 +149,5 @@ export class ReverbComponent implements AfterViewInit, OnDestroy {
 
   disconnect() {
     this.gain.disconnect();
-  }
-
-  ngAfterViewInit(): void {
-    const reverbOnOff = this.reverbOnOffForm().nativeElement;
-    for (let i = 0; i < reverbOnOff.elements.length; ++i) {
-      reverbOnOff.elements[i].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value;
-        this.proxySettings.output = value as onOff;
-        this.output.emit(value);
-      });
-    }
-  }
-  ngOnDestroy(): void {
-    this.disconnect();
   }
 }

@@ -1,9 +1,8 @@
 import {
-  AfterViewInit,
-  ChangeDetectorRef,
+  afterNextRender,
   Component,
   ElementRef,
-  inject,
+  inject, signal,
   Signal,
   viewChild,
 } from '@angular/core';
@@ -22,7 +21,7 @@ import {IndexedDBService} from '../services/indexed-db-service';
   templateUrl: './analyser-component.html',
   styleUrl: './analyser-component.scss',
 })
-export class AnalyserComponent implements AfterViewInit {
+export class AnalyserComponent {
   private audioCtx!: AudioContext;
   private analyser!: AnalyserNode;
   private canvasCtx!: CanvasRenderingContext2D | null;
@@ -39,8 +38,21 @@ export class AnalyserComponent implements AfterViewInit {
   yScaleControl = viewChild.required<LevelControlComponent>('yScale');
   xScaleControl = viewChild.required<LevelControlComponent>('xScale');
   triggerLevelControl = viewChild.required<LevelControlComponent>('trigLevel');
+  analyserType = signal<analyserTypes>(analyserTypes.off);
   private readonly indexedDBService = inject(IndexedDBService);
-  constructor(private cd: ChangeDetectorRef) {
+  constructor() {
+    afterNextRender({
+      write: ()=> {
+        const analyserTypeForm = this.analyserTypeForm().nativeElement;
+        for (let i = 0; i < analyserTypeForm.elements.length; ++i) {
+          analyserTypeForm.elements[i].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value;
+            this.setAnalyserType(value);
+          });
+        }
+      }
+    });
   }
 
   async start(audioCtx: AudioContext, settings: AnalyserSettings | null): Promise<void> {
@@ -163,7 +175,6 @@ export class AnalyserComponent implements AfterViewInit {
 
     const offsetXScale = this.xScale +0.7;
     const triggerIndex = this.calculateTriggerIndex(timeData);
-    //console.log("triggerIndex = ", triggerIndex);
     for (let x = triggerIndex; x < timeData.length && (x - triggerIndex)*offsetXScale < width; x++)
       ctx.lineTo((x - triggerIndex)*offsetXScale, (128 - timeData[x])*this.yScale + height/2);
 
@@ -173,6 +184,7 @@ export class AnalyserComponent implements AfterViewInit {
 
   private setAnalyserType(value: analyserTypes) {
     this.proxySettings.analyserType = value;
+    this.analyserType.set(value);
     if (value !== analyserTypes.off)
       this.draw();
   }
@@ -188,18 +200,6 @@ export class AnalyserComponent implements AfterViewInit {
   }
   node(): AudioNode {
     return this.analyser;
-  }
-
-  async ngAfterViewInit(): Promise<void> {
-    const analyserTypeForm = this.analyserTypeForm().nativeElement;
-    for (let i = 0; i < analyserTypeForm.elements.length; ++i) {
-      analyserTypeForm.elements[i].addEventListener('change', ($event) => {
-        // @ts-ignore
-        const value = $event.target.value;
-        this.setAnalyserType(value);
-        this.cd.detectChanges();
-      });
-    }
   }
 
 //  protected readonly analyserTypes = analyserTypes;

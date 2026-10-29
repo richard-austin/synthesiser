@@ -1,10 +1,9 @@
 import {
-  AfterViewInit, ChangeDetectorRef,
-  Component, effect, EffectRef,
+  afterNextRender,
+  ChangeDetectorRef,
+  Component, DestroyRef, effect, EffectRef,
   ElementRef, inject,
   input,
-  OnDestroy,
-  OnInit,
   viewChild
 } from '@angular/core';
 import {FormsModule} from '@angular/forms';
@@ -23,8 +22,9 @@ import {timer} from 'rxjs';
   templateUrl: './config-file.component.html',
   styleUrl: './config-file.component.scss',
 })
-export class ConfigFileComponent implements OnInit, AfterViewInit, OnDestroy {
+export class ConfigFileComponent {
   signalService: SignalService = inject(SignalService);
+  private destroyRef = inject(DestroyRef);
 
   disappearOnMouseOut = input<boolean>(false);
 
@@ -51,9 +51,36 @@ export class ConfigFileComponent implements OnInit, AfterViewInit, OnDestroy {
       const display = visible ? 'block' : 'none';
       this.outerDiv?.setAttribute('style', 'display:'+display);
     });
+
+    afterNextRender({
+      write: () => {
+        const loadButton = this.loadButton().nativeElement;
+        const deleteButton = this.deleteButton().nativeElement;
+        const renameButton = this.renameButton().nativeElement;
+
+        loadButton.disabled = true;
+        deleteButton.disabled = true;
+        renameButton.disabled = true;
+
+        this.outerDiv = this.html().nativeElement;
+        this.outerDiv.setAttribute('style', 'display:none');
+        this.configOptions().nativeElement.addEventListener("change", (e) => {
+          const disabled = this.configOptions().nativeElement.value === '';
+          loadButton.disabled = disabled;
+          deleteButton.disabled = disabled;
+          renameButton.disabled = disabled;
+        });
+      }
+    });
+
+    this.destroyRef.onDestroy(() => {
+      const configOptions = this.configOptions().nativeElement;
+      configOptions.onchange = null;
+      this.homeControlEffectRef.destroy();
+    });
   }
 
-  private reset() {
+  reset() {
     this.rest.getConfigFileList().subscribe({
       next: (v) => {
         this.configFileList = v
@@ -163,34 +190,5 @@ export class ConfigFileComponent implements OnInit, AfterViewInit, OnDestroy {
         this.signalService.configFileComponentControl.set(false);
       }
     });
-  }
-
-  ngOnInit() {
-    this.reset();
-  }
-
-  ngAfterViewInit(): void {
-    const loadButton = this.loadButton().nativeElement;
-    const deleteButton = this.deleteButton().nativeElement;
-    const renameButton = this.renameButton().nativeElement;
-
-    loadButton.disabled = true;
-    deleteButton.disabled = true;
-    renameButton.disabled = true;
-
-    this.outerDiv = this.html().nativeElement;
-    this.outerDiv.setAttribute('style', 'display:none');
-    this.configOptions().nativeElement.addEventListener("change", (e) => {
-      const disabled = this.configOptions().nativeElement.value === '';
-      loadButton.disabled = disabled;
-      deleteButton.disabled = disabled;
-      renameButton.disabled = disabled;
-     });
-  }
-
-  ngOnDestroy(): void {
-    const configOptions = this.configOptions().nativeElement;
-    configOptions.onchange = null;
-    this.homeControlEffectRef.destroy();
   }
 }

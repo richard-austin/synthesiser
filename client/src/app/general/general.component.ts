@@ -1,12 +1,10 @@
 import {
-  AfterViewInit,
   ChangeDetectorRef,
   Component,
   ElementRef, output,
-  OnDestroy,
   signal,
   viewChild,
-  ViewEncapsulation, inject, effect, EffectRef
+  ViewEncapsulation, inject, effect, EffectRef, afterNextRender, DestroyRef
 } from '@angular/core';
 import {LevelControlComponent} from "../level-control/level-control.component";
 import {dialStyle} from '../level-control/levelControlParameters';
@@ -17,6 +15,8 @@ import {SynthComponent} from '../synth/synth-component';
 import {RestfulApiService} from '../services/restful-api.service';
 import {IndexedDBService} from '../services/indexed-db-service';
 import {SignalService} from '../services/signal-service';
+import {FmSynthService} from '../services/fm-synth-service';
+import {SetRadioButtons} from '../settings/set-radio-buttons';
 
 
 @Component({
@@ -27,9 +27,10 @@ import {SignalService} from '../services/signal-service';
   ],
   templateUrl: './general.component.html',
   styleUrl: './general.component.scss',
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
+  standalone: true
 })
-export class GeneralComponent implements AfterViewInit, OnDestroy {
+export class GeneralComponent {
   protected readonly dialStyle = dialStyle;
   private compressor!: DynamicsCompressorNode;
   private volume!: GainNode;
@@ -49,11 +50,15 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
   masterVolume = viewChild.required<LevelControlComponent>('masterVolume');
   configEditor = viewChild.required<ElementRef<HTMLDivElement>>('configEditor');
   general = viewChild.required<ElementRef<HTMLDivElement>>('general');
+  synthesiserModeForm = viewChild.required<ElementRef<HTMLFormElement>>('synthesiserModeForm');
 
   animationEnter = signal('enter-animation');
   animationLeave = signal('leaving-animation');
   private readonly indexedDBService: IndexedDBService = inject(IndexedDBService);
   private signalService: SignalService = inject(SignalService);
+  private fmSynthService = inject(FmSynthService);
+  private destroyRef = inject(DestroyRef);
+
   private renameEffectRef!:EffectRef;
 
   constructor(private cdr: ChangeDetectorRef, private parent: SynthComponent, private rest: RestfulApiService) {
@@ -66,6 +71,27 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
       }
     });
 
+    afterNextRender({
+      write: () => {
+          window.addEventListener('mousedown', (evt) => this.clickAwayHandler(evt));
+          const synthModeForm = this.synthesiserModeForm().nativeElement;
+          for (let j = 0; j < synthModeForm.elements.length; ++j) {
+
+          synthModeForm.elements[j].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value;
+            this.setSynthMode(value);
+            this.proxySettings.synthesiserMode = value;
+          });
+        }
+      }
+    });
+
+    this.destroyRef.onDestroy(() => {
+      this.volume.disconnect();
+      window.removeEventListener('mousedown', () => this.clickAwayHandler);
+      this.renameEffectRef.destroy();
+    });
   }
 
   async start(audioCtx: AudioContext, settings: GeneralSettings | null): Promise<boolean> {
@@ -101,6 +127,8 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
     this.proxySettings = this.indexedDBService.getSettingsProxy(settings, objectName);
     this.configFileName = this.proxySettings.configFileName;
     this.masterVolume().setValue(this.proxySettings.level);
+    const synthesiserMode = this.proxySettings.synthesiserMode === undefined ? 'poly' : this.proxySettings.synthesiserMode;
+    SetRadioButtons.set(this.synthesiserModeForm(), synthesiserMode);
   }
 
   public getSettings(): GeneralSettings {
@@ -181,17 +209,13 @@ export class GeneralComponent implements AfterViewInit, OnDestroy {
     this.addConfigMode = this.showConfigEditor = false;
   }
 
-  ngAfterViewInit(): void {
-    window.addEventListener('mousedown', (evt) => this.clickAwayHandler(evt));
-  }
-
-  ngOnDestroy(): void {
-    this.volume.disconnect();
-    window.removeEventListener('mousedown', () => this.clickAwayHandler);
-    this.renameEffectRef.destroy();
-  }
-
   protected showConfigLoadForm() {
     this.signalService.configFileComponentControl.set(!this.signalService.configFileComponentControl());
+  }
+
+  protected setSynthMode(mode: 'mono' | 'poly') {
+    this.fmSynthService.setSynthMode(mode);
+    this.signalService.synthModeSignal.set(mode);
+    this.proxySettings.synthesiserMode = mode;
   }
 }

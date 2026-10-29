@@ -54,9 +54,14 @@
             <button id="manageConfig" (click)="manageConfigurations()">Save configuration</button>
           }
         </div>
-      </div>
-      <div class="button-container module general-width">
         <button class="show-config-load-form-button" (click)="showConfigLoadForm()">Load or Manage Config Files</button>
+      </div>
+      <div class="module general-width">
+        <h2>Synthesiser Mode</h2>
+        <form #synthesiserModeForm>
+          <label><input type="radio" name="mode" value="poly"><span>Polyphonic</span></label>
+          <label><input type="radio" name="mode" value="mono"><span>Monophonic</span></label>
+        </form>
       </div>
     </div>
   </div>

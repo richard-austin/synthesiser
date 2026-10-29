@@ -1,5 +1,4 @@
 import {
-  AfterViewInit,
   Component, inject,
   input,
   InputSignal,
@@ -20,7 +19,7 @@ import {IndexedDBService} from '../services/indexed-db-service';
   templateUrl: './matrix-component.html',
   styleUrl: './matrix-component.scss',
 })
-export class MatrixComponent implements AfterViewInit {
+export class MatrixComponent {
   matrixControls: Signal<readonly MatrixControlComponent[]> = viewChildren(MatrixControlComponent);
   oscillators: InputSignal<readonly OscillatorComponent[]> = input.required<readonly OscillatorComponent[]>();
   selectOperator: InputSignal<WritableSignal<number>> = input.required<WritableSignal<number>>();
@@ -61,8 +60,5 @@ export class MatrixComponent implements AfterViewInit {
   protected modSelection(modSetting: ModSetting) {
     const element = this.proxySettings.matrix[modSetting.carrier][modSetting.modulator]
     element.setting = modSetting.modType;
-  }
-
-  ngAfterViewInit(): void {
   }
 }

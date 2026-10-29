@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, effect, EffectRef, inject, signal, viewChild} from '@angular/core';
+import {Component, effect, EffectRef, inject, signal, viewChild} from '@angular/core';
 import {SynthComponent} from './synth/synth-component';
 import {NgOptimizedImage} from '@angular/common';
 import {ConfigFileComponent} from './config-file/config-file.component';
@@ -11,8 +11,8 @@ import {RestfulApiService} from './services/restful-api.service';
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
-export class App implements AfterViewInit {
-  homeComponent = viewChild.required(ConfigFileComponent)
+export class App {
+  configFileComponent = viewChild.required(ConfigFileComponent)
   signalService = inject(SignalService);
   restfulApiService = inject(RestfulApiService);
 
@@ -22,7 +22,7 @@ export class App implements AfterViewInit {
   constructor() {
     this.effectRef = effect(() => {
       if(this.signalService.configFileComponentControl())
-        this.homeComponent().ngOnInit(); // Ensure file list is reloaded
+        this.configFileComponent().reset(); // Ensure file list is reloaded
     });
     this.restfulApiService.getVersion().subscribe((result:{version: string}) => {
       this.versionNumber.set(result.version);
@@ -30,7 +30,5 @@ export class App implements AfterViewInit {
   }
   protected async showHomeForm() {
      this.started = true;
-  }
-  ngAfterViewInit(): void {
   }
  }
