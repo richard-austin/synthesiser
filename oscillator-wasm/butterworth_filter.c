@@ -1,6 +1,13 @@
 #include "butterworth_filter.h"
 #include <math.h>
 
+void butterworth_init(ButterworthFilter *f) {
+    f->x1 = 0.0f;
+    f->x2 = 0.0f;
+    f->y1 = 0.0f;
+    f->y2 = 0.0f;
+}
+
 // --- Filter Architecture Logic ---
 void butterworth_calculate_coefficients(ButterworthFilter *f, float cutoff, float sampleRate) {
     float omega = m_pi * cutoff / sampleRate;

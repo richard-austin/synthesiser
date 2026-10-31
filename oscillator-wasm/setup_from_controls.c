@@ -2,6 +2,8 @@
 #include <emscripten.h>
 #include <math.h>
 #include <stdlib.h>
+
+#include "butterworth_filter.h"
 #include "globals.h"
 
 #include "svf4_filter.h"
@@ -22,6 +24,17 @@ EMSCRIPTEN_KEEPALIVE
 void setModType(int modBank, int carrierBank, int type) {
     ModSettings *modSettings = g_banks[modBank].modMatrix + carrierBank;
     modSettings->modType = (oscModType) type;
+
+    // Clear the butterworth filter and fm accumulators down to zero if modulation was turned off, this prevents
+    // stored values causing sudden changes in mod phase. after FM was turned off which caused clicks on keydown
+    if (type == MOD_OFF) {
+        OscillatorData* od = g_oscData[carrierBank];
+        float* accs = g_fmAccumulators + carrierBank * g_workingOscillatorsPerBank;
+        for (int i = 0; i < g_workingOscillatorsPerBank; ++i) {
+            butterworth_init(&od[i].butterworthFilter);
+            accs[i] = 0.0f;
+        }
+    }
 }
 
 EMSCRIPTEN_KEEPALIVE

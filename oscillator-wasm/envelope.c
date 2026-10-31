@@ -42,7 +42,7 @@ void envelope_prepare_to_stop(Envelope *env) {
     env->lastSignum = 0;
     env->signumSet = false;
     env->keyDown = false;
-    env->phase = ENV_DECAY;  // It will go from decal, to pending release
+    env->phase = ENV_DECAY;  // It will go from decay, to pending release
 }
 
 void envelope_set_timing(Envelope *env, float value, float time) {
