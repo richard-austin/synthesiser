@@ -152,7 +152,6 @@ export class SynthComponent implements OnDestroy {
           this.isRendered.set(true);
         }
         this.isRendered.set(true);
-     //   this.changeDetectorRef.detectChanges();
       }
     });
 

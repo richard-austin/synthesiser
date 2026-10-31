@@ -1,6 +1,5 @@
 import {
   afterNextRender,
-  ChangeDetectorRef,
   Component, DestroyRef, effect, EffectRef,
   ElementRef, inject,
   input,
@@ -33,6 +32,7 @@ export class ConfigFileComponent {
   loadButton = viewChild.required<ElementRef<HTMLButtonElement>>('loadButton');
   renameButton = viewChild.required<ElementRef<HTMLButtonElement>>('renameButton');
   deleteButton = viewChild.required<ElementRef<HTMLButtonElement>>('deleteButton');
+  private rest = inject(RestfulApiService);
 
   protected configFileList: string[] = [];
   protected _confirmDelete: boolean = false;
@@ -43,8 +43,7 @@ export class ConfigFileComponent {
   protected errorMessage: string = "";
   private homeControlEffectRef: EffectRef;
   private outerDiv!: HTMLDivElement;
-  constructor(private cdr: ChangeDetectorRef, private rest: RestfulApiService) {
-
+  constructor() {
     this.homeControlEffectRef = effect(() => {
       const visible = this.signalService.configFileComponentControl();
       this.loadButton().nativeElement.disabled = this.deleteButton().nativeElement.disabled = this.renameButton().nativeElement.disabled = true;
@@ -92,7 +91,6 @@ export class ConfigFileComponent {
         this._confirmDelete = false;
         if (this.configOptions() && this.configOptions().nativeElement)
           this.configOptions().nativeElement.value = '';
-        this.cdr.detectChanges();
       }
     });
   }
@@ -151,7 +149,6 @@ export class ConfigFileComponent {
 
     const sub = timer(1000).subscribe(() =>{
       this.signalService.configFileComponentControl.set(false);
-      this.cdr.detectChanges();
       sub.unsubscribe();
     });
   }

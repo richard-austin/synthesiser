@@ -1,5 +1,4 @@
 import {
-  ChangeDetectorRef,
   Component,
   ElementRef,
   inject, input, output,
@@ -98,8 +97,6 @@ export class OscillatorComponent  {
   readonly fmSynthService: FmSynthService = inject(FmSynthService);
 
   clipboard: ClipboardService = inject(ClipboardService);
-  cd: ChangeDetectorRef = inject(ChangeDetectorRef);
-
   constructor() {
     afterNextRender({
       write: async () => {
@@ -512,7 +509,6 @@ export class OscillatorComponent  {
   }
 
   private async ctxMenu(e: PointerEvent) {
-    this.cd.detectChanges();
     const contextMenu = this.contextMenu().nativeElement;
     contextMenu.style.visibility = "visible";
     const zoomStr = document.body.style.zoom;
@@ -530,6 +526,7 @@ export class OscillatorComponent  {
       this.clipboard.config = JSON.stringify(this.proxySettings);
       this.clipboard.source = this.params().settingsId;
       this.clipboard.type = "oscillator";
+      this.signalService.clipboardSource.set(this.clipboard.source);
     }
     // @ts-ignore
     else if (target.value === 2) {
