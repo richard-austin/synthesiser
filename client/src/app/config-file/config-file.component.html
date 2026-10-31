@@ -4,7 +4,7 @@
     <h2>Select saved configuration</h2>
     <select #configOptions>
       <option value="">Select configuration</option>
-      @for(fileName of configFileList | sortPipe; track fileName) {
+      @for(fileName of configFileList() | sortPipe; track fileName) {
         <option [value]="fileName">{{fileName}}</option>
       }
     </select>

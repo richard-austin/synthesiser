@@ -2,8 +2,8 @@ import {
   afterNextRender,
   Component, DestroyRef, effect, EffectRef,
   ElementRef, inject,
-  input,
-  viewChild
+  input, signal,
+  viewChild, WritableSignal
 } from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {RestfulApiService} from '../services/restful-api.service';
@@ -34,7 +34,7 @@ export class ConfigFileComponent {
   deleteButton = viewChild.required<ElementRef<HTMLButtonElement>>('deleteButton');
   private rest = inject(RestfulApiService);
 
-  protected configFileList: string[] = [];
+  protected configFileList:WritableSignal<string[]> = signal<string[]>([]);
   protected _confirmDelete: boolean = false;
   protected _confirmRename: boolean = false;
   protected newName: string = "";
@@ -82,7 +82,7 @@ export class ConfigFileComponent {
   reset() {
     this.rest.getConfigFileList().subscribe({
       next: (v) => {
-        this.configFileList = v
+        this.configFileList.set(v);
         const selector = this.configOptions().nativeElement;
         selector.value = '';
       },

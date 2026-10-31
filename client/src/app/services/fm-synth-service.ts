@@ -342,6 +342,7 @@ export class FmSynthService {
     this.setOutputWaveform(proxySettings.waveForm, bank);
     this.setPortamentoType(bank, proxySettings.portamentoType);
     // this.clearModulation();  // Remove any preexisting mod settings
+    this.setSlop(false);
   }
 
   setLFOModType(bank: number, modType: oscModType) {
@@ -445,6 +446,10 @@ export class FmSynthService {
 
   setSynthMode(mode: "mono" | "poly") {
     this.port.postMessage({type: 'setSynthMode', mode});
+  }
+
+  setSlop(slop: boolean) {
+    this.port.postMessage({type: 'setSlop', slop});
   }
 
   addKeyDownHandler(handler: (bank: number, device: number, key: number, velocity: number) => void) {
