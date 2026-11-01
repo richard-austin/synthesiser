@@ -342,7 +342,7 @@ export class FmSynthService {
     this.setOutputWaveform(proxySettings.waveForm, bank);
     this.setPortamentoType(bank, proxySettings.portamentoType);
     // this.clearModulation();  // Remove any preexisting mod settings
-    this.setSlop(false);
+    this.setSlop(true);
   }
 
   setLFOModType(bank: number, modType: oscModType) {

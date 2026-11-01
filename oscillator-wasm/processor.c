@@ -97,6 +97,18 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, int numBand
     }
 }
 
+void clear_old_modulation_data(int carrierBank) {
+    // Clear the butterworth filter and fm accumulators down to zero , this prevents
+    // stored values causing sudden changes in mod phase. after FM was turned off which caused clicks on keydown
+    OscillatorData *od = g_oscData[carrierBank];
+    float *accs = g_fmAccumulators + carrierBank * g_workingOscillatorsPerBank;
+    for (int i = 0; i < g_workingOscillatorsPerBank; ++i) {
+        butterworth_init(&od[i].butterworthFilter);
+        od->phase = 0.0f;
+        accs[i] = 0.0f;
+    }
+}
+
 EMSCRIPTEN_KEEPALIVE
 
 void triggerNoteOn(int key, int velocity) {
@@ -105,7 +117,7 @@ void triggerNoteOn(int key, int velocity) {
     // STEP 1: Strict Global Co-indexing Lookup. Is this key already active?
     for (int o = 0; o < g_workingOscillatorsPerBank; o++) {
         for (int b = 0; b < g_numberOfBanks; b++) {
-            OscillatorData* od = &g_oscData[b][o];
+            OscillatorData *od = &g_oscData[b][o];
             if (od->env.inUse && !od->env.keyDown && od->key == key) {
                 foundIdx = o;
                 break;
@@ -122,15 +134,15 @@ void triggerNoteOn(int key, int velocity) {
             foundIdx = g_roundRobinIndex++;
             if (g_roundRobinIndex >= g_workingOscillatorsPerBank)
                 g_roundRobinIndex = 0;
-        }
-        while (g_roundRobinIndex != initialIndex && g_oscData[0][foundIdx].env.keyDown); // Don't let the round robin bomb a held down key
+        } while (g_roundRobinIndex != initialIndex && g_oscData[0][foundIdx].env.keyDown);
+        // Don't let the round robin bomb a held down key
 
         if (g_roundRobinIndex == initialIndex) {
-            foundIdx = initialIndex;  // Use the oldest index if absolutely none yet available.
+            foundIdx = initialIndex; // Use the oldest index if absolutely none yet available.
         }
     }
 
-   // STEP 3: Map parameters identically across all multi-bank nodes
+    // STEP 3: Map parameters identically across all multi-bank nodes
     for (int b = 0; b < g_numberOfBanks; b++) {
         OscillatorData *od = &g_oscData[b][foundIdx];
         BankData *bd = &g_banks[b];
@@ -146,7 +158,8 @@ void triggerNoteOn(int key, int velocity) {
             const float targetFrequency = key_to_frequency(key, b);
             const float preGlideFrequency = /*isRetrigger ? */od->frequency /*: 0.0*/;
             portamento_chord_capture(&bd->portamentoData, targetFrequency, foundIdx);
-            od->frequency = bd->portamentoData.previousNotes->noteCount == 0 ? targetFrequency : preGlideFrequency;  // Prevent brief glitch at target frequency just before glide starts
+            od->frequency = bd->portamentoData.previousNotes->noteCount == 0 ? targetFrequency : preGlideFrequency;
+            // Prevent brief glitch at target frequency just before glide starts
         } else
             od->frequency = key_to_frequency(key, b);
 
@@ -154,7 +167,10 @@ void triggerNoteOn(int key, int velocity) {
             const float targetFrequency = filter_key_to_frequency(key, b);
             const float preGlideFrequency = isRetrigger ? od->filterFrequency : 0.0f;
             portamento_chord_capture(&bd->filterPortamentoData, targetFrequency, foundIdx);
-            od->filterFrequency = bd->filterPortamentoData.previousNotes->noteCount == 0 ? targetFrequency : preGlideFrequency;  // Prevent brief glitch at target frequency just before glide starts
+            od->filterFrequency = bd->filterPortamentoData.previousNotes->noteCount == 0
+                                      ? targetFrequency
+                                      : preGlideFrequency;
+            // Prevent brief glitch at target frequency just before glide starts
         } else
             od->filterFrequency = filter_key_to_frequency(key, b);
 
@@ -168,6 +184,9 @@ void triggerNoteOn(int key, int velocity) {
         pitch_envelope_prepare_to_start(&od->filterPitchEnv);
         if (g_noise->output != OFF)
             noise_init_envelope(g_noise, foundIdx, velocity);
+
+       // if (!isRetrigger)
+            clear_old_modulation_data(b);
     }
 }
 
@@ -213,6 +232,7 @@ void matrix_apply_modulation(const BankData *bd, int osc, float modSignal) {
         ModSettings *ms = bd->modMatrix + cB;
         int targetIdx = cB * g_workingOscillatorsPerBank + osc;
         if (ms->modType == MOD_FREQUENCY) {
+            // Add mod signal to accumulator rather than set the accumulator from it as there may be more than one modulator bank
             g_fmAccumulators[targetIdx] += modSignal * ms->level;
         } else if (ms->modType == MOD_AMPLITUDE) {
             g_amAccumulators[targetIdx] += modSignal * ms->level;
@@ -229,15 +249,15 @@ float render_sample_from_phase(int bank, int table_index, float phase) {
     float *current_table = bd->periodicWaveData + (table_index * bd_waveTableSize);
 
     // 1. Force phase into a strict [0.0, 1.0) range to prevent floating-point edge cases
-    if (phase >= 1.0f) phase -= (int)phase;
-    if (phase < 0.0f)  phase += 1.0f;
+    if (phase >= 1.0f) phase -= (int) phase;
+    if (phase < 0.0f) phase += 1.0f;
 
     // 2. Scale phase to index space
-    float exact_index = phase * (float)bd_waveTableSize;
+    float exact_index = phase * (float) bd_waveTableSize;
 
     // 3. Get floor integer and fraction
-    int index_a = (int)exact_index;
-    float fraction = exact_index - (float)index_a;
+    int index_a = (int) exact_index;
+    float fraction = exact_index - (float) index_a;
 
     // 4. Robust boundary safety guard BEFORE calculating index_b
     if (index_a >= bd_waveTableSize) {
@@ -345,13 +365,13 @@ void processBlock(float **outputBuffers, int numSamples) {
 
             for (int osc = 0; osc < g_workingOscillatorsPerBank; osc++) {
                 OscillatorData *od = &g_oscData[b][osc];
-                Envelope* env = &od->env;
-                Envelope* noiseEnvelope = &g_noise->envelopes[osc];
+                Envelope *env = &od->env;
+                Envelope *noiseEnvelope = &g_noise->envelopes[osc];
                 if (!env->inUse && !is_modulating(bd, osc) && !noiseEnvelope->inUse)
                     continue;
 
                 float f = od->frequency;
-                const PortamentoData* pd = od->portamento.portamentoData;
+                const PortamentoData *pd = od->portamento.portamentoData;
                 if (portamento_in_use(pd))
                     f = od->frequency = portamentoGlide(&od->portamento, f);
                 if (bd_usePitchEnvelope)
@@ -411,8 +431,8 @@ void processBlock(float **outputBuffers, int numSamples) {
                     signal = render_sample_from_phase(b, band, currentPhase) * matrixA;
                     const bool portamentoInUse = portamento_in_use(od->portamento.portamentoData);
 
-                  //  Don't let envelope start during the portamento chord capture phase
-                   if (!portamentoInUse || (portamentoInUse && !od->portamento.portamentoData->timerRunning))
+                    //  Don't let envelope start during the portamento chord capture phase
+                    if (!portamentoInUse || (portamentoInUse && !od->portamento.portamentoData->timerRunning))
                         envelope_detect_signal_near_zero(env, signal);
                 }
 
@@ -462,7 +482,7 @@ void processBlock(float **outputBuffers, int numSamples) {
 
                 if (g_noise_output == FILTER)
                     filterInputSample += noiseSample;
-                else if(g_noise_output == PHASER)
+                else if (g_noise_output == PHASER)
                     bd->phaserInputs += noiseSample;
 
                 if (bd_outputToFilter || (g_noise_output == FILTER && b == 0)) {
@@ -491,7 +511,8 @@ void processBlock(float **outputBuffers, int numSamples) {
                     outLeft[i] += finalOutputSample * panLeft;
                     outRight[i] += finalOutputSample * panRight;
                 }
-                if (g_noise_output == MASTER_VOLUME && b == 0) {  // Only allow bank 0 panner to pan noise
+                if (g_noise_output == MASTER_VOLUME && b == 0) {
+                    // Only allow bank 0 panner to pan noise
                     noiseOutLeft[i] += noiseSample * panLeft;
                     noiseOutRight[i] += noiseSample * panRight;
                 }

@@ -89,21 +89,21 @@ const static float smallSigValue = 0.02f;  // Small enough waveform value to sta
 void envelope_detect_signal_near_zero(Envelope *env, float signal) {
     const int thisSignum =  (signal > 0.0f) - (signal < 0.0f);
        if (env->phase == ENV_PENDING_ATTACK && (fabs(signal) < smallSigValue || (env->signumSet && env->lastSignum != thisSignum))) {
-        // if (fabs(signal) > smallSigValue) {
-        //     emscripten_console_logf("To attack %f lastSignum %d thisSignum %d", signal, env->lastSignum, thisSignum);
-        // }
+        if (fabs(signal) > smallSigValue) {
+            emscripten_console_logf("To attack %f lastSignum %d thisSignum %d", signal, env->lastSignum, thisSignum);
+        }
         env->phase = ENV_ATTACK;
         env->signumSet = false;
     } else if (env->phase == ENV_PENDING_DECAY && (fabs(signal) < smallSigValue || (env->signumSet && env->lastSignum != thisSignum))) {
-        // if (fabs(signal) > smallSigValue) {
-        //     emscripten_console_logf("To decay %f lastSignum %d thisSignum %d", signal, env->lastSignum, thisSignum);
-        // }
+        if (fabs(signal) > smallSigValue) {
+            emscripten_console_logf("To decay %f lastSignum %d thisSignum %d", signal, env->lastSignum, thisSignum);
+        }
         env->phase = ENV_DECAY;
         env->signumSet = false;
     } else if (env->phase == ENV_PENDING_RELEASE && (fabs(signal) < smallSigValue || (env->signumSet && env->lastSignum != thisSignum))) {
-        // if (fabs(signal) > smallSigValue) {
-        //     emscripten_console_logf("To release %f lastSignum %d thisSignum %d", signal, env->lastSignum, thisSignum);
-        // }
+        if (fabs(signal) > smallSigValue) {
+            emscripten_console_logf("To release %f lastSignum %d thisSignum %d", signal, env->lastSignum, thisSignum);
+        }
         env->phase = ENV_RELEASE;
         env->signumSet = false;
     }
