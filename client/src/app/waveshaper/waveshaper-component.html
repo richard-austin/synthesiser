@@ -1,0 +1,43 @@
+<div class="group-container waveshaper-size metallic-button">
+  <h1>Waveshaper</h1>
+  <div class="group">
+    <div class="column">
+      <div class="module waveshaper-width">
+        <div class="row">
+          <app-level-control #drive label="Drive" [plusMinus]="false" [style]="dialStyle.red" [divisions]="10"
+                             [factor]="10"
+                             [calAngle]="300"
+                             [radius]="50" (setLevel)="setDrive($event)"></app-level-control>
+          <app-level-control #wetDry
+                             label="Wet/Dry"
+                             [plusMinus]="true"
+                             [style]="dialStyle.green"
+                             [radius]="50"
+                             [divisions]="10"
+                             (setLevel)="setWetDryBalance($event)"></app-level-control>
+
+        </div>
+      </div>
+      <div class="module waveshaper-width">
+        <h2>Mode</h2>
+        <form #waveshaperModeForm>
+          <label><input type="radio" name="mode" value="identity"><span>Identity</span></label>
+          <label><input type="radio" name="mode" value="hardClip"><span>Hard Clip</span></label>
+          <label><input type="radio" name="mode" value="softClip"><span>Soft Clip</span></label>
+          <label><input type="radio" name="mode" value="hardClip2"><span>Hard Clip x 2</span></label>
+          <label><input type="radio" name="mode" value="softClip2"><span>Soft Clip x 2</span></label>
+        </form>
+      </div>
+      <div class="module waveshaper-width">
+        <h2>Output</h2>
+        <form #waveshaperOnOffForm>
+          <label><input type="radio" name="waveshaper" value="speaker"><span>Speaker</span></label>
+          <label><input type="radio" name="waveshaper" value="phaser"><span>Phaser</span></label>
+          <label><input type="radio" name="waveshaper" value="reverb"><span>Reverb</span></label>
+          <label><input type="radio" name="waveshaper" value="off" checked><span>Off</span></label>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+

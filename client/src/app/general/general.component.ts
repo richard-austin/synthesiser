@@ -76,7 +76,6 @@ export class GeneralComponent {
           window.addEventListener('mousedown', (evt) => this.clickAwayHandler(evt));
           const synthModeForm = this.synthesiserModeForm().nativeElement;
           for (let j = 0; j < synthModeForm.elements.length; ++j) {
-
           synthModeForm.elements[j].addEventListener('change', ($event) => {
             // @ts-ignore
             const value = $event.target.value;
@@ -95,7 +94,8 @@ export class GeneralComponent {
 
     // Update slop state from changes made in the oscillators
     toObservable(this.signalService.slopSignal).subscribe((slop) => {
-      this.proxySettings.slop = slop;
+      if(this.proxySettings)
+        this.proxySettings.slop = slop;
     });
   }
 

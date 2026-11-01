@@ -24,6 +24,7 @@ import {MatrixComponent} from '../matrix/matrix-component';
 import {FmSynthService} from '../services/fm-synth-service';
 import {IndexedDBService} from '../services/indexed-db-service';
 import {SignalService} from '../services/signal-service';
+import {WaveshaperComponent} from '../waveshaper/waveshaper-component';
 
 @Component({
   selector: 'app-synth-component',
@@ -36,7 +37,8 @@ import {SignalService} from '../services/signal-service';
     AnalyserComponent,
     GeneralComponent,
     MatrixComponent,
-    OscillatorComponent
+    OscillatorComponent,
+    WaveshaperComponent
   ],
   templateUrl: `./synth-component.html`,
   styleUrl: './synth-component.scss',
@@ -98,6 +100,7 @@ export class SynthComponent implements OnDestroy {
 
   reverb: Signal<ReverbComponent> = viewChild.required(ReverbComponent);
   phaser: Signal<PhaserComponent> = viewChild.required(PhaserComponent);
+  waveshaper: Signal<WaveshaperComponent> = viewChild.required(WaveshaperComponent);
 
   analyser: Signal<AnalyserComponent> = viewChild.required(AnalyserComponent);
   synth: Signal<ElementRef<HTMLDivElement>> = viewChild.required('synth');
@@ -185,6 +188,7 @@ export class SynthComponent implements OnDestroy {
     await this.ringModulator().start(this.audioCtx, settings ? settings.ringModSettings : settings);
     await this.reverb().start(this.audioCtx, settings ? settings.reverbSettings : settings);
     await this.phaser().setUp(settings ? settings.phasorSettings : settings);
+    await this.waveshaper().start(this.audioCtx, settings ? settings.waveShaperSettings : settings);
     await this.analyser().start(this.audioCtx, settings ? settings.analyserSettings : settings);
     await this.masterVolume().start(this.audioCtx, settings ? settings.generalSettings : settings);
     this.masterVolume().connect(this.analyser().node())
@@ -306,6 +310,7 @@ export class SynthComponent implements OnDestroy {
       this.matrixComponent().getSettings(),
       this.reverb().getSettings(),
       this.phaser().getSettings(),
+      this.waveshaper().getSettings(),
       this.masterVolume().getSettings(),
       this.analyser().getSettings());
   }

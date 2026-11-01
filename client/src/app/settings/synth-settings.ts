@@ -9,6 +9,7 @@ import {AnalyserSettings} from './analyser-settings';
 import {SynthComponentSettings} from './synth-component-settings';
 import {SynthComponent} from '../synth/synth-component';
 import {MatrixSettings} from './matrix';
+import {WaveshaperSettings} from './waveshaper-settings';
 
 export class SynthSettings {
   synthComponentSettings: SynthComponentSettings;
@@ -18,6 +19,7 @@ export class SynthSettings {
   ringModSettings: RingModSettings;
   reverbSettings: ReverbSettings;
   phasorSettings: PhasorSettings;
+  waveShaperSettings: WaveshaperSettings;
   generalSettings: GeneralSettings;
   analyserSettings: AnalyserSettings;
   matrixSettings: MatrixSettings;
@@ -30,6 +32,7 @@ export class SynthSettings {
               matrixSettings: MatrixSettings = new MatrixSettings(),
               reverbSettings: ReverbSettings = new ReverbSettings(),
               phasorSettings: PhasorSettings = new PhasorSettings(),
+              waveshaperSettings: WaveshaperSettings = new WaveshaperSettings(),
               generalSettings: GeneralSettings = new GeneralSettings(),
               analyserSettings: AnalyserSettings = new AnalyserSettings())
    {
@@ -40,6 +43,7 @@ export class SynthSettings {
      this.ringModSettings = ringModSettings;
      this.reverbSettings = reverbSettings;
      this.phasorSettings = phasorSettings;
+     this.waveShaperSettings = waveshaperSettings;
      this.generalSettings = generalSettings;
      this.analyserSettings = analyserSettings;
      this.matrixSettings = matrixSettings;
