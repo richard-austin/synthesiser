@@ -16,6 +16,7 @@ import {IndexedDBService} from '../services/indexed-db-service';
 import {SignalService} from '../services/signal-service';
 import {FmSynthService} from '../services/fm-synth-service';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
+import {toObservable} from '@angular/core/rxjs-interop';
 
 
 @Component({
@@ -91,6 +92,11 @@ export class GeneralComponent {
       window.removeEventListener('mousedown', () => this.clickAwayHandler);
       this.renameEffectRef.destroy();
     });
+
+    // Update slop state from changes made in the oscillators
+    toObservable(this.signalService.slopSignal).subscribe((slop) => {
+      this.proxySettings.slop = slop;
+    });
   }
 
   async start(audioCtx: AudioContext, settings: GeneralSettings | null): Promise<boolean> {
@@ -128,6 +134,10 @@ export class GeneralComponent {
     this.masterVolume().setValue(this.proxySettings.level);
     const synthesiserMode = this.proxySettings.synthesiserMode === undefined ? 'poly' : this.proxySettings.synthesiserMode;
     SetRadioButtons.set(this.synthesiserModeForm(), synthesiserMode);
+
+    // This setting will be applied to the oscillators
+    const slop = this.proxySettings.slop;
+    this.signalService.slopSignal.set(slop == undefined ? true : slop);
   }
 
   public getSettings(): GeneralSettings {
