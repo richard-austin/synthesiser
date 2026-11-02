@@ -331,6 +331,10 @@ void processBlock(float **outputBuffers, int numSamples) {
             lfo_advance(g_phaser->lfoData);
         }
         float noiseSample = 0.0f;
+        float phaserInput = 0.0f;
+        float phaserPanLeft = 0.0f;
+        float phaserPanRight = 0.0f;
+
         for (int b = 0; b < g_numberOfBanks; b++) {
             // Resolve base offsets for stereo pairs
             // Oscillator Bank outputs are pairs at: 0/1, 2/3, 4/5, 6/7
@@ -350,6 +354,11 @@ void processBlock(float **outputBuffers, int numSamples) {
             // NO TRANSCENDENTAL MATH HERE: Pure lightning fast cache reads!
             float panLeft = bd->panLeft;
             float panRight = bd->panRight;
+
+            if (b==0) {  // Set the phaser panning from oscillator bank 1
+                phaserPanLeft = bd->panLeft;
+                phaserPanRight = bd->panRight;
+            }
 
             bool bd_useFilter = bd->useFilter;
             bool bd_usePhaser = bd->outputToPhaser || bd->filterConnectToPhaser || g_noise_output == PHASER;
@@ -520,10 +529,11 @@ void processBlock(float **outputBuffers, int numSamples) {
             // The phaser input is processed after the oscillator loop as the sum of the samples from the oscillators
             //  and filters in the bank comprises the single sample for the phaser.
             if (bd_usePhaser) {
-                const float phaserOutputSample = phaser_process(g_phaser, bd->phaserInputs);
-                phaserOutLeft[i] += phaserOutputSample * panLeft;
-                phaserOutRight[i] += phaserOutputSample * panRight;
+                phaserInput += bd->phaserInputs;
             }
         }
+        const float phaserOutputSample = phaser_process(g_phaser, phaserInput);
+        phaserOutLeft[i] += phaserOutputSample * phaserPanLeft;
+        phaserOutRight[i] += phaserOutputSample * phaserPanRight;
     }
 }
