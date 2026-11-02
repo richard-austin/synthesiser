@@ -154,7 +154,7 @@ export class GeneralComponent {
     this.masterVolume().setValue(value * 3);
   }
 
-  node(): DynamicsCompressorNode {
+  get node(): DynamicsCompressorNode {
     return this.compressor;
   }
 

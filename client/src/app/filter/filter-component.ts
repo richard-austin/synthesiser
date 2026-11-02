@@ -293,7 +293,7 @@ export class FilterComponent {
     let ok = false;
     if (reverb) {
       ok = true;
-      this.fmSynthService.connectFilter(reverb.input, this.filterNumber());
+      this.fmSynthService.connectFilter(reverb.node, this.filterNumber());
     }
     return ok;
   }

@@ -24,10 +24,10 @@ import {IndexedDBService} from '../services/indexed-db-service';
 })
 export class ReverbComponent {
   audioCtx!: AudioContext;
-  reverb!: Reverb;
-  gain!: GainNode;
-  input!: GainNode;
-  proxySettings!: ReverbSettings;
+  private reverb!: Reverb;
+  private gain!: GainNode;
+  private  input!: GainNode;
+  private proxySettings!: ReverbSettings;
 
   readonly output: OutputEmitterRef<string> = output<string>();
 
@@ -141,6 +141,10 @@ export class ReverbComponent {
     this.proxySettings.wetDry = $event;
     this.reverb.setWetGain(0.5 - $event);
     this.reverb.setDryGain(0.5 + $event);
+  }
+
+  get node() {
+    return this.input;
   }
 
   connect(node: AudioNode) {

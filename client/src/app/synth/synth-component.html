@@ -41,7 +41,7 @@
     <app-phaser #phaser
                 (output)="setPhasorOutputTarget($event)">
     </app-phaser>
-    <app-waveshaper #waveshaper></app-waveshaper>
+    <app-waveshaper #waveshaper (output)="setWaveshaperOutputTarget($event)"></app-waveshaper>
     <app-general #general></app-general>
     <div class="analyser">
       <app-analyser></app-analyser>
