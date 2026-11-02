@@ -463,13 +463,13 @@ export class SynthComponent implements OnDestroy {
     osc.disconnect(oscNumber);
     switch ($event) {
       case 'speaker':
-        osc.connect(this.masterVolume().node());
+        osc.connect(this.masterVolume().node);
         break;
       case 'ringmod':
         osc.connectToRingMod();
         break;
       case 'filter':
-        osc.connect(this.masterVolume().node());
+        osc.connect(this.masterVolume().node);
         osc.connectToFilters();
         break;
       case 'reverb':
@@ -478,6 +478,9 @@ export class SynthComponent implements OnDestroy {
       case 'phasor':
         osc.connectToPhaser();
         break
+      case 'waveshaper':
+        osc.connect(this.waveshaper().node);
+        break;
       case 'off':
         break;
       default:
@@ -492,7 +495,7 @@ export class SynthComponent implements OnDestroy {
       filter.disconnect();
       switch ($event) {
         case 'speaker':
-          filter.connect(this.masterVolume().node());
+          filter.connect(this.masterVolume().node);
           break;
         case 'ringmod':
           filter.connectToRingMod();
@@ -517,14 +520,14 @@ export class SynthComponent implements OnDestroy {
     switch ($event) {
       case 'speaker':
         this.noise().noiseOff(false);
-        this.fmSynthService.connectNoise(this.masterVolume().node());
+        this.fmSynthService.connectNoise(this.masterVolume().node);
         break;
       case 'filter':
         this.noise().connectToFilters();
         break;
       case 'reverb':
         this.noise().noiseOff(false);
-        this.fmSynthService.connectNoise(this.reverb().input);
+        this.fmSynthService.connectNoise(this.reverb().node);
         break;
       case 'phaser':
         this.noise().connectToPhaser();
@@ -541,7 +544,7 @@ export class SynthComponent implements OnDestroy {
     this.ringModulator().disconnect();
     switch ($event) {
       case 'speaker':
-        this.ringModulator().connect(this.masterVolume().node());
+        this.ringModulator().connect(this.masterVolume().node);
         break;
       case 'filter':
         this.ringModulator().connectToFilters();
@@ -557,11 +560,28 @@ export class SynthComponent implements OnDestroy {
     }
   }
 
+  protected setWaveshaperOutputTarget($event: string) {
+    this.waveshaper().disconnect();
+    switch ($event) {
+      case 'speaker':
+        this.waveshaper().connect(this.masterVolume().node)
+        break;
+      case 'reverb':
+        this.waveshaper().connect(this.reverb().node)
+        break;
+      case 'off':
+        break;
+      default:
+        console.error('Unknown waveshaper output destination');
+        break;
+    }
+  }
+
   protected setReverbOutputTarget($event: string) {
     this.reverb().disconnect();
     switch ($event) {
       case 'speaker':
-        this.reverb().connect(this.masterVolume().node());
+        this.reverb().connect(this.masterVolume().node);
         break;
       case 'off':
         break;
@@ -572,10 +592,10 @@ export class SynthComponent implements OnDestroy {
     this.fmSynthService.disconnectPhaser();
     switch ($event) {
       case 'speaker':
-        this.fmSynthService.connectPhaser(this.masterVolume().node());
+        this.fmSynthService.connectPhaser(this.masterVolume().node);
         break;
       case 'reverb':
-        this.fmSynthService.connectPhaser(this.reverb().input);
+        this.fmSynthService.connectPhaser(this.reverb().node);
         break;
       case 'off':
         break;

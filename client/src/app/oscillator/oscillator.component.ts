@@ -385,7 +385,7 @@ export class OscillatorComponent  {
     if (reverb) {
       ok = true;
       this.fmSynthService.disconnect(this.oscNumber());
-      this.fmSynthService.connect(reverb.input, this.oscNumber())
+      this.fmSynthService.connect(reverb.node, this.oscNumber())
     }
     return ok;
   }

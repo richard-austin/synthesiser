@@ -97,16 +97,16 @@ void initProcessor(int numBanks, int oscsPerBank, int waveTableSize, int numBand
     }
 }
 
-void clear_old_modulation_data(int carrierBank) {
+void clear_old_modulation_data(int carrierBank, int foundIdx) {
     // Clear the butterworth filter and fm accumulators down to zero , this prevents
     // stored values causing sudden changes in mod phase. after FM was turned off which caused clicks on keydown
-    OscillatorData *od = g_oscData[carrierBank];
-    float *accs = g_fmAccumulators + carrierBank * g_workingOscillatorsPerBank;
-    for (int i = 0; i < g_workingOscillatorsPerBank; ++i) {
-        butterworth_init(&od[i].butterworthFilter);
+    OscillatorData *od = &g_oscData[carrierBank][foundIdx];
+    float *acc = g_fmAccumulators + (carrierBank * g_workingOscillatorsPerBank + foundIdx);
+
+    butterworth_init(&od->butterworthFilter);
+    if (g_workingOscillatorsPerBank != 1)
         od->phase = 0.0f;
-        accs[i] = 0.0f;
-    }
+    *acc = 0.0f;
 }
 
 EMSCRIPTEN_KEEPALIVE
@@ -185,8 +185,8 @@ void triggerNoteOn(int key, int velocity) {
         if (g_noise->output != OFF)
             noise_init_envelope(g_noise, foundIdx, velocity);
 
-       // if (!isRetrigger)
-            clear_old_modulation_data(b);
+        if (!isRetrigger)
+            clear_old_modulation_data(b, foundIdx);
     }
 }
 
