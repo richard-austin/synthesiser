@@ -8,5 +8,7 @@ export class SignalService {
   public configFileComponentControl: WritableSignal<boolean> = signal<boolean>(false);
   public rename: WritableSignal<{oldName: string, newName: string}> = signal<{oldName:string, newName: string}>({oldName:"", newName:""});
   public synthModeSignal: WritableSignal<'mono' | 'poly'> = signal<'mono' | 'poly'>('poly');
+  public clipboardSource: WritableSignal<number> = signal<number>(-1);
+  public slopSignal: WritableSignal<boolean> = signal<boolean>(false);
 }
 

@@ -4,6 +4,8 @@
 #include "key_to_frequency.h"
 #include <stdlib.h>
 
+#include "emscripten/console.h"
+
 bool g_slop = true;
 const float slopFactor = 20000.0f;  // Gives nearly +/- 5 cent slop
 

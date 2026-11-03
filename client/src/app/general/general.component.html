@@ -12,14 +12,14 @@
         <h2>Configuration</h2>
         <h4>{{proxySettings ? proxySettings.configFileName : ""}}</h4>
         <div class="general-width">
-          @if (showConfigEditor) {
+          @if (showConfigEditor()) {
             <div #configEditor
                  [animate.enter]="animationEnter()"
                  [animate.leave]="animationLeave()"
                  class="group-container group metallic-button edit-configs">
               <div class="module column">
                 <h2>Save Configuration</h2>
-                @if (addConfigMode) {
+                @if (addConfigMode()) {
                   <form class="save-config-form">
                     <div>
                       <label for="configFile">Enter Config File Name</label>
@@ -31,7 +31,7 @@
                       <button (click)="addConfiguration(configFileName)" [disabled]="!configFileNameRegex.test(configFileName)">Confirm</button>
                     </div>
                   </form>
-                } @else if(_confirmOverwrite) {
+                } @else if(_confirmOverwrite()) {
                   <h4>
                     Update {{ configFileName }} configuration, Are you sure?
                   </h4>
@@ -46,10 +46,10 @@
               </div>
             </div>
           }
-          @if (success) {
-            <div (click)="failed=success=false" class="success">{{ configFileName }} saved successfully</div>
-          } @else if (failed) {
-            <div (click)="failed=success=false;" class="failed">Error: {{ errorMessage }}</div>
+          @if (success()) {
+            <div (click)="success.set(false); failed.set(false)" class="success">{{ configFileName }} saved successfully</div>
+          } @else if (failed()) {
+            <div (click)="success.set(false); failed.set(false)" class="failed">Error: {{ errorMessage }}</div>
           } @else {
             <button id="manageConfig" (click)="manageConfigurations()">Save configuration</button>
           }

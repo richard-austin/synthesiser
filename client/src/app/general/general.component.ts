@@ -1,5 +1,4 @@
 import {
-  ChangeDetectorRef,
   Component,
   ElementRef, output,
   signal,
@@ -17,6 +16,7 @@ import {IndexedDBService} from '../services/indexed-db-service';
 import {SignalService} from '../services/signal-service';
 import {FmSynthService} from '../services/fm-synth-service';
 import {SetRadioButtons} from '../settings/set-radio-buttons';
+import {toObservable} from '@angular/core/rxjs-interop';
 
 
 @Component({
@@ -35,13 +35,13 @@ export class GeneralComponent {
   private compressor!: DynamicsCompressorNode;
   private volume!: GainNode;
   protected proxySettings!: GeneralSettings;
-  protected showConfigEditor: boolean = false;
-  protected addConfigMode: boolean = false;
+  protected showConfigEditor = signal<boolean>(false);
+  protected addConfigMode = signal<boolean>(false);
   protected configFileName: string = "";
-  protected _confirmOverwrite: boolean = false;
+  protected _confirmOverwrite = signal<boolean>(false);
   protected errorMessage: string = "";
-  protected failed: boolean = false;
-  protected success: boolean = false;
+  protected failed = signal<boolean>(false);
+  protected success = signal<boolean>(false);
   public static readonly _configFileNameRegex = /^[a-zA-Z]\w{0,14}( ?\w){1,14}$/
   protected readonly configFileNameRegex = GeneralComponent._configFileNameRegex;
 
@@ -61,7 +61,7 @@ export class GeneralComponent {
 
   private renameEffectRef!:EffectRef;
 
-  constructor(private cdr: ChangeDetectorRef, private parent: SynthComponent, private rest: RestfulApiService) {
+  constructor(private parent: SynthComponent, private rest: RestfulApiService) {
 
     this.renameEffectRef = effect(() => {
       // @ts-ignore
@@ -76,7 +76,6 @@ export class GeneralComponent {
           window.addEventListener('mousedown', (evt) => this.clickAwayHandler(evt));
           const synthModeForm = this.synthesiserModeForm().nativeElement;
           for (let j = 0; j < synthModeForm.elements.length; ++j) {
-
           synthModeForm.elements[j].addEventListener('change', ($event) => {
             // @ts-ignore
             const value = $event.target.value;
@@ -91,6 +90,12 @@ export class GeneralComponent {
       this.volume.disconnect();
       window.removeEventListener('mousedown', () => this.clickAwayHandler);
       this.renameEffectRef.destroy();
+    });
+
+    // Update slop state from changes made in the oscillators
+    toObservable(this.signalService.slopSignal).subscribe((slop) => {
+      if(this.proxySettings)
+        this.proxySettings.slop = slop;
     });
   }
 
@@ -129,6 +134,10 @@ export class GeneralComponent {
     this.masterVolume().setValue(this.proxySettings.level);
     const synthesiserMode = this.proxySettings.synthesiserMode === undefined ? 'poly' : this.proxySettings.synthesiserMode;
     SetRadioButtons.set(this.synthesiserModeForm(), synthesiserMode);
+
+    // This setting will be applied to the oscillators
+    const slop = this.proxySettings.slop;
+    this.signalService.slopSignal.set(slop == undefined ? true : slop);
   }
 
   public getSettings(): GeneralSettings {
@@ -145,7 +154,7 @@ export class GeneralComponent {
     this.masterVolume().setValue(value * 3);
   }
 
-  node(): DynamicsCompressorNode {
+  get node(): DynamicsCompressorNode {
     return this.compressor;
   }
 
@@ -154,8 +163,9 @@ export class GeneralComponent {
   }
 
   protected manageConfigurations() {
-    this.addConfigMode = this.showConfigEditor = !this.showConfigEditor;
-    if (this.showConfigEditor) {
+    this.showConfigEditor.set(!this.showConfigEditor());
+    this.addConfigMode.set(this.showConfigEditor());
+    if (this.showConfigEditor()) {
       const sub = timer(0).subscribe(() => {
         if (this.configEditor()) {
           sub.unsubscribe();
@@ -164,33 +174,33 @@ export class GeneralComponent {
         }
       });
     } else {
-      this.addConfigMode = false;
+      this.addConfigMode.set(false);
     }
   }
 
   protected addConfiguration(configFileName: string, overwrite: boolean = false) {
-    this.success = this.failed = false;
+    this.success.set(false);
+    this.failed.set(false);
+
     this.proxySettings.configFileName = configFileName;
-    this.addConfigMode = false;
+    this.addConfigMode.set(false);
     this.rest.saveConfig(this.parent.getSettings(), configFileName, overwrite).subscribe({
       next: (v: any) => console.log("next: " + v.message),
       error: (e) => {
         if (e.status === 400) {  // Status 400 means file already exists so confirm overwrite
-          this._confirmOverwrite = true;
-          this.cdr.detectChanges();
+          this._confirmOverwrite.set(true);
         } else {
-          this.addConfigMode = this.showConfigEditor = false;
+          this.showConfigEditor.set(false);
+          this.addConfigMode.set(false);
           console.log(e.error.message)
-          this.failed = true;
+          this.failed.set(true);
           this.errorMessage = e.error.message;
-          this.cdr.detectChanges();
         }
       },
       complete: () => {
-        this.showConfigEditor = false;
+        this.showConfigEditor.set(false);
         console.log("complete");
-        this.success = true;
-        this.cdr.detectChanges();
+        this.success.set(true);
       }
     });
   }
@@ -199,14 +209,16 @@ export class GeneralComponent {
     const target = $event.target as HTMLElement;
     const general = this.general()?.nativeElement;
     if (!general?.contains(target)) {
-      this.addConfigMode = this.showConfigEditor = false;
-      this.cdr.detectChanges();
+      this.addConfigMode.set(false);
+      this.showConfigEditor.set(false);
     }
   }
 
   cancel() {
-    this.success = this.failed = false;
-    this.addConfigMode = this.showConfigEditor = false;
+    this.success.set(false);
+    this.failed.set(false);
+    this.addConfigMode.set(false);
+    this.showConfigEditor.set(false);
   }
 
   protected showConfigLoadForm() {

@@ -315,6 +315,9 @@ if (typeof globalThis.registerProcessor === 'function') {
             Module._setSynthesiserMode(mode);
           }
             break;
+          case 'setSlop':
+            Module._setSlop(data.slop);
+            break;
           default:
             console.error("Unknown control type " + data.type);
             break;

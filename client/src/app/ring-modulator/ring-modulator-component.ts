@@ -160,7 +160,7 @@ export class RingModulatorComponent {
     let ok = false;
     if (reverb) {
       ok = true;
-      this.ringMod.connect(reverb.input);
+      this.ringMod.connect(reverb.node);
     }
     return ok;
   }

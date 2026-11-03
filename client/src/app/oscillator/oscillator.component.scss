@@ -66,3 +66,12 @@ div.context-menu {
     background-color: #e8e8e8 !important;
   }
 }
+
+form.outputs {
+  display: flex;
+  flex-direction: column;
+  > div {
+    display: flex;
+    flex-direction: row;
+  }
+}

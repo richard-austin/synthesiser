@@ -1,0 +1,21 @@
+div.waveshaper-size {
+  width: 274px;
+  height: 380px;
+}
+
+div.waveshaper-width {
+  width: 234px;
+  position: relative;
+}
+.module {
+  justify-content: center;
+}
+
+form.outputs {
+  display: flex;
+  flex-direction: column;
+  > div {
+    display: flex;
+    flex-direction: row;
+  }
+}

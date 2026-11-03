@@ -447,6 +447,10 @@ export class FmSynthService {
     this.port.postMessage({type: 'setSynthMode', mode});
   }
 
+  setSlop(slop: boolean) {
+    this.port.postMessage({type: 'setSlop', slop});
+  }
+
   addKeyDownHandler(handler: (bank: number, device: number, key: number, velocity: number) => void) {
     if (!this.keyDownHandlers.find(h => h === handler)) {
       this.keyDownHandlers.push(handler);

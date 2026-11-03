@@ -1,10 +1,10 @@
 import {
-  ChangeDetectorRef,
   Component,
   ElementRef,
   inject, input, output,
   InputSignal,
-  OutputEmitterRef, viewChild, Signal, signal, afterNextRender} from '@angular/core';
+  OutputEmitterRef, viewChild, Signal, signal, afterNextRender
+} from '@angular/core';
 import {OscillatorParams} from '../modules/oscillator';
 import {LevelControlComponent} from '../level-control/level-control.component';
 import {dialStyle} from '../level-control/levelControlParameters';
@@ -24,6 +24,7 @@ import {EnvelopeGraphComponent} from '../envelope-graph/envelope-graph-component
 import {ADSRValues} from '../util-classes/adsrvalues';
 import {PitchEnvValues} from '../util-classes/pitch-env-values';
 import {SignalService} from '../services/signal-service';
+import {toObservable} from '@angular/core/rxjs-interop';
 
 export enum envelopePhase {inactive, attack, decay, sustain, release, retrigger, legato }
 
@@ -88,6 +89,7 @@ export class OscillatorComponent  {
 
   readonly modSettingsForm = viewChild.required<ElementRef<HTMLFormElement>>('modSettingsForm');
   readonly oscModOutputForm = viewChild.required<ElementRef<HTMLFormElement>>('oscModOutputForm');
+  readonly slopOnOffForm = viewChild.required<ElementRef<HTMLFormElement>>('slopOnOffForm');
 
   readonly modFreq = viewChild.required<LevelControlComponent>('modFreq');
   readonly modLevel = viewChild.required<LevelControlComponent>('modDepth');
@@ -98,8 +100,6 @@ export class OscillatorComponent  {
   readonly fmSynthService: FmSynthService = inject(FmSynthService);
 
   clipboard: ClipboardService = inject(ClipboardService);
-  cd: ChangeDetectorRef = inject(ChangeDetectorRef);
-
   constructor() {
     afterNextRender({
       write: async () => {
@@ -203,6 +203,15 @@ export class OscillatorComponent  {
           });
         }
 
+        const slopOnOffForm = this.slopOnOffForm().nativeElement;
+        for (let j = 0; j < slopOnOffForm.elements.length; ++j) {
+          slopOnOffForm.elements[j].addEventListener('change', ($event) => {
+            // @ts-ignore
+            const value = $event.target.value as string;
+            this.setSlop(value);
+          });
+        }
+
         const modWaveForm = this.lfoWaveForm().nativeElement;
         for (let j = 0; j < modWaveForm.elements.length; ++j) {
           modWaveForm.elements[j].addEventListener('change', ($event) => {
@@ -213,6 +222,10 @@ export class OscillatorComponent  {
           })
         }
       }
+    });
+
+    toObservable(this.signalService.slopSignal).subscribe((value) => {
+      SetRadioButtons.set(this.slopOnOffForm(), value ? "true" : "false");
     });
   }
 
@@ -336,6 +349,12 @@ export class OscillatorComponent  {
     this.fmSynthService.setModOutput(this.oscNumber(), modOutput);
   }
 
+  private setSlop(value: string) {
+    const slop = value === "true"
+      this.fmSynthService.setSlop(slop);
+      this.signalService.slopSignal.set(slop);
+  }
+
   /**
    * connectToFilters: Connect to a group of filters
    */
@@ -366,7 +385,7 @@ export class OscillatorComponent  {
     if (reverb) {
       ok = true;
       this.fmSynthService.disconnect(this.oscNumber());
-      this.fmSynthService.connect(reverb.input, this.oscNumber())
+      this.fmSynthService.connect(reverb.node, this.oscNumber())
     }
     return ok;
   }
@@ -512,7 +531,6 @@ export class OscillatorComponent  {
   }
 
   private async ctxMenu(e: PointerEvent) {
-    this.cd.detectChanges();
     const contextMenu = this.contextMenu().nativeElement;
     contextMenu.style.visibility = "visible";
     const zoomStr = document.body.style.zoom;
@@ -530,6 +548,7 @@ export class OscillatorComponent  {
       this.clipboard.config = JSON.stringify(this.proxySettings);
       this.clipboard.source = this.params().settingsId;
       this.clipboard.type = "oscillator";
+      this.signalService.clipboardSource.set(this.clipboard.source);
     }
     // @ts-ignore
     else if (target.value === 2) {
