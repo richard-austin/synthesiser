@@ -345,6 +345,33 @@ stages which can be between 1 and 61,
 | Sine/Square/Sawtooth/Triangle | The LFO waveform.                                                                                                                                                                                                                                         |
 | On/Off                        | Sets the LFO on or off.                                                                                                                                                                                                                                   |
 
+### Waveshaper
+![](README.images/waveshaper.png)
+
+The waveshaper applies various distortion types to the oscillator output. To use the waveshaper, you set one or more oscillator bank outputs to "Wave Shaper",
+set the waveshaper and set the waveshaper as reuired.
+
+####
+Mode settings
+
+##### Drive
+Use this to adjust how far into clipping to drive the signal.
+##### Wet/Dry
+Adjust the balance between input (undistorted) and output (distorted) signal. 5 is fully undistorted, -5 is fully distorted
+and zero is 50/50 balance between the two.
+
+##### Mode
+| Mode          | Description                                                  |
+|---------------|--------------------------------------------------------------|
+| Identity      | Output is linear up to the point where hard clipping occurs. |
+| Clip          | A more gentle onset of clipping                              |
+| Hard Clip     | Earlier onset of clipping with drive adjustment              |
+| Soft Clip     | Rounded clipping using the tanh function                     |
+| Hard Clip x 2 | Hard Clip with wave inversion (2 x frequency)                |
+| Soft Clip x 2 | Soft Clip with wave inversion (2 x frequency)                |
+
+##### Output
+The output can be off, to speaker or reverb.
 
 ### General
 
