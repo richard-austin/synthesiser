@@ -10,3 +10,12 @@ div.waveshaper-width {
 .module {
   justify-content: center;
 }
+
+form.outputs {
+  display: flex;
+  flex-direction: column;
+  > div {
+    display: flex;
+    flex-direction: row;
+  }
+}

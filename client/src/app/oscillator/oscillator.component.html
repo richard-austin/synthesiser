@@ -46,14 +46,18 @@
         </select>
         <h2>Output</h2>
         <div style="height: 3px;"></div>
-        <form #oscOutputToForm>
-          <label><input type="radio" name="output" value="speaker" checked><span>Spkr</span></label>
-          <label><input type="radio" name="output" value="filter"><span>Filter</span></label>
-          <label><input type="radio" name="output" value="ringmod"><span>Ring Mod</span></label>
-          <label><input type="radio" name="output" value="reverb"><span>Reverb</span></label>
-          <label><input type="radio" name="output" value="phasor"><span>Phaser</span></label>
-          <label><input type="radio" name="output" value="waveshaper"><span>Wave shaper</span></label>
-          <label><input type="radio" name="output" value="off"><span>Off&nbsp;</span></label>
+        <form #oscOutputToForm class="outputs">
+          <div>
+            <label><input type="radio" name="output" value="speaker" checked><span>Spkr</span></label>
+            <label><input type="radio" name="output" value="filter"><span>Filter</span></label>
+            <label><input type="radio" name="output" value="ringmod"><span>Ring Mod</span></label>
+            <label><input type="radio" name="output" value="reverb"><span>Reverb</span></label>
+          </div>
+          <div>
+            <label><input type="radio" name="output" value="phasor"><span>Phaser</span></label>
+            <label><input type="radio" name="output" value="waveshaper"><span>Wave shaper</span></label>
+            <label><input type="radio" name="output" value="off"><span>Off&nbsp;</span></label>
+          </div>
         </form>
       </div>
       <div class="module osc-width">
@@ -114,7 +118,7 @@
                            (setLevel)="setPortamento($event)"></app-level-control>
         <select #portamentoType>
           <option value="off">Off</option>
-          <option value="chord">{{signalService.synthModeSignal() === 'mono' ? 'Glide' : 'Chord'}}</option>
+          <option value="chord">{{ signalService.synthModeSignal() === 'mono' ? 'Glide' : 'Chord' }}</option>
           <option value="plus12">+12</option>
           <option value="plus24">+24</option>
           <option value="minus12">-12</option>
@@ -150,8 +154,9 @@
                            [divisions]="10"
                            [factor]="12"
                            (setLevel)="setReleaseTime($event)"></app-level-control>
-        @if(proxySettings) {
-          <app-envelope-graph-component [enabled]="envelopeGraphicsEnabled()" [envelope]="envelopeSignal" [positionOffset]="graphPositionOffset()"></app-envelope-graph-component>
+        @if (proxySettings) {
+          <app-envelope-graph-component [enabled]="envelopeGraphicsEnabled()" [envelope]="envelopeSignal"
+                                        [positionOffset]="graphPositionOffset()"></app-envelope-graph-component>
         }
         <h4>Legato</h4>
         <form #legatoOnOffForm>
@@ -220,7 +225,7 @@
   <div #contextMenu class="context-menu">
     <ol (click)="contextSelected($event)">
       <li value="1">Copy Oscillator {{ params().settingsId }} Config</li>
-      <li value="2">Paste Oscillator {{signalService.clipboardSource()}} Config</li>
+      <li value="2">Paste Oscillator {{ signalService.clipboardSource() }} Config</li>
     </ol>
   </div>
 </div>

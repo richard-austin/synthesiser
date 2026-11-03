@@ -18,7 +18,7 @@ import {timer} from 'rxjs';
 })
 export class WaveshaperComponent {
   private proxySettings!: WaveshaperSettings;
-  private readonly amount: number = 0.95
+  private readonly amount: number = 0.5;
   private _ws!: WaveShaperNode;
   private _wsInput!: GainNode;
   private _wsOutput!: GainNode;
@@ -121,11 +121,15 @@ export class WaveshaperComponent {
 
     const x = (i: number) => {return (i - (n / 2)) / (n / 2);}
     const x2 = (i: number) => {return Math.abs(x(i)) * 2}
+    const kf = (i: number) => {return (1 + k) * x(i) / (1 + k * Math.abs(x(i)))};
     let curveFn: (i:number)=> number = x;
 
     switch (mode) {
       case 'identity':
-        curveFn = x;
+        curveFn = (index:number) => {return x(index)};
+        break;
+      case 'clip':
+        curveFn = (index:number) => {return kf(index)};
         break;
       case 'softClip':
         curveFn = (index: number) => {return Math.tanh(x(index))};
